@@ -34,9 +34,25 @@ export const createUsers = async (req, res) => {
 };
 
 
-export const getUser = async (req, res) =>{
+export const getUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
 
+    const { data, error } = await db
+      .from('user')
+      .select('*')
+      .eq('id', userId) 
+      .single();
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+  
 };
+
 export const updateUser = async (req, res) =>{
 
 };

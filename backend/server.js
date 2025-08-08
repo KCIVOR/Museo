@@ -5,7 +5,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from 'uuid';
 import userRoutes from "./routes/userRoutes.js";
-
+import authRoutes from "./routes/authRoutes.js";
 dotenv.config();
 
 const app = express()
@@ -19,6 +19,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use("/api/users", userRoutes) //papunta sa routes(userRoutes.js)
+app.use("/api/auth", authRoutes);// papunta sa authRoutes
 
 app.listen(PORT,()=>{
     console.log("Server is running on port", PORT)
