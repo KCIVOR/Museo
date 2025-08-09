@@ -5,10 +5,9 @@ import { decodeJWT } from '../utils/auth';
 function Home() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token"); //gets 
     
     useEffect(() => {
-        const token = localStorage.getItem("token");
         const decodedUser = decodeJWT(token);
         setUser(decodedUser);
     }, [navigate]); //checks if user is authenticated(utils/auth)
