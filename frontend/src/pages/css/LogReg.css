@@ -1,0 +1,101 @@
+.login-container {
+  display: flex;
+  min-height: 100vh;
+  border-radius: 50;
+}
+
+.login-image-section img {
+  width: 50%;
+  height: 50%;
+  object-fit: cover;
+  border-radius: 20px 0 0 20px;
+}
+
+
+.login-form-section {
+  flex: 1;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* center the form vertically */
+  position: relative;      /* so we can position the logo */
+}
+
+.logo {
+  position: absolute;
+  top: 20px;   /* distance from top */
+  left: 20px;  /* distance from left */
+}
+
+.logo img {
+  width: 100px;
+}
+
+h1 {
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+input {
+  border: none;
+  border-bottom: 1px solid black;
+  padding: 8px 0;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.button-group {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid black;
+  background: white;
+  cursor: pointer;
+}
+
+.error-msg {
+  color: red;
+  margin-top: 15px;
+}
+
+.signup-text {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.signup-text span {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.login-image-section {
+  flex: 1;
+}
+
+.login-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+.forgot-password {
+  font-size: 12px;
+  color: gray;
+  margin-top: 5px;
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { decodeJWT } from "../utils/auth";
-
+import './css/LogReg.css';
 
 export default function Register() {
     const [email, setEmail] = useState('');
@@ -14,93 +14,109 @@ export default function Register() {
 
     useEffect(() => {
       const token = localStorage.getItem("token");
-      if (token){
+      if (token) {
         const decodedUser = decodeJWT(token);
-        if (decodedUser){
-          navigate("/Home")
+        if (decodedUser) {
+          navigate("/Home");
         }
       }
     }, [navigate]); 
   
-
     const handleLogin = async (e) => {
         e.preventDefault();
+        try {
+            if (password !== password2) {
+                setMessage('Password must match');
+                return;
+            }
 
-    try {
-        
-        if (password != password2){
-            setMessage(data.error || 'Password must match');
-            return;
+            const res = await fetch('http://localhost:3000/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, email }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setMessage(data.error || 'Registration failed');
+                return;
+            }
+            navigate('/'); 
+        } catch (err) {
+            setMessage('Something went wrong');
+            console.error(err);
         }
+    };
 
-        const res = await fetch('http://localhost:3000/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username,password,email }),
-        });
+    return (
+      <div className="login-container">
+        {/* Left side - form */}
+        <div className="login-form-section">
+          <div className="logo">
+            <img
+              src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/assets/logo.png"
+              alt="Museo Logo"
+            />
+          </div>
 
-        const data = await res.json();
+          <h1>Register</h1>
+          <form onSubmit={handleLogin}>
+            <label>Username</label>
+            <input
+              type="text"
+              placeholder="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
 
-        if (!res.ok) {
-            setMessage(data.error || 'Login failed');
-            return;
-        }
+            <label>Email Address</label>
+            <input
+              type="email"
+              placeholder="yourname@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
+            <label>Password</label>
+            <input
+              type="password"
+              placeholder="********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-        
-        navigate('/'); 
-    } catch (err) {
-      setMessage('Something went wrong');
-      console.error(err);
-    }
-  };
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              placeholder="********"
+              value={password2}
+              onChange={(e) => setPassword2(e.target.value)}
+              required
+            />
 
-  return (
-    <div style={{ maxWidth: 400, margin: '50px auto' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>username</label><br />
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
+            <div className="button-group">
+              <button type="submit">Register</button>
+            </div>
+          </form>
+
+          {message && <p className="error-msg">{message}</p>}
+
+          <div className="signup-text">
+            Already have an account? <span onClick={() => navigate('/')}>Login</span>
+          </div>
         </div>
 
-        <div style={{ marginTop: 10 }}>
-          <label>Email</label><br />
-          <input
-            type="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+        {/* Right side - image */}
+        <div className="login-image-section">
+          <img
+            src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/assets/login.png"
+            alt="Museum"
           />
         </div>
-        <div style={{ marginTop: 10 }}>
-          <label>Password</label><br />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <label>Confirm Password</label><br />
-          <input
-            type="password"
-            value={password2}
-            onChange={(e) => setPassword2(e.target.value)}
-            required
-          />
-        </div>
-
-        <button type="submit" style={{ marginTop: 15 }}>Register</button>
-      </form>
-
-      {message && <p style={{ marginTop: 20 }}>{message}</p>}
-    </div>
-  );
+      </div>
+    );
 }
