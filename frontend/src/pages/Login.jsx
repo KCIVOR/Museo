@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { decodeJWT } from "../utils/auth";
 
-function App() {
+
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -9,18 +11,20 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      navigate('/Homepage'); 
+    const token = localStorage.getItem("token");
+    const decodedUser = decodeJWT(token);
+    if (decodedUser){
+      navigate("/Home")
     }
-  }, []);
-
+  }, [navigate]); 
+  
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+      
+      const res = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, email }),
@@ -33,13 +37,11 @@ function App() {
         return;
       }
 
-      setMessage(`Welcome, ${data.user.email}`);
-
+      //setMessage(`Welcome, ${data.user.email}`);
       localStorage.setItem('token', data.token); 
-      localStorage.setItem('user', JSON.stringify(data.user));
 
-
-      navigate('/Homepage'); 
+      
+      navigate('/Home'); 
     } catch (err) {
       setMessage('Something went wrong');
       console.error(err);
@@ -77,5 +79,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

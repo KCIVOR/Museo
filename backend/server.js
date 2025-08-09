@@ -18,6 +18,7 @@ app.use(morgan("dev")); // log the req to console
 app.use(express.json());
 app.use(cors());
 
+
 app.use("/api/users", userRoutes) //papunta sa routes(userRoutes.js)
 app.use("/api/auth", authRoutes);// papunta sa authRoutes
 

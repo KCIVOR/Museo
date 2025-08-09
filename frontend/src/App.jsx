@@ -1,13 +1,15 @@
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
-import Homepage from "./pages/Homepage"
+import Home from "./pages/Home";
 import { Routes, Route, useLocation } from 'react-router-dom';
+import ProtectedRoutes from "./utils/protectedRoutes";
 
 import { useState, useEffect } from 'react';
 
 function App(){
   const location = useLocation();
   const hideNavbar = location.pathname === '/';
+  
   return (
     <>
 
@@ -16,7 +18,9 @@ function App(){
 
       <Routes>
         <Route path="/" element={<Login/>}></Route>
-        <Route path="/Homepage" element={<Homepage/>}></Route>
+        <Route element={<ProtectedRoutes/>}>
+          <Route path="/Home" element={<Home/>}></Route>
+        </Route>
       </Routes>
 
     </>

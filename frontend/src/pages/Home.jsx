@@ -1,22 +1,17 @@
 import { useEffect,useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { decodeJWT } from '../utils/auth';
 
-function Homepage() {
+function Home() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-
+    const token = localStorage.getItem("token");
+    
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-
-        if (!token) {
-        navigate('/'); // Redirect to login if no token
-        } else {
-        setUser(JSON.parse(storedUser)); // Set user info
-        }
-    }, []);
-
-
+        const token = localStorage.getItem("token");
+        const decodedUser = decodeJWT(token);
+        setUser(decodedUser);
+    }, [navigate]); //checks if user is authenticated(utils/auth)
 
     return (
         <div>
@@ -30,4 +25,4 @@ function Homepage() {
     );
 }
 
-export default Homepage;
+export default Home;
