@@ -46,24 +46,42 @@ export const loginUser = async (req, res) =>{
     
 };
 
-export const registerUser = async (req, res) =>{
+export const registerUser = async (req, res) => {
     try {
-        const { username, password, email } = req.body // gets data from user requests
-
-        const hashedPassword = await bcrypt.hash(password, 10); //bcrypt pass
+        const { username, password, email } = req.body; 
 
         if (!username || !password || !email) {
             return res.status(400).json({ error: 'All fields are required.' });
         }
-        const { data, error } = await db
-        .from('user')
-        .insert([{username, password:hashedPassword, email }])
-        .select()
-        
-        if (error) throw error
-        res.status(201).json(data[0])
-    } catch (error) {
-        res.status(500).json({ error: error.message })
-  }
-};
 
+        
+        const { data: existingUser, error: checkError } = await db
+            .from('user')
+            .select('*')
+            .eq('email', email)
+            .single(); 
+
+        if (checkError && checkError.code !== 'PGRST116') { 
+            throw checkError;
+        }
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'Email is already taken.' });
+        }
+
+       
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+       
+        const { data, error } = await db
+            .from('user')
+            .insert([{ username, password: hashedPassword, email }])
+            .select();
+
+        if (error) throw error;
+
+        res.status(201).json(data[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

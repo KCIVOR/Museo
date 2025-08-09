@@ -12,9 +12,11 @@ export default function Login() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const decodedUser = decodeJWT(token);
-    if (decodedUser){
-      navigate("/Home")
+    if (token){
+      const decodedUser = decodeJWT(token);
+      if (decodedUser){
+        navigate("/Home")
+      }
     }
   }, [navigate]); 
   

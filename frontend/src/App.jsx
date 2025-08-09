@@ -5,10 +5,11 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import ProtectedRoutes from "./utils/protectedRoutes";
 
 import { useState, useEffect } from 'react';
+import Register from "./pages/Register";
 
 function App(){
   const location = useLocation();
-  const hideNavbar = location.pathname === '/';
+  const hideNavbar = location.pathname === '/' || "/Register";
   
   return (
     <>
@@ -18,6 +19,7 @@ function App(){
 
       <Routes>
         <Route path="/" element={<Login/>}></Route>
+        <Route path="/Register" element={<Register/>}></Route>
         <Route element={<ProtectedRoutes/>}>
           <Route path="/Home" element={<Home/>}></Route>
         </Route>
