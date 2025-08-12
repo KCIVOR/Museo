@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { decodeJWT } from "../utils/auth";
 import './css/LogReg.css'; 
 
 
@@ -9,18 +8,39 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-
+  const [isValid, setIsValidToken] = useState('')
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decodedUser = decodeJWT(token);
-      if (decodedUser) {
-        navigate("/Home");
+    const checkToken = async () => {
+      const token = localStorage.getItem('accessToken');
+      if(!token){
+        try {
+          const refreshResponse = await fetch(
+            "http://localhost:3000/api/auth/refresh",
+            {
+              method: "GET",
+              credentials: "include", // send httpOnly cookie
+            }
+          );
+
+          if (!refreshResponse.ok) {
+            setIsValidToken(false);
+            return;
+          }
+
+          navigate('/home')
+        } catch (error) {
+          console.error("Refresh token error:", error);
+          setIsValidToken(false);
+          return;
+        }
       }
+      navigate("/home")
     }
+    checkToken();
   }, [navigate]);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,7 +50,11 @@ export default function Login() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, email }),
+        credentials: 'include',
       });
+
+
+      
 
       const data = await res.json();
 
@@ -38,8 +62,8 @@ export default function Login() {
         setMessage(data.error || 'Login failed');
         return;
       }
-
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('accessToken', data.accessToken);
+      
       navigate('/Home');
     } catch (err) {
       setMessage('Something went wrong');
