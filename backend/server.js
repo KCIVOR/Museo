@@ -25,7 +25,7 @@ app.use(cors({
 }));
 
 app.use("/api/users", userRoutes) //papunta sa routes(userRoutes.js)
-app.use("/api/auth", authRoutes);// papunta sa authRoutes
+app.use("/api/auth", authRoutes);  // papunta sa authRoutes
 
 app.listen(PORT,()=>{
     console.log("Server is running on port", PORT)

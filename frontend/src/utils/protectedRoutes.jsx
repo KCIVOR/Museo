@@ -2,7 +2,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const ProtectedRoutes = () => {
-  const [isValidToken, setIsValidToken] = useState(null);
+  const [isValidToken, setIsValidToken] = useState(null); 
 
   useEffect(() => {
     const verifyToken = async () => {
