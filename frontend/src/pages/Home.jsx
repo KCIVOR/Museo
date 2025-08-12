@@ -1,16 +1,23 @@
 import { useEffect,useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { decodeJWT } from '../utils/auth';
+import { jwtDecode } from "jwt-decode"; 
 
 function Home() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const token = localStorage.getItem("token"); //gets 
     
     useEffect(() => {
-        const decodedUser = decodeJWT(token);
-        setUser(decodedUser);
-    }, [navigate]); //checks if user is authenticated(utils/auth)
+        const token = localStorage.getItem("accessToken");
+
+        try {
+        const decoded = jwtDecode(token);
+        setUser(decoded);
+        } catch (err) {
+        console.error("Invalid token:", err);
+        navigate("/");
+        }
+    }, [navigate]);
+
 
     return (
         <div>

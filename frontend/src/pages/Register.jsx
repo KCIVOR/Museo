@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { decodeJWT } from "../utils/auth";
+
 import './css/LogReg.css';
 
 export default function Register() {
@@ -10,18 +10,40 @@ export default function Register() {
     const [username, setUsername] = useState('');
     const [message, setMessage] = useState('');
 
+    
+    const [isValid, setIsValidToken] = useState('')
     const navigate = useNavigate();
 
     useEffect(() => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const decodedUser = decodeJWT(token);
-        if (decodedUser) {
-          navigate("/Home");
+      const checkToken = async () => {
+        const token = localStorage.getItem('accessToken');
+        if(!token){
+          try {
+            const refreshResponse = await fetch(
+              "http://localhost:3000/api/auth/refresh",
+              {
+                method: "GET",
+                credentials: "include", // send httpOnly cookie
+              }
+            );
+
+            if (!refreshResponse.ok) {
+              setIsValidToken(false);
+              return;
+            }
+
+            navigate('/home')
+          } catch (error) {
+            console.error("Refresh token error:", error);
+            setIsValidToken(false);
+            return;
+          }
         }
+        navigate("/home")
       }
-    }, [navigate]); 
-  
+      checkToken();
+    }, [navigate]);
+
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
