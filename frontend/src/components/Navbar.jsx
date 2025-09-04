@@ -2,7 +2,7 @@ function Navbar(){
     console.log("nav")
     return(
         <>
-            <div>Navbar</div>
+            <div></div>
         </>
     )
 }

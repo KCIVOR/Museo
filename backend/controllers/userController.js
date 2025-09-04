@@ -59,7 +59,9 @@ export const updateUser = async (req, res) =>{
 export const deleteUser = async (req, res) =>{
 
 };
-
-
+export const getCurrentUser = (req, res) => {
+  // req.user is set by authMiddleware
+  res.json(req.user);
+};
 
 //const isMatch = await bcrypt.compare(password, data.password); check password

@@ -1,73 +1,59 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "../supabase/supabaseClient";
 import './css/LogReg.css'; 
-
-
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [isValid, setIsValidToken] = useState('')
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkToken = async () => {
-      const token = localStorage.getItem('accessToken');
-      if(!token){
-        try {
-          const refreshResponse = await fetch(
-            "http://localhost:3000/api/auth/refresh",
-            {
-              method: "GET",
-              credentials: "include", // send httpOnly cookie
-            }
-          );
-
-          if (!refreshResponse.ok) {
-            setIsValidToken(false);
-            return;
-          }
-
-          navigate('/home')
-        } catch (error) {
-          console.error("Refresh token error:", error);
-          setIsValidToken(false);
-          return;
-        }
-      }
-      navigate("/home")
-    }
-    checkToken();
-  }, [navigate]);
-
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    try {
-      const res = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, email }),
-        credentials: 'include',
-      });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.session) {
+      setMessage(error?.message || "Login failed.");
+      return;
+    }
+
+    const { access_token, refresh_token } = data.session;
+    const response = await fetch("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ access_token, refresh_token }),
+    });
 
 
-      
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      setMessage(result.message || "Failed to store session");
+      return;
+    }
 
-      const data = await res.json();
+    alert("Logged in!");
+    localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
+    navigate('/home')
 
-      if (!res.ok) {
-        setMessage(data.error || 'Login failed');
-        return;
-      }
-      localStorage.setItem('accessToken', data.accessToken);
-      
-      navigate('/Home');
-    } catch (err) {
-      setMessage('Something went wrong');
-      console.error(err);
+  };
+
+  // Google OAuth login
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: "http://localhost:5173/auth/callback", // redirect after login, di kana babalikan
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
     }
   };
 
@@ -77,7 +63,7 @@ export default function Login() {
       <div className="login-form-section">
         <div className="logo">
           <img
-            src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/assets/logo.png"
+            src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/logo.png"
             alt="Museo Logo"
           />
         </div>
@@ -105,7 +91,10 @@ export default function Login() {
           <div className="forgot-password">Forgot your password?</div>
 
           <div className="button-group">
-            <button type="submit">Login</button>
+            <button type="submit">Login with Email</button>
+            <button type="button" onClick={handleGoogleLogin}>
+              Continue with Google
+            </button>
           </div>
         </form>
 
@@ -119,7 +108,7 @@ export default function Login() {
       {/* Right side - Image */}
       <div className="login-image-section">
         <img
-          src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/assets/login.png"
+          src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/login.png"
           alt="Museum"
         />
       </div>

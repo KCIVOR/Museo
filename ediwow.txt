@@ -1,0 +1,48 @@
+/*
+git add .
+git commit -m "Add latest changes"
+git push -u origin main
+
+
+
+For all protected API calls:
+Make sure to include the authorization header:
+fetch('http://localhost:3000/api/some-protected-route', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    },
+    credentials: 'include'
+});
+
+*/
+
+Supabase = identity provider only (auth check, signup, OAuth).
+
+Your backend = session manager (HttpOnly cookies for access + refresh tokens).
+
+Frontend = “stateless” (no tokens in localStorage/sessionStorage, just uses cookies automatically).
+
+After you send tokens to backend → you call supabase.auth.signOut() → ✅ clears them from the browser.
+
+This gives you:
+
+🔒 Stronger security (no XSS leaking tokens).
+
+🎯 Cleaner architecture (all requests validated server-side).
+
+🔄 Centralized session handling (easy refresh, logout everywhere).
+
+
+
+
+auth.js workflow
+Step	Actor	Action	Condition
+1	User	Makes any request to a protected API route (e.g., GET /api/users/me).	-
+2	Middleware (auth.js)	Checks the access_token cookie. Finds it expired or expiring in <60 sec.	Token is invalid or exp <= (now + 60)
+3	Middleware	Checks for a refresh_token cookie.	refresh_token exists
+4	Middleware	Calls supabase.auth.refreshSession() with the refresh token.	Previous step was successful
+5	Supabase	Validates the refresh token and returns a brand new access_token and refresh_token.	Refresh token is valid
+6	Middleware	Automatically sets new cookies with the fresh tokens.	Supabase call was successful
+7	Middleware	Allows the request to continue to the original controller (e.g., userController).	-
