@@ -1,0 +1,150 @@
+/* Page */
+.profilePage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Width */
+:root { --feed-max: 960px; }
+
+.profileFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 24px auto 64px;
+  padding: 0 12px;
+}
+
+/* Card */
+.pCard {
+  position: relative; /* anchor for kebab */
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+/* Top-right options button */
+.pKebab {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  border: 1px solid #e6e6ea;
+  background: #fff; color: #0f172a;
+  cursor: pointer;
+}
+.pKebab:hover { background: #f9fafb; }
+
+/* Cover + avatar overlap */
+.pCover {
+  position: relative;
+  border-radius: 12px;
+  overflow: visible; /* allow avatar overlap */
+  height: 180px;
+  background: #e5ecf3;
+  margin-bottom: 24px;
+}
+.pCoverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pAvatarWrap {
+  position: absolute;
+  left: 24px;
+  bottom: -64px;
+  width: 160px; height: 160px;
+  border: 6px solid #fff;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #ddd;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+.pAvatar {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* Header */
+.pHeader {
+  margin-top: 88px; /* space for overlapped avatar */
+  display: grid;
+  gap: 8px;
+}
+.pName {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #111;
+  margin: 0;
+}
+.pMeta {
+  display: grid;
+  gap: 4px;
+  color: #111;
+  font-size: 14px;
+}
+
+/* About panel */
+.pBio {
+  margin-top: 16px;
+  background: #f3f7fb;
+  border: 1px solid #e6eef7;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+/* Section heading bar (title + future actions) */
+.pSectionBar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pSectionTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+}
+
+/* Arts grid — simple responsive (prevents compression) */
+.pGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.pTile {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.pTile img {
+  width: 100%;
+  height: auto;   /* preserve aspect ratio */
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  :root { --feed-max: 820px; }
+  .pAvatarWrap { width: 140px; height: 140px; bottom: -56px; }
+  .pHeader { margin-top: 80px; }
+  .pName { font-size: 34px; }
+  .pGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  :root { --feed-max: 100%; }
+  .profileFeed { padding: 0 10px; }
+  .pAvatarWrap { width: 120px; height: 120px; bottom: -48px; }
+  .pHeader { margin-top: 72px; }
+  .pName { font-size: 28px; }
+  .pGrid { grid-template-columns: 1fr; }
+}

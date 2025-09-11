@@ -1,0 +1,111 @@
+/* Museo Composer — original capsule, frosted, grid accent */
+.mc {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  background: rgba(255,255,255,.9);
+  backdrop-filter: saturate(1.1) blur(6px);
+  border: 1px solid #e6e6ea;
+  border-radius: 16px;
+  padding: 12px;
+  margin: 8px 0 14px;
+  box-shadow: 0 2px 14px rgba(16, 24, 40, .05);
+}
+.mc__avatar {
+  width: 48px; height: 48px; border-radius: 999px; object-fit: cover;
+}
+
+.mc__body { display: grid; gap: 10px; }
+
+.mc__inputWrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fafbff;
+  border: 1px solid #e7ebf3;
+}
+.mc__label {
+  position: absolute;
+  top: 10px; left: 12px;
+  font-size: 14px; color: #6b7280;
+  transition: all .15s ease;
+  pointer-events: none;
+}
+.mc__label.is-floating {
+  transform: translateY(-10px);
+  font-size: 11px;
+  color: #3b82f6;
+}
+.mc__ta {
+  width: 100%;
+  min-height: 44px;
+  max-height: 200px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 22px 12px 12px;
+  resize: none;
+  color: #111827;
+  line-height: 1.45;
+  font-size: 14px;
+}
+.mc__grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(transparent 23px, rgba(59,130,246,.065) 24px),
+                    linear-gradient(90deg, transparent 23px, rgba(59,130,246,.065) 24px);
+  background-size: 24px 24px;
+  opacity: .3; pointer-events: none;
+}
+
+/* Chips row */
+.mc__chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.mc__chip {
+  position: relative;
+  display: inline-grid; grid-template-columns: 48px auto; align-items: center; gap: 8px;
+  background: #fff; border: 1px solid #e6e6ea; border-radius: 12px; padding: 4px 8px 4px 4px;
+}
+.mc__thumb {
+  width: 48px; height: 36px; border-radius: 8px; object-fit: cover; background:#f2f3f7; display:block;
+}
+.mc__thumb--video { display:grid; place-items:center; font-weight:800; color:#1f2937; }
+.mc__x {
+  position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; border-radius: 999px; border: 1px solid #e6e6ea;
+  background: #fff; cursor: pointer; line-height: 0;
+}
+
+/* Toolbar */
+.mc__bar {
+  display: flex;                /* flex is simpler for left–right alignment */
+  align-items: center;
+  gap: 8px;
+}
+
+.mc__tool {
+  height: 34px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid #e6e6ea; background: #fff; color:#111; cursor: pointer; font-size: 13px;
+}
+.mc__tool:hover { background:#f8fafc; }
+.mc__spacer {
+  flex: 1;                      /* pushes everything after it to the right */
+}
+.mc__post {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 0;
+  background: #111827;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mc__post.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .mc { grid-template-columns: 40px 1fr; }
+  .mc__avatar { width: 40px; height: 40px; }
+  .mc__tool:nth-child(n+2) { display: none; } /* keep one tool on mobile */
+}

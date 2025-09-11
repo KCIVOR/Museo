@@ -1,0 +1,155 @@
+/* Page wrapper */
+.artistDetailPage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Content width */
+:root { --feed-max: 960px; }
+
+.artistDetailFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 24px auto 64px;
+  padding: 0 12px;
+}
+
+/* Card container style (outer shell) */
+.adCard {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 24px;
+}
+
+/* Cover banner with avatar overlap */
+.adCover {
+  position: relative;
+  border-radius: 12px;
+  /* overflow: hidden;  removed to avoid clipping the avatar */
+  overflow: visible;
+  height: 180px;
+  background: #e5ecf3;
+  margin-bottom: 24px;
+}
+.adCoverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Avatar overlapping cover */
+.adAvatarWrap {
+  position: absolute;
+  left: 24px;
+  bottom: -64px;
+  width: 160px;                 /* outer square including border */
+  height: 160px;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;       /* account for the 6px border */
+  border: 6px solid #fff;
+  border-radius: 999px;         /* circle */
+  overflow: hidden;             /* clip image to circle */
+  background: #ddd;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.adAvatar {
+  display: block;               /* eliminate inline-img baseline gap */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;            /* fill circle without distortion */
+  transform: none;
+}
+
+/* Header text area */
+.adHeader {
+  margin-top: 88px;             /* space for overlapped avatar */
+  display: grid;
+  gap: 8px;
+}
+.adName {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #111;
+}
+.adMeta {
+  display: grid;
+  gap: 4px;
+  color: #111;
+  font-size: 14px;
+}
+
+/* Actions */
+.adActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.adBtn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e6e6ea;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adBtn:hover { background: #f9fafb; }
+
+/* Bio panel */
+.adBio {
+  margin-top: 16px;
+  background: #f3f7fb;
+  border: 1px solid #e6eef7;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+/* Section title */
+.adSectionTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111;
+  margin: 18px 0 10px;
+}
+
+/* -------- Masonry Arts (CSS Grid dense) -------- */
+.adMasonryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 8px;          /* base row unit */
+  grid-auto-flow: dense;        /* back-fill gaps */
+  gap: 12px;
+}
+.adGItem {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.adGImg {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  :root { --feed-max: 820px; }
+  .adAvatarWrap { width: 140px; height: 140px; bottom: -56px; }
+  .adHeader { margin-top: 80px; }
+  .adName { font-size: 34px; }
+  .adMasonryGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  :root { --feed-max: 100%; }
+  .artistDetailFeed { padding: 0 10px; }
+  .adAvatarWrap { width: 120px; height: 120px; bottom: -48px; }
+  .adHeader { margin-top: 72px; }
+  .adName { font-size: 28px; }
+  .adMasonryGrid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,198 @@
+/* Page + container */
+.artPage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+:root { --feed-max: 960px; }
+.artFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  padding: 16px 16px 64px;
+  box-sizing: border-box;
+}
+
+/* Cards */
+.artCard {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+  margin: 12px 0;
+  box-sizing: border-box;
+}
+
+/* Hero image */
+.heroWrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef2f5;
+}
+.heroImg {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+}
+
+/* Thumbnails */
+.thumbRow {
+  margin-top: 12px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 64px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+  overflow: hidden;
+  padding: 0;
+  background: #fff;
+  cursor: pointer;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb--active {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.titleCard {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+  margin: 16px auto;         /* center the card block */
+  display: grid;
+  place-items: center;       /* centers content vertically & horizontally */
+  justify-items: center;     /* ensure inner items align center on the x-axis */
+  max-width: 100%;           /* avoid overflow */
+  box-sizing: border-box;
+}
+
+/* Title text */
+.artTitle {
+  font-size: clamp(22px, 3.2vw, 34px);
+  font-weight: 900;
+  color: #111;
+  text-align: center;
+  margin: 0;                 /* remove default h1 margins for perfect centering */
+  line-height: 1.25;
+  width: 100%;
+}
+
+/* Description + bullets */
+.artLead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #111;
+  margin: 6px 0 10px;
+}
+.artBullets {
+  margin: 8px 0 0 18px;
+  color: #111;
+  font-size: 16px;
+}
+.artBullets.inner { margin-top: 6px; }
+
+/* --- Comment Composer Fix --- */
+.composer {
+  display: flex;               /* stack children vertically */
+  flex-direction: column;
+  gap: 10px;                    /* spacing between textarea, toolbar, actions */
+}
+
+.composerInput {
+  width: 100%;
+  background: #f2f5f9;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 120px;
+  max-height: 60vh;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.composerToolbar {
+  display: flex;                /* stay on one row */
+  flex-wrap: wrap;              /* wrap if screen is very narrow */
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 2px;
+}
+
+.tBtn {
+  background: transparent;
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.tBtn:hover { background: #f3f4f6; }
+
+.composerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.submitBtn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.submitBtn:hover { background: #1b46c6; }
+
+/* Comments */
+.artComments {
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+  box-sizing: border-box;
+}
+.commentsTitle {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 4px 0 12px;
+  color: #111;
+}
+.commentsList { display: grid; gap: 18px; }
+.commentItem { display: grid; grid-template-columns: 40px 1fr; gap: 12px; }
+.cAvatar {
+  width: 40px; height: 40px; border-radius: 999px; object-fit: cover; background: #ddd;
+}
+.cBody { display: grid; gap: 4px; }
+.cMeta { display: flex; gap: 10px; align-items: baseline; }
+.cName { font-weight: 700; color: #111; }
+.cTime { font-size: 13px; color: #6b7280; }
+.cText { color: #111; line-height: 1.6; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  :root { --feed-max: 100%; }
+  .artFeed { padding: 12px; }
+  .thumbRow { grid-auto-columns: 56px; gap: 10px; }
+}

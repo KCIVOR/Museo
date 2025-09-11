@@ -1,0 +1,100 @@
+/* Page wrapper */
+.galleryPage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Content width */
+:root { --feed-max: 880px; }
+
+.galleryFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 0 auto;
+  padding: 12px 12px 48px;
+}
+
+/* Section block */
+.gSection {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Section header */
+.gHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 12px;
+}
+.gTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111;
+}
+.gMore {
+  font-size: 13px;
+  color: #4b5563;
+  text-decoration: none;
+}
+
+/* Horizontal scroller row */
+.gRow {
+  display: grid;
+  grid-auto-flow: column;           /* horizontal flow */
+  grid-auto-columns: 320px;         /* card width */
+  gap: 16px;
+  overflow-x: auto;                 /* horizontal scroll */
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x mandatory;    /* snapping feel */
+  -webkit-overflow-scrolling: touch;
+}
+.gRow::-webkit-scrollbar { height: 10px; }
+.gRow::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 8px;
+}
+.gRow::-webkit-scrollbar-track { background: transparent; }
+
+/* Card */
+.gCard {
+  scroll-snap-align: start;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.gMedia {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: #eef2f5;
+  object-fit: cover;
+  display: block;
+}
+.gCaption {
+  padding: 10px 12px 12px;
+  font-size: 14px;
+  color: #111;
+}
+
+/* Responsive */
+@media (min-width: 1440px) {
+  :root { --feed-max: 960px; }
+  .gRow { grid-auto-columns: 360px; }
+}
+@media (max-width: 1024px) {
+  :root { --feed-max: 760px; }
+  .gRow { grid-auto-columns: 280px; }
+}
+@media (max-width: 768px) {
+  .gRow { grid-auto-columns: 240px; }
+  .gTitle { font-size: 18px; }
+}

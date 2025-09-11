@@ -1,0 +1,255 @@
+/* src/pages/css/blindAuction.css */
+
+/* Page shell */
+.baPDP {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Wrapper: two-column PDP */
+.baWrap {
+  width: 100%;
+  max-width: 960px;          /* tighter max width */
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 24px;             /* more padding */
+  margin: 24px auto;         /* more breathing room */
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1.4fr 1fr;
+}
+
+/* Gallery */
+.baGallery {
+  display: grid;
+  gap: 12px;
+}
+
+.baHero {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef2f5;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.baHero img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 4 / 3;       /* taller ratio */
+  max-height: 480px;
+}
+
+.baThumbs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.baThumb {
+  width: 88px;               /* larger thumbs */
+  height: 88px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.baThumb.is-active {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.baThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Right panel */
+.baPanel {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.baCountdown {
+  background: #f6f9ff;
+  border: 1px solid #dfe8ff;
+  color: #0f172a;
+  font-weight: 800;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.baPrice {
+  font-size: 28px;
+  font-weight: 900;
+  color: #111;
+}
+
+/* Field groups */
+.baField {
+  display: grid;
+  gap: 10px;
+}
+
+/* Label */
+.baLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  font-weight: 800;
+}
+
+/* Large bid input */
+.baBidInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.baPrefix {
+  font-weight: 900;
+  color: #111;
+}
+
+.baInput {
+  border: 0;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 18px;
+  color: #111;
+  padding: 6px 0;
+}
+
+/* Min / Max chips */
+.baLimits {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.baLimit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.baLimit span {
+  color: #6b7280;
+  font-weight: 700;
+}
+.baLimit b {
+  color: #0f172a;
+}
+
+.baHelp {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* CTA row */
+.baCTARow--single {
+  display: grid;
+}
+
+.baBuy {
+  height: 44px;
+  border-radius: 12px;
+  border: 0;
+  background: #111827;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Details section */
+.baDetails {
+  margin-top: 6px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #eef0f4;
+  padding-top: 10px;
+}
+
+.baSectionTitle {
+  font-weight: 900;
+  color: #111;
+}
+.baLead {
+  margin: 0;
+  color: #111;
+  line-height: 1.6;
+}
+
+.baSpecs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.baSpecs li {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  font-size: 14px;
+  align-items: start;
+}
+
+.baSpecs li span {
+  color: #6b7280;
+}
+.baSpecs li b {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .baWrap {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
+  }
+  .baSpecs li {
+    grid-template-columns: 100px 1fr;
+  }
+  .baHero img {
+    max-height: 380px;
+  }
+}
+
+@media (max-width: 600px) {
+  .baThumb {
+    width: 70px;
+    height: 70px;
+  }
+  .baSpecs li {
+    grid-template-columns: 90px 1fr;
+  }
+}

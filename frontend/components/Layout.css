@@ -1,0 +1,96 @@
+/* Layout.css */
+
+/* Root grid: header on top, footer bottom, center row with 3 columns */
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* header, content, footer */
+  grid-template-columns: var(--side-l, 280px) 1fr var(--side-r, 340px); /* left, main, right */
+  grid-template-areas:
+    "header header header"
+    "sideL  main   sideR"
+    "footer footer footer";
+  background: #eef2f5;
+  overflow: visible; /* important: do not clip sticky children */
+}
+
+/* Sticky header */
+.app__header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #f7f9fb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Left sidebar: sticky under header, owns its own scroll */
+.app__side-left {
+  grid-area: sideL;
+  position: sticky;
+  top: var(--nav-h, 64px);
+  height: calc(100vh - var(--nav-h, 64px));
+  overflow: auto;                          /* independent scrollbar */
+  background: #f3f6f8;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px;
+
+  contain: layout paint size;              /* optional isolation */
+  overscroll-behavior: contain;            /* prevent scroll chaining */
+}
+
+/* Right rail: sticky under header, owns its own scroll */
+.app__side-right {
+  grid-area: sideR;
+  position: sticky;
+  top: var(--nav-h, 64px);
+  height: calc(100vh - var(--nav-h, 64px));
+  overflow: auto;                          /* independent scrollbar */
+  background: #f7f9fb;
+  border-left: 1px solid #e5e7eb;
+  padding: 16px;
+
+  contain: layout paint size;
+  overscroll-behavior: contain;
+}
+
+/* Center main: scrolls independently */
+.app__main {
+  grid-area: main;
+  min-width: 0;
+  overflow: auto;                          /* independent scrollbar */
+  padding: 16px;
+  background: #f5f7fa;
+
+  overscroll-behavior: contain;            /* block scroll chaining */
+}
+
+/* Footer */
+.app__footer {
+  grid-area: footer;
+  background: #f7f9fb;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .app {
+    grid-template-columns: var(--side-l, 280px) 1fr 0px;
+    grid-template-areas:
+      "header header header"
+      "sideL  main   main"
+      "footer footer footer";
+  }
+
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main"
+      "footer";
+  }
+  .app__side-left { display: none; } /* consider a drawer on mobile */
+}

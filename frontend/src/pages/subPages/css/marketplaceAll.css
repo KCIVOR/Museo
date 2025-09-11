@@ -1,0 +1,57 @@
+/* Page shell */
+.vaPage { min-height: 100vh; background:#f4f6f8; display:flex; justify-content:center; }
+.vaWrap { width:100%; max-width: 1200px; padding: 16px; }
+
+/* Header */
+.vaHead { display:grid; gap:12px; margin-bottom: 10px; }
+.vaTitle { display:flex; align-items:baseline; gap:10px; }
+.vaTitle h1 { margin:0; font-size: 26px; font-weight: 900; color:#111; }
+.vaCount { color:#6b7280; font-weight:700; }
+
+.vaActions { display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+.vaChips { display:flex; gap:8px; flex-wrap:wrap; }
+.vaChip {
+  height:32px; padding:0 12px; border-radius:999px; border:1px solid #e6e6ea; background:#fff; color:#111; font-weight:700; cursor:pointer;
+}
+.vaChip.is-active { background:#111827; color:#fff; border-color:#111827; }
+.vaSort {
+  height:36px; border:1px solid #e6e6ea; border-radius:10px; background:#fff; padding:0 10px; color:#111;
+}
+
+/* Grid */
+.vaGrid {
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.vaCard {
+  display:grid; gap:8px; text-decoration:none; background:#fff;
+  border:1px solid rgba(0,0,0,.06); border-radius:12px; overflow:hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.vaImgWrap { position:relative; background:#eef2f5; }
+.vaImgWrap img { width:100%; display:block; object-fit:cover; aspect-ratio: 16 / 10; }
+.vaBadge {
+  position:absolute; left:8px; top:8px; background:#fff; border:1px solid #e6e6ea; border-radius:999px; padding:4px 10px;
+  font-size:12px; font-weight:800; color:#111;
+}
+.vaBadge--accent { background:#fff6f0; border-color:#ffd4b5; color:#b45309; }
+
+.vaMeta { display:grid; gap:4px; padding: 10px 12px; }
+.vaName { color:#111; font-weight:700; line-height:1.4; }
+.vaPrice { color:#0f172a; font-weight:900; }
+
+/* Pager */
+.vaPager { display:flex; gap:8px; justify-content:center; margin-top: 16px; }
+.vaPageBtn {
+  height:34px; min-width:34px; padding:0 10px; border-radius:10px; border:1px solid #e6e6ea; background:#fff; color:#111; font-weight:700; cursor:pointer;
+}
+.vaPageBtn.is-active { background:#111827; color:#fff; border-color:#111827; }
+.vaPageBtn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* Responsive */
+@media (max-width: 1100px) { .vaGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  {
+  .vaWrap { padding: 12px; }
+  .vaGrid { grid-template-columns: 1fr; }
+}

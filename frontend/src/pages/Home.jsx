@@ -1,191 +1,159 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/Home.jsx
+import React, { useEffect, useRef, useState } from "react";
 import "./css/home.css";
+import MuseoComposer from "./museoComposer"; // <-- add this import
 
-export default function Home() {
-  const [users, setUsers] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+function getAverageColorFromImageElement(img) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const w = 16, h = 16;
+  canvas.width = w; canvas.height = h;
+  ctx.drawImage(img, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  let r = 0, g = 0, b = 0, n = w * h;
+  for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
+  return `rgb(${Math.round(r/n)}, ${Math.round(g/n)}, ${Math.round(b/n)})`;
+}
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/api/users/", {
-          method: "GET",
-          credentials: "include",
-        });
+function AnnouncementCard({
+  id,
+  eyebrow,
+  title,
+  meta,
+  primaryHref = "/event",
+  primaryLabel = "View details",
+  secondaryHref = "/home",
+  secondaryLabel = "RSVP",
+}) {
+  const storageKey = `museo_announce_hidden_${id}`;
+  const [hidden, setHidden] = useState(() => localStorage.getItem(storageKey) === "1");
 
-        if (response.status === 401) {
-          navigate("/");
-          return;
-        }
+  useEffect(() => { if (hidden) localStorage.setItem(storageKey, "1"); }, [hidden, storageKey]);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch users");
-        }
+  if (hidden) return null;
 
-        const data = await response.json();
-        setUsers(data);
-      } catch (err) {
-        setError(err.message || "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, [navigate]);
+  const onKey = (e) => {
+    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setHidden(true);
+    }
+  };
 
   return (
-    <div className="museo-shell">
-      {/* Left Sidebar */}
-      <aside className="museo-left">
-        <div className="logo-row">
-          <div className="logo-circle" />
-          <strong className="logo-text">Museo</strong>
+    <div className="announce" role="region" aria-label={`${eyebrow} announcement`}>
+      <div className="announce__left">
+        <div className="announce__eyebrow">{eyebrow}</div>
+        <div className="announce__title">{title}</div>
+        <div className="announce__meta">{meta}</div>
+        <div className="announce__ctaRow">
+          <a className="btnPrimary" href={primaryHref}>{primaryLabel}</a>
+          <a className="btnGhost" href={secondaryHref}>{secondaryLabel}</a>
         </div>
+      </div>
+      <button
+        className="announce__close"
+        aria-label="Dismiss announcement"
+        onClick={() => setHidden(true)}
+        onKeyDown={onKey}
+      >✕</button>
+    </div>
+  );
+}
 
-        <nav className="nav-group">
-          <a className="nav-item active">Home</a>
-          <a className="nav-item">Artists</a>
-          <a className="nav-item">Gallery</a>
-          <a className="nav-item">Marketplace</a>
-          <a className="nav-item">Events</a>
-          <a className="nav-item">Community</a>
-        </nav>
+export default function Home() {
+  const initial = [
+    { name: "Rovick Romasanta", pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "I like egg", picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg" },
+    { name: "Ron iverson",       pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "test",      picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(4).jpg" },
+    { name: "Dwayne tan",        pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "padre nuestro que estas", picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(2).jpg" },
+    { name: "Ron iverson",       pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "test",      picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(3).jpg" }
+  ];
+  const [posts, setPosts] = useState(initial);
 
-        <div className="section-title">Your Community</div>
-        <div className="list">
-          <div className="list-item">
-            <span className="dot" /> DemakinArts
-          </div>
-          <div className="list-item">
-            <span className="dot orange" /> Ripple Realms
-          </div>
-        </div>
+  const [bg, setBg] = useState({});
+  const [ratioClass, setRatioClass] = useState({});
+  const [fit, setFit] = useState({});
 
-        <div className="section-title">Your Virtual Gallery</div>
-        <div className="list">
-          <div className="list-item">
-            <span className="dot deep" /> Deep Blue Gallery
-          </div>
-        </div>
+  const onImageLoad = (idx, e) => {
+    const img = e.target;
+    const ar = img.naturalWidth / img.naturalHeight;
 
-        <div className="section-title">You Might Know</div>
-        <div className="people-list">
-          {[
-            "Aria Bennett",
-            "Ron Iverson Roguel",
-            "James Morgan McGill",
-            "Mike Ehrmantraut",
-          ].map((name) => (
-            <div key={name} className="person">
-              <div className="avatar" />
-              <span>{name}</span>
-            </div>
-          ))}
-        </div>
-      </aside>
+    let rClass = "ratio-1-1";
+    if (ar >= 1.6) rClass = "ratio-191-1";
+    else if (ar <= 0.9) rClass = "ratio-4-5";
+    setRatioClass((s) => ({ ...s, [idx]: rClass }));
 
-      {/* Main */}
-      <main className="museo-main">
-        {/* Topbar */}
-        <header className="topbar">
-          <div className="search">
-            <span className="icon">🔎</span>
-            <input placeholder="Search" />
-          </div>
-          <div className="top-actions">
-            <div className="coins">
-              <span className="coin" /> 5042
-            </div>
-            <button className="icon-btn">🔔</button>
-            <button className="icon-btn">💬</button>
-            <div className="avatar sm" />
-          </div>
-        </header>
+    const box = img.parentElement.getBoundingClientRect();
+    const small = img.naturalWidth < box.width || img.naturalHeight < box.height;
+    const useContain = small || ar < 0.9 || ar > 2.2;
+    setFit((s) => ({ ...s, [idx]: useContain ? "contain" : "cover" }));
 
-        {/* Feed */}
-        <div className="feed">
-          <article className="card">
-            <div className="card-head">
-              <div className="avatar sm" />
-              <div>
-                <div className="title">m/Inkspire/Kcivor</div>
-                <div className="sub">
-                  Van Gogh’s swirling night sky turns emotion into a timeless
-                  masterpiece.
+    try {
+      const avg = getAverageColorFromImageElement(img);
+      setBg((s) => ({ ...s, [idx]: avg }));
+    } catch {}
+  };
+
+  const announcements = [
+        { id: "a1", eyebrow: "Museo Event", title: "Upcoming “Museo Nights: Contemporary Visions”", meta: "Oct 18, 7:00 PM • Museo Main Hall" },
+    { id: "a2", eyebrow: "Open Call", title: "Submissions now open for Emerging Artists 2025", meta: "Deadline Nov 10 • Top picks get featured in the December showcase" },
+    { id: "a3", eyebrow: "Workshop", title: "Watercolor Masterclass with Dhalia Ford", meta: "Oct 25, 2:00 PM • Limited seats • Materials included" },
+  ];
+
+  const afterIndex = { 1: 1, 3: 2 };
+
+  return (
+    <div className="page">
+      <div className="feed">
+        {/* New, original Museo composer */}
+        <MuseoComposer onSubmit={(card) => setPosts((p) => [card, ...p])} />
+
+        {/* First announcement before posts */}
+        <AnnouncementCard {...announcements} />
+
+        {posts.map((item, idx) => (
+          <React.Fragment key={`row-${idx}`}>
+            <div className="card">
+              <div className="cardHeader">
+                <img src={item.pPicture} alt="" className="avatar" />
+                <div className="meta">
+                  <div className="name">{item.name}</div>
+                  <div className="desc">{item.description}</div>
                 </div>
               </div>
-            </div>
-            <div className="card-media">
-              <div className="media-sample">SAMPLE</div>
-            </div>
-            <div className="card-foot">
-              <span>❤️ 334</span>
-              <span>💬</span>
-            </div>
-          </article>
 
-          <article className="card">
-            <div className="card-head">
-              <div className="avatar sm" />
-              <div>
-                <div className="title">m/DemakinArts/Mike Ehrmantraut</div>
-                <div className="sub">A silent witness to time and life.</div>
+              {item.text && (
+                <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                  <p style={{ margin: 0, color: "#111", lineHeight: 1.5 }}>{item.text}</p>
+                </div>
+              )}
+
+              {item.picture && (
+                <div
+                  className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
+                  style={{ background: bg[idx] || "#f2f4f7" }}
+                >
+                  <img
+                    src={item.picture}
+                    alt=""
+                    className={`postImage ${fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"}`}
+                    crossOrigin="anonymous"
+                    onLoad={(e) => onImageLoad(idx, e)}
+                  />
+                </div>
+              )}
+
+              <div className="actions">
+                <button className="actionBtn" aria-label="Like">❤️ <span className="actionText">123</span></button>
+                <button className="actionBtn" aria-label="Comment">💬 <span className="actionText">11</span></button>
               </div>
             </div>
-            <div className="card-media">
-              <div className="media-sample">SAMPLE</div>
-            </div>
-            <div className="card-foot">
-              <span className="like-red">❤️ 1.5k</span>
-              <span>💬</span>
-            </div>
-          </article>
-        </div>
-      </main>
 
-        {/* Right Sidebar */}
-        <aside className="museo-right">
-        <div className="widget">
-            <div className="widget-title">Upcoming Events</div>
-
-            {/* Events as bars */}
-            <div className="events-list">
-            {[
-                { month: "April", day: "8", title: "Art Celebration", time: "8:00AM - 1:00PM" },
-                { month: "May", day: "8", title: "Global Showcase", time: "10:00AM - 4:00PM" },
-                { month: "March", day: "8", title: "Digital Summit", time: "1:00AM - 6:00PM" },
-            ].map((e, i) => (
-                <article key={i} className="event-row">
-                <div className="date-badge">
-                    <div className="m">{e.month}</div>
-                    <div className="d">{e.day}</div>
-                </div>
-                <div className="event-info">
-                    <div className="event-title">{e.title}</div>
-                    <div className="event-time">{e.time}</div>
-                </div>
-                </article>
-            ))}
-            </div>
-        </div>
-
-        <div className="widget">
-          <div className="widget-title">Top Arts of the Week</div>
-          <div className="thumb">
-            <div className="thumb-img">SAMPLE</div>
-            <div className="thumb-caption">“Lovers” by Aria Bennett</div>
-          </div>
-          <div className="thumb">
-            <div className="thumb-img">SAMPLE</div>
-            <div className="thumb-caption">“Green Forest” by Gustavo Fring</div>
-          </div>
-        </div>
-      </aside>
+            {afterIndex[idx] !== undefined && (
+              <AnnouncementCard {...announcements[afterIndex[idx]]} />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 }

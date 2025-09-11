@@ -1,0 +1,279 @@
+/* Page wrapper */
+.msgPage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Wider content */
+:root {
+  --feed-max: 1440px;
+}
+
+/* Two columns: compact inbox, wide thread */
+.msgWrap {
+  width: 100%;
+  max-width: var(--feed-max);
+  display: grid;
+  grid-template-columns: 260px 1fr; /* narrower inbox for wider thread */
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Sidebar */
+.msgSide {
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.msgSideHead {
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+  padding: 12px 14px 8px;
+}
+
+.msgSearch {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  padding: 0 12px 10px;
+}
+
+.msgSearchIcon {
+  text-align: center;
+}
+
+.msgSearchInput {
+  border: 1px solid #e6e6ea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.msgList {
+  overflow: auto;
+  padding: 8px 8px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.msgItem {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.msgItem:hover {
+  background: #f9fafb;
+}
+
+.msgItem.is-active {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.msgAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.msgAvatar--lg {
+  width: 32px;
+  height: 32px;
+}
+
+.msgMeta {
+  display: grid;
+  gap: 2px;
+}
+
+.msgName {
+  font-weight: 700;
+  color: #111;
+  font-size: 14px;
+}
+
+.msgNote {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Conversation shell */
+.msgMain {
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.msgHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.msgPeer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.msgPeerName {
+  font-weight: 800;
+  color: #111;
+}
+
+.msgHeadDots {
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 10px;
+  width: 36px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.msgHeadDots:hover {
+  background: #fafafa;
+}
+
+/* Body fits wider area; subtle inner padding */
+.msgBody {
+  padding: 16px 20px;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  background: #fbfcfe;
+}
+
+/* Bubbles expand further while staying readable */
+.bubbleRow {
+  display: grid;
+  grid-template-columns: 32px max-content;
+  align-items: end;
+  gap: 8px;
+}
+
+.bubbleRow.from-me {
+  grid-template-columns: max-content 32px;
+  justify-content: end;
+}
+
+.bubbleAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.bubble {
+  max-width: min(880px, 86vw); /* wider bubbles */
+  background: #f3f4f6;
+  border: 1px solid #eceff3;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.bubble--me {
+  background: #dbebff;
+  border-color: #cfe3ff;
+}
+
+.bubble--them {
+  background: #fff;
+}
+
+.bubbleText {
+  margin: 0;
+  color: #111;
+  line-height: 1.5;
+}
+
+.bubbleTime {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: right;
+  margin-top: 2px;
+}
+
+/* Composer */
+.msgCompose {
+  display: grid;
+  grid-template-columns: 40px 1fr 44px;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid #eee;
+  background: #fff;
+}
+
+.mcBtn,
+.mcSend {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e6e6ea;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mcBtn:hover,
+.mcSend:hover {
+  background: #fafafa;
+}
+
+.mcInput {
+  border: 1px solid #e6e6ea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: none;
+  min-height: 40px;
+  max-height: 160px;
+  overflow: auto;
+  line-height: 1.45;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .msgWrap {
+    grid-template-columns: 240px 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .msgWrap {
+    grid-template-columns: 1fr;
+  }
+  .msgSide {
+    order: 2;
+  }
+  .msgMain {
+    order: 1;
+  }
+}
+
+/* Optional ultra-wide tweak */
+@media (min-width: 1600px) {
+  .bubble {
+    max-width: 980px;
+  }
+}

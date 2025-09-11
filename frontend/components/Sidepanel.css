@@ -1,0 +1,76 @@
+/* 1) Wrapper (provided by your Layout) owns the scroll */
+/* Sidepanel.css (key parts) */
+
+/* Outer wrappers own the scroll */
+.app__side-left,
+.app__side-right {
+  position: sticky;
+  top: var(--nav-h, 64px);
+  height: calc(100vh - var(--nav-h, 64px));
+  overflow: auto;             /* keep this */
+  background: transparent;
+}
+
+/* Inner panel should not scroll to avoid double scrollbars */
+.side {
+  display: block;
+  height: 100%;
+  overflow: visible;          /* was auto; keep visible */
+  padding: 16px;
+  background: #f3f6f8;
+}
+
+
+/* Left panel look */
+.side--left { border-right: 1px solid #e5e7eb; }
+.side__heading { margin: 20px 0 8px; font-size: 12px; letter-spacing: .04em; color: #a0a3aa; text-transform: uppercase; }
+.side__section { list-style: none; margin: 0 0 10px; padding: 0; }
+.side__link { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; color: #222; text-decoration: none; }
+.side__link:hover { background: #ffffff; }
+.side__icon { width: 20px; text-align: center; }
+.side__dot { width: 10px; height: 10px; border-radius: 999px; background: #1f3b74; display: inline-block; }
+
+/* People list */
+.side__people { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.side__person { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center; width: 100%; text-align: left; background: #fff; border: 1px solid #e6e6ea; border-radius: 10px; padding: 6px 10px; }
+.side__avatar { width: 28px; height: 28px; border-radius: 999px; }
+
+/* Right rail */
+.side--right { background: #f7f9fb; border-left: 1px solid #e5e7eb; }
+.card { background: #fff; border: 1px solid #e6e6ea; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+.card__title { font-weight: 700; font-size: 14px; text-transform: uppercase; color: #333; text-align: center;}
+.card__image { width: 100%; height: auto; border-radius: 8px; display: block; }
+.card__caption { font-size: 12px; color: #333; text-align: center; padding-top: 8px; }
+
+/* Events */
+.event { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; background: #fff; border: 1px solid #e6e6ea; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.event__date { display: grid; place-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 6px 0; }
+.event__month { font-size: 14px; }
+.event__day { font-weight: 700; }
+.event__title { font-weight: 700; }
+.event__time { color: #6b7280; font-size: 12px; }
+
+/* 3) Scrollbar polish (optional, accessible) */
+.app__side-left,
+.app__side-right {
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: #cbd5e1 transparent;
+}
+.app__side-left::-webkit-scrollbar,
+.app__side-right::-webkit-scrollbar { width: 8px; }
+.app__side-left::-webkit-scrollbar-thumb,
+.app__side-right::-webkit-scrollbar-thumb {
+  background: #cbd5e1; border-radius: 8px;
+}
+.app__side-left::-webkit-scrollbar-track,
+.app__side-right::-webkit-scrollbar-track { background: transparent; }
+
+/* 4) Responsive widths using clamp for nicer scaling */
+:root { --side-l: clamp(240px, 22vw, 280px); --side-r: clamp(280px, 28vw, 340px); }
+@media (min-width: 0px) {
+  .app { grid-template-columns: var(--side-l) 1fr var(--side-r); }
+}
+
+/* 5) Hide right rail on smaller screens */
+@media (max-width: 1200px) { .side--right { display: none; } }
+@media (max-width: 900px)  { .side--left { display: none; } }

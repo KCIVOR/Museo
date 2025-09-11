@@ -1,0 +1,60 @@
+.evmOverlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(17, 24, 39, 0.5);
+  display: grid; place-items: center;
+  padding: 20px;
+}
+
+.evmDialog {
+  width: min(760px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: #f4f6f8;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  position: relative;
+  padding: 16px;
+}
+
+.evmClose {
+  position: absolute; top: 10px; right: 10px;
+  background: #fff; border: 1px solid #e6e6ea; border-radius: 10px;
+  width: 36px; height: 36px; cursor: pointer;
+}
+
+.evmHeroWrap {
+  border-radius: 12px; overflow: hidden; background: #eef2f5;
+}
+.evmHeroImg {
+  width: 100%; display: block; object-fit: cover; aspect-ratio: 16 / 10;
+}
+
+.evmTitleRow {
+  margin-top: 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.evmTitle {
+  font-size: clamp(22px, 3.2vw, 32px);
+  font-weight: 900; color: #111; margin: 0;
+}
+.evmCta {
+  padding: 10px 16px; border-radius: 12px;
+  border: 1px solid #1f2937; background: #fff; color: #111;
+  font-weight: 700; cursor: pointer;
+}
+.evmCta:hover { background: #fafafa; }
+
+.evmCard {
+  margin-top: 12px; background: #fff; border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+}
+.evmLabel { font-weight: 800; color: #111; margin: 8px 0; }
+.evmP { color: #111; font-size: 16px; line-height: 1.6; margin: 6px 0; }
+
+.evmBullets { margin: 4px 0 0 18px; color: #111; display: grid; gap: 6px; }
+
+@media (max-width: 520px) {
+  .evmDialog { padding: 12px; }
+  .evmCta { padding: 8px 12px; }
+}

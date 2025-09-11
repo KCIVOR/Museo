@@ -1,35 +1,53 @@
-import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import { Routes, Route, useLocation } from 'react-router-dom';
+import Marketplace from "./pages/Marketplace";
+import Gallery from "./pages/Gallery";
+import Event from "./pages/Event";
+import Artist from "./pages/Artist";
+import ArtistDetail from "./pages/subPages/artistProfile";
+import Artwork from "./pages/subPages/artwork";
+import MarketplaceItem from "./pages/subPages/marketPlaceItem";
+import RegisterArtist from "./pages/subPages/registerArtist";
+import GalleryAll from "./pages/subPages/galleryAll";
+import Message from "./pages/subPages/message";
+import Layout from "../components/Layout";
+import MyProfile from "./pages/MyProfile";
+import MarketplaceAll from "./pages/subPages/marketplaceAll"
+import { Routes, Route } from "react-router-dom";
 import ProtectedRoutes from "./utils/protectedRoutes";
-import AuthCallback from "./pages/authCallback"; 
-
-import { useState, useEffect } from 'react';
+import AuthCallback from "./pages/authCallback";
 import Register from "./pages/Register";
-
-function App(){
-  const location = useLocation();
-  const hideNavbar = location.pathname === '/' || location.pathname ==="/Register" || location.pathname === '/auth/callback';
-;
-  
+import BlindAuction from "./pages/subPages/blindAuction";
+function App() {
   return (
-    <>
-      {!hideNavbar && <Navbar />}
-      
-      <Routes>
-        <Route path="/" element={<Login/>}></Route>
-        <Route path="/Register" element={<Register/>}></Route>
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route element={<ProtectedRoutes/>}>
-          <Route path="/Home" element={<Home/>}></Route>
-        </Route>
-      </Routes>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/Register" element={<Register />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
-    </>
-  )
-  
+      {/* Auth gate */}
+      <Route element={<ProtectedRoutes />}>
+        {/* Default app layout */}
+        <Route element={<Layout />}>
+          <Route path="/Home" element={<Home />} />
+          <Route path="/Marketplace" element={<Marketplace />} />
+          <Route path="/Event" element={<Event />} />
+          <Route path="/Gallery" element={<Gallery />} />
+          <Route path="/Artist" element={<Artist />} />
+          <Route path="/Artist/:id" element={<ArtistDetail />} />
+          <Route path="/Gallery/:id" element={<Artwork />} />
+          <Route path="/Marketplace/:id" element={<MarketplaceItem />} />
+          <Route path="/RegisterAsArtist" element={<RegisterArtist />} />
+          <Route path="/Gallery/category" element={<GalleryAll />} />
+          <Route path="/Message" element={<Message />} />
+          <Route path="/MyProfile" element={<MyProfile />} />
+          <Route path="/blindAuction" element={<BlindAuction />} />
+          <Route path="/marketplace/category" element={<MarketplaceAll />} />
+        </Route>
+
+      </Route>
+    </Routes>
+  );
 }
 
-
-export default App
+export default App;

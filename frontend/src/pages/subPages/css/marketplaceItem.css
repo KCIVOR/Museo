@@ -1,0 +1,234 @@
+/* Page shell */
+.mpPage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+:root { --feed-max: 960px; }
+.mpFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  padding: 16px 16px 64px;
+}
+
+/* Cards */
+.mpCard {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+  margin: 12px 0;
+}
+
+/* Hero image */
+.heroWrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eef2f5;
+}
+.heroImg {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+}
+
+/* Thumbs + Buy row */
+.rowBar {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.thumbRow {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 64px;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  overflow: hidden;
+  padding: 0;
+  background: #fff;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb--active { outline: 2px solid #60a5fa; outline-offset: 2px; }
+
+/* Buy button (outlined) */
+.buyBtn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid #1f2937;
+  background: #fff;
+  color: #111;
+  font-weight: 700;
+  cursor: pointer;
+}
+.buyBtn:hover { background: #fafafa; }
+
+/* Title */
+.titleCard {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 16px;
+  margin: 16px auto;         /* center the card block */
+  display: grid;
+  place-items: center;       /* centers content vertically & horizontally */
+  justify-items: center;     /* ensure inner items align center on the x-axis */
+  max-width: 100%;           /* avoid overflow */
+  box-sizing: border-box;
+}
+
+.mpTitle {
+  font-size: clamp(22px, 3.2vw, 34px);
+  font-weight: 900;
+  color: #111;
+  text-align: center;
+  margin: 0;                 /* remove default h1 margins for perfect centering */
+  line-height: 1.25;
+  width: 100%;
+}
+
+/* Description block */
+.descGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+}
+.mpText {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #111;
+}
+.mpBullets {
+  margin: 0;
+  padding-left: 18px;
+  color: #111;
+  display: grid;
+  gap: 10px;
+  font-size: 16px;
+}
+.emojiTitle {
+  font-weight: 800;
+  color: #111;
+  margin-right: 6px;
+}
+
+
+/* Buy panel beside hero */
+.buyPanel {
+  display: grid;
+  gap: 12px;
+  min-width: 280px;
+}
+.buyPrice {
+  padding-top:20px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+}
+.buyActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.btnPrimary {
+  height: 44px; border-radius: 12px; border: 0;
+  background: #111827; color: #fff; font-weight: 700; cursor: pointer;
+}
+.btnSecondary {
+  height: 44px; border-radius: 12px; border: 1px solid #1f2937;
+  background: #fff; color: #111; font-weight: 700; cursor: pointer;
+}
+.optionGroup { display: grid; gap: 8px; }
+.optionLabel { font-size: 12px; text-transform: uppercase; color:#6b7280; letter-spacing:.06em; }
+.optionRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.select, .qtyInput {
+  height: 40px; border:1px solid #e6e6ea; border-radius: 10px; padding: 0 10px; background:#fff;
+}
+
+/* Trust + policy */
+.trust {
+  display: grid; gap: 6px; font-size: 13px; color:#374151;
+}
+.trust i { font-style: normal; }
+.policies { font-size: 12px; color:#6b7280; }
+.policies a { color:#3b82f6; text-decoration: none; }
+
+/* Sticky buy bar (mobile & desktop on scroll) */
+.stickyBuy {
+  position: sticky; bottom: 12px;
+  display: grid; grid-template-columns: 1fr auto; gap: 10px;
+  background: rgba(255,255,255,.95); backdrop-filter: saturate(1.2) blur(6px);
+  border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 10px 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.08);
+}
+.stickyBuy .price { font-weight: 900; }
+
+/* Side-by-side hero + buy for wide screens */
+@media (min-width: 1100px) {
+  .mpCard--hero {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+/* Zoom on desktop */
+@media (hover:hover) and (pointer:fine) {
+  .heroWrap { position: relative; }
+  .heroImg { transition: transform .2s ease; cursor: zoom-in; }
+  .heroImg:hover { transform: scale(1.02); }
+}
+
+/* Ratings and social proof */
+.ratingRow { display:flex; align-items:center; gap:8px; font-size:14px; color:#6b7280; }
+.star { color:#f59e0b; }
+
+/* Recommendations */
+.recos {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.recoCard {
+  background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:12px; overflow:hidden;
+}
+.recoCard img { width:100%; aspect-ratio: 4/3; object-fit: cover; display:block; }
+.recoMeta { padding:10px; display:grid; gap:4px; }
+.recoTitle { font-weight:700; font-size:14px; color:#111; }
+.recoPrice { font-weight:800; }
+
+/* Small polishing */
+.badges { display:flex; gap:8px; flex-wrap: wrap; }
+.badge {
+  font-size: 11px; color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0;
+  padding: 4px 8px; border-radius: 999px; font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  :root { --feed-max: 100%; }
+  .mpFeed { padding: 12px; }
+  .descGrid { grid-template-columns: 1fr; }
+  .thumbRow { grid-auto-columns: 56px; gap: 10px; }
+}
