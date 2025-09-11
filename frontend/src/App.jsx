@@ -18,7 +18,7 @@ import ProtectedRoutes from "./utils/protectedRoutes";
 import AuthCallback from "./pages/authCallback";
 import Register from "./pages/Register";
 import BlindAuction from "./pages/subPages/blindAuction";
-import eventsAll from "./pages/subPages/eventsAll"
+//import eventsAll from "./pages/subPages/eventsAll"
 function App() {
   return (
     <Routes>

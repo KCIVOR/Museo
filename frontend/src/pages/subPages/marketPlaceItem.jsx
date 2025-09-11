@@ -123,11 +123,6 @@ export default function MarketplaceItem() {
               <button className="btnSecondary" onClick={addToCart}>Add to Cart</button>
             </div>
 
-            <div className="badges">
-              <div className="badge">Verified Artist</div>
-              <div className="badge">Secure Checkout</div>
-              <div className="badge">7‑Day Returns</div>
-            </div>
 
 
       
