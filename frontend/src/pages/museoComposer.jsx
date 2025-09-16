@@ -13,6 +13,7 @@ export default function MuseoComposer({
   const [files, setFiles] = useState([]); // [{url,type,file}]
   const taRef = useRef(null);
 
+
   // Auto-grow
   useEffect(() => {
     const ta = taRef.current;
@@ -46,21 +47,43 @@ export default function MuseoComposer({
 
   const canPost = text.trim().length > 0 || files.length > 0;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canPost) return;
-    onSubmit?.({
-      name: me.name,
-      pPicture: me.avatar,
-      description: "shared a Museo update",
-      text: text.trim(),
-      media: files.map((f) => ({ type: f.type, url: f.url })),
-      createdAt: new Date().toISOString(),
-    });
-    setText("");
-    files.forEach((f) => f.url?.startsWith("blob:") && URL.revokeObjectURL(f.url));
-    setFiles([]);
+    
+    try {
+      const formData = new FormData();
+      formData.append("description", text);
+      formData.append("createdAt", new Date().toISOString());
+      files.forEach((f) => {
+        formData.append("media", f.file);
+      });
+
+      const res = await fetch("http://localhost:3000/api/homepage/createPost", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
+      
+      const data = await res.json();
+      console.log("Post created:", data);
+      
+      // Clear form after successful post
+      setText("");
+      setFiles([]);
+      
+      // Trigger refresh in parent component
+      if (onSubmit) {
+        onSubmit(data);
+      }
+      
+    } catch(err) {
+      console.error("Failed to submit post", err);
+    }
   };
+
 
   return (
     <form className="mc" onSubmit={handleSubmit} aria-label="Museo post composer">

@@ -54,13 +54,10 @@
   padding-bottom: 4px;
   scroll-snap-type: x mandatory;    /* snapping feel */
   -webkit-overflow-scrolling: touch;
+  
 }
-.gRow::-webkit-scrollbar { height: 10px; }
-.gRow::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 8px;
-}
-.gRow::-webkit-scrollbar-track { background: transparent; }
+.gRow::-webkit-scrollbar {height: 10px;}
+.gRow::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
 
 /* Card */
 .gCard {

@@ -147,13 +147,19 @@
   color: #111;
 }
 .buyActions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;          /* or grid; either is fine */
+  justify-content: flex-end;  /* keep it on the right side */
+  width: 100%;            /* match the parent form width */
 }
 .btnPrimary {
-  height: 44px; border-radius: 12px; border: 0;
-  background: #111827; color: #fff; font-weight: 700; cursor: pointer;
+  width: 100%;            /* full width of .buyActions */
+  height: 44px;
+  border-radius: 12px;
+  border: 0;
+  background: #111827;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
 }
 .btnSecondary {
   height: 44px; border-radius: 12px; border: 1px solid #1f2937;

@@ -1,7 +1,8 @@
 // src/pages/Home.jsx
+
 import React, { useEffect, useRef, useState } from "react";
 import "./css/home.css";
-import MuseoComposer from "./museoComposer"; // <-- add this import
+import MuseoComposer from "./museoComposer";
 
 function getAverageColorFromImageElement(img) {
   const canvas = document.createElement("canvas");
@@ -15,143 +16,181 @@ function getAverageColorFromImageElement(img) {
   return `rgb(${Math.round(r/n)}, ${Math.round(g/n)}, ${Math.round(b/n)})`;
 }
 
-function AnnouncementCard({
-  id,
-  eyebrow,
-  title,
-  meta,
-  primaryHref = "/event",
-  primaryLabel = "View details",
-  secondaryHref = "/home",
-  secondaryLabel = "RSVP",
-}) {
-  const storageKey = `museo_announce_hidden_${id}`;
-  const [hidden, setHidden] = useState(() => localStorage.getItem(storageKey) === "1");
-
-  useEffect(() => { if (hidden) localStorage.setItem(storageKey, "1"); }, [hidden, storageKey]);
-
-  if (hidden) return null;
-
-  const onKey = (e) => {
-    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setHidden(true);
-    }
-  };
-
+/* New: Museo hero banner */
+function MuseoHero() {
   return (
-    <div className="announce" role="region" aria-label={`${eyebrow} announcement`}>
-      <div className="announce__left">
-        <div className="announce__eyebrow">{eyebrow}</div>
-        <div className="announce__title">{title}</div>
-        <div className="announce__meta">{meta}</div>
-        <div className="announce__ctaRow">
-          <a className="btnPrimary" href={primaryHref}>{primaryLabel}</a>
-          <a className="btnGhost" href={secondaryHref}>{secondaryLabel}</a>
+    <section className="museoHero">
+      <div className="mHero__media"></div>
+      <div className="mHero__overlay"></div>
+      <div className="mHero__content">
+        <div className="mHero__eyebrow">Community Showcase</div>
+        <h1 className="mHero__title">Discover, share, and celebrate emerging art</h1>
+        <p className="mHero__subtitle">Curated picks, community showcases, and open calls year‑round.</p>
+        <div className="mHero__ctaRow">
+          <button className="mHero__btnPrimary">Join Community</button>
+          <button className="mHero__btnGhost">Browse Gallery</button>
         </div>
       </div>
-      <button
-        className="announce__close"
-        aria-label="Dismiss announcement"
-        onClick={() => setHidden(true)}
-        onKeyDown={onKey}
-      >✕</button>
-    </div>
+    </section>
   );
 }
 
 export default function Home() {
-  const initial = [
-    { name: "Rovick Romasanta", pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "I like egg", picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg" },
-    { name: "Ron iverson",       pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "test",      picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(4).jpg" },
-    { name: "Dwayne tan",        pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "padre nuestro que estas", picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(2).jpg" },
-    { name: "Ron iverson",       pPicture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg", description: "test",      picture: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(3).jpg" }
-  ];
-  const [posts, setPosts] = useState(initial);
-
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Image handling states
   const [bg, setBg] = useState({});
   const [ratioClass, setRatioClass] = useState({});
   const [fit, setFit] = useState({});
 
+  // Advanced image load handler
   const onImageLoad = (idx, e) => {
     const img = e.target;
     const ar = img.naturalWidth / img.naturalHeight;
-
+    
+    // Determine ratio class based on aspect ratio
     let rClass = "ratio-1-1";
     if (ar >= 1.6) rClass = "ratio-191-1";
     else if (ar <= 0.9) rClass = "ratio-4-5";
+    
     setRatioClass((s) => ({ ...s, [idx]: rClass }));
-
+    
+    // Determine fit based on image size and aspect ratio
     const box = img.parentElement.getBoundingClientRect();
     const small = img.naturalWidth < box.width || img.naturalHeight < box.height;
     const useContain = small || ar < 0.9 || ar > 2.2;
+    
     setFit((s) => ({ ...s, [idx]: useContain ? "contain" : "cover" }));
-
+    
+    // Get average color for background
     try {
       const avg = getAverageColorFromImageElement(img);
       setBg((s) => ({ ...s, [idx]: avg }));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to get average color:', err);
+    }
   };
 
-  const announcements = [
-        { id: "a1", eyebrow: "Museo Event", title: "Upcoming “Museo Nights: Contemporary Visions”", meta: "Oct 18, 7:00 PM • Museo Main Hall" },
-    { id: "a2", eyebrow: "Open Call", title: "Submissions now open for Emerging Artists 2025", meta: "Deadline Nov 10 • Top picks get featured in the December showcase" },
-    { id: "a3", eyebrow: "Workshop", title: "Watercolor Masterclass with Dhalia Ford", meta: "Oct 25, 2:00 PM • Limited seats • Materials included" },
-  ];
+  // Fetch posts from API
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3000/api/homepage/getPost', {
+        method: 'GET',
+        credentials: 'include', // Include cookies for auth
+      });
 
-  const afterIndex = { 1: 1, 3: 2 };
+      if (!response.ok) {
+        throw new Error(`Failed to fetch posts: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setPosts(data.posts);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch posts on component mount
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Handle new post creation
+  const handleNewPost = (newPostData) => {
+    console.log('New post created:', newPostData);
+    // Refresh posts after creating new post
+    fetchPosts();
+  };
 
   return (
     <div className="page">
       <div className="feed">
-        {/* New, original Museo composer */}
-        <MuseoComposer onSubmit={(card) => setPosts((p) => [card, ...p])} />
-
-        {/* First announcement before posts */}
-        <AnnouncementCard {...announcements} />
-
-        {posts.map((item, idx) => (
-          <React.Fragment key={`row-${idx}`}>
-            <div className="card">
-              <div className="cardHeader">
-                <img src={item.pPicture} alt="" className="avatar" />
-                <div className="meta">
-                  <div className="name">{item.name}</div>
-                  <div className="desc">{item.description}</div>
-                </div>
-              </div>
-
-              {item.text && (
-                <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                  <p style={{ margin: 0, color: "#111", lineHeight: 1.5 }}>{item.text}</p>
-                </div>
-              )}
-
-              {item.picture && (
-                <div
-                  className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
-                  style={{ background: bg[idx] || "#f2f4f7" }}
-                >
-                  <img
-                    src={item.picture}
-                    alt=""
-                    className={`postImage ${fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"}`}
-                    crossOrigin="anonymous"
-                    onLoad={(e) => onImageLoad(idx, e)}
-                  />
-                </div>
-              )}
-
-              <div className="actions">
-                <button className="actionBtn" aria-label="Like">❤️ <span className="actionText">123</span></button>
-                <button className="actionBtn" aria-label="Comment">💬 <span className="actionText">11</span></button>
+        <MuseoHero />
+        
+        <MuseoComposer onSubmit={handleNewPost} />
+        
+        {loading && (
+          <div className="card">
+            <div className="cardHeader">
+              <div className="loading">Loading posts...</div>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="card">
+            <div className="cardHeader">
+              <div className="error">
+                <p>Error: {error}</p>
+                <button className="btnPrimary" onClick={fetchPosts}>Retry</button>
               </div>
             </div>
-
-            {afterIndex[idx] !== undefined && (
-              <AnnouncementCard {...announcements[afterIndex[idx]]} />
+          </div>
+        )}
+        
+        {!loading && !error && posts.length === 0 && (
+          <div className="card">
+            <div className="cardHeader">
+              <div className="no-posts">
+                <p>No posts yet. Be the first to share something!</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {!loading && !error && posts.map((post, idx) => (
+          <div key={post.id} className="card">
+            <div className="cardHeader">
+              <img 
+                src={post.user.avatar} 
+                alt={post.user.name}
+                className="avatar"
+              />
+              <div className="meta">
+                <div className="name">{post.user.name}</div>
+                <div className="desc">{post.timestamp}</div>
+              </div>
+            </div>
+            
+            {post.text && (
+              <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                <p style={{ margin: 0, color: "#111", lineHeight: 1.5 }}>{post.text}</p>
+              </div>
             )}
-          </React.Fragment>
+            
+            {post.image && (
+              <div
+                className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
+                style={{ background: bg[idx] || "#f2f4f7" }}
+              >
+                <img 
+                  src={post.image} 
+                  alt="Post content"
+                  className={`postImage ${fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"}`}
+                  crossOrigin="anonymous"
+                  onLoad={(e) => onImageLoad(idx, e)}
+                />
+              </div>
+            )}
+            
+            <div className="actions">
+              <button className="actionBtn" aria-label="Like">
+                <span>❤️</span>
+                <span className="actionText">Like</span>
+              </button>
+              <button className="actionBtn" aria-label="Comment">
+                <span>💬</span>
+                <span className="actionText">Comment</span>
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </div>

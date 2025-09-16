@@ -120,7 +120,6 @@ export default function MarketplaceItem() {
 
             <div className="buyActions">
               <button className="btnPrimary" onClick={handleBuy}>Buy Now</button>
-              <button className="btnSecondary" onClick={addToCart}>Add to Cart</button>
             </div>
 
 
@@ -159,8 +158,9 @@ export default function MarketplaceItem() {
           <h3 style={{marginTop:0}}>About the Artist</h3>
           <p className="mpText">Dhalia Ford is a contemporary watercolor artist focusing on alpine landscapes and abstract natural forms. Her works are held by 100+ private collectors worldwide.</p>
           <div className="badges" style={{marginTop:8}}>
-            <div className="badge">Certificate of Authenticity</div>
-            <div className="badge">Signed by Artist</div>
+            <div className="badge">Certified Artist</div>
+            <div className="badge">test</div>
+            <div className="badge">test</div>
           </div>
         </section>
 

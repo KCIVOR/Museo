@@ -8,8 +8,7 @@
 
 /* Make feed narrower on desktop to read smaller */
 :root {
-  /* align with Navbar, but reduce desktop maximums */
-  --feed-max: 880px; /* was 1000px; 12% tighter */
+  --feed-max: 880px;
 }
 
 /* Wider, centered content column (uses same var as Navbar) */
@@ -17,16 +16,117 @@
   width: 100%;
   max-width: var(--feed-max);
   margin: 0 auto;
-  padding: 12px 12px 48px; /* was 16 / 64 */
+  padding: 12px 12px 48px;
 }
+
+/* ============ Museo Hero (new) ============ */
+.museoHero {
+  position: relative;
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 6px 0 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+
+  /* Grid layers: media, overlay, content */
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(120px, clamp(140px, 20vw, 220px));
+}
+.mHero__media,
+.mHero__overlay,
+.mHero__content { grid-area: 1 / 1; }
+
+/* Background media: abstract gradients */
+.mHero__media {
+  background:
+    radial-gradient(1200px 600px at -10% -20%, #dbeafe 0%, transparent 60%),
+    radial-gradient(1000px 500px at 110% 120%, #f5d0fe 0%, transparent 55%),
+    linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  filter: saturate(1.05);
+}
+
+/* Overlay for contrast */
+.mHero__overlay {
+  background: linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.45));
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+/* Content */
+.mHero__content {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: clamp(12px, 2vw, 16px) clamp(14px, 2.4vw, 20px);
+  color: #fff;
+}
+.mHero__eyebrow {
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #bfdbfe;
+  font-size: clamp(11px, 1.8vw, 12px);
+}
+.mHero__title {
+  margin: 0;
+  font-weight: 900;
+  line-height: 1.25;
+  font-size: clamp(18px, 3.4vw, 28px);
+  color: #e5e7eb;
+  text-shadow: 0 1px 1px rgba(0,0,0,.25);
+}
+.mHero__subtitle {
+  margin: 0;
+  color: #e5e7eb;
+  font-size: clamp(12px, 2.2vw, 14px);
+}
+
+/* Hero CTAs: balanced and responsive */
+.mHero__ctaRow {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.mHero__btnPrimary,
+.mHero__btnGhost {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 1 1 180px;  /* equal widths in row */
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.mHero__btnPrimary { background:#22c55e; color:#062b16; border:1px solid #16a34a; }
+.mHero__btnPrimary:hover { background:#16a34a; color:#ffffff; }
+.mHero__btnGhost { background:transparent; color:#ffffff; border:1px solid rgba(255,255,255,.8);}
+.mHero__btnGhost:hover { background:rgba(255,255,255,.08); }
+
+@media (max-width: 460px) {
+  .mHero__btnPrimary, .mHero__btnGhost { flex: 1 1 100%; }
+}
+
+/* ============ Cards & feed ============ */
 
 /* Card styles — smaller shadows and radius */
 .card {
   background: #fff;
-  border-radius: 10px;         /* was 12px */
-  margin: 10px 0;              /* was 12px */
+  border-radius: 10px;
+  margin: 10px 0;
   overflow: hidden;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.05); /* slightly lighter */
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
   border: 1px solid rgba(0,0,0,0.06);
 }
 
@@ -34,18 +134,18 @@
 .cardHeader {
   display: flex;
   align-items: center;
-  padding: 10px 12px;          /* was 12px 16px */
+  padding: 10px 12px;
 }
 .avatar {
-  width: 36px; height: 36px;   /* was 40x40 */
+  width: 36px; height: 36px;
   border-radius: 50%;
   object-fit: cover;
   background: #ddd;
-  margin-right: 8px;           /* was 10px */
+  margin-right: 8px;
 }
 .meta { min-width: 0; }
-.name { font-weight: 600; font-size: 13px; color: #111; } /* was 14px */
-.desc { font-size: 11.5px; color: #555; }                 /* was 12px */
+.name { font-weight: 600; font-size: 13px; color: #111; }
+.desc { font-size: 11.5px; color: #555; }
 
 /* Media wrapper: aspect-ratio boxes — slightly smaller perceived height */
 .imageBox {
@@ -53,10 +153,9 @@
   position: relative;
   background: #f2f4f7;
 }
-/* Keep aspect choices but nudge tall box smaller for feel */
-.imageBox.ratio-191-1 { padding-top: 50%; }  /* was 52.3% */
-.imageBox.ratio-1-1   { padding-top: 96%; }  /* was 100% */
-.imageBox.ratio-4-5   { padding-top: 120%; } /* was 125% */
+.imageBox.ratio-191-1 { padding-top: 50%; }
+.imageBox.ratio-1-1   { padding-top: 96%; }
+.imageBox.ratio-4-5   { padding-top: 120%; }
 
 .postImage {
   position: absolute; inset: 0;
@@ -90,11 +189,12 @@
 .actionBtn:hover { background: #f9fafb; }
 .actionBtn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
 .actionText { font-weight: 600; color: #333; }
-/* Announcement banner */
-/* Announcement banner (existing from earlier) */
+
+/* ============ Announcement banner ============ */
+
 .announce {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto; /* content + close */
   gap: 10px;
   align-items: start;
   background: #eef7ff;
@@ -111,20 +211,45 @@
 }
 .announce__title { font-size: clamp(16px, 2.3vw, 18px); font-weight: 800; color: #0f172a; line-height: 1.35; }
 .announce__meta { color:#334155; font-size: 13px; margin-top: 4px; }
-.announce__ctaRow { margin-top: 10px; display:flex; gap:8px; flex-wrap: wrap; }
-.btnPrimary {
-  display:inline-flex; align-items:center; justify-content:center;
-  height:36px; padding:0 14px; border-radius:10px; border:0;
-  background:#111827; color:#fff; font-weight:700; cursor:pointer;
+
+/* CTA row fixed to left column */
+.announce__ctaRow {
+  grid-column: 1 / 2;
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;            /* allow children to shrink */
 }
+
+/* Equal, shorter buttons with truncation */
+.btnPrimary,
 .btnGhost {
   display:inline-flex; align-items:center; justify-content:center;
-  height:36px; padding:0 14px; border-radius:10px; border:1px solid #111827;
-  background:#fff; color:#111827; font-weight:700; cursor:pointer;
+  height:32px; /* shorter */
+  padding:0 12px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+
+  /* equal widths and balance */
+  flex: 1 1 180px; /* equal grow & shrink from 180px basis */
+  max-width: 100%;
+  min-width: 0; /* critical for shrink/ellipsis */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
+
+/* Visual styles per variant */
+.btnPrimary { border:0; background:#111827; color:#fff; }
+.btnGhost { border:1px solid #111827; background:#fff; color:#111827; }
+
 .announce__close {
   border:0; background:transparent; color:#475569; cursor:pointer;
   font-size:18px; padding:2px 6px; border-radius:8px; line-height:1;
+  align-self: start;
 }
 .announce__close:hover { background:#e6f0ff; }
 
@@ -135,9 +260,8 @@
 .announce:nth-of-type(2) .announce__eyebrow { color:#15803d; }
 .announce:nth-of-type(3) .announce__eyebrow { color:#c2410c; }
 
+/* ============ Composer ============ */
 
-
-/* Post Composer */
 .composer {
   display: grid;
   grid-template-columns: 44px 1fr;
@@ -176,29 +300,23 @@
 .postBtn { height:36px; padding:0 14px; border-radius:10px; border:0; background:#111827; color:#fff; font-weight:700; cursor:pointer; }
 .postBtn.is-disabled { opacity:.5; cursor:not-allowed; }
 
+/* ============ Responsive ============ */
+
 @media (max-width:700px) {
   .composer { grid-template-columns:36px 1fr; }
   .composer__avatar { width:36px; height:36px; }
-  .tool { display:none; } /* keep it clean on small screens */
-}
-
-
-/* Compact on mobile */
-@media (max-width: 700px) {
+  .tool { display:none; }
   .announce { padding: 12px; }
   .announce__title { font-size: 16px; }
-  .btnPrimary, .btnGhost { height: 34px; }
+  .btnPrimary, .btnGhost { height: 32px; }
 }
 
-
-
-/* Responsive steps (mirror the :root breakpoints) */
 @media (min-width: 1440px) {
-  :root { --feed-max: 960px; }  /* keep large wide but still smaller than 1120 */
+  :root { --feed-max: 960px; }
   .feed { max-width: var(--feed-max); }
 }
 @media (max-width: 1024px) {
-  :root { --feed-max: 760px; }  /* tablet/smaller laptops */
+  :root { --feed-max: 760px; }
   .feed { max-width: var(--feed-max); }
 }
 @media (max-width: 768px)  {

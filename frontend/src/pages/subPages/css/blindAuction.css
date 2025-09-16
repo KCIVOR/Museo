@@ -1,5 +1,3 @@
-/* src/pages/css/blindAuction.css */
-
 /* Page shell */
 .baPDP {
   min-height: 100vh;
@@ -8,51 +6,51 @@
   justify-content: center;
 }
 
-/* Wrapper: two-column PDP */
+/* Wrapper: two-column PDP (stacks on small screens) */
 .baWrap {
   width: 100%;
-  max-width: 960px;          /* tighter max width */
+  max-width: 1120px; /* wider for comfort */
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  padding: 24px;             /* more padding */
-  margin: 24px auto;         /* more breathing room */
+  padding: 24px;
+  margin: 24px auto;
   display: grid;
   gap: 24px;
   grid-template-columns: 1.4fr 1fr;
+  box-sizing: border-box;
 }
 
 /* Gallery */
-.baGallery {
-  display: grid;
-  gap: 12px;
-}
+.baGallery { display: grid; gap: 12px; }
 
+/* Hero: remove bottom image gap via line-height:0 and vertical-align top */
 .baHero {
   border-radius: 12px;
   overflow: hidden;
   background: #eef2f5;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  line-height: 0;           /* prevents extra baseline space */
 }
-
 .baHero img {
   width: 100%;
-  display: block;
+  display: block;           /* no inline baseline */
+  vertical-align: top;      /* belt-and-suspenders */
   object-fit: cover;
-  aspect-ratio: 4 / 3;       /* taller ratio */
-  max-height: 480px;
+  aspect-ratio: 4 / 3;
+  max-height: 520px;
 }
 
+/* Thumbs */
 .baThumbs {
   display: flex;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 2px;
 }
-
 .baThumb {
-  width: 88px;               /* larger thumbs */
+  width: 88px;
   height: 88px;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -62,25 +60,12 @@
   flex: 0 0 auto;
   overflow: hidden;
 }
-
-.baThumb.is-active {
-  outline: 2px solid #60a5fa;
-  outline-offset: 2px;
-}
-
-.baThumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.baThumb.is-active { outline: 2px solid #60a5fa; outline-offset: 2px; }
+.baThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Right panel */
-.baPanel {
-  display: grid;
-  gap: 16px;
-  align-content: start;
-}
+.baPanel { display: grid; gap: 14px; align-content: start; }
+.baTitle { font-size: clamp(18px, 2.2vw, 22px); font-weight: 900; color: #111; }
 
 .baCountdown {
   background: #f6f9ff;
@@ -92,17 +77,7 @@
   border-radius: 12px;
 }
 
-.baPrice {
-  font-size: 28px;
-  font-weight: 900;
-  color: #111;
-}
-
-/* Field groups */
-.baField {
-  display: grid;
-  gap: 10px;
-}
+.baField { display: grid; gap: 10px; }
 
 /* Label */
 .baLabel {
@@ -113,7 +88,7 @@
   font-weight: 800;
 }
 
-/* Large bid input */
+/* Bid input */
 .baBidInput {
   display: flex;
   align-items: center;
@@ -123,12 +98,7 @@
   border-radius: 12px;
   padding: 8px 12px;
 }
-
-.baPrefix {
-  font-weight: 900;
-  color: #111;
-}
-
+.baPrefix { font-weight: 900; color: #111; }
 .baInput {
   border: 0;
   outline: none;
@@ -140,42 +110,20 @@
 }
 
 /* Min / Max chips */
-.baLimits {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
+.baLimits { display: flex; gap: 8px; flex-wrap: wrap; }
 .baLimit {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  background: #fff;
-  border: 1px solid #e6e6ea;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 12px;
+  display: flex; gap: 6px; align-items: center;
+  background: #fff; border: 1px solid #e6e6ea; border-radius: 999px;
+  padding: 6px 10px; font-size: 12px;
 }
+.baLimit span { color: #6b7280; font-weight: 700; }
+.baLimit b { color: #0f172a; }
 
-.baLimit span {
-  color: #6b7280;
-  font-weight: 700;
-}
-.baLimit b {
-  color: #0f172a;
-}
-
-.baHelp {
-  margin: 0;
-  color: #64748b;
-  font-size: 12px;
-}
+/* Help */
+.baHelp { margin: 0; color: #64748b; font-size: 12px; }
 
 /* CTA row */
-.baCTARow--single {
-  display: grid;
-}
-
+.baCTARow--single { display: grid; }
 .baBuy {
   height: 44px;
   border-radius: 12px;
@@ -186,7 +134,7 @@
   cursor: pointer;
 }
 
-/* Details section */
+/* Details */
 .baDetails {
   margin-top: 6px;
   display: grid;
@@ -194,25 +142,11 @@
   border-top: 1px solid #eef0f4;
   padding-top: 10px;
 }
+.baSectionTitle { font-weight: 900; color: #111; }
+.baLead { margin: 0; color: #111; line-height: 1.6; }
 
-.baSectionTitle {
-  font-weight: 900;
-  color: #111;
-}
-.baLead {
-  margin: 0;
-  color: #111;
-  line-height: 1.6;
-}
-
-.baSpecs {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
+/* Specs */
+.baSpecs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .baSpecs li {
   display: grid;
   grid-template-columns: 120px 1fr;
@@ -220,36 +154,28 @@
   font-size: 14px;
   align-items: start;
 }
+.baSpecs li span { color: #6b7280; }
+.baSpecs li b { color: #0f172a; font-weight: 700; }
 
-.baSpecs li span {
-  color: #6b7280;
+/* Breakpoints */
+@media (max-width: 62em) { /* ~992px */
+  .baWrap { grid-template-columns: 1fr; padding: 20px; gap: 20px; }
+  .baHero img { max-height: 420px; }
+  .baPanel { order: 2; }
+  .baGallery { order: 1; }
 }
-.baSpecs li b {
-  color: #0f172a;
-  font-weight: 700;
+@media (max-width: 48em) { /* ~768px */
+  .baThumb { width: 74px; height: 74px; }
+  .baSpecs li { grid-template-columns: 100px 1fr; }
 }
-
-/* Responsive */
-@media (max-width: 980px) {
-  .baWrap {
-    grid-template-columns: 1fr;
-    padding: 20px;
-    gap: 20px;
-  }
-  .baSpecs li {
-    grid-template-columns: 100px 1fr;
-  }
-  .baHero img {
-    max-height: 380px;
-  }
+@media (max-width: 36em) { /* ~576px */
+  .baWrap { padding: 16px; }
+  .baThumb { width: 64px; height: 64px; }
+  .baInput { font-size: 16px; }
+  .baBuy { height: 42px; }
+  .baHero img { max-height: 360px; }
+  .baSpecs li { grid-template-columns: 90px 1fr; }
 }
-
-@media (max-width: 600px) {
-  .baThumb {
-    width: 70px;
-    height: 70px;
-  }
-  .baSpecs li {
-    grid-template-columns: 90px 1fr;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .baThumb.is-active { outline-offset: 0; }
 }

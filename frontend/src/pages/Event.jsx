@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./css/events.css";
 
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg";
+const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-lj.pg";
 
 const EVENTS = {
   artCelebration: {
@@ -16,7 +16,55 @@ const EVENTS = {
     desc: "A visual journey of feelings expressed through art.",
     src: IMG
   },
+  ac: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
   timelessCreation: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  a: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  b: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  c: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  m: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  n: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  v: {
+    id: "timeless-creation",
+    title: "Timeless Creation",
+    desc: "Join for a captivating art showcase that transcends time and creativity.",
+    src: IMG
+  },
+  z: {
     id: "timeless-creation",
     title: "Timeless Creation",
     desc: "Join for a captivating art showcase that transcends time and creativity.",

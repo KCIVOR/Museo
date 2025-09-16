@@ -1,9 +1,16 @@
 import "./Sidepanel.css"
+import { useNavigate } from "react-router-dom";
+
 
 export default function SidePanel2() {
+  const navigate = useNavigate();
   return (
     <aside className="side side--right" aria-label="Right rail widgets">
-      <div className="card">
+     <div
+        className="card"
+        onClick={() => navigate("/upcomingevents")}
+        style={{ cursor: "pointer" }}
+      >
         <div className="card__title">Upcoming Events</div>
       </div>
 
@@ -28,9 +35,13 @@ export default function SidePanel2() {
           <div className="event__time">10:00AM - 4:00PM</div>
         </div>
       </div>
-      <div className="card">
-        <div className="card__title">Top Arts Of The Week</div>
-      </div>
+        <div
+          className="card"
+          onClick={() => navigate("/toparts")}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="card__title">Top Arts Of The Week</div>
+        </div>
       <div className="card">
         
         <img className="card__image" src="https://picsum.photos/seed/art1/600/240" alt="" />

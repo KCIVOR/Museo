@@ -1,0 +1,94 @@
+/* Page wrapper (centered) */
+.uePage {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+}
+
+/* Centered feed width */
+:root { --feed-max: 1120px; }
+.ueFeed {
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 0 auto;
+  padding: 16px 20px 48px;
+  box-sizing: border-box;
+}
+
+/* Header */
+.ueHead { display: grid; gap: 12px; margin-bottom: 12px; }
+.ueTitle { display: flex; align-items: baseline; gap: 10px; }
+.ueTitle h1 { margin: 0; font-size: clamp(22px, 2.2vw, 26px); font-weight: 900; color:#111; }
+.ueCount { color:#6b7280; font-weight:700; }
+.ueActions { display:flex; gap:12px; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+.ueFilters { display:flex; gap:8px; flex-wrap:wrap; }
+.ueChip { height:32px; padding:0 12px; border-radius:999px; border:1px solid #e6e6ea; background:#fff; color:#111; font-weight:700; cursor:pointer; }
+.ueChip.is-active { background:#111827; color:#fff; border-color:#111827; }
+.ueSort { height:36px; border:1px solid #e6e6ea; border-radius:10px; background:#fff; padding:0 10px; color:#111; }
+
+/* Buckets */
+.ueBucket { margin-top: 18px; }
+.ueBucketTitle { margin:0 0 12px; font-size:18px; font-weight:900; color:#111; }
+
+/* Responsive grid: fluid columns */
+.ueGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.ueGrid > * { min-width: 0; }  /* prevent blowout from long content */
+
+/* Card */
+.ueCard {
+  background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:12px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06); overflow:hidden;
+  display:flex; flex-direction:column;   /* card is flex column */
+}
+
+/* Media */
+.ueImgWrap { position:relative; background:#eef2f5; }
+.ueImgWrap img { width:100%; display:block; object-fit:cover; aspect-ratio:16 / 10; }
+
+/* Tag */
+.ueTag {
+  position:absolute; left:8px; top:8px;
+  background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46;
+  border-radius:999px; padding:4px 10px; font-size:12px; font-weight:800;
+}
+
+/* Body */
+.ueBody {
+  display:flex; flex-direction:column; gap:8px; padding:12px;
+  height: 100%;
+}
+.ueName {
+  font-weight:900; color:#111; font-size: clamp(15px, 1.8vw, 16px); line-height:1.3;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.ueMeta { display:flex; gap:6px; flex-wrap:wrap; color:#6b7280; font-size:13px; }
+.ueDot { opacity:.6; }
+.ueDesc {
+  margin:0; color:#111; line-height:1.5; font-size:14px;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+
+/* Spacer that forces buttons to the bottom of the card */
+.ueGrow { flex: 1 1 auto; }
+
+/* Buttons row (always at bottom because of .ueGrow) */
+.ueBtns { display:flex; gap:10px; margin-top:6px; }
+.ueBtn, .ueBtnGhost {
+  height:38px; padding:0 14px; border-radius:10px;
+  font-size:14px; font-weight:800;
+  white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.ueBtn { border:0; background:#111827; color:#fff; cursor:pointer; }
+.ueBtnGhost { border:1px solid #1f2937; background:#fff; color:#111; text-decoration:none; }
+
+/* Small screens tweaks */
+@media (max-width: 640px) {
+  .ueFeed { padding: 12px 12px 36px; }
+  .ueBtn, .ueBtnGhost { height:36px; padding:0 12px; font-size:13px; }
+}

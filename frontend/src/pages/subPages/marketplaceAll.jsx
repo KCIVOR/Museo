@@ -2,11 +2,16 @@
 import React from "react";
 import "./css/marketplaceAll.css";
 
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
+const IMG =
+  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
 
+// Generate 24 demo items with alternating titles
 const ITEMS = Array.from({ length: 24 }).map((_, i) => ({
   id: `p${i + 1}`,
-  title: i % 2 ? "“Fire Flower” by Aria Bennett" : "“Blind” by Kylan Gentry",
+  title:
+    i % 2
+      ? '"Fire Flower" by Aria Bennett'
+      : '"Blind" by Kylan Gentry',
   img: IMG,
   price: i % 3 === 0 ? "₱12,500" : "₱9,800",
   badge: i % 5 === 0 ? "Auction" : "For Sale",
@@ -46,7 +51,13 @@ export default function MarketplaceAll() {
             <a key={it.id} className="vaCard" href={`/item/${it.id}`}>
               <div className="vaImgWrap">
                 <img src={it.img} alt={it.title} />
-                <span className={`vaBadge ${it.badge === "Auction" ? "vaBadge--accent" : ""}`}>{it.badge}</span>
+                <span
+                  className={`vaBadge ${
+                    it.badge === "Auction" ? "vaBadge--accent" : ""
+                  }`}
+                >
+                  {it.badge}
+                </span>
               </div>
               <div className="vaMeta">
                 <div className="vaName">{it.title}</div>
@@ -58,7 +69,9 @@ export default function MarketplaceAll() {
 
         {/* Pagination */}
         <div className="vaPager">
-          <button className="vaPageBtn" disabled>Prev</button>
+          <button className="vaPageBtn" disabled>
+            Prev
+          </button>
           <button className="vaPageBtn is-active">1</button>
           <button className="vaPageBtn">2</button>
           <button className="vaPageBtn">3</button>

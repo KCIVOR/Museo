@@ -18,7 +18,9 @@ import ProtectedRoutes from "./utils/protectedRoutes";
 import AuthCallback from "./pages/authCallback";
 import Register from "./pages/Register";
 import BlindAuction from "./pages/subPages/blindAuction";
-//import eventsAll from "./pages/subPages/eventsAll"
+import UpcomingEvents from "./pages/subPages/upcomingEvents"
+import TopArts from "./pages/subPages/topArts"
+import Search from "./pages/subPages/Search";
 function App() {
   return (
     <Routes>
@@ -44,7 +46,9 @@ function App() {
           <Route path="/MyProfile" element={<MyProfile />} />
           <Route path="/blindAuction" element={<BlindAuction />} />
           <Route path="/marketplace/category" element={<MarketplaceAll />} />
-          <Route path="/eventsAll" element={<eventsAll />} />
+          <Route path="/upcomingEvents" element={<UpcomingEvents />} />
+          <Route path="/topArts" element={<TopArts />} />
+          <Route path="/Search" element={<Search/>}/>
         </Route>
 
       </Route>

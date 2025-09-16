@@ -14,28 +14,55 @@ html, body { margin: 0; background: #eef2f5; }
   height: 64px; padding: 0 16px; background: #f0f6fb; border-bottom: 1px solid #e5e7eb;
   padding-bottom: 10px; padding-top: 10px;
 }
+
+/* Left (brand) */
 .nav__brand { display: inline-flex; align-items: center; gap: 8px; }
 .nav__logo { height: 36px; width: auto; }
 
+/* Center (search button, centered and balanced) */
 .nav__center { display: flex; justify-content: center; align-items: center; }
-.nav__center-inner { width: min(var(--feed-max), 100%); padding: 0 16px; box-sizing: border-box; padding-left: 35px; }
+.nav__center-inner {
+  width: min(var(--feed-max), 100%);
+  padding: 0 16px; box-sizing: border-box;
+  display: flex; justify-content: center; align-items: center;
+}
+
+/* New: dedicated Search button to match control sizing */
+.nav__searchBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 12px;
+  background: #fff; color: #111;
+  border: 1px solid #e6e6ea; border-radius: 10px;
+  font-weight: 700; cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+.nav__searchBtn:hover { background: #fafafa; }
+.nav__searchBtn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+.nav__searchIcon { font-size: 15px; line-height: 1; }
+.nav__searchLabel { font-size: 14px; }
+
+/* (Legacy) If you decide to revert to an input someday */
 .nav__search { display: flex; align-items: center; width: 100%; max-width: 100%; background: none; border: none; box-shadow: none; padding: 0; }
 .nav__search-input { flex: 1; border: 1px solid #e6e6ea; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #444; background: #fff; outline: none; }
 
+/* Right (actions) */
 .nav__right { display: inline-flex; justify-content: flex-end; align-items: center; gap: 12px; }
+
 .nav__icon-btn, .nav__coin, .nav__avatar {
   background: #fff; border: 1px solid #e6e6ea; border-radius: 10px; height: 36px; padding: 0 10px; display: inline-flex; align-items: center; gap: 8px;
 }
+
 .nav__coin-count { font-weight: 600; color: #7a6a00; }
 .nav__avatar-img { width: 24px; height: 24px; border-radius: 999px; }
 .nav__avatar-caret { font-size: 12px; color: #777; }
 
 /* Focus & hover */
-.nav__icon-btn:focus-visible, .nav__coin:focus-visible, .nav__avatar:focus-visible, .nav__search-input:focus-visible {
+.nav__icon-btn:focus-visible, .nav__coin:focus-visible, .nav__avatar:focus-visible, .nav__search-input:focus-visible, .nav__searchBtn:focus-visible {
   outline: 2px solid #60a5fa; outline-offset: 2px;
 }
 .nav__icon-btn:hover, .nav__coin:hover, .nav__avatar:hover { background: #fafafa; }
 
+/* Positioning helpers */
 .nav__account { position: relative; }
 .nav__notif-wrap { position: relative; }
 
@@ -90,13 +117,16 @@ html, body { margin: 0; background: #eef2f5; }
 
 /* Responsive */
 @media (max-width: 1100px) { .nav { grid-template-columns: 180px 1fr 260px; } }
-@media (max-width: 900px) { .nav { grid-template-columns: 120px 1fr 200px; } .nav__logo { height: 28px; } }
+@media (max-width: 900px)  { .nav { grid-template-columns: 120px 1fr 200px; } .nav__logo { height: 28px; } }
+
+/* Mobile: keep center button aligned and tappable */
 @media (max-width: 700px) {
   .nav { grid-template-columns: 1fr 44px 44px; gap: 8px; }
   .nav__left { display: none; }
   .nav__center { grid-column: 1 / 2; }
   .nav__right { grid-column: 2 / 4; justify-content: flex-end; }
   .nav__center-inner { padding: 0 8px; }
-  .nav__search { width: 100%; }
+  .nav__searchBtn { width: 100%; justify-content: center; }
+  .nav__search { width: 100%; } /* if ever using the input again */
   .nav__coin-count { display: none; }
 }

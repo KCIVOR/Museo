@@ -1,9 +1,7 @@
 import { useState } from "react";
 import "./css/artwork.css";
 
-// Single image used for hero, thumbnails, and avatars
-const IMG =
-  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
+const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
 
 const ARTWORK = {
   id: "blind",
@@ -18,38 +16,10 @@ const ARTWORK = {
 };
 
 const INITIAL_COMMENTS = [
-  {
-    id: "c1",
-    name: "Travis Langdon",
-    avatar: IMG,
-    time: "2025-05-14 09:12 AM",
-    text:
-      "This painting gives me chills. The way their faces are veiled yet they’re so close—it speaks volumes about emotional distance in relationships. Hauntingly beautiful."
-  },
-  {
-    id: "c2",
-    name: "Eric Langford",
-    avatar: IMG,
-    time: "2025-05-13 08:47 AM",
-    text:
-      "The contrast between the warm embrace and the faceless connection hits hard. Beautifully unsettling."
-  },
-  {
-    id: "c3",
-    name: "Dylan Hawthorne",
-    avatar: IMG,
-    time: "2025-05-13 01:37 AM",
-    text:
-      "I can’t stop staring at this. It’s like love in the modern world—present, close, but somehow always slightly hidden."
-  },
-  {
-    id: "c4",
-    name: "Jared Ellison",
-    avatar: IMG,
-    time: "2025-05-11 02:15 PM",
-    text:
-      "This piece really stopped me in my tracks. The symbolism is powerful and the execution is flawless."
-  }
+  { id: "c1", name: "Travis Langdon", avatar: IMG, time: "2025-05-14 09:12 AM", text: "This painting gives me chills. The way their faces are veiled yet they’re so close—it speaks volumes about emotional distance in relationships. Hauntingly beautiful." },
+  { id: "c2", name: "Eric Langford", avatar: IMG, time: "2025-05-13 08:47 AM", text: "The contrast between the warm embrace and the faceless connection hits hard. Beautifully unsettling." },
+  { id: "c3", name: "Dylan Hawthorne", avatar: IMG, time: "2025-05-13 01:37 AM", text: "I can’t stop staring at this. It’s like love in the modern world—present, close, but somehow always slightly hidden." },
+  { id: "c4", name: "Jared Ellison", avatar: IMG, time: "2025-05-11 02:15 PM", text: "This piece really stopped me in my tracks. The symbolism is powerful and the execution is flawless." }
 ];
 
 export default function Artwork() {
@@ -57,20 +27,41 @@ export default function Artwork() {
   const [comments, setComments] = useState(INITIAL_COMMENTS);
   const [draft, setDraft] = useState("");
 
+  // Artwork like state
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(123);
+
+  // Optional: comment like state map
+  const [commentLikes, setCommentLikes] = useState({}); // { [commentId]: { liked: bool, count: number } }
+
+  const toggleArtworkLike = () => {
+    setLiked((v) => {
+      const next = !v;
+      setLikeCount((c) => c + (next ? 1 : -1));
+      return next;
+    });
+  };
+
+  const toggleCommentLike = (id) => {
+    setCommentLikes((prev) => {
+      const cur = prev[id] || { liked: false, count: 0 };
+      const nextLiked = !cur.liked;
+      return { ...prev, [id]: { liked: nextLiked, count: cur.count + (nextLiked ? 1 : -1) } };
+    });
+  };
+
   const submitComment = (e) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
-    setComments((prev) => [
-      {
-        id: `c${Date.now()}`,
-        name: "You",
-        avatar: IMG,
-        time: new Date().toISOString().replace("T", " ").slice(0, 16),
-        text
-      },
-      ...prev
-    ]);
+    const newComment = {
+      id: `c${Date.now()}`,
+      name: "You",
+      avatar: IMG,
+      time: new Date().toISOString().replace("T", " ").slice(0, 16),
+      text
+    };
+    setComments((prev) => [newComment, ...prev]);
     setDraft("");
   };
 
@@ -95,6 +86,21 @@ export default function Artwork() {
                 <img src={src} alt="" />
               </button>
             ))}
+          </div>
+
+          {/* Artwork like row */}
+          <div className="likeRow">
+            <button
+              type="button"
+              className={`likeBtn ${liked ? "is-on" : ""}`}
+              aria-pressed={liked}
+              aria-label={liked ? "Unlike artwork" : "Like artwork"}
+              onClick={toggleArtworkLike}
+            >
+              <span className="likeIcon" aria-hidden="true">❤️</span>
+              <span className="likeText">{liked ? "" : ""}</span>
+              <span className="likeCount">{likeCount}</span>
+            </button>
           </div>
         </section>
 
@@ -150,18 +156,34 @@ export default function Artwork() {
         <section className="artComments">
           <h2 className="commentsTitle">Comments</h2>
           <div className="commentsList">
-            {comments.map((c) => (
-              <article key={c.id} className="commentItem">
-                <img className="cAvatar" src={c.avatar} alt="" />
-                <div className="cBody">
-                  <div className="cMeta">
-                    <span className="cName">{c.name}</span>
-                    <span className="cTime">{c.time}</span>
+            {comments.map((c) => {
+              const st = commentLikes[c.id] || { liked: false, count: 0 };
+              return (
+                <article key={c.id} className="commentItem">
+                  <img className="cAvatar" src={c.avatar} alt="" />
+                  <div className="cBody">
+                    <div className="cMeta">
+                      <span className="cName">{c.name}</span>
+                      <span className="cTime">{c.time}</span>
+                    </div>
+                    <p className="cText">{c.text}</p>
+                    <div className="cActions">
+                      <button
+                        type="button"
+                        className={`likeBtn likeBtn--sm ${st.liked ? "is-on" : ""}`}
+                        aria-pressed={st.liked}
+                        aria-label={st.liked ? "Unlike comment" : "Like comment"}
+                        onClick={() => toggleCommentLike(c.id)}
+                      >
+                        <span className="likeIcon" aria-hidden="true">❤️</span>
+                        <span className="likeText">{st.liked ? "" : ""}</span>
+                        <span className="likeCount">{st.count}</span>
+                      </button>
+                    </div>
                   </div>
-                  <p className="cText">{c.text}</p>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </section>
       </div>

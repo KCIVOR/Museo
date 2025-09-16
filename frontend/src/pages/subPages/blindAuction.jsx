@@ -1,8 +1,7 @@
-// src/pages/BlindAuction.jsx
 import "./css/blindAuction.css";
 
 const IMG =
-  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
+  "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80";
 
 const AUCTION = {
   title: "“The Mountains” by Dhalia Ford",
@@ -32,7 +31,7 @@ export default function BlindAuction() {
         {/* LEFT: gallery */}
         <section className="baGallery">
           <div className="baHero">
-            <img src={AUCTION.images[0]} alt={AUCTION.title} />
+            <img src={IMG} alt={AUCTION.title} />
           </div>
           <div className="baThumbs">
             {AUCTION.images.map((src, i) => (
@@ -49,6 +48,7 @@ export default function BlindAuction() {
 
         {/* RIGHT: info + controls */}
         <section className="baPanel">
+          <h1 className="baTitle">{AUCTION.title}</h1>
           <div className="baCountdown">{AUCTION.closingLabel}</div>
 
           {/* Bid input */}
@@ -80,7 +80,7 @@ export default function BlindAuction() {
             </p>
           </div>
 
-          {/* Primary CTA only */}
+          {/* Primary CTA */}
           <div className="baCTARow baCTARow--single">
             <button className="baBuy">Place Blind Bid</button>
           </div>
