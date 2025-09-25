@@ -229,9 +229,7 @@ export default function Home() {
 
   const closeModal = () => setActivePost(null);
 
-  const fetchReactCount = (postId) => {
-    alert('getLikeCount not implemented yet');
-  }
+
   return (
     <div className="page">
       <div className="feed">
@@ -290,7 +288,7 @@ export default function Home() {
 
             {post.text && (
               <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                <p class="ge" style={{ margin: 0, color: "#111", lineHeight: 1.5, }}>{post.text}</p>
+                <p className="ge" style={{ margin: 0, color: "#111", lineHeight: 1.5, }}>{post.text}</p>
               </div>
             )}
 

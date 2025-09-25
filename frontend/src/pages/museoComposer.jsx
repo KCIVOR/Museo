@@ -2,17 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import "./css/museoComposer.css";
 
 export default function MuseoComposer({
-  me = {
-    name: "Rovick",
-    avatar:
-      "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg",
-  },
   onSubmit,
 }) {
+  const FALLBACK_AVATAR = "/assets/avatar-placeholder.png"; // ensure file exists in public/assets
+  const resolveAvatar = (raw) => {
+    if (!raw) return FALLBACK_AVATAR;
+    // Allow absolute http(s) or local paths only; reject bucket-relative strings
+    if (raw.startsWith("/") || /^https?:\/\//i.test(raw)) return raw;
+    return FALLBACK_AVATAR;
+  };
+
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]); // [{url,type,file}]
   const taRef = useRef(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [meData, setMeData] = useState({
+  });
 
   // Auto-grow
   useEffect(() => {
@@ -22,17 +26,64 @@ export default function MuseoComposer({
     ta.style.height = ta.scrollHeight + "px";
   }, [text]);
 
+  // Fetch current user profile
+  useEffect(() => {
+    let abort = false;
+    const loadUser = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/users/me", {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch current user");
+        const data = await res.json();
+
+        const name =
+          data?.user_metadata?.full_name ||
+          data?.user_metadata?.name ||
+          data?.name ||
+          data?.email 
+
+        const avatarRaw =
+          data?.user_metadata?.avatar_url ||
+          data?.avatar_url ||
+          data?.picture
+
+        if (!abort) {
+          setMeData({
+            name,
+            avatar: resolveAvatar(avatarRaw),
+          });
+        }
+      } catch (err) {
+        // Keep defaults and fallback
+        if (!abort) {
+          setMeData((prev) => ({
+            ...prev,
+            avatar: FALLBACK_AVATAR,
+          }));
+        }
+        console.error(err);
+      }
+    };
+    loadUser();
+    return () => {
+      abort = true;
+    };
+  }, []);
+
   const pickFiles = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*,video/*";
     input.multiple = true;
     input.onchange = () => {
-      const sel = Array.from(input.files || []).slice(0, 4).map((f) => ({
-        file: f,
-        url: URL.createObjectURL(f),
-        type: f.type.startsWith("video/") ? "video" : "image",
-      }));
+      const sel = Array.from(input.files || [])
+        .slice(0, 4)
+        .map((f) => ({
+          file: f,
+          url: URL.createObjectURL(f),
+          type: f.type.startsWith("video/") ? "video" : "image",
+        }));
       setFiles((prev) => [...prev, ...sel].slice(0, 4));
     };
     input.click();
@@ -40,8 +91,8 @@ export default function MuseoComposer({
 
   const removeAt = (i) => {
     const next = [...files];
-    const removed = next.splice(i, 1);
-    if (removed?.url?.startsWith("blob:")) URL.revokeObjectURL(removed.url);
+    const [removed] = next.splice(i, 1);
+    if (removed?.url?.startsWith?.("blob:")) URL.revokeObjectURL(removed.url);
     setFiles(next);
   };
 
@@ -49,16 +100,13 @@ export default function MuseoComposer({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!canPost || isSubmitting) return;
-    setIsSubmitting(true);
-    
+    if (!canPost) return;
+
     try {
       const formData = new FormData();
       formData.append("description", text);
       formData.append("createdAt", new Date().toISOString());
-      files.forEach((f) => {
-        formData.append("media", f.file);
-      });
+      files.forEach((f) => formData.append("media", f.file));
 
       const res = await fetch("http://localhost:3000/api/homepage/createPost", {
         method: "POST",
@@ -67,31 +115,30 @@ export default function MuseoComposer({
       });
 
       if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
-      
+
       const data = await res.json();
       console.log("Post created:", data);
-      
-      // Clear form after successful post
+
       setText("");
       setFiles([]);
-      
-      // Trigger refresh in parent component
-      if (onSubmit) {
-        onSubmit(data);
-      }
-      
-    } catch(err) {
+
+      onSubmit?.(data);
+    } catch (err) {
       console.error("Failed to submit post", err);
-    }finally {
-      setIsSubmitting(false);
     }
-
   };
-
 
   return (
     <form className="mc" onSubmit={handleSubmit} aria-label="Museo post composer">
-      <img className="mc__avatar" src={me.avatar} alt={`${me.name} avatar`} />
+      <img
+        className="mc__avatar"
+        src={resolveAvatar(meData?.avatar)}
+        alt={`${meData?.name || "You"} avatar`}
+        referrerPolicy="no-referrer"
+        onError={(e) => {
+          e.currentTarget.src = FALLBACK_AVATAR;
+        }}
+      />
 
       <div className="mc__body">
         <div className="mc__inputWrap">
@@ -119,7 +166,12 @@ export default function MuseoComposer({
                 ) : (
                   <span className="mc__thumb mc__thumb--video">▶</span>
                 )}
-                <button type="button" className="mc__x" aria-label="Remove" onClick={() => removeAt(i)}>
+                <button
+                  type="button"
+                  className="mc__x"
+                  aria-label="Remove"
+                  onClick={() => removeAt(i)}
+                >
                   ×
                 </button>
               </div>
@@ -128,7 +180,12 @@ export default function MuseoComposer({
         )}
 
         <div className="mc__bar">
-          <button type="button" className="mc__tool" onClick={pickFiles} aria-label="Add image or video">
+          <button
+            type="button"
+            className="mc__tool"
+            onClick={pickFiles}
+            aria-label="Add image or video"
+          >
             🖼 Add media
           </button>
           <button type="button" className="mc__tool" aria-label="Announce event">
