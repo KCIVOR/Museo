@@ -1,10 +1,10 @@
-import db from '../database/db.js';
+import supabase from '../database/db.js';
 import bcrypt from "bcrypt"
 
 export const getAllUsers = async (req, res) =>{
     try {
-        const { data, error } = await db
-        .from('user')
+        const { data, error } = await supabase
+        .from('profile')
         .select('*')
         if (error) throw error
         res.json(data)
@@ -21,7 +21,7 @@ export const createUsers = async (req, res) => {
         if (!username || !password || !email) {
             return res.status(400).json({ error: 'All fields are required.' });
         }
-        const { data, error } = await db
+        const { data, error } = await supabase
         .from('user')
         .insert([{username, password:hashedPassword, email }])
         .select()
@@ -33,12 +33,11 @@ export const createUsers = async (req, res) => {
   }
 };
 
-
 export const getUser = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('user')
       .select('*')
       .eq('id', userId) 
@@ -63,5 +62,35 @@ export const getCurrentUser = (req, res) => {
   // req.user is set by authMiddleware
   res.json(req.user);
 };
+
+
+
+export const getRole = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const { data: profile, error } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .maybeSingle(); 
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Database query failed' });
+      }
+    if (!profile) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    console.log('getRole type:', typeof profile.role);
+    res.json(profile.role)
+    
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Server error' });
+    }
+}
+
 
 //const isMatch = await bcrypt.compare(password, data.password); check password

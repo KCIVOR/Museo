@@ -1,0 +1,29 @@
+Login
+You sign in on the frontend and get two tokens: access token (short life) and refresh token (long life).
+Frontend sends both to the backend once.
+Backend checks the access token is valid and saves both in secure HttpOnly cookies.
+
+Making requests
+Your browser automatically sends those cookies with each request.
+A middleware runs first on protected routes. It:
+Tries to use the access token.
+If the access token is missing/expired, it uses the refresh token to get a new access token.
+It then updates the cookies and attaches the user to req.user for the route handler.
+
+Why two tokens?
+Access token: fast and short-lived. Used for the actual request.
+Refresh token: longer-lived. Only used to get a new access token when needed.
+
+Role/permissions
+After the user is attached to req.user, the permission middleware checks your database for the user’s role.
+If the role is allowed, the request continues; otherwise it returns 403.
+
+Logout
+Backend tells Supabase to sign out and clears both cookies, so future requests are unauthenticated.
+
+What we fixed
+We stopped sharing one Supabase client for both admin work and user sessions.
+Now, the middleware creates a temporary “auth client” per request just to:
+Check who the user is.
+Refresh tokens when needed.
+This avoids cross-request mixups and the “User not found” after refresh.

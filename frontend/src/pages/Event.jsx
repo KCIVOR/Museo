@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./css/events.css";
 
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-lj.pg";
+const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
 
 const EVENTS = {
   artCelebration: {

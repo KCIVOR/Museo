@@ -1,9 +1,8 @@
 import db from '../database/db.js';
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
-import { createClient } from "@supabase/supabase-js";
+import supabase, { createAuthClient } from '../database/db.js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY );
 
 
 export const loginUser = async (req, res) => {
@@ -14,27 +13,24 @@ export const loginUser = async (req, res) => {
   }
 
   try {
-    // ✅ Verify access token with Supabase
-    const { data: user, error } = await supabase.auth.getUser(access_token);
+    // ✅ Verify access token with a short-lived client to avoid mutating global state
+    const authClient = createAuthClient(access_token);
+    const { data: user, error } = await authClient.auth.getUser(access_token);
 
     if (error || !user) {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    // ✅ Store tokens in cookies
-    res.cookie("access_token", access_token, {
+    // ✅ Store tokens in cookies (match middleware attributes)
+    const isProd = process.env.NODE_ENV === "production";
+    const base = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 60 * 60 * 1000,
-    });
-
-    res.cookie("refresh_token", refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 14 * 24 * 60 * 60 * 1000, 
-    });
+      sameSite: isProd ? "None" : "Lax",
+      secure: isProd ? true : false,
+      path: "/",
+    };
+    res.cookie("access_token", access_token, { ...base, maxAge: 60 * 60 * 1000 });
+    res.cookie("refresh_token", refresh_token, { ...base, maxAge: 14 * 24 * 60 * 60 * 1000 });
     return res.json({
       message: "Logged in successfully",
       user: user.user, 
@@ -45,7 +41,6 @@ export const loginUser = async (req, res) => {
   }
 };
 
-
 export const registerUser = async (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -55,7 +50,7 @@ export const registerUser = async (req, res) => {
       password,
       options: {
         data: { username },
-        emailRedirectTo: "http://localhost:5173/"
+        emailRedirectTo: "http://localhost:5173/" 
       }
     });
 
@@ -75,19 +70,17 @@ export const registerUser = async (req, res) => {
   }
 };
 
-
 const ACCESS_COOKIE = "access_token";
 const REFRESH_COOKIE = "refresh_token";
 
 export async function logout(req, res) {
   const isProd = process.env.NODE_ENV === "production";
 
-  // If FE is on a different origin/port, use SameSite=None;Secure and proper CORS
   const cookieBase = {
     httpOnly: true,
     path: "/",
-    sameSite: isProd ? "None" : "Lax", // set to "None" when cross-site
-    secure: isProd ? true : false,     // must be true with SameSite=None over HTTPS
+    sameSite: isProd ? "None" : "Lax", 
+    secure: isProd ? true : false,   
   };
 
   try {
@@ -125,3 +118,4 @@ export async function logout(req, res) {
     return res.status(204).send();
   }
 }
+

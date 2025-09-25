@@ -16,21 +16,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cookieParser());
-app.use(helmet());
-app.use(morgan("dev"));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Serve uploaded files statically
-app.use('/uploads', express.static('uploads'));
-
+// ✅ 1. CORS first
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true,
 }));
 
-// Routes
+// ✅ 2. Cookie parser next
+app.use(cookieParser());
+
+// ✅ 3. Security / logging / body parsers
+app.use(helmet());
+app.use(morgan("dev"));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// ✅ 4. Static files
+app.use("/uploads", express.static("uploads"));
+
+// ✅ 5. Routes
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/homepage", authMiddleware, homepageRoutes);
 app.use("/api/auth", authRoutes);

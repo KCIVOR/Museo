@@ -12,7 +12,7 @@ export default function MuseoComposer({
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]); // [{url,type,file}]
   const taRef = useRef(null);
-
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   // Auto-grow
   useEffect(() => {
@@ -49,7 +49,8 @@ export default function MuseoComposer({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!canPost) return;
+    if (!canPost || isSubmitting) return;
+    setIsSubmitting(true);
     
     try {
       const formData = new FormData();
@@ -81,7 +82,10 @@ export default function MuseoComposer({
       
     } catch(err) {
       console.error("Failed to submit post", err);
+    }finally {
+      setIsSubmitting(false);
     }
+
   };
 
 
