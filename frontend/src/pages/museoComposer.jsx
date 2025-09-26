@@ -4,7 +4,7 @@ import "./css/museoComposer.css";
 export default function MuseoComposer({
   onSubmit,
 }) {
-  const FALLBACK_AVATAR = "/assets/avatar-placeholder.png"; // ensure file exists in public/assets
+  const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
   const resolveAvatar = (raw) => {
     if (!raw) return FALLBACK_AVATAR;
     // Allow absolute http(s) or local paths only; reject bucket-relative strings
@@ -16,7 +16,9 @@ export default function MuseoComposer({
   const [files, setFiles] = useState([]); // [{url,type,file}]
   const taRef = useRef(null);
   const [meData, setMeData] = useState({
+    
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-grow
   useEffect(() => {
@@ -101,7 +103,8 @@ export default function MuseoComposer({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canPost) return;
-
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append("description", text);
@@ -125,6 +128,8 @@ export default function MuseoComposer({
       onSubmit?.(data);
     } catch (err) {
       console.error("Failed to submit post", err);
+    }finally{
+      setIsSubmitting(false);
     }
   };
 

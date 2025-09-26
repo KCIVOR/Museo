@@ -35,8 +35,8 @@ export const authMiddleware = async (req, res, next) => {
     if (req.authProcessed) return next();
     req.authProcessed = true;
 
-    const accessToken = req.cookies?.access_token;
-    const refreshToken = req.cookies?.refresh_token;
+    const accessToken = req.cookies?.access_token;// 1h
+    const refreshToken = req.cookies?.refresh_token;// 14d
 
     // No access token
     if (!accessToken) {

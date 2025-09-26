@@ -7,6 +7,9 @@ import { v4 as uuidv4 } from "uuid";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import homepageRoutes from "./routes/homepageRoutes.js";
+import artistRoutes from "./routes/artistRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middleware/auth.js";
 import path from "path";
@@ -36,7 +39,15 @@ app.use("/uploads", express.static("uploads"));
 
 // ✅ 5. Routes
 app.use("/api/users", authMiddleware, userRoutes);
+//homepage
 app.use("/api/homepage", authMiddleware, homepageRoutes);
+//artist
+app.use("/api/artist", authMiddleware, artistRoutes);
+
+//profile
+app.use("/api/profile", authMiddleware, profileRoutes);
+
+// Auth routes
 app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {

@@ -41,8 +41,7 @@ export default function PostModal({
   const [commentErr, setCommentErr] = useState(null);
   const [commentText, setCommentText] = useState("");
 
-  const FALLBACK_AVATAR =
-    "https://ui-avatars.com/api/?name=Anon&background=9CA3AF&color=ffffff&size=40";
+  const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
 
   // Lock scroll / ESC close
   useEffect(() => {
