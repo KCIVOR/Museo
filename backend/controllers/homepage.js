@@ -103,11 +103,10 @@ export const createPost = async (req, res) => {
   }
 };
 
-// FIXED: Get posts function - simpler approach without complex joins
+
 export const getPost = async (req, res) => {
   try {
 
-    // Fetch posts only - no complex joins
     const { data: posts, error } = await supabase
       .from('post')
       .select('*')
@@ -123,36 +122,34 @@ export const getPost = async (req, res) => {
     const userIds = [...new Set(posts.map(post => post.userId))];
     const userMap = new Map();
 
+    // Fetch profile records for these users instead of relying on auth meta fields
+    if (userIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profile')
+        .select('userId, firstName, lastName, profilePicture')
+        .in('userId', userIds);
 
-    for (const userId of userIds) {
-      try {
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-        
-        if (!userError && userData.user) {
-          userMap.set(userId, {
-            id: userData.user.id,
-            name: userData.user.user_metadata?.name || 
-                  userData.user.user_metadata?.full_name || 
-                  userData.user.email?.split('@')[0] || 
-                  'Anonymous',
-            avatar: userData.user.user_metadata?.avatar_url || 
-                   userData.user.user_metadata?.picture || 
-                   'https://via.placeholder.com/40'
-          });
-        } else {
-          // Fallback user data
-          userMap.set(userId, {
-            id: userId,
-            name: 'Anonymous',
-            avatar: 'https://via.placeholder.com/40'
+      if (profileError) {
+        console.warn('Failed to fetch profiles:', profileError);
+      } else if (profiles && profiles.length) {
+        for (const pr of profiles) {
+          const fullName = [pr.firstName, pr.lastName].filter(Boolean).join(' ').trim() || 'Anonymous';
+          userMap.set(pr.userId, {
+            id: pr.userId,
+            name: fullName,
+            avatar: pr.profilePicture || 'https://via.placeholder.com/40',
           });
         }
-      } catch (userFetchError) {
-        console.warn(`Failed to fetch user ${userId}:`, userFetchError);
-        userMap.set(userId, {
-          id: userId,
+      }
+    }
+
+    // Ensure every userId has a fallback entry
+    for (const uid of userIds) {
+      if (!userMap.has(uid)) {
+        userMap.set(uid, {
+          id: uid,
           name: 'Anonymous',
-          avatar: 'https://via.placeholder.com/40'
+          avatar: 'https://via.placeholder.com/40',
         });
       }
     }
@@ -338,33 +335,34 @@ export const getComments = async (req, res) => {
 
     if (error) throw error;
 
-    // Gather unique userIds, fetch minimal profile for each
+    // Gather unique userIds, fetch minimal profile for each from profile table
     const userIds = [...new Set(rows.map(r => r.userId))];
     const userMap = new Map();
 
-    for (const uid of userIds) {
-      try {
-        const { data: u, error: ue } = await supabase.auth.admin.getUserById(uid);
-        if (!ue && u.user) {
-          userMap.set(uid, {
-            id: u.user.id,
-            name: u.user.user_metadata?.name ||
-                  u.user.user_metadata?.full_name ||
-                  u.user.email?.split("@")[0] ||
-                  "Anonymous",
-            avatar: u.user.user_metadata?.avatar_url ||
-                    u.user.user_metadata?.picture ||
-                    "https://via.placeholder.com/40",
-          });
-        } else {
-          userMap.set(uid, {
-            id: uid, name: "Anonymous", avatar: "https://via.placeholder.com/40",
+    if (userIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profile')
+        .select('userId, firstName, lastName, profilePicture')
+        .in('userId', userIds);
+
+      if (profileError) {
+        console.warn('getComments: failed to fetch profiles', profileError);
+      } else if (profiles && profiles.length) {
+        for (const pr of profiles) {
+          const name = [pr.firstName, pr.lastName].filter(Boolean).join(' ').trim() || 'Anonymous';
+          userMap.set(pr.userId, {
+            id: pr.userId,
+            name,
+            avatar: pr.profilePicture || 'https://via.placeholder.com/40',
           });
         }
-      } catch {
-        userMap.set(uid, {
-          id: uid, name: "Anonymous", avatar: "https://via.placeholder.com/40",
-        });
+      }
+    }
+
+    // Ensure fallback entries
+    for (const uid of userIds) {
+      if (!userMap.has(uid)) {
+        userMap.set(uid, { id: uid, name: 'Anonymous', avatar: 'https://via.placeholder.com/40' });
       }
     }
 

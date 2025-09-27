@@ -1,0 +1,201 @@
+Museo Homepage - End-to-End Overview
+
+This document explains how the homepage works across the frontend, backend, and database. It references exact files and functions in your codebase for defense and study.
+
+============================================================
+HIGH-LEVEL FLOW
+============================================================
+1) User opens the Home page.
+2) Frontend (Home.jsx) performs three initial calls:
+   - GET /api/profile/profileStatus to decide if profile setup modal should show.
+   - GET /api/homepage/getPost to load posts, with author info derived from the profile table.
+   - GET /api/users/role to determine if the composer should be visible (artist/admin only).
+3) Feed renders with posts, showing avatars, names, timestamps, media, and action buttons.
+4) Users with proper roles can create posts via MuseoComposer (images + text).
+5) Users can like posts and open a PostModal to view/add comments.
+
+============================================================
+FRONTEND
+============================================================
+File: frontend/src/pages/Home.jsx
+Component: Home()
+
+Key state
+- posts: array of normalized posts for rendering.
+- loading, error: fetch status.
+- role: 'artist' | 'admin' | 'user'; controls composer visibility.
+- likes, comments: maps of postId -> count.
+- showProfileModal: whether to display profile setup modal.
+- activePost: the selected post for viewing in a modal.
+
+Important functions
+- checkProfile()
+  - Calls: GET http://localhost:3000/api/profile/profileStatus
+  - If profileStatus === false or request fails, opens SetProfileModal for setup.
+
+- fetchRole()
+  - Calls: GET http://localhost:3000/api/users/role
+  - Saves role; composer shown only for 'artist' and 'admin'.
+
+- fetchPosts()
+  - Calls: GET http://localhost:3000/api/homepage/getPost
+  - Response body:
+    - posts: each post has user info from the profile table (id, name, avatar).
+    - reacts: array of reaction rows; UI aggregates counts by postId.
+    - comments: array of comment rows; UI aggregates counts by postId.
+  - normalizePosts():
+    - Normalizes timestamps.
+    - Ensures avatar URLs are safe and have fallbacks.
+
+- handleLike(postId)
+  - Calls: POST http://localhost:3000/api/homepage/createReact { postId }
+  - Toggles like, updates likes[postId] based on { removed } flag from server.
+
+- handleComment(postId, text)
+  - Calls: POST http://localhost:3000/api/homepage/createComment { postId, text }
+  - Optimistically increments comments count for the post.
+
+- handlePopUp(postId)
+  - Sets activePost for PostModal display.
+
+Rendering
+- <MuseoHero /> header section.
+- <MuseoComposer /> visible only for 'artist' or 'admin'.
+- Loading / error / empty states handled gracefully.
+- Each post card shows author avatar + name + timestamp + text + media + actions.
+- Clicking a card opens <PostModal />.
+
+Image polish
+- onImageLoad(): computes average background color, determines aspect ratio class, and applies contain/cover fit to preserve layout aesthetics.
+- Robust avatar handling via fallback URLs.
+
+File: frontend/src/pages/museoComposer.jsx
+Component: MuseoComposer
+Purpose: Compose and submit new posts (text + up to 4 media files).
+
+Profile source for current user (no meta fields used)
+- Calls: GET http://localhost:3000/api/profile/getProfile
+- name = firstName + lastName
+- avatar = profilePicture (fallback image if unset)
+
+Submit flow
+- Builds a FormData payload: description, createdAt, media files.
+- POST http://localhost:3000/api/homepage/createPost
+- On success, clears UI and invokes onSubmit -> Home.jsx refreshes the feed with fetchPosts().
+
+File: frontend/src/pages/PostModal.jsx
+Component: PostModal
+Purpose: View a selected post, its details, likes, and comments; add a comment.
+
+Loading comments
+- GET http://localhost:3000/api/homepage/getComments?postId=...
+- The backend attaches commenter user objects from the profile table.
+
+Optimistic comments (profile-based)
+- If the parent did not pass currentUser, PostModal fetches GET /api/profile/getProfile and uses:
+  - name = firstName + lastName
+  - avatar = profilePicture
+- This ensures the optimistic comment immediately shows the correct name and avatar.
+
+============================================================
+BACKEND
+============================================================
+File: backend/controllers/homepage.js
+
+createPost(req, res)
+- Requires authentication (handled by middleware elsewhere).
+- Uploads media to Supabase Storage bucket: uploads/pics/{userId}/...
+- Inserts a row into the post table: { userId, description, image, datePosted }.
+- Returns details (uploaded files, created posts).
+
+getPost(req, res)
+- Reads posts from table 'post' ordered by datePosted DESC.
+- Collects unique userIds and batch-fetches their profile rows:
+  - SELECT userId, firstName, lastName, profilePicture FROM profile WHERE userId IN (...)
+- Builds each post's user object from profile (not auth meta fields):
+  - user = { id, name: firstName + ' ' + lastName, avatar: profilePicture }
+- Returns:
+  - posts: formatted posts with user info from profile.
+  - reacts: all reaction rows (UI computes counts per postId).
+  - comments: all comment rows (UI computes counts per postId).
+
+createReact(req, res)
+- Body: { postId }
+- If a react by this user/post exists, deletes it (unlike). Otherwise inserts it (like).
+- Returns a flag { removed } for the client to adjust counts.
+
+createComment(req, res)
+- Body: { postId, text }
+- Inserts into table 'comment' with userId, content, datePosted, postId.
+
+getComments(req, res)  [PROFILE-BASED]
+- Query param: postId
+- Reads comments for the post ordered by datePosted DESC.
+- Collects unique commenter userIds and batch-fetches profile rows:
+  - SELECT userId, firstName, lastName, profilePicture FROM profile WHERE userId IN (...)
+- Each comment's user is built from profile (name, avatar), falling back to Anonymous + placeholder if absent.
+
+File: backend/controllers/profileController.js
+
+getProfile(req, res)
+- Returns the profile record for the authenticated user.
+
+profileStatus(req, res)
+- Returns { profileStatus: boolean } indicating if the user has completed setup.
+
+uploadProfileMedia(req, res)
+- Accepts multipart/form-data fields for avatar and cover.
+- Uploads to Supabase Storage under uploads/pics/{userId}/...
+- Updates or inserts profile with text fields (firstName, lastName, bio, about, birthdate, etc.).
+- Sets profileStatus = true when updated/created successfully.
+
+============================================================
+DATABASE TABLES
+============================================================
+- post(postId, userId, description, image, datePosted)
+- profile(userId, firstName, middleName, lastName, profilePicture, coverPicture, bio, about, profileStatus, ...)
+- react(reactId, userId, postId, reactTime)
+- comment(commentId, userId, postId, content, datePosted)
+
+============================================================
+REQUEST LIFECYCLE EXAMPLE
+============================================================
+1) Page load
+   - Home.jsx -> checkProfile() -> GET /api/profile/profileStatus
+   - Home.jsx -> fetchPosts() -> GET /api/homepage/getPost
+   - Home.jsx -> fetchRole() -> GET /api/users/role
+
+2) Render feed
+   - Posts list includes author objects derived from the profile table.
+   - UI aggregates likes and comments counts from arrays returned by the backend.
+
+3) Create a post
+   - MuseoComposer -> POST /api/homepage/createPost with FormData (description + media)
+   - On success: Home.jsx refreshes via fetchPosts().
+
+4) Like/unlike a post
+   - Home.jsx -> POST /api/homepage/createReact { postId }
+   - Uses server response to toggle the count.
+
+5) Open PostModal and add a comment
+   - PostModal -> GET /api/homepage/getComments?postId=...
+   - Comments include commenter user derived from profile table.
+   - Submit -> Home.jsx -> POST /api/homepage/createComment
+   - PostModal then reloads comments to reconcile IDs/order.
+
+============================================================
+KEY DESIGN POINTS FOR DEFENSE
+============================================================
+- Profile-centric identity: All names/avatars shown on the homepage are sourced from the profile table rather than auth provider metadata, ensuring consistency and user-controlled identity.
+- Batched queries: The backend batches profile lookups for posts and comments, minimizing round trips and improving performance.
+- Robust UI/UX: The feed handles various media sizes, broken URLs, and displays graceful loading/error/empty states. Composer is role-gated.
+- Clear separation: Frontend presentation (React), backend aggregation (Express + Supabase), and persistence (Supabase tables) are cleanly separated.
+
+============================================================
+QUICK CUSTOMIZATION POINTS
+============================================================
+- Change author display format: Edit name construction in getPost() and getComments().
+- Post card layout/fields: Edit the map(posts) section in frontend/src/pages/Home.jsx.
+- Modal behavior: Edit frontend/src/pages/PostModal.jsx.
+- Composer limits/validation: Edit frontend/src/pages/museoComposer.jsx.
+- Role logic: Frontend fetchRole() + your backend role endpoint.

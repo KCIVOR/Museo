@@ -28,7 +28,7 @@ export default function PostModal({
   onLike,
   onComment,
   likeCount,
-  currentUser // NEW: signed-in user's {name, avatar}
+  currentUser // signed-in user's {name, avatar} (optional)
 }) {
   const dialogRef = useRef(null);
   const [avgBg, setAvgBg] = useState(post.avgBg || "#f3f4f6");
@@ -40,8 +40,37 @@ export default function PostModal({
   const [loadingComments, setLoadingComments] = useState(true);
   const [commentErr, setCommentErr] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [me, setMe] = useState(null); // {name, avatar} from profile
 
   const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
+
+  // Load current user's profile for optimistic UI when currentUser prop isn't passed
+  useEffect(() => {
+    let abort = false;
+    if (currentUser) {
+      setMe(currentUser);
+      return;
+    }
+    const loadMe = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/profile/getProfile", {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch profile");
+        const data = await res.json();
+        const p = data?.profile || {};
+        const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || "You";
+        const avatar = p.profilePicture || FALLBACK_AVATAR;
+        if (!abort) setMe({ name, avatar });
+      } catch (e) {
+        if (!abort) setMe({ name: "You", avatar: FALLBACK_AVATAR });
+      }
+    };
+    loadMe();
+    return () => {
+      abort = true;
+    };
+  }, [currentUser]);
 
   // Lock scroll / ESC close
   useEffect(() => {
@@ -114,8 +143,8 @@ export default function PostModal({
 
       // Optimistic prepend using currentUser to prevent avatar swap
       const optimisticUser = {
-        name: currentUser?.name || "You",
-        avatar: currentUser?.avatar || FALLBACK_AVATAR
+        name: (me?.name || currentUser?.name || "You"),
+        avatar: (me?.avatar || currentUser?.avatar || FALLBACK_AVATAR),
       };
       setComments((prev) => [
         {

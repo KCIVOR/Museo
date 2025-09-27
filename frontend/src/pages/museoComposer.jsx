@@ -33,29 +33,17 @@ export default function MuseoComposer({
     let abort = false;
     const loadUser = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/users/me", {
+        const res = await fetch("http://localhost:3000/api/profile/getProfile", {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Failed to fetch current user");
+        if (!res.ok) throw new Error("Failed to fetch profile");
         const data = await res.json();
+        const p = data?.profile || {};
 
-        const name =
-          data?.user_metadata?.full_name ||
-          data?.user_metadata?.name ||
-          data?.name ||
-          data?.email 
+        const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || "You";
+        const avatarRaw = p.profilePicture;
 
-        const avatarRaw =
-          data?.user_metadata?.avatar_url ||
-          data?.avatar_url ||
-          data?.picture
-
-        if (!abort) {
-          setMeData({
-            name,
-            avatar: resolveAvatar(avatarRaw),
-          });
-        }
+        if (!abort) setMeData({ name, avatar: resolveAvatar(avatarRaw) });
       } catch (err) {
         // Keep defaults and fallback
         if (!abort) {
