@@ -1,20 +1,16 @@
-// src/pages/MyProfile.jsx
+// src/components/SetProfileModal.jsx
+import React, { useEffect, useRef, useState } from "react";
 import "./css/MyProfile.css";
-import React, { useEffect, useState, useMemo } from "react";
 
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
   "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
 
-const FALLBACK_COVER =
-  import.meta.env.FALLBACKCOVER_URL ||
-  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/coverphoto.png";
-
-function EditProfileModal({ open, onClose, initial }) {
+export default function SetProfileModal({ open, onClose, initial }) {
   const [avatar, setAvatar] = useState(initial?.avatar || "");
   const [cover, setCover] = useState(initial?.cover || "");
   const [bio, setBio] = useState(initial?.bio || "");
-  const [about, setAbout] = useState(initial?.about || ""); // <-- added
+  const [about, setAbout] = useState(initial?.about || "");
   const [birthdate, setBirthdate] = useState(initial?.birthdate || "");
   const [address, setAddress] = useState(initial?.address || "");
   const [sex, setSex] = useState(initial?.sex || "");
@@ -22,20 +18,37 @@ function EditProfileModal({ open, onClose, initial }) {
   const [lastName, setLastName] = useState(initial?.lastName || "");
   const [middleName, setMiddleName] = useState(initial?.middleName || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
   useEffect(() => {
     if (!open) return;
     setAvatar(initial?.avatar || "");
     setCover(initial?.cover || "");
     setBio(initial?.bio || "");
-    setAbout(initial?.about || "");          
+    setAbout(initial?.about || "");
     setBirthdate(initial?.birthdate || "");
     setAddress(initial?.address || "");
     setSex(initial?.sex || "");
     setFirstName(initial?.firstName || "");
     setLastName(initial?.lastName || "");
     setMiddleName(initial?.middleName || "");
-  
+    setValidationErrors({});
   }, [open, initial]);
+
+  // Prevent escape key from closing modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && open) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [open]);
 
   const pickImage = (cb) => {
     const input = document.createElement("input");
@@ -50,16 +63,34 @@ function EditProfileModal({ open, onClose, initial }) {
     input.click();
   };
 
-  if (!open) return null;
-
+  // Validation function
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (!bio.trim()) errors.bio = "Bio is required";
+    if (!about.trim()) errors.about = "About is required";
+    if (!birthdate) errors.birthdate = "Birthdate is required";
+    if (!address.trim()) errors.address = "Address is required";
+    if (!sex) errors.sex = "Sex is required";
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const updateProfile = async () => {
     try {
       if (isSubmitting) return;
+      
+      // Validate form before submitting
+      if (!validateForm()) {
+        return;
+      }
+      
       setIsSubmitting(true);
 
       const fd = new FormData();
-      // text fields
       fd.append("firstName", firstName || "");
       fd.append("middleName", middleName || "");
       fd.append("lastName", lastName || "");
@@ -68,48 +99,51 @@ function EditProfileModal({ open, onClose, initial }) {
       fd.append("birthdate", birthdate || "");
       fd.append("address", address || "");
       fd.append("sex", sex || "");
-
-      // files only if newly chosen via pickImage (which stores {file, url})
       if (avatar && avatar.file) fd.append("avatar", avatar.file);
       if (cover && cover.file) fd.append("cover", cover.file);
 
       const res = await fetch("http://localhost:3000/api/profile/updateProfile", {
         method: "POST",
         credentials: "include",
-        body: fd, // IMPORTANT: no Content-Type header; browser sets multipart boundary
+        body: fd,
       });
       if (!res.ok) {
         const t = await res.text();
         throw new Error(t || "Failed to update profile");
       }
-      // Optional: re-fetch to reflect new URLs
-      // await fetchProfile() if available in scope or lift a callback via props
       onClose();
     } catch (err) {
       console.error("Update failed:", err);
       alert(err.message);
     } finally {
       setIsSubmitting(false);
-  }
+    }
   };
 
+  if (!open) return null;
+
   return (
-    <div className="pe__scrim" onClick={onClose}>
+    <div className="pe__scrim">
       <section
         className="pe__dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Edit profile"
+        aria-label="Set up your profile"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="pe__header">
-          <h3 className="pe__title">Edit profile</h3>
-          <button className="pe__close" onClick={onClose} aria-label="Close">✕</button>
+          <h3 className="pe__title">Complete Your Profile</h3>
+          <p className="pe__subtitle">Please fill out all required fields to continue</p>
         </header>
 
         <div className="pe__coverBox">
           {cover ? (
-            <img className="pe__coverImg" src={cover.url || cover} alt="" />
+            <img
+              className="pe__coverImg"
+              src={cover.url || cover}
+              alt=""
+              onError={(e) => { e.currentTarget.src = ""; }}
+            />
           ) : (
             <div className="pe__coverEmpty">Background photo</div>
           )}
@@ -125,7 +159,14 @@ function EditProfileModal({ open, onClose, initial }) {
         <div className="pe__body">
           <div className="pe__avatarWrap">
             {avatar ? (
-              <img className="pe__avatar" src={avatar.url || avatar} alt="" />
+              <img
+                className="pe__avatar"
+                src={avatar.url || avatar}
+                alt=""
+                onError={(e) => { e.currentTarget.src = FALLBACK_AVATAR; }}
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+              />
             ) : (
               <div className="pe__avatarEmpty">Photo</div>
             )}
@@ -141,14 +182,15 @@ function EditProfileModal({ open, onClose, initial }) {
           <div className="pe__form">
             <div className="pe__row">
               <label className="pe__label">
-                First name
+                First name *
                 <input
                   type="text"
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
                 />
+                {validationErrors.firstName && <span className="pe__error">{validationErrors.firstName}</span>}
               </label>
               <label className="pe__label">
                 Middle name
@@ -163,54 +205,57 @@ function EditProfileModal({ open, onClose, initial }) {
             </div>
 
             <label className="pe__label">
-              Last name
+              Last name *
               <input
                 type="text"
-                className="pe__input"
+                className={`pe__input ${validationErrors.lastName ? 'pe__input--error' : ''}`}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last name"
               />
+              {validationErrors.lastName && <span className="pe__error">{validationErrors.lastName}</span>}
             </label>
 
             <label className="pe__label">
-              Bio
+              Bio *
               <textarea
-                className="pe__input pe__input--area"
+                className={`pe__input pe__input--area ${validationErrors.bio ? 'pe__input--error' : ''}`}
                 placeholder="Short intro about yourself…"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
               />
+              {validationErrors.bio && <span className="pe__error">{validationErrors.bio}</span>}
             </label>
 
-            {/* NEW About field */}
             <label className="pe__label">
-              About
+              About *
               <textarea
-                className="pe__input pe__input--area"
+                className={`pe__input pe__input--area ${validationErrors.about ? 'pe__input--error' : ''}`}
                 placeholder="Write a more detailed description, story, or background…"
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
                 rows={5}
               />
+              {validationErrors.about && <span className="pe__error">{validationErrors.about}</span>}
             </label>
 
             <div className="pe__row">
               <label className="pe__label">
-                Birthdate
+                Birthdate *
                 <input
                   type="date"
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.birthdate ? 'pe__input--error' : ''}`}
                   value={birthdate || ""}
                   onChange={(e) => setBirthdate(e.target.value)}
                 />
+                {validationErrors.birthdate && <span className="pe__error">{validationErrors.birthdate}</span>}
               </label>
 
               <label className="pe__label">
-                Sex
+                Sex *
                 <select
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.sex ? 'pe__input--error' : ''}`}
                   value={sex}
                   onChange={(e) => setSex(e.target.value)}
                 >
@@ -219,184 +264,34 @@ function EditProfileModal({ open, onClose, initial }) {
                   <option>Male</option>
                   <option>Prefer not to say</option>
                 </select>
+                {validationErrors.sex && <span className="pe__error">{validationErrors.sex}</span>}
               </label>
             </div>
 
             <label className="pe__label">
-              Address
+              Address *
               <input
                 type="text"
-                className="pe__input"
+                className={`pe__input ${validationErrors.address ? 'pe__input--error' : ''}`}
                 placeholder="Street, city, province"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
+              {validationErrors.address && <span className="pe__error">{validationErrors.address}</span>}
             </label>
           </div>
         </div>
 
         <footer className="pe__footer">
-          <button className="pe__btn pe__btn--ghost" onClick={onClose}>Cancel</button>
           <button
             className="pe__btn pe__btn--primary"
-            onClick={updateProfile}
+            onClick={async () => { await updateProfile(); }}
+            disabled={isSubmitting}
           >
-            Save
+            {isSubmitting ? "Saving..." : "Complete Profile"}
           </button>
         </footer>
       </section>
-    </div>
-  );
-}
-
-
-export default function MyProfile() {
-  const [profileId, setProfileId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [avatar, setAvatar] = useState(FALLBACK_AVATAR);
-  const [cover, setCover] = useState(FALLBACK_COVER);
-  const [sex, setSex] = useState("");
-  const [address, setAddress] = useState("");
-  const [birthdate, setBirthdate] = useState("");
-  const [bio, setBio] = useState("");
-  const [about, setAbout] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
-
-  // NEW: modal open state
-  const [openEdit, setOpenEdit] = useState(false);
-
-  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
-
-  const age = useMemo(() => {
-    if (!birthdate) return "";
-    const b = new Date(birthdate);
-    const now = new Date();
-    let years = now.getFullYear() - b.getFullYear();
-    const m = now.getMonth() - b.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) years--;
-    return years;
-  }, [birthdate]);
-
-  const fetchProfile = async () => {
-    if (isFetching) return;
-    setIsFetching(true);
-    try {
-      const res = await fetch("http://localhost:3000/api/profile/getProfile", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      const result = await res.json();
-      const p = result?.profile ?? result ?? {};
-      setProfileId(p.profileId || "");
-      setFirstName(p.firstName ?? "");
-      setMiddleName(p.middleName ?? "");
-      setLastName(p.lastName ?? "");
-      setBio(p.bio ?? "");
-      setBirthdate(p.birthdate ?? "");
-      setAddress(p.address ?? "");
-      setSex(p.sex ?? "");
-      setAvatar(p.profilePicture || FALLBACK_AVATAR);
-      setCover(p.coverPicture || FALLBACK_COVER);
-      setAbout(p.about ?? "");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const handleCloseEdit = () => {
-    setOpenEdit(false);
-    // optionally refresh after saving:
-    // fetchProfile();
-  };
-
-  return (
-    <div className="profilePage">
-      <div className="profileFeed">
-        <section className="pCard">
-          <div className="pCover">
-            <img className="pCoverImg" src={cover || FALLBACK_COVER} alt="Cover" loading="lazy" />
-            <div className="pAvatarRing">
-              <div className="pAvatarWrap">
-                <img
-                  className="pAvatar"
-                  src={avatar || FALLBACK_AVATAR}
-                  alt={`${fullName || "User"} avatar`}
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Kebab now opens the editor */}
-          <button
-            type="button"
-            className="pKebab compact"
-            aria-label="Edit profile"
-            onClick={() => setOpenEdit(true)}
-            title="Edit profile"
-          >
-            ⋯
-          </button>
-
-          {/* If a separate refresh is desired, add this near the header or kebab:
-          <button
-            type="button"
-            className="pKebab compact"
-            aria-label="Refresh profile"
-            onClick={fetchProfile}
-            title="Refresh profile"
-            style={{ right: 56 }}
-          >
-            ⟳
-          </button>
-          */}
-
-          <header className="pHeader">
-            <h1 className="pName" title={fullName || "Unnamed user"}>
-              {fullName || "Unnamed user"}
-            </h1>
-            <div className="pMeta">
-              <div>Sex: {sex || "—"}</div>
-              <div>Address: {address || "—"}</div>
-              {birthdate && (
-                <div>
-                  Birthdate: {new Date(birthdate).toLocaleDateString()} {age !== "" ? `(Age ${age})` : ""}
-                </div>
-              )}
-              <div className="pQuickBio">{bio || "—"}</div>
-            </div>
-          </header>
-
-          {about && <div className="pBio">{about}</div>}
-        </section>
-      </div>
-
-      {/* Mount the edit modal with initial values from current state */}
-      <EditProfileModal
-        open={openEdit}
-        onClose={handleCloseEdit}
-        initial={{
-          avatar,
-          cover,
-          bio,
-          birthdate,
-          address,
-          about,
-          sex,
-          firstName,
-          middleName,
-          lastName,
-          profileId,
-        }}
-      />
     </div>
   );
 }

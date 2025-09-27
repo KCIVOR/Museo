@@ -1,41 +1,73 @@
-import { useEffect, useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const ProtectedRoutes = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(null); 
+  const [profileStatus, setProfileStatus] = useState(null);     
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // try access sa protected api para macheck if valid token
-        const response = await fetch("http://localhost:3000/api/users/me", {
+        const authRes = await fetch("http://localhost:3000/api/users/me", {
           method: "GET",
-          credentials: "include", 
+          credentials: "include",
         });
 
-        if (response.status === 200) {
-          setIsAuthenticated(true);
-        } else {
+        if (authRes.status !== 200) {
           setIsAuthenticated(false);
+          setProfileStatus(null);
+          return;
         }
-      } catch (error) {
-        console.error("Auth check failed:", error);
+
+        setIsAuthenticated(true);
+
+        const statRes = await fetch(`http://localhost:3000/api/profile/profileStatus`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+
+        if (!statRes.ok) {
+          setProfileStatus(false);
+        } else {
+          const json = await statRes.json(); // expects { profileStatus: boolean }
+          setProfileStatus(Boolean(json?.profileStatus));
+        }
+      } catch (e) {
         setIsAuthenticated(false);
+        setProfileStatus(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, []);
+  }, [location.pathname]);
 
+  // 1) Block until checks complete to avoid rendering child routes early
+  if (isLoading) return <div>Loading...</div>;
 
-  if (isLoading) {
-    return <div>Loading...</div>; 
+  // 2) Unauthenticated => login
+  if (isAuthenticated === false) {
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
+  // 3) Authenticated but incomplete profile => redirect to Home (unless already on Home)
+  if (isAuthenticated === true && profileStatus === false) {
+    if (location.pathname !== "/Home") {
+      return <Navigate to="/Home" replace />;
+    }
+    // Already on Home: render children so Home can show "complete profile" UI
+    return <Outlet />;
+  }
+
+  // 4) Authenticated + complete profile => allow access
+  return <Outlet />;
 };
 
 export default ProtectedRoutes;

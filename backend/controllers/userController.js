@@ -79,17 +79,18 @@ export const getRole = async (req, res) => {
     if (error) {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Database query failed' });
-      }
+    }
     if (!profile) {
-      return res.status(404).json({ error: 'User not found' });
+      // Return default role if no profile exists
+      return res.json('user');
     }
     console.log('getRole type:', typeof profile.role);
-    res.json(profile.role)
+    res.json(profile.role || 'user');
     
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Server error' });
-    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Server error' });
+  }
 }
 
 

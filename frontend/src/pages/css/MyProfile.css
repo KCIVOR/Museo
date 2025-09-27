@@ -179,9 +179,18 @@
 
 .pe__body {
   display: grid; grid-template-columns: 160px 1fr; gap: 16px;
+  align-items: start;                 /* keep both columns top-aligned */
   padding: 0 16px 12px;
 }
-.pe__avatarWrap { position: relative; }
+.pe__avatarWrap {
+  position: relative;
+  align-self: start;
+  width: 160px;                /* match avatar width */
+  display: flex;               /* stack avatar and button */
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
 .pe__avatar, .pe__avatarEmpty {
   width: 160px; height: 160px; border-radius: 999px;
   border: 6px solid #fff; background:#ddd; object-fit: cover;
@@ -190,10 +199,18 @@
 }
 .pe__avatarEmpty { color:#475569; font-weight: 700; }
 .pe__avatarBtn {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: -4px;
-  height: 30px; padding: 0 10px; border-radius: 10px;
-  border: 1px solid #e6e6ea; background:#fff; cursor: pointer; font-weight:700;
+  position: static;             /* stack below the image */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;                    /* spacing handled by gap */
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid #e6e6ea;
+  background:#fff;
+  cursor: pointer;
+  font-weight:700;
 }
 .pe__avatarBtn:hover { background:#f9fafb; }
 
@@ -205,6 +222,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;                        /* more space between side-by-side inputs */
+  align-items: start;               /* prevent tall sibling from stretching the other */
 }
 .pe__label {
   display: grid;
@@ -212,6 +230,7 @@
   font-size: 13px;
   color:#111827;
   font-weight: 700;
+  align-items: start;               /* keep controls aligned to the top */
 }
 .pe__input {
   width: 100%;
@@ -222,6 +241,7 @@
   background:#fff;
   color:#111;
   font-weight: 500;
+  align-self: start;                /* avoid vertical stretching in grid cells */
 }
 .pe__input--area {
   min-height: 72px;
@@ -249,6 +269,20 @@
 .pe__btn--ghost:hover { background:#f9fafb; }
 .pe__btn--primary { border:1px solid #16a34a; background:#22c55e; color:#062b16; }
 .pe__btn--primary:hover { background:#16a34a; color:#fff; }
+
+/* Error styling */
+.pe__input--error { border-color: #dc2626 !important; }
+.pe__error { 
+  color: #dc2626; 
+  font-size: 12px; 
+  margin-top: 4px; 
+  display: block; 
+}
+.pe__subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 4px 0 0 0;
+}
 
 .pQuickBio {
   margin-top: 8px;
