@@ -53,5 +53,150 @@ export const getArtist = async (req, res) => {
   } catch (err) {
     console.error("Unexpected error:", err);
     return res.status(500).json({ error: "Server error" });
+}
+};
+
+export const getArtistById = async (req, res) => {
+  try{
+    const { id } = req.params;
+    const { data: profile, error } = await supabase
+      .from("profile")
+      .select("*")
+      .or(`profileId.eq.${id},userId.eq.${id}`)
+      .in("role", ["artist", "admin"]) 
+      .maybeSingle();
+
+    if (error) {
+      console.error("getArtistById - supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    return res.status(200).json({ profile });
+  } catch (error) {
+    console.error("getProfile error:", error);
+    return res.status(500).json({ error: error.message });
   }
 };
+
+
+export const getRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const { data: profile, error } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('profileId', id)
+      .maybeSingle(); 
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
+    if (!profile) {
+      // Return default role if no profile exists
+      return res.json('user');
+    }
+    console.log('getRole type:', typeof profile.role);
+    res.json(profile.role || 'user');
+    
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
+
+export const getArts = async (req, res) =>{
+  try{
+    const { id } = req.params;
+
+    // Resolve incoming :id (can be profileId or userId) to a concrete userId
+    const { data: prof, error: profErr } = await supabase
+      .from('profile')
+      .select('userId')
+      .or(`profileId.eq.${id},userId.eq.${id}`)
+      .maybeSingle();
+    if (profErr) {
+      console.error('getArts - profile lookup error:', profErr);
+      return res.status(500).json({ error: profErr.message });
+    }
+    if (!prof) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    const targetUserId = prof.userId;
+
+    // Fetch this user's arts (profile page scope)
+    const { data: arts, error } = await supabase
+      .from("art")
+      .select("*")
+      .eq("userId", targetUserId)
+      .order("datePosted", { ascending: false });
+
+    if (error) {
+      console.error("getArts - Supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    // Build user map from profile like homepage.getPost
+    const userIds = [...new Set((arts || []).map(a => a.userId))];
+    const userMap = new Map();
+
+    if (userIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profile')
+        .select('userId, firstName, lastName, profilePicture')
+        .in('userId', userIds);
+
+      if (profileError) {
+        console.warn('getArts: failed to fetch profiles', profileError);
+      } else if (profiles && profiles.length) {
+        for (const pr of profiles) {
+          const fullName = [pr.firstName, pr.lastName].filter(Boolean).join(' ').trim() || 'Anonymous';
+          userMap.set(pr.userId, {
+            id: pr.userId,
+            name: fullName,
+            avatar: pr.profilePicture || 'https://via.placeholder.com/40',
+          });
+        }
+      }
+    }
+
+    for (const uid of userIds) {
+      if (!userMap.has(uid)) {
+        userMap.set(uid, {
+          id: uid,
+          name: 'Anonymous',
+          avatar: 'https://via.placeholder.com/40',
+        });
+      }
+    }
+
+    const formattedArts = (arts || []).map(art => ({
+      artId: art.artId,
+      user: userMap.get(art.userId) || {
+        id: art.userId,
+        name: 'Anonymous',
+        avatar: 'https://via.placeholder.com/40',
+      },
+      title: art.title || null,
+      description: art.description || null,
+      medium: art.medium || null,
+      image: art.image,
+      datePosted: art.datePosted,
+      timestamp: art.datePosted ? new Date(art.datePosted).toLocaleString() : null,
+    }));
+    console.log(formattedArts)
+    return res.status(200).json(formattedArts);
+
+  }catch(error){
+    console.error("getArts error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+}

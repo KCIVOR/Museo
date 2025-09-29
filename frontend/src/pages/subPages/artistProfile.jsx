@@ -1,83 +1,197 @@
-import { useParams } from "react-router-dom";
-import "./css/artistProfile.css";
+// src/pages/MyProfile.jsx
+import "../css/MyProfile.css";
+import React, { useEffect, useState, useMemo } from "react";
+import ArtistArtGallery from "./artistArtGallery";
+import { useParams } from 'react-router-dom';
 
-/* Replace with real per-artist assets or fetch; placeholders for now */
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg";
 
-/* Dictionary-style artist data */
-const ARTISTS = {
-  "james-morgan-mcgill": {
-    id: "james-morgan-mcgill",
-    name: "James Morgan McGill",
-    avatar: IMG,
-    cover: IMG,
-    gender: "Male",
-    address: "9800 Montgomery Blvd NE, Albuquerque, NM 87111",
-    bio: "Need an artist? Facing creative injustice? Better Call Saul!",
-    about:
-      "Once a courtroom legend, Saul Goodman now dominates the art scene with bold colors, sharp lines, and striking messages. His work is loud, unapologetic, and unforgettable—just like his legal career. Need art with attitude? Better Call Saul.",
-    /* Virtual Galleries removed as requested */
-    arts: [
-      { id: "a1", src: IMG },
+const FALLBACK_AVATAR =
+  import.meta.env.FALLBACKPHOTO_URL ||
+  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
 
-    ]
-  }
-  // Add more keys for other artists if needed
-};
+const FALLBACK_COVER =
+  import.meta.env.FALLBACKCOVER_URL ||
+  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/coverphoto.png";
 
-export default function ArtistDetail() {
+export default function ArtistProfile() {
+  const [profileId, setProfileId] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [avatar, setAvatar] = useState(FALLBACK_AVATAR);
+  const [cover, setCover] = useState(FALLBACK_COVER);
+  const [sex, setSex] = useState("");
+  const [address, setAddress] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [bio, setBio] = useState("");
+  const [about, setAbout] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
+  const [role, setRole] = useState("");
+  const [arts, setArts] = useState([]);
+
   const { id } = useParams();
-  const artist = ARTISTS[id] || ARTISTS["james-morgan-mcgill"];
+
+  const [openEdit, setOpenEdit] = useState(false);
+
+  const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
+
+  const age = useMemo(() => {
+    if (!birthdate) return "";
+    const b = new Date(birthdate);
+    const now = new Date();
+    let years = now.getFullYear() - b.getFullYear();
+    const m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) years--;
+    return years;
+  }, [birthdate]);
+
+  const fetchProfile = async () => {
+    if (isFetching) return;
+    setIsFetching(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/artist/getArtistById/${id}`, {
+        credentials: "include",
+        method: "GET",
+      });
+      
+      if (!res.ok) throw new Error("Failed to fetch profile");
+      const result = await res.json();
+      const p = result?.profile ?? result ?? {};
+      setProfileId(p.profileId || "");
+      setFirstName(p.firstName ?? "");
+      setMiddleName(p.middleName ?? "");
+      setLastName(p.lastName ?? "");
+      setBio(p.bio ?? "");
+      setBirthdate(p.birthdate ?? "");
+      setAddress(p.address ?? "");
+      setSex(p.sex ?? "");
+      setAvatar(p.profilePicture || FALLBACK_AVATAR);
+      setCover(p.coverPicture || FALLBACK_COVER);
+      setAbout(p.about ?? "");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const fetchArts = async () => {
+    try{
+      const response = await fetch(`http://localhost:3000/api/artist/getArts/${id}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch arts: ${response.statusText}`);
+      const data = await response.json();
+      
+      setArts(data);
+
+      console.log("Fetched arts:", data);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+
+  const fetchRole = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/artist/getRole/${id}`, {
+        credentials: "include",
+        method: "GET",
+      });
+      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
+      const data = await response.json();
+      setRole(data);
+      console.log("Fetched user:", data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  }; 
+
+  useEffect(() => {
+    fetchProfile();
+    fetchRole();
+    fetchArts();
+  }, []);
+
+  const handleCloseEdit = () => {
+    setOpenEdit(false);
+    fetchProfile();
+  };
+
+  // Event handlers for ArtGallery
+  const handleViewArt = (art, index) => {
+    console.log('Viewing art:', art, 'at index:', index);
+    // Add your view logic here
+  };
+
+  const handleLikeArt = (art, index) => {
+    console.log('Liking art:', art, 'at index:', index);
+    // Add your like logic here
+  };
+
+  const handleArtClick = (art, index) => {
+    console.log('Art clicked:', art, 'at index:', index);
+    // Add your click logic here
+  };
 
   return (
-    <div className="artistDetailPage">
-      <div className="artistDetailFeed">
-        <div className="adCard">
-          {/* Cover + Avatar */}
-          <div className="adCover">
-            <img className="adCoverImg" src={"https://png.pngtree.com/thumb_back/fh260/background/20231231/pngtree-random-pattern-of-low-poly-textured-triangle-shapes-on-abstract-gray-image_13883731.png"} alt="" />
-            <div className="adAvatarWrap">
-              <img className="adAvatar" src={artist.avatar} alt="" />
-            </div>
-          </div>
-
-          {/* Header text, meta, actions */}
-          <div className="adHeader">
-            <div className="adName">{artist.name}</div>
-            <div className="adMeta">
-              <div>Gender: {artist.gender}</div>
-              <div>Address: {artist.address}</div>
-              <div>Bio: {artist.bio}</div>
-            </div>
-            <div className="adActions">
-              <button className="adBtn">Follow</button>
-              <button className="adBtn">Message</button>
-            </div>
-            <div className="adBio">{artist.about}</div>
-          </div>
-
-          {/* Arts (masonry collage using CSS Grid dense) */}
-          <div className="adSectionTitle" style={{ marginTop: 18 }}>Arts</div>
-          <div className="adMasonryGrid">
-            {artist.arts.map((a) => (
-              <div key={a.id} className="adGItem">
+    <div className="profilePage">
+      <div className="profileFeed">
+        {/* Profile Card */}
+        <section className="pCard">
+          <div className="pCover">
+            <img className="pCoverImg" src={cover || FALLBACK_COVER} alt="Cover" loading="lazy" />
+            <div className="pAvatarRing">
+              <div className="pAvatarWrap">
                 <img
-                  className="adGImg"
-                  src={a.src}
-                  alt=""
-                  onLoad={(e) => {
-                    // compute row span from rendered height to pack tightly
-                    const el = e.currentTarget.parentElement;
-                    const h = e.currentTarget.getBoundingClientRect().height;
-                    const rowH = 8; // must match grid-auto-rows
-                    const span = Math.max(20, Math.round(h / rowH));
-                    el.style.gridRowEnd = `span ${span}`;
-                  }}
+                  className="pAvatar"
+                  src={avatar || FALLBACK_AVATAR}
+                  alt={`${fullName || "User"} avatar`}
+                  loading="lazy"
                 />
               </div>
-            ))}
+            </div>
           </div>
-        </div>
+          <header className="pHeader">
+            <h1 className="pName" title={fullName || "Unnamed user"}>
+              {fullName || "Unnamed user"}
+            </h1>
+            <div className="pMeta">
+              <div>Sex: {sex || "—"}</div>
+              <div>Address: {address || "—"}</div>
+              {birthdate && (
+                <div>
+                  Birthdate: {new Date(birthdate).toLocaleDateString()} {age !== "" ? `(Age ${age})` : ""}
+                </div>
+              )}
+              <div className="pQuickBio">{bio || "—"}</div>
+            </div>
+          </header>
+
+          {about && <div className="pBio">{about}</div>}
+        </section>
+
+        {/* FIXED: Art galleries only show for artists and admins */}
+        {(role === "artist" || role === "admin") && (
+          <>
+            {/* Main Artwork Gallery */}
+            <section className="pCard">
+            <ArtistArtGallery
+              arts={arts}
+              title="Artworks"
+              showStats={true}
+              showActions={true}
+              showUpload={true} // This shows the upload buttons
+              onViewArt={handleViewArt}
+              onLikeArt={handleLikeArt}
+              onArtClick={handleArtClick}
+              fallbackImage={FALLBACK_COVER}
+            />
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

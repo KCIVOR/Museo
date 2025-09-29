@@ -1,7 +1,7 @@
 // routes/profileRoutes.js
 import express from "express";
 import multer from "multer";
-import { getProfile, uploadProfileMedia, profileStatus } from "../controllers/profileController.js";
+import { getProfile, uploadProfileMedia, profileStatus, getArts, createComment, getComments, createReact, getReact, uploadArt } from "../controllers/profileController.js";
 
 const router = express.Router();
 
@@ -12,6 +12,17 @@ const upload = multer({
 });
 
 router.get("/getProfile", getProfile);
+router.get("/getArts", getArts);
+router.post("/createComment", createComment);
+router.get("/getComments", getComments);
+router.post("/createComment", createComment);
+router.post("/createReact", createReact);
+router.get("/getReact", getReact);
+router.post("/uploadArt", upload.single('image'), uploadArt);
+
+// Also accept POST with JSON body for ID-based reads
+router.post("/getComments", getComments);
+router.post("/getReact", getReact);
 
 router.get("/profileStatus", profileStatus);
 // Upload files then update profile

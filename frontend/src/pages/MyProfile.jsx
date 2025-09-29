@@ -1,6 +1,8 @@
 // src/pages/MyProfile.jsx
 import "./css/MyProfile.css";
 import React, { useEffect, useState, useMemo } from "react";
+import ArtGallery from "./subPages/artGallery";
+import UploadArt from "./UploadArt";
 
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
@@ -14,7 +16,7 @@ function EditProfileModal({ open, onClose, initial }) {
   const [avatar, setAvatar] = useState(initial?.avatar || "");
   const [cover, setCover] = useState(initial?.cover || "");
   const [bio, setBio] = useState(initial?.bio || "");
-  const [about, setAbout] = useState(initial?.about || ""); // <-- added
+  const [about, setAbout] = useState(initial?.about || ""); 
   const [birthdate, setBirthdate] = useState(initial?.birthdate || "");
   const [address, setAddress] = useState(initial?.address || "");
   const [sex, setSex] = useState(initial?.sex || "");
@@ -22,6 +24,7 @@ function EditProfileModal({ open, onClose, initial }) {
   const [lastName, setLastName] = useState(initial?.lastName || "");
   const [middleName, setMiddleName] = useState(initial?.middleName || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     setAvatar(initial?.avatar || "");
@@ -34,7 +37,6 @@ function EditProfileModal({ open, onClose, initial }) {
     setFirstName(initial?.firstName || "");
     setLastName(initial?.lastName || "");
     setMiddleName(initial?.middleName || "");
-  
   }, [open, initial]);
 
   const pickImage = (cb) => {
@@ -51,7 +53,6 @@ function EditProfileModal({ open, onClose, initial }) {
   };
 
   if (!open) return null;
-
 
   const updateProfile = async () => {
     try {
@@ -76,21 +77,19 @@ function EditProfileModal({ open, onClose, initial }) {
       const res = await fetch("http://localhost:3000/api/profile/updateProfile", {
         method: "POST",
         credentials: "include",
-        body: fd, // IMPORTANT: no Content-Type header; browser sets multipart boundary
+        body: fd,
       });
       if (!res.ok) {
         const t = await res.text();
         throw new Error(t || "Failed to update profile");
       }
-      // Optional: re-fetch to reflect new URLs
-      // await fetchProfile() if available in scope or lift a callback via props
       onClose();
     } catch (err) {
       console.error("Update failed:", err);
       alert(err.message);
     } finally {
       setIsSubmitting(false);
-  }
+    }
   };
 
   return (
@@ -184,7 +183,6 @@ function EditProfileModal({ open, onClose, initial }) {
               />
             </label>
 
-            {/* NEW About field */}
             <label className="pe__label">
               About
               <textarea
@@ -240,8 +238,9 @@ function EditProfileModal({ open, onClose, initial }) {
           <button
             className="pe__btn pe__btn--primary"
             onClick={updateProfile}
+            disabled={isSubmitting}
           >
-            Save
+            {isSubmitting ? "Saving..." : "Save"}
           </button>
         </footer>
       </section>
@@ -263,8 +262,11 @@ export default function MyProfile() {
   const [bio, setBio] = useState("");
   const [about, setAbout] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [role, setRole] = useState("");
+  const [arts, setArts] = useState([]);
+  const [openUploadArt, setOpenUploadArt] = useState(false);
 
-  // NEW: modal open state
+
   const [openEdit, setOpenEdit] = useState(false);
 
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
@@ -307,19 +309,71 @@ export default function MyProfile() {
     }
   };
 
+  const fetchArts = async () => {
+    try{
+      const response = await fetch("http://localhost:3000/api/profile/getArts", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch arts: ${response.statusText}`);
+      const data = await response.json();
+      
+      setArts(data);
+
+      console.log("Fetched arts:", data);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+
+  const fetchRole = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/users/role", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
+      const data = await response.json();
+      setRole(data);
+      console.log("Fetched user:", data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  }; 
+
   useEffect(() => {
     fetchProfile();
+    fetchRole();
+    fetchArts();
   }, []);
 
   const handleCloseEdit = () => {
     setOpenEdit(false);
-    // optionally refresh after saving:
-    // fetchProfile();
+    fetchProfile();
+  };
+
+  // Event handlers for ArtGallery
+  const handleViewArt = (art, index) => {
+    console.log('Viewing art:', art, 'at index:', index);
+    // Add your view logic here
+  };
+
+  const handleLikeArt = (art, index) => {
+    console.log('Liking art:', art, 'at index:', index);
+    // Add your like logic here
+  };
+
+  const handleArtClick = (art, index) => {
+    console.log('Art clicked:', art, 'at index:', index);
+    // Add your click logic here
   };
 
   return (
     <div className="profilePage">
       <div className="profileFeed">
+        {/* Profile Card */}
         <section className="pCard">
           <div className="pCover">
             <img className="pCoverImg" src={cover || FALLBACK_COVER} alt="Cover" loading="lazy" />
@@ -335,7 +389,6 @@ export default function MyProfile() {
             </div>
           </div>
 
-          {/* Kebab now opens the editor */}
           <button
             type="button"
             className="pKebab compact"
@@ -345,19 +398,6 @@ export default function MyProfile() {
           >
             ⋯
           </button>
-
-          {/* If a separate refresh is desired, add this near the header or kebab:
-          <button
-            type="button"
-            className="pKebab compact"
-            aria-label="Refresh profile"
-            onClick={fetchProfile}
-            title="Refresh profile"
-            style={{ right: 56 }}
-          >
-            ⟳
-          </button>
-          */}
 
           <header className="pHeader">
             <h1 className="pName" title={fullName || "Unnamed user"}>
@@ -377,9 +417,72 @@ export default function MyProfile() {
 
           {about && <div className="pBio">{about}</div>}
         </section>
+
+        {/* FIXED: Art galleries only show for artists and admins */}
+        {(role === "artist" || role === "admin") && (
+          <>
+            {/* Main Artwork Gallery */}
+            <section className="pCard">
+            <ArtGallery
+              arts={arts}
+              title="My Artwork"
+              showStats={true}
+              showActions={true}
+              showUpload={true} // This shows the upload buttons
+              onUploadRequest={() => setOpenUploadArt(true)}
+              onViewArt={handleViewArt}
+              onLikeArt={handleLikeArt}
+              onArtClick={handleArtClick}
+              fallbackImage={FALLBACK_COVER}
+            />
+            </section>
+
+            {/* Featured Works Gallery */}
+            <section className="pCard">
+              <ArtGallery
+                arts={[]} // Empty for demonstration
+                title="Featured Works"
+                emptyStateTitle="No featured works"
+                emptyStateMessage="Promote your best artwork here!"
+                emptyStateIcon="⭐"
+                showActions={false}
+              />
+            </section>
+          </>
+        )}
+
+        {/* Optional: Show different content for regular users */}
+        {role === "user" && (
+          <section className="pCard">
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px',
+              background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.03), rgba(147, 51, 234, 0.03))',
+              borderRadius: '20px',
+              border: '2px dashed rgba(79, 70, 229, 0.2)'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: '0.7' }}>🎨</div>
+              <h3 style={{ 
+                fontSize: '22px', 
+                fontWeight: '700', 
+                color: '#374151', 
+                margin: '0 0 8px 0' 
+              }}>
+                Welcome to the Gallery!
+              </h3>
+              <p style={{ 
+                fontSize: '16px', 
+                margin: '0', 
+                opacity: '0.8',
+                color: '#6b7280'
+              }}>
+                Explore amazing artwork from talented artists. Upgrade to artist account to showcase your own creations!
+              </p>
+            </div>
+          </section>
+        )}
       </div>
 
-      {/* Mount the edit modal with initial values from current state */}
       <EditProfileModal
         open={openEdit}
         onClose={handleCloseEdit}
@@ -396,6 +499,12 @@ export default function MyProfile() {
           lastName,
           profileId,
         }}
+      />
+
+      <UploadArt
+        open={openUploadArt}
+        onClose={() => { setOpenUploadArt(false); fetchArts(); }}
+        onUploaded={() => { fetchArts(); }}
       />
     </div>
   );

@@ -308,7 +308,10 @@ export default function Home() {
     fetchPosts();
   };
 
-  const closeModal = () => setActivePost(null);
+  const closeModal = () => {
+    setActivePost(null);
+    fetchPosts(); // re-fetch posts after modal closes
+  };
 
   return (
     <div className="page">

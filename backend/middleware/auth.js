@@ -30,13 +30,33 @@ async function resolveUserFromAccess(accessToken) {
   return data.user;
 }
 
+
+
 export const authMiddleware = async (req, res, next) => {
   try {
     if (req.authProcessed) return next();
     req.authProcessed = true;
 
-    const accessToken = req.cookies?.access_token;// 1h
-    const refreshToken = req.cookies?.refresh_token;// 14d
+    // Check for Bearer token first (React Native)
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    
+    if (bearerToken) {
+      // Mobile request with Bearer token - validate directly
+      try {
+        const user = await resolveUserFromAccess(bearerToken);
+        req.user = user;
+        req.isMobileRequest = true; // Flag to identify mobile requests
+        console.log("📱 Auth: Bearer token valid; user:", user.id);
+        return next();
+      } catch (err) {
+        return res.status(401).json({ error: "Invalid access token" });
+      }
+    }
+
+    // Fall back to cookie-based auth (React web)
+    const accessToken = req.cookies?.access_token; // 1h
+    const refreshToken = req.cookies?.refresh_token; // 14d
 
     // No access token
     if (!accessToken) {
@@ -53,7 +73,7 @@ export const authMiddleware = async (req, res, next) => {
       setSessionCookies(res, session);
       const user = await resolveUserFromAccess(session.access_token);
       req.user = user;
-      console.log("Auth: refreshed via missing access token; user:", user.id);
+      console.log("🌐 Auth: refreshed via missing access token; user:", user.id);
       return next();
     }
 
@@ -88,7 +108,7 @@ export const authMiddleware = async (req, res, next) => {
     // Access token valid; verify user
     const user = await resolveUserFromAccess(accessToken);
     req.user = user;
-    // console.log("Auth: valid access; user:", user.id);
+    console.log("🌐 Auth: valid access; user:", user.id);
     return next();
 
   } catch (err) {
