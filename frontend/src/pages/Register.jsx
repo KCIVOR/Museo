@@ -5,7 +5,6 @@ import "./css/LogReg.css";
 
 export default function Register() {
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +22,7 @@ export default function Register() {
       const res = await fetch("http://localhost:3000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, username })
+        body: JSON.stringify({ email, password })
       });
 
       const data = await res.json().catch(() => ({}));
@@ -72,15 +71,6 @@ export default function Register() {
               placeholder="yourname@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <label>Username</label>
-            <input
-              type="text"
-              placeholder="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
               required
             />
 

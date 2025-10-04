@@ -23,7 +23,9 @@ function EditProfileModal({ open, onClose, initial }) {
   const [firstName, setFirstName] = useState(initial?.firstName || "");
   const [lastName, setLastName] = useState(initial?.lastName || "");
   const [middleName, setMiddleName] = useState(initial?.middleName || "");
+  const [username, setUsername] = useState(initial?.username || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     if (!open) return;
@@ -37,6 +39,8 @@ function EditProfileModal({ open, onClose, initial }) {
     setFirstName(initial?.firstName || "");
     setLastName(initial?.lastName || "");
     setMiddleName(initial?.middleName || "");
+    setUsername(initial?.username || "")
+    setValidationErrors({});
   }, [open, initial]);
 
   const pickImage = (cb) => {
@@ -69,6 +73,7 @@ function EditProfileModal({ open, onClose, initial }) {
       fd.append("birthdate", birthdate || "");
       fd.append("address", address || "");
       fd.append("sex", sex || "");
+      fd.append("username", username || "")
 
       // files only if newly chosen via pickImage (which stores {file, url})
       if (avatar && avatar.file) fd.append("avatar", avatar.file);
@@ -80,8 +85,17 @@ function EditProfileModal({ open, onClose, initial }) {
         body: fd,
       });
       if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Failed to update profile");
+        try {
+          const payload = await res.json();
+          if (res.status === 409) {
+            setValidationErrors((prev) => ({ ...prev, username: "Username is already taken" }));
+            return; // keep modal open
+          }
+          throw new Error(payload?.error || payload?.message || "Failed to update profile");
+        } catch (_) {
+          const t = await res.text();
+          throw new Error(t || "Failed to update profile");
+        }
       }
       onClose();
     } catch (err) {
@@ -170,6 +184,18 @@ function EditProfileModal({ open, onClose, initial }) {
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last name"
               />
+            </label>
+
+            <label className="pe__label">
+              Username
+              <input
+                type="text"
+                className={`pe__input ${validationErrors.username ? 'pe__input--error' : ''}`}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+              />
+              {validationErrors.username && <span className="pe__error">{validationErrors.username}</span>}
             </label>
 
             <label className="pe__label">
@@ -265,6 +291,7 @@ export default function MyProfile() {
   const [role, setRole] = useState("");
   const [arts, setArts] = useState([]);
   const [openUploadArt, setOpenUploadArt] = useState(false);
+  const [username, setUsername] = useState("");
 
 
   const [openEdit, setOpenEdit] = useState(false);
@@ -302,6 +329,7 @@ export default function MyProfile() {
       setAvatar(p.profilePicture || FALLBACK_AVATAR);
       setCover(p.coverPicture || FALLBACK_COVER);
       setAbout(p.about ?? "");
+      setUsername(p.username ?? "");
     } catch (err) {
       console.error(err);
     } finally {
@@ -498,6 +526,7 @@ export default function MyProfile() {
           middleName,
           lastName,
           profileId,
+          username,
         }}
       />
 

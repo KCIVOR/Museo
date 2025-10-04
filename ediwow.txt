@@ -46,3 +46,15 @@ Step	Actor	Action	Condition
 5	Supabase	Validates the refresh token and returns a brand new access_token and refresh_token.	Refresh token is valid
 6	Middleware	Automatically sets new cookies with the fresh tokens.	Supabase call was successful
 7	Middleware	Allows the request to continue to the original controller (e.g., userController).	-
+
+
+
+
+
+
+
+
+
+remove username from register/controller
+add textfield for setup profile
+use username for profile url

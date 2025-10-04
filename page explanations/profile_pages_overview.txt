@@ -1,0 +1,153 @@
+Museo Profile Pages - End-to-End Overview
+
+This document explains how MyProfile and ArtistProfile work across the frontend, backend, and database. It references exact files and functions in your codebase.
+
+============================================================
+MYPROFILE PAGE – END-TO-END FLOW
+============================================================
+1) User opens My Profile.
+2) Frontend (frontend/src/pages/MyProfile.jsx) performs initial calls:
+   - GET /api/profile/getProfile → load the signed-in user’s profile.
+   - GET /api/users/role → determine role-based UI (artist/admin vs user).
+   - GET /api/profile/getArts → load the signed-in user’s artworks.
+3) UI renders profile header, about section, and artwork galleries (role-gated).
+4) User actions:
+   - Edit profile via edit modal (multipart form: text + optional avatar/cover).
+   - Upload new artworks (for artist/admin).
+   - Like and comment on artworks.
+
+------------------------------------------------------------
+FRONTEND (MyProfile)
+------------------------------------------------------------
+File: frontend/src/pages/MyProfile.jsx
+Component: MyProfile()
+
+- Key state
+  - firstName, middleName, lastName, bio, about, birthdate, address, sex
+  - avatar (profilePicture), cover (coverPicture)
+  - username (fetched and passed to EditProfileModal)
+  - role (controls visibility of galleries and upload UI)
+  - arts (list of artworks)
+
+- Data fetching
+  - fetchProfile() → GET http://localhost:3000/api/profile/getProfile
+  - fetchRole() → GET http://localhost:3000/api/users/role
+  - fetchArts() → GET http://localhost:3000/api/profile/getArts
+
+- Edit Profile (inline component EditProfileModal)
+  - Builds FormData including text fields and optional files (avatar, cover)
+  - POST http://localhost:3000/api/profile/updateProfile
+  - Username uniqueness handling
+    - If 409 returned, shows inline error next to Username field
+  - On success, closes and parent refetches profile
+
+- Artwork Upload
+  - Component: frontend/src/pages/UploadArt.jsx (triggered in MyProfile)
+  - POST /api/profile/uploadArt with image and text (title, description, medium)
+
+------------------------------------------------------------
+BACKEND (MyProfile)
+------------------------------------------------------------
+File: backend/controllers/profileController.js
+
+- getProfile(req, res) → GET /api/profile/getProfile
+  - Selects from profile by userId = req.user.id
+
+- uploadProfileMedia(req, res) → POST /api/profile/updateProfile
+  - Accepts multipart form (files: avatar, cover; text: names, bio, about, birthdate, address, sex, username)
+  - Uploads to Supabase Storage and saves public URLs
+  - Enforces username uniqueness
+    - Case-insensitive pre-check against other users
+    - Maps DB unique violation (23505) to HTTP 409
+  - Upserts user’s profile (update if exists, else insert) and sets profileStatus: true
+
+- getArts(req, res) → GET /api/profile/getArts
+  - Retrieves current user’s artworks (art table by req.user.id)
+  - Builds minimal user map from profile for display
+
+- Interactions
+  - createComment / getComments (for comments)
+  - createReact / getReact (for likes)
+
+File: backend/controllers/userController.js
+- getRole(req, res) → GET /api/users/role
+  - Reads profile.role by req.user.id, defaults to 'user'
+
+------------------------------------------------------------
+DATABASE/FILES (MyProfile)
+------------------------------------------------------------
+- Tables: profile, art, comment, react
+- Storage: uploads bucket for images
+- Recommended: unique index on lower(username) in profile
+
+
+============================================================
+ARTISTPROFILE PAGE – END-TO-END FLOW
+============================================================
+1) User opens /artist/:id where :id prefers username (public), but profileId/userId still supported.
+2) Frontend (frontend/src/pages/subPages/artistProfile.jsx) performs initial calls with :id:
+   - GET /api/artist/getArtistById/:id → load the artist’s profile
+   - GET /api/artist/getRole/:id → load the artist’s role
+   - GET /api/artist/getArts/:id → load the artist’s artworks
+3) UI renders artist cover, avatar, bio/about, and artworks (read-only for viewer).
+
+------------------------------------------------------------
+FRONTEND (ArtistProfile)
+------------------------------------------------------------
+File: frontend/src/pages/subPages/artistProfile.jsx
+Component: ArtistProfile()
+
+- Route Parameter
+  - const { id } = useParams()
+  - id is typically the artist’s username; legacy IDs still work
+
+- Data fetching
+  - fetchProfile() → GET http://localhost:3000/api/artist/getArtistById/${id}
+  - fetchRole() → GET http://localhost:3000/api/artist/getRole/${id}
+  - fetchArts() → GET http://localhost:3000/api/artist/getArts/${id}
+
+- State
+  - Same profile shape as MyProfile for display: name fields, bio, about, birthdate, address, sex, avatar, cover
+  - arts rendered via ArtistArtGallery
+
+- Artist Listing
+  - File: frontend/src/pages/Artist.jsx
+  - GET /api/artist/getArtist → returns list of artists with username
+  - normalize() prefers username for link id, so links are /artist/:username
+
+------------------------------------------------------------
+BACKEND (ArtistProfile)
+------------------------------------------------------------
+File: backend/controllers/artistController.js
+
+- getArtist(req, res) → GET /api/artist/getArtist
+  - Selects from profile for role = 'artist'
+  - Returns { artists: [{ id, username, name, hero }] }, preferring username for id
+
+- getArtistById(req, res) → GET /api/artist/getArtistById/:id
+  - Detects if :id is UUID
+    - If UUID: match profileId OR userId OR username
+    - Else: match username only
+  - Prevents UUID vs text comparison errors
+
+- getRole(req, res) → GET /api/artist/getRole/:id
+  - Same UUID-or-username resolution
+
+- getArts(req, res) → GET /api/artist/getArts/:id
+  - Resolves :id (username/UUID) to a concrete userId via profile
+  - Returns artworks for that userId with minimal user map
+
+------------------------------------------------------------
+DATABASE/FILES (ArtistProfile)
+------------------------------------------------------------
+- Tables: profile, art
+- Storage: uploads bucket for images
+- Username must be unique for clean URLs (case-insensitive recommended)
+
+
+============================================================
+ERROR HANDLING & NOTES
+============================================================
+- Username conflicts return HTTP 409 from /api/profile/updateProfile; UI shows inline field error.
+- Artist endpoints guard against UUID/text mismatches by filtering only by username if :id is not a UUID.
+- Legacy ID-based URLs continue to work for backward compatibility; prefer username-based links moving forward.

@@ -7,7 +7,7 @@ export const getArtist = async (req, res) => {
     // 1) Pull artist profiles
     const { data: profs, error } = await supabase
       .from("profile")
-      .select("profileId:profileId, profilePicture, userId, role")
+      .select("profileId:profileId, profilePicture, userId, role, username")
       .eq("role", "artist");
 
     if (error) {
@@ -43,7 +43,8 @@ export const getArtist = async (req, res) => {
       const hero = toPublicUrl(p.profilePicture) || "/assets/artist-placeholder.jpg";
 
       artists.push({
-        id: p.profileId || p.userId,
+        id: p.username || p.profileId || p.userId, // prefer username for public URLs
+        username: p.username || null,
         name,
         hero,
       });
@@ -59,10 +60,15 @@ export const getArtist = async (req, res) => {
 export const getArtistById = async (req, res) => {
   try{
     const { id } = req.params;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const orFilter = isUuid
+      ? `profileId.eq.${id},userId.eq.${id},username.eq.${id}`
+      : `username.eq.${id}`;
+
     const { data: profile, error } = await supabase
       .from("profile")
       .select("*")
-      .or(`profileId.eq.${id},userId.eq.${id}`)
+      .or(orFilter)
       .in("role", ["artist", "admin"]) 
       .maybeSingle();
 
@@ -90,10 +96,15 @@ export const getRole = async (req, res) => {
     if (!id) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const orFilter = isUuid
+      ? `profileId.eq.${id},userId.eq.${id},username.eq.${id}`
+      : `username.eq.${id}`;
+
     const { data: profile, error } = await supabase
       .from('profile')
       .select('role')
-      .eq('profileId', id)
+      .or(orFilter)
       .maybeSingle(); 
     if (error) {
       console.error('Supabase error:', error);
@@ -117,11 +128,16 @@ export const getArts = async (req, res) =>{
   try{
     const { id } = req.params;
 
-    // Resolve incoming :id (can be profileId or userId) to a concrete userId
+    // Resolve incoming :id (can be profileId or userId or username) to a concrete userId
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const orFilter = isUuid
+      ? `profileId.eq.${id},userId.eq.${id},username.eq.${id}`
+      : `username.eq.${id}`;
+
     const { data: prof, error: profErr } = await supabase
       .from('profile')
       .select('userId')
-      .or(`profileId.eq.${id},userId.eq.${id}`)
+      .or(orFilter)
       .maybeSingle();
     if (profErr) {
       console.error('getArts - profile lookup error:', profErr);

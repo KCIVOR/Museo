@@ -43,13 +43,12 @@ export const loginUser = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password } = req.body;
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { username },
         emailRedirectTo: "http://localhost:5173/" 
       }
     });

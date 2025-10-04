@@ -10,7 +10,8 @@ export default function Artist() {
   const normalize = (row) => {
     // Map server fields to UI fields; adjust keys to match your API
     return {
-      id: row.id || row.slug || row.artistId || String(row.name || "unknown").toLowerCase().replace(/\s+/g, "-"),
+      // Prefer username for public URL
+      id: row.username || row.id || row.slug || row.artistId || String(row.name || "unknown").toLowerCase().replace(/\s+/g, "-"),
       name: row.name || row.displayName || "Untitled Artist",
       hero:
         row.hero ||

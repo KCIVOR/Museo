@@ -80,7 +80,8 @@ function serviceClient() {
 
 // POST /api/profile/updateProfile
 // Accepts multipart/form-data with optional files: avatar, cover
-// Also accepts text fields: firstName, middleName, lastName, bio, about, birthdate, address, sex
+// Also accepts text fields: firstName, middleName, lastName, bio, about, birthdate, address, sex, username
+
 export const uploadProfileMedia = async (req, res) => {
   try {
     console.log("uploadProfileMedia - req.user:", req.user);
@@ -126,6 +127,7 @@ export const uploadProfileMedia = async (req, res) => {
       birthdate,
       address,
       sex,
+      username,
     } = req.body;
 
     // Build patch (only include URLs when new uploads exist)
@@ -138,10 +140,32 @@ export const uploadProfileMedia = async (req, res) => {
       birthdate,
       address,
       sex,
+      username,
       profileStatus: true,
     };
     if (uploaded.avatarUrl) patch.profilePicture = uploaded.avatarUrl;
     if (uploaded.coverUrl) patch.coverPicture = uploaded.coverUrl;
+
+    // Normalize and validate username uniqueness if provided
+    const desiredUsername = (username || '').trim();
+    if (desiredUsername) {
+      // Check if another user's profile already uses this username
+      const { data: existingWithUsername, error: usernameCheckError } = await supabase
+        .from('profile')
+        .select('userId')
+        .ilike('username', desiredUsername)
+        .neq('userId', userId)
+        .maybeSingle();
+
+      if (usernameCheckError && usernameCheckError.code !== 'PGRST116') {
+        console.error('Username check error:', usernameCheckError);
+        return res.status(500).json({ error: usernameCheckError.message });
+      }
+
+      if (existingWithUsername) {
+        return res.status(409).json({ error: 'Username is already taken' });
+      }
+    }
 
     // Update or create profile
     console.log("Profile update data:", { ...patch, userId });
@@ -154,6 +178,11 @@ export const uploadProfileMedia = async (req, res) => {
       .select()
       .single();
     
+    if (updateError && updateError.code === '23505') {
+      // Unique violation at DB level
+      return res.status(409).json({ error: 'Username is already taken' });
+    }
+
     if (updateError && updateError.code === 'PGRST116') {
       // No existing profile found, create new one
       console.log("No existing profile found, creating new one");
@@ -164,6 +193,9 @@ export const uploadProfileMedia = async (req, res) => {
         .single();
       
       if (insertError) {
+        if (insertError.code === '23505' || /duplicate key value/i.test(insertError.message || '')) {
+          return res.status(409).json({ error: 'Username is already taken' });
+        }
         console.error("Profile insert error:", insertError);
         throw insertError;
       }

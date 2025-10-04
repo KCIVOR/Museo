@@ -18,6 +18,7 @@ export default function SetProfileModal({ open, onClose, initial }) {
   const [lastName, setLastName] = useState(initial?.lastName || "");
   const [middleName, setMiddleName] = useState(initial?.middleName || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [username, setUsername] = useState(initial?.username || "");
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function SetProfileModal({ open, onClose, initial }) {
     setFirstName(initial?.firstName || "");
     setLastName(initial?.lastName || "");
     setMiddleName(initial?.middleName || "");
+    setUsername(initial?.username || "");
     setValidationErrors({});
   }, [open, initial]);
 
@@ -74,7 +76,7 @@ export default function SetProfileModal({ open, onClose, initial }) {
     if (!birthdate) errors.birthdate = "Birthdate is required";
     if (!address.trim()) errors.address = "Address is required";
     if (!sex) errors.sex = "Sex is required";
-    
+    if (!username) errors.username = "Username is required";
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -99,6 +101,7 @@ export default function SetProfileModal({ open, onClose, initial }) {
       fd.append("birthdate", birthdate || "");
       fd.append("address", address || "");
       fd.append("sex", sex || "");
+      fd.append("username", username || "")
       if (avatar && avatar.file) fd.append("avatar", avatar.file);
       if (cover && cover.file) fd.append("cover", cover.file);
 
@@ -108,8 +111,20 @@ export default function SetProfileModal({ open, onClose, initial }) {
         body: fd,
       });
       if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Failed to update profile");
+        // Try to parse JSON error
+        try {
+          const payload = await res.json();
+          if (res.status === 409) {
+            // Username conflict
+            setValidationErrors((prev) => ({ ...prev, username: "Username is already taken" }));
+            return; // stop without closing modal
+          }
+          throw new Error(payload?.error || payload?.message || "Failed to update profile");
+        } catch (_) {
+          // Fallback to text
+          const t = await res.text();
+          throw new Error(t || "Failed to update profile");
+        }
       }
       onClose();
     } catch (err) {
@@ -214,6 +229,18 @@ export default function SetProfileModal({ open, onClose, initial }) {
                 placeholder="Last name"
               />
               {validationErrors.lastName && <span className="pe__error">{validationErrors.lastName}</span>}
+            </label>
+
+            <label className="pe__label">
+              Username *
+              <input
+                type="text"
+                className={`pe__input ${validationErrors.username ? 'pe__input--error' : ''}`}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+              />
+              {validationErrors.username && <span className="pe__error">{validationErrors.username}</span>}
             </label>
 
             <label className="pe__label">
