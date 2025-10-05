@@ -211,10 +211,10 @@
 .announce__ctaRow {
   grid-column: 1 / 2;
   margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* perfectly balanced two buttons */
+  gap: 10px;
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -222,23 +222,30 @@
 .btnPrimary,
 .btnGhost {
   display:inline-flex; align-items:center; justify-content:center;
-  height:32px;
-  padding:0 12px;
-  border-radius:10px;
-  font-weight:700;
+  height:44px;                 /* unified fixed height */
+  padding:0 16px;              /* same horizontal padding */
+  border-radius:12px;          /* same rounded corners */
+  font-weight:800;
+  font-size:14px;
   cursor:pointer;
-
-  flex: 1 1 180px;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  box-sizing: border-box; /* include border in final height */
+  line-height: 1;            /* avoid extra vertical expansion */
+  vertical-align: middle;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;                 /* reset UA margins */
 }
 
 /* Visual styles per variant */
-.btnPrimary { border:0; background:#111827; color:#fff; }
+.btnPrimary { border:1px solid #111827; background:#111827; color:#fff; }
 .btnGhost { border:1px solid #111827; background:#fff; color:#111827; }
+.btnPrimary:focus-visible, .btnGhost:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
 
 .announce__close {
   border:0; background:transparent; color:#475569; cursor:pointer;
@@ -299,7 +306,11 @@
   .tool { display:none; }
   .announce { padding: 12px; }
   .announce__title { font-size: 16px; }
-  .btnPrimary, .btnGhost { height: 32px; }
+  .btnPrimary, .btnGhost { height: 38px; }
+}
+
+@media (max-width: 520px) {
+  .announce__ctaRow { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 1440px) {

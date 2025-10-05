@@ -8,7 +8,7 @@ export const getArtist = async (req, res) => {
     const { data: profs, error } = await supabase
       .from("profile")
       .select("profileId:profileId, profilePicture, userId, role, username")
-      .eq("role", "artist");
+      .in("role", ["artist", "admin"]);
 
     if (error) {
       console.error("Supabase error:", error);

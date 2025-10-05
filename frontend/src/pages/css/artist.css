@@ -16,11 +16,11 @@
   padding: 12px 12px 48px;
 }
 
-/* Two-column grid */
+/* Responsive grid: 3 per row on desktop, then 2, then 1 */
 .artistGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px; /* a bit more space between rows to avoid visual clash */
 }
 
 /* Card */
@@ -30,6 +30,23 @@
   border: 1px solid rgba(0,0,0,0.06);
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   padding: 24px;
+  overflow: hidden; /* prevent overlap with animated/hover elements */
+  position: relative; /* create stacking context */
+  /* reveal animation (no layout shift) */
+  opacity: 0;
+  transform: translateY(6px);
+  animation: artistReveal 420ms ease forwards;
+}
+
+/* Disable hover lift from shared eCard style to prevent row overlap */
+.artistCard:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  z-index: 1;
+}
+
+@keyframes artistReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Pure circle avatar (no background box) */
@@ -54,12 +71,14 @@
 
 /* Responsive */
 @media (min-width: 1440px) {
-  :root { --feed-max: 960px; }
+  :root { --feed-max: 1200px; }
 }
 @media (max-width: 1024px) {
-  :root { --feed-max: 760px; }
+  :root { --feed-max: 960px; }
+  .artistGrid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
+  :root { --feed-max: 640px; }
   .artistGrid { grid-template-columns: 1fr; }
   .artistName { font-size: 16px; }
   .artistAvatar { width: 70%; }

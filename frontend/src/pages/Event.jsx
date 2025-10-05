@@ -1,245 +1,284 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./css/events.css";
-
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
-
-const EVENTS = {
-  artCelebration: {
-    id: "art-celebration",
-    title: "Art Celebration",
-    desc: "A joyful and memorable celebration that united everyone in festive spirit.",
-    src: IMG
-  },
-  craftedEmotion: {
-    id: "crafted-emotion",
-    title: "Crafted Emotion",
-    desc: "A visual journey of feelings expressed through art.",
-    src: IMG
-  },
-  ac: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  timelessCreation: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  a: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  b: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  c: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  m: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  n: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  v: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  },
-  z: {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "Join for a captivating art showcase that transcends time and creativity.",
-    src: IMG
-  }
-};
-
-function EventModal({ open, event, onClose }) {
-  const overlayRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onClose?.();
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
-
-  if (!open || !event) return null;
-
-  const pad = (n) => String(n).padStart(2, "0");
-  const toICSDate = (dt) => {
-    const d = new Date(dt);
-    return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-  };
-  const esc = (s) => String(s||"").replace(/,/g,"\\,").replace(/;/g,"\\;").replace(/\n/g,"\\n");
-  const buildICS = (e) => [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Museo//Event//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:${Date.now()}@museo.app`,
-    `DTSTAMP:${toICSDate(new Date())}`,
-    `DTSTART:${toICSDate(e.start)}`,
-    `DTEND:${toICSDate(e.end)}`,
-    `SUMMARY:${esc(e.title)}`,
-    `DESCRIPTION:${esc(e.lead)}`,
-    `LOCATION:${esc(`${e.venueName||""} ${e.venueAddress||""}`.trim())}`,
-    "END:VEVENT",
-    "END:VCALENDAR"
-  ].join("\r\n");
-
-  const addToCalendar = () => {
-    const ics = buildICS(event);
-    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(event.slug || event.title || "event").replace(/\s+/g,"-")}.ics`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const fmt = (dt) => new Date(dt).toLocaleString(undefined, {
-    weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
-  });
-
-  return (
-    <div
-      className="evmOverlay"
-      ref={overlayRef}
-      onMouseDown={(e) => e.target === overlayRef.current && onClose?.()}
-    >
-      <article
-        role="dialog"
-        aria-modal="true"
-        aria-label={event.title}
-        className="evmDialog"
-      >
-        <button
-          aria-label="Close"
-          onClick={onClose}
-          className="evmClose"
-        >✕</button>
-
-        <div className="evmHeroWrap">
-          <img src={event.hero} alt="" className="evmHero" />
-        </div>
-
-        <div className="evmHeader">
-          <h1 className="evmTitle">{event.title}</h1>
-          <button onClick={addToCalendar} className="evmCalBtn">
-            Add to Calendar
-          </button>
-        </div>
-
-        <section className="evmSection">
-          <p className="evmP">{event.lead}</p>
-
-          {event.activities?.length > 0 && (
-            <div>
-              <div className="evmSectionTitle">🎨 Activities Include:</div>
-              <ul className="evmList">
-                {event.activities.map((a, i) => <li key={i}>{a}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {event.admission && (
-            <div>
-              <div className="evmSectionTitle">🎟️ Admission:</div>
-              <p className="evmP">{event.admission}</p>
-              {event.admissionNote && <p className="evmP">{event.admissionNote}</p>}
-            </div>
-          )}
-        </section>
-
-        <section className="evmSection">
-          <div className="evmSectionTitle">📍 Venue:</div>
-          <p className="evmP">
-            {event.venueName}<br />{event.venueAddress}
-          </p>
-        </section>
-
-        <section className="evmSection">
-          <div className="evmSectionTitle">🗓️ Date & Time:</div>
-          <p className="evmP"><b>Start:</b> {fmt(event.start)}</p>
-          <p className="evmP"><b>End:</b> {fmt(event.end)}</p>
-        </section>
-      </article>
-    </div>
-  );
-}
+import EventModal from "./EventModal.jsx";
+import PublishEventModal from "./PublishEventModal.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
+import { NavLink } from "react-router-dom";
 
 export default function Event() {
-  const items = Object.values(EVENTS);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [events, setEvents] = useState([]);
+  const items = events; // use fetched events instead of hardcoded
   const [selected, setSelected] = useState(null);
+  const [role, setRole] = useState(null);
+  const [showPublish, setShowPublish] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
+  const [participantCounts, setParticipantCounts] = useState({}); // { [eventId]: number }
 
-  const openEvent = (card) => setSelected({
-    slug: card.id,
-    title: card.title,
-    hero: card.src,
-    lead:
-      "Join us for a vibrant and inspiring Celebration of the Arts, a one-day event that brings together the best of visual arts, music, dance, theater, and creative expression under one roof.",
-    activities: [
-      "Live art painting demos",
-      "Music and spoken word performances",
-      "Local artisan booths and exhibits",
-      "Hands-on art workshops for kids and adults",
-      "Food trucks and local cuisine",
-    ],
-    admission: "Free for all ages!",
-    admissionNote: "(Some workshops may require pre-registration)",
-    venueName: "Albuquerque Convention Center – Grand Ballroom",
-    venueAddress: "401 2nd St NW, Albuquerque, NM 87102",
-    start: "2025-08-16T10:00:00",
-    end: "2025-08-16T19:00:00",
+  const getEvents = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/event/getEvents", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch events: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      // backend returns { data: [...] }
+      setEvents(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  // Fetch role of current user
+  const fetchRole = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/users/role", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
+      const data = await response.json();
+      setRole(data);
+      console.log("Fetched user:", data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      setRole(null);
+    }
+  };
+
+  useEffect(() => {
+    getEvents();
+    fetchRole();
+  }, []);
+
+  // Fetch participant counts per event
+  useEffect(() => {
+    let abort = false;
+    const run = async () => {
+      try {
+        if (!Array.isArray(items) || items.length === 0) {
+          setParticipantCounts({});
+          return;
+        }
+        const results = await Promise.all(items.map(async (e) => {
+          const id = e.eventId || e.id;
+          if (!id) return [id, 0];
+          try {
+            const res = await fetch('http://localhost:3000/api/event/eventParticipants', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ eventId: id })
+            });
+            if (!res.ok) return [id, 0];
+            const data = await res.json();
+            const count = Array.isArray(data?.participants) ? data.participants.length : 0;
+            return [id, count];
+          } catch {
+            return [id, 0];
+          }
+        }));
+        if (abort) return;
+        const map = Object.fromEntries(results.filter(Boolean));
+        setParticipantCounts(map);
+      } catch {}
+    };
+    run();
+    return () => { abort = true; };
+  }, [items]);
+
+  // Auto-open modal if URL has ?open=<eventId> or navigation state { open: <eventId> }
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search || window.location.search);
+      const rawQuery = params.get('open');
+      const rawState = location.state && (location.state.open || location.state?.open === 0 ? String(location.state.open) : null);
+      const raw = rawState ?? rawQuery;
+      if (!raw || !items?.length || selected) return;
+      const openKey = String(raw).toLowerCase();
+      const match = items.find(e => {
+        const a = String(e.eventId || '').toLowerCase();
+        const b = String(e.id || '').toLowerCase();
+        const c = String(e.title || '').toLowerCase();
+        return a === openKey || b === openKey || c === openKey;
+      });
+      if (match) {
+        openEvent(match);
+        // If opened via state, clear it so it doesn't keep re-opening
+        if (rawState) {
+          // Preserve current search, clear state
+          const search = location.search || '';
+          navigate({ pathname: location.pathname, search }, { replace: true, state: {} });
+        }
+      }
+    } catch {}
+  }, [items, selected, location.search, location.state]);
+
+  const openEvent = (evt) => setSelected({
+    eventId: evt.eventId || evt.id,
+    slug: evt.eventId || evt.id || evt.title,
+    title: evt.title,
+    hero: evt.image,
+    lead: evt.details, // full details shown in modal
+    activities: Array.isArray(evt.activities)
+      ? evt.activities
+      : (evt.activities ? [evt.activities] : []),
+    admission: evt.admission,
+    admissionNote: evt.admissionNote,
+    venueName: evt.venueName,
+    venueAddress: evt.venueAddress,
+    start: evt.startsAt,
+    end: evt.endsAt,
   });
+
+  const closeEventModal = () => {
+    setSelected(null);
+    // Remove ?open= from URL via React Router so location updates
+    try {
+      const params = new URLSearchParams(location.search || '');
+      params.delete('open');
+      navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+    } catch {}
+    // Refresh events when modal is closed
+    getEvents();
+  };
+
+  const openEdit = (evt) => {
+    setEditData({
+      eventId: evt.eventId || evt.id,
+      title: evt.title || "",
+      details: evt.details || "",
+      venueName: evt.venueName || "",
+      venueAddress: evt.venueAddress || "",
+      startsAt: evt.startsAt || "",
+      endsAt: evt.endsAt || "",
+      admission: evt.admission || "",
+      admissionNote: evt.admissionNote || "",
+      activities: Array.isArray(evt.activities) ? evt.activities : (evt.activities ? [evt.activities] : []),
+      image: evt.image || "",
+    });
+  };
+
+  const askDelete = (evt) => {
+    const id = evt.eventId || evt.id;
+    if (!id) return;
+    setToDelete(evt);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!toDelete) return;
+    const id = toDelete.eventId || toDelete.id;
+    try {
+      const res = await fetch(`http://localhost:3000/api/event/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete event');
+      setConfirmOpen(false);
+      setToDelete(null);
+      await getEvents();
+    } catch (e) {
+      console.error(e);
+      setConfirmOpen(false);
+      setToDelete(null);
+      alert('Delete failed');
+    }
+  };
 
   return (
     <div className="eventsPage">
       <div className="eventsFeed">
+        <div className="eventsBar">
+          <h2 className="eventsHeading">Events</h2>
+          {(role === 'admin' || role?.role === 'admin') && (
+            <button
+              className="evmCalBtn"
+              onClick={() => setShowPublish(true)}
+            >
+              Publish Event
+            </button>
+          )}
+        </div>
         <div className="eventsGrid">
-          {items.map((e) => (
+          {items.map((e, i) => (
             <article
-              key={e.id}
-              className="eCard"
+              key={e.eventId || e.id || e.title}
+              className="eCard eReveal"
+              style={{ animationDelay: `${i * 60}ms`, position: 'relative' }}
               onClick={() => openEvent(e)}
             >
-              <img src={e.src} alt="" className="eMedia" />
+              <img src={e.image} alt="" className="eMedia" />
+              <div
+                className="evmBadge"
+                style={{ position: 'absolute', top: 8, right: 8 }}
+                title="Total participants"
+              >
+                Participants ({participantCounts[e.eventId || e.id] ?? 0})
+              </div>
               <div className="eBody">
                 <div className="eTitle">{e.title}</div>
-                <div className="eDesc">{e.desc}</div>
+                <div className="eDesc" title={e.details}>{
+                  (() => {
+                    const text = typeof e.details === 'string' ? e.details : '';
+                    const limit = 140; // characters
+                    if (text.length <= limit) return text;
+                    const clipped = text.slice(0, limit);
+                    // avoid cutting mid-word
+                    const trimmed = clipped.replace(/\s+\S*$/, "");
+                    return trimmed + "...";
+                  })()
+                }</div>
+                <div className="eActions" onClick={(ev) => ev.stopPropagation()}>
+                  <button className="eBtn" onClick={() => openEvent(e)}>View More</button>
+                  {(role === 'admin' || role?.role === 'admin') && (
+                    <>
+                      <button className="eBtn eBtnGhost" onClick={() => openEdit(e)}>Edit</button>
+                      <button className="eBtn eBtnDanger" onClick={() => askDelete(e)}>Delete</button>
+                    </>
+                  )}
+                </div>
               </div>
             </article>
           ))}
         </div>
 
-        <EventModal open={!!selected} event={selected} onClose={() => setSelected(null)} />
+        <EventModal open={!!selected} event={selected} onClose={closeEventModal} />
+        <PublishEventModal
+          open={showPublish}
+          onClose={() => setShowPublish(false)}
+          onPublished={() => {
+            setShowPublish(false);
+            getEvents();
+          }}
+        />
+        <PublishEventModal
+          open={!!editData}
+          mode="edit"
+          initialData={editData}
+          onClose={() => setEditData(null)}
+          onPublished={() => {
+            setEditData(null);
+            getEvents();
+          }}
+        />
+        <ConfirmModal
+          open={confirmOpen}
+          title="Delete event"
+          message={toDelete ? `Are you sure you want to delete "${toDelete.title}"? This cannot be undone.` : ""}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
+        />
       </div>
     </div>
   );

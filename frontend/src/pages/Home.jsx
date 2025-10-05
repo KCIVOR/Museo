@@ -4,6 +4,7 @@ import "./css/home.css";
 import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
 import SetProfileModal from "./SetProfile";
+import AnnouncementCard from "./AnnouncementCard.jsx";
 // Get average color from an image element using canvas
 function getAverageColorFromImageElement(img) {
   const canvas = document.createElement("canvas");
@@ -108,6 +109,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
 
   const [commenting, setCommenting] = useState({});
   const [liking, setLiking] = useState(false);
@@ -191,6 +193,14 @@ export default function Home() {
       const data = await response.json();
       const normalized = normalizePosts(data);
       setPosts(normalized);
+      const anns = Array.isArray(data.announcements)
+        ? [...data.announcements].sort((a, b) => {
+            const da = new Date(a.datePosted).getTime() || 0;
+            const db = new Date(b.datePosted).getTime() || 0;
+            return db - da; // newest first
+          })
+        : [];
+      setAnnouncements(anns);
 
       const reactCounts = {};
       (data.reacts || []).forEach((r) => {
@@ -353,35 +363,43 @@ export default function Home() {
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          posts.map((post, idx) => (
+        {/* Unified feed: announcements + regular posts sorted by datePosted desc */}
+        {!loading && !error && [...(announcements||[]), ...(posts||[])]
+          .sort((a, b) => {
+            const da = new Date(a.datePosted).getTime() || 0;
+            const db = new Date(b.datePosted).getTime() || 0;
+            return db - da;
+          })
+          .map((item, idx) => (
+            item.isAnnouncement ? (
+              <AnnouncementCard key={`ann-${item.id || idx}`} post={item} />
+            ) : (
             <div
-              key={post.id}
+              key={item.id}
               className="card"
-              onClick={() => handlePopUp(post.id)}
+              onClick={() => handlePopUp(item.id)}
             >
               <div className="cardHeader">
                 <img
-                  src={post.user.avatar || FALLBACK_AVATAR}
+                  src={item.user.avatar || FALLBACK_AVATAR}
                   onError={(e) => {
                     if (e.currentTarget.src !== FALLBACK_AVATAR) {
                       e.currentTarget.src = FALLBACK_AVATAR;
                     }
                   }}
-                  alt={post.user.name}
+                  alt={item.user.name}
                   className="avatar"
                   decoding="async"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                 />
                 <div className="meta">
-                  <div className="name">{post.user.name}</div>
-                  <div className="desc">{post.timestamp}</div>
+                  <div className="name">{item.user.name}</div>
+                  <div className="desc">{item.timestamp}</div>
                 </div>
               </div>
 
-              {post.text && (
+              {item.text && (
                 <div
                   style={{
                     padding: "10px 12px",
@@ -392,18 +410,18 @@ export default function Home() {
                     className="ge"
                     style={{ margin: 0, color: "#111", lineHeight: 1.5 }}
                   >
-                    {post.text}
+                    {item.text}
                   </p>
                 </div>
               )}
 
-              {post.image && (
+              {item.image && (
                 <div
                   className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
                   style={{ background: bg[idx] || "#f2f4f7" }}
                 >
                   <img
-                    src={post.image}
+                    src={item.image}
                     alt="Post content"
                     className={`postImage ${
                       fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"
@@ -422,19 +440,20 @@ export default function Home() {
                 <button
                   className="actionBtn"
                   aria-label="Like"
-                  onClick={() => handleLike(post.id)}
+                  onClick={() => handleLike(item.id)}
                 >
-                  <span>❤️{likes[post.id] || 0}</span>
+                  <span>❤️{likes[item.id] || 0}</span>
                 </button>
                 <button
                   className="actionBtn"
                   aria-label="Comment"
-                  onClick={() => handlePopUp(post.id)}
+                  onClick={() => handlePopUp(item.id)}
                 >
-                  <span>💬{comments[post.id] || 0}</span>
+                  <span>💬{comments[item.id] || 0}</span>
                 </button>
               </div>
             </div>
+            )
           ))}
 
         {activePost && (

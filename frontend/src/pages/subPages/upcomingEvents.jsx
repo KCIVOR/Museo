@@ -1,66 +1,9 @@
 import React from "react";
 import "./css/upcomingEvents.css";
+import "../css/events.css"; // for eActions/eBtn/eBtnGhost to match Event.jsx
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
-const IMG =
-  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg";
-
-const EVENTS = [
-  {
-    id: "art-celebration",
-    title: "Art Celebration",
-    desc: "A joyful and memorable celebration that united everyone in festive spirit.",
-    cover: IMG,
-    start: "2025-09-20T18:00:00",
-    end: "2025-09-20T21:00:00",
-    venue: "Museo Main Hall, Manila",
-  },
-  {
-    id: "ge",
-    title: "Art Celebration",
-    desc: "A joyful and memorable celebration that united everyone in festive spirit.",
-    cover: IMG,
-    start: "2025-09-20T18:00:00",
-    end: "2025-09-20T21:00:00",
-    venue: "Museo Main Hall, Manila",
-  },
-
-  {
-    id: "crafted-emotion",
-    title: "Crafted Emotion",
-    desc: "A visual journey of feelings expressed through art.",
-    cover: IMG,
-    start: "2025-09-28T14:00:00",
-    end: "2025-09-28T17:00:00",
-    venue: "Atrium East, Quezon",
-  },
-  {
-    id: "timeless-creation",
-    title: "Timeless Creation",
-    desc: "An art showcase that transcends time and creativity.",
-    cover: IMG,
-    start: "2025-10-05T13:00:00",
-    end: "2025-10-05T17:00:00",
-    venue: "Gallery West, Makati",
-  },
-  {
-    id: "test",
-    title: "test",
-    desc: "test.",
-    cover: IMG,
-    start: "2025-10-05T13:00:00",
-    end: "2025-10-05T17:00:00",
-    venue: "Gallery West, Makati",
-  },
-  {
-    id: "a",
-    title: "test",
-    desc: "test.",
-    cover: IMG,
-    start: "2025-10-05T13:00:00",
-    end: "2025-10-05T17:00:00",
-    venue: "Gallery West, Makati",
-  },
-];
 
 function fmtRange(start, end) {
   const s = new Date(start);
@@ -88,24 +31,157 @@ function fmtRange(start, end) {
   )} ${e.toLocaleTimeString(undefined, tOpt)}`;
 }
 
-function bucketLabel(date) {
-  const now = new Date();
-  const d = new Date(date);
-  const diffDays = Math.floor((d - now) / (1000 * 60 * 60 * 24));
+// Manila timezone-aware bucketing
+const MANILA_TZ = "Asia/Manila";
+const manilaMidnightMs = (dateLike) => {
+  const d = new Date(dateLike);
+  const ymd = new Intl.DateTimeFormat('en-CA', {
+    timeZone: MANILA_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d); // YYYY-MM-DD in Manila time
+  // Construct midnight at Manila (+08:00) and parse to UTC ms
+  return Date.parse(`${ymd}T00:00:00+08:00`);
+};
+
+function bucketLabel(dateLike) {
+  const nowMs = manilaMidnightMs(new Date());
+  const evMs = manilaMidnightMs(dateLike);
+  const diffDays = Math.floor((evMs - nowMs) / 86400000);
   if (diffDays <= 7) return "This Week";
   if (diffDays <= 14) return "Next Week";
   return "Later";
 }
 
-const grouped = EVENTS.reduce((acc, ev) => {
-  const b = bucketLabel(ev.start);
-  acc[b] = acc[b] || [];
-  acc[b].push(ev);
-  return acc;
-}, {});
-
 export default function UpcomingEvents() {
-  const total = EVENTS.length;
+  const navigate = useNavigate();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All'); // All | This Week | Next Week | Next Month
+
+  const fetchMyEvents = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:3000/api/event/myEvents", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Failed to fetch events: ${res.status} ${res.statusText} ${txt || ""}`);
+      }
+      const data = await res.json();
+      setEvents(Array.isArray(data?.events) ? data.events : []);
+    } catch (err) {
+      console.error('fetchMyEvents: unexpected error:', err);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyEvents();
+  }, []);
+
+  // Normalize fetched events into UI items
+  const uiEvents = useMemo(() => (events || []).map(ev => ({
+    id: ev.eventId,
+    title: ev.title,
+    desc: ev.details,
+    cover: ev.image,
+    start: ev.startsAt,
+    end: ev.endsAt,
+    venue: [ev.venueName, ev.venueAddress].filter(Boolean).join(', '),
+  })), [events]);
+
+  // Manila date helpers for filtering
+  const getManilaYMD = (dateLike) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: MANILA_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(dateLike));
+  const getManilaYearMonth = (dateLike) => {
+    const d = new Date(dateLike);
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: MANILA_TZ, year: 'numeric', month: '2-digit' }).formatToParts(d);
+    const y = Number(parts.find(p => p.type === 'year')?.value);
+    const m = Number(parts.find(p => p.type === 'month')?.value);
+    return { y, m };
+  };
+  const todayYM = (() => {
+    const { y, m } = getManilaYearMonth(new Date());
+    return { y, m };
+  })();
+  const nextMonthYM = (() => {
+    let y = todayYM.y; let m = todayYM.m + 1;
+    if (m > 12) { m = 1; y += 1; }
+    return { y, m };
+  })();
+  const isThisWeek = (dateLike) => {
+    const nowMs = manilaMidnightMs(new Date());
+    const evMs = manilaMidnightMs(dateLike);
+    const diff = Math.floor((evMs - nowMs) / 86400000);
+    return diff >= 0 && diff <= 7;
+  };
+  const isNextWeek = (dateLike) => {
+    const nowMs = manilaMidnightMs(new Date());
+    const evMs = manilaMidnightMs(dateLike);
+    const diff = Math.floor((evMs - nowMs) / 86400000);
+    return diff > 7 && diff <= 14;
+  };
+  const isNextMonth = (dateLike) => {
+    const { y, m } = getManilaYearMonth(dateLike);
+    return y === nextMonthYM.y && m === nextMonthYM.m;
+  };
+  const isLater = (dateLike) => {
+    const nowMs = manilaMidnightMs(new Date());
+    const evMs = manilaMidnightMs(dateLike);
+    const diff = Math.floor((evMs - nowMs) / 86400000);
+    return diff > 14; // matches bucketLabel "Later"
+  };
+  const isDone = (startLike, endLike) => {
+    // Consider event done if its end is strictly before now; fallback to start if end missing
+    const endMs = endLike ? new Date(endLike).getTime() : new Date(startLike).getTime();
+    return endMs < Date.now();
+  };
+
+  // Apply filter
+  const filteredUi = useMemo(() => {
+    switch (activeFilter) {
+      case 'This Week':
+        return uiEvents.filter(ev => isThisWeek(ev.start));
+      case 'Next Week':
+        return uiEvents.filter(ev => isNextWeek(ev.start));
+      case 'Next Month':
+        return uiEvents.filter(ev => isNextMonth(ev.start));
+      case 'Later':
+        return uiEvents.filter(ev => isLater(ev.start));
+      case 'Done':
+        return uiEvents.filter(ev => isDone(ev.start, ev.end));
+      default:
+        return uiEvents;
+    }
+  }, [activeFilter, uiEvents]);
+
+
+  const grouped = useMemo(() => {
+    const list = (activeFilter === 'Done')
+      ? filteredUi
+      : filteredUi.filter(ev => !isDone(ev.start, ev.end));
+    return list.reduce((acc, ev) => {
+      const b = bucketLabel(ev.start);
+      acc[b] = acc[b] || [];
+      acc[b].push(ev);
+      return acc;
+    }, {});
+  }, [filteredUi, activeFilter]);
+
+  const total = filteredUi.length;
+  const orderedLabels = ["This Week", "Next Week", "Later"];
+
+  const openDetails = (ev) => {
+    navigate('/Event', { state: { open: ev.id } });
+  };
 
   return (
     <div className="uePage">
@@ -114,58 +190,106 @@ export default function UpcomingEvents() {
         <div className="ueHead">
           <div className="ueTitle">
             <h1>Upcoming Events</h1>
-            <span className="ueCount">{total} saved</span>
+            <span className="ueCount">{loading ? 'Loading…' : `${total} saved`}</span>
           </div>
           <div className="ueActions">
             <div className="ueFilters">
-              <button className="ueChip is-active">All</button>
-              <button className="ueChip">This Week</button>
-              <button className="ueChip">Next Week</button>
-              <button className="ueChip">Next Month</button>
+              <button className={`ueChip ${activeFilter === 'All' ? 'is-active' : ''}`} onClick={() => setActiveFilter('All')}>All</button>
+              <button className={`ueChip ${activeFilter === 'This Week' ? 'is-active' : ''}`} onClick={() => setActiveFilter('This Week')}>This Week</button>
+              <button className={`ueChip ${activeFilter === 'Next Week' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Next Week')}>Next Week</button>
+              <button className={`ueChip ${activeFilter === 'Next Month' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Next Month')}>Next Month</button>
+              <button className={`ueChip ${activeFilter === 'Later' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Later')}>Later</button>
+              <button className={`ueChip ${activeFilter === 'Done' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Done')}>Done</button>
             </div>
-            <select className="ueSort" defaultValue="dateAsc">
-              <option value="dateAsc">Soonest first</option>
-              <option value="dateDesc">Latest first</option>
-              <option value="nameAsc">A–Z</option>
-              <option value="nameDesc">Z–A</option>
-            </select>
           </div>
         </div>
 
         {/* Buckets */}
-        {Object.entries(grouped).map(([label, list]) => (
-          <section key={label} className="ueBucket">
-            <h2 className="ueBucketTitle">{label}</h2>
-            <div className="ueGrid">
-              {list.map((ev) => (
-                <article key={ev.id} className="ueCard">
-                  <div className="ueImgWrap">
-                    <img src={ev.cover} alt="" />
-                    <span className="ueTag">Added</span>
-                  </div>
-
-                  <div className="ueBody">
-                    <div className="ueName" title={ev.title}>{ev.title}</div>
-                    <div className="ueMeta">
-                      <span className="ueDate">{fmtRange(ev.start, ev.end)}</span>
-                      <span className="ueDot">•</span>
-                      <span className="ueVenue">{ev.venue}</span>
+        {Object.keys(grouped).length === 0 && !loading && (
+          <section className="ueBucket"><h2 className="ueBucketTitle">No upcoming events</h2></section>
+        )}
+        {activeFilter === 'Done'
+          ? (
+            <section className="ueBucket">
+              <h2 className="ueBucketTitle">Done</h2>
+              <div className="ueGrid">
+                {filteredUi.map((ev, i) => (
+                  <article
+                    key={ev.id}
+                    className="ueCard eCard eReveal"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    onClick={() => openDetails(ev)}
+                  >
+                    <div className="ueImgWrap">
+                      <img src={ev.cover} alt="" />
+                      <span className="ueTag">Done</span>
                     </div>
-                    <p className="ueDesc">{ev.desc}</p>
 
-                    {/* spacer to push buttons down */}
-                    <div className="ueGrow" />
+                    <div className="ueBody">
+                      <div className="ueName" title={ev.title}>{ev.title}</div>
+                      <div className="ueMeta">
+                        <span className="ueDate">{fmtRange(ev.start, ev.end)}</span>
+                        <span className="ueDot">•</span>
+                        <span className="ueVenue">{ev.venue}</span>
+                      </div>
+                      <p className="ueDesc">{ev.desc}</p>
 
-                    <div className="ueBtns">
-                      <a className="ueBtnGhost" href={`/events/${ev.id}`}>View details</a>
-                      <button className="ueBtn">Open in Calendar</button>
+                      <div className="ueGrow" />
+
+                      <div className="eActions" onClick={(e) => e.stopPropagation()}>
+                        <NavLink className="eBtn" style={{ textDecoration: 'none' }} to="/Event" state={{ open: ev.id }}>
+                          View More
+                        </NavLink>
+                      </div>
                     </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )
+          : (
+            orderedLabels
+              .filter(label => Array.isArray(grouped[label]) && grouped[label].length > 0)
+              .map(label => (
+                <section key={label} className="ueBucket">
+                  <h2 className="ueBucketTitle">{label}</h2>
+                  <div className="ueGrid">
+                    {grouped[label].map((ev, i) => (
+                      <article
+                        key={ev.id}
+                        className="ueCard eCard eReveal"
+                        style={{ animationDelay: `${i * 60}ms` }}
+                        onClick={() => openDetails(ev)}
+                      >
+                        <div className="ueImgWrap">
+                          <img src={ev.cover} alt="" />
+                          <span className="ueTag">Added</span>
+                        </div>
+
+                        <div className="ueBody">
+                          <div className="ueName" title={ev.title}>{ev.title}</div>
+                          <div className="ueMeta">
+                            <span className="ueDate">{fmtRange(ev.start, ev.end)}</span>
+                            <span className="ueDot">•</span>
+                            <span className="ueVenue">{ev.venue}</span>
+                          </div>
+                          <p className="ueDesc">{ev.desc}</p>
+
+                          {/* spacer to push buttons down */}
+                          <div className="ueGrow" />
+
+                          <div className="eActions" onClick={(e) => e.stopPropagation()}>
+                            <NavLink className="eBtn" style={{ textDecoration: 'none' }} to="/Event" state={{ open: ev.id }}>
+                              View More
+                            </NavLink>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ))}
+                </section>
+              ))
+          )}
       </div>
     </div>
   );

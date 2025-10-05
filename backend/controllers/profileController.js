@@ -84,16 +84,12 @@ function serviceClient() {
 
 export const uploadProfileMedia = async (req, res) => {
   try {
-    console.log("uploadProfileMedia - req.user:", req.user);
-    console.log("uploadProfileMedia - req.files:", req.files);
-    console.log("uploadProfileMedia - req.body:", req.body);
-    
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "User not authenticated" });
     }
     
     const userId = req.user.id;
-    console.log("uploadProfileMedia - userId:", userId);
     const svc = serviceClient();
     const files = req.files || {};
     const uploaded = { avatarUrl: null, coverUrl: null };
@@ -116,8 +112,7 @@ export const uploadProfileMedia = async (req, res) => {
     await uploadOne("avatar", "avatarUrl");
     await uploadOne("cover", "coverUrl");
 
-    // Collect text fields
-    console.log("uploadProfileMedia - req.body:", req.body);
+
     const {
       firstName,
       middleName,
@@ -167,10 +162,8 @@ export const uploadProfileMedia = async (req, res) => {
       }
     }
 
-    // Update or create profile
-    console.log("Profile update data:", { ...patch, userId });
-    
-    // First try to update existing profile
+
+
     const { data: existingProfile, error: updateError } = await supabase
       .from("profile")
       .update(patch)
@@ -185,7 +178,7 @@ export const uploadProfileMedia = async (req, res) => {
 
     if (updateError && updateError.code === 'PGRST116') {
       // No existing profile found, create new one
-      console.log("No existing profile found, creating new one");
+
       const { data: newProfile, error: insertError } = await supabase
         .from("profile")
         .insert({ ...patch, userId })
@@ -200,14 +193,12 @@ export const uploadProfileMedia = async (req, res) => {
         throw insertError;
       }
       
-      console.log("Profile created successfully:", newProfile);
       return res.status(200).json({ message: "Profile created", profile: newProfile, uploaded });
     } else if (updateError) {
       console.error("Profile update error:", updateError);
       throw updateError;
     }
-    
-    console.log("Profile updated successfully:", existingProfile);
+  
 
     return res.status(200).json({ message: "Profile updated", profile: existingProfile, uploaded });
   } catch (err) {
@@ -218,8 +209,7 @@ export const uploadProfileMedia = async (req, res) => {
 
 export const profileStatus = async (req, res) => {
   try{
-    console.log("profileStatus - req.user:", req.user);
-    console.log("profileStatus - req.user.id:", req.user?.id);
+
     
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -232,7 +222,6 @@ export const profileStatus = async (req, res) => {
       .eq("userId", userId)
       .maybeSingle(); // Use maybeSingle instead of single to handle no records
 
-    console.log("profileStatus - Supabase response:", { data: profile, error });
 
     if (error) {
       console.error("profileStatus - Supabase error:", error);
@@ -241,12 +230,10 @@ export const profileStatus = async (req, res) => {
 
     // If no profile exists, return false
     if (!profile) {
-      console.log("profileStatus - No profile found, returning false");
       return res.status(200).json({ profileStatus: false });
     }
 
     const result = { profileStatus: profile.profileStatus || false };
-    console.log("profileStatus - Final result:", result);
     return res.status(200).json(result);
     
   }catch(err){
@@ -334,9 +321,9 @@ export const getArts = async (req, res) =>{
 export const createComment = async (req, res) => {
   try{
     const { artId, text } = req.body;
-    console.log(artId,text)
+
     const userId = req.user.id;
-    console.log(userId)
+
     
     const { data: inserted, error: insertErr } = await supabase
       .from("comment")

@@ -62,6 +62,23 @@ function EditProfileModal({ open, onClose, initial }) {
     try {
       if (isSubmitting) return;
       setIsSubmitting(true);
+      // Validate required text fields
+      const errs = {};
+      const t = (v) => (typeof v === 'string' ? v.trim() : v);
+      if (!t(firstName)) errs.firstName = "First name is required";
+      if (!t(middleName)) errs.middleName = "Middle name is required";
+      if (!t(lastName)) errs.lastName = "Last name is required";
+      if (!t(username)) errs.username = "Username is required";
+      if (!t(bio)) errs.bio = "Bio is required";
+      if (!t(about)) errs.about = "About is required";
+      if (!t(birthdate)) errs.birthdate = "Birthdate is required";
+      if (!t(address)) errs.address = "Address is required";
+      if (!t(sex)) errs.sex = "Sex is required";
+
+      if (Object.keys(errs).length) {
+        setValidationErrors(errs);
+        throw new Error("Please fill out all required fields.");
+      }
 
       const fd = new FormData();
       // text fields
@@ -100,7 +117,6 @@ function EditProfileModal({ open, onClose, initial }) {
       onClose();
     } catch (err) {
       console.error("Update failed:", err);
-      alert(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -157,21 +173,23 @@ function EditProfileModal({ open, onClose, initial }) {
                 First name
                 <input
                   type="text"
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e) => { setFirstName(e.target.value); setValidationErrors((p)=>({...p, firstName: ''})); }}
                   placeholder="First name"
                 />
+                {validationErrors.firstName && <span className="pe__error">{validationErrors.firstName}</span>}
               </label>
               <label className="pe__label">
                 Middle name
                 <input
                   type="text"
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.middleName ? 'pe__input--error' : ''}`}
                   value={middleName}
-                  onChange={(e) => setMiddleName(e.target.value)}
+                  onChange={(e) => { setMiddleName(e.target.value); setValidationErrors((p)=>({...p, middleName: ''})); }}
                   placeholder="Middle name"
                 />
+                {validationErrors.middleName && <span className="pe__error">{validationErrors.middleName}</span>}
               </label>
             </div>
 
@@ -179,11 +197,12 @@ function EditProfileModal({ open, onClose, initial }) {
               Last name
               <input
                 type="text"
-                className="pe__input"
+                className={`pe__input ${validationErrors.lastName ? 'pe__input--error' : ''}`}
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => { setLastName(e.target.value); setValidationErrors((p)=>({...p, lastName: ''})); }}
                 placeholder="Last name"
               />
+              {validationErrors.lastName && <span className="pe__error">{validationErrors.lastName}</span>}
             </label>
 
             <label className="pe__label">
@@ -192,7 +211,7 @@ function EditProfileModal({ open, onClose, initial }) {
                 type="text"
                 className={`pe__input ${validationErrors.username ? 'pe__input--error' : ''}`}
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => { setUsername(e.target.value); setValidationErrors((p)=>({...p, username: ''})); }}
                 placeholder="Username"
               />
               {validationErrors.username && <span className="pe__error">{validationErrors.username}</span>}
@@ -201,23 +220,25 @@ function EditProfileModal({ open, onClose, initial }) {
             <label className="pe__label">
               Bio
               <textarea
-                className="pe__input pe__input--area"
+                className={`pe__input pe__input--area ${validationErrors.bio ? 'pe__input--error' : ''}`}
                 placeholder="Short intro about yourself…"
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                onChange={(e) => { setBio(e.target.value); setValidationErrors((p)=>({...p, bio: ''})); }}
                 rows={3}
               />
+              {validationErrors.bio && <span className="pe__error">{validationErrors.bio}</span>}
             </label>
 
             <label className="pe__label">
               About
               <textarea
-                className="pe__input pe__input--area"
+                className={`pe__input pe__input--area ${validationErrors.about ? 'pe__input--error' : ''}`}
                 placeholder="Write a more detailed description, story, or background…"
                 value={about}
-                onChange={(e) => setAbout(e.target.value)}
+                onChange={(e) => { setAbout(e.target.value); setValidationErrors((p)=>({...p, about: ''})); }}
                 rows={5}
               />
+              {validationErrors.about && <span className="pe__error">{validationErrors.about}</span>}
             </label>
 
             <div className="pe__row">
@@ -225,24 +246,26 @@ function EditProfileModal({ open, onClose, initial }) {
                 Birthdate
                 <input
                   type="date"
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.birthdate ? 'pe__input--error' : ''}`}
                   value={birthdate || ""}
-                  onChange={(e) => setBirthdate(e.target.value)}
+                  onChange={(e) => { setBirthdate(e.target.value); setValidationErrors((p)=>({...p, birthdate: ''})); }}
                 />
+                {validationErrors.birthdate && <span className="pe__error">{validationErrors.birthdate}</span>}
               </label>
 
               <label className="pe__label">
                 Sex
                 <select
-                  className="pe__input"
+                  className={`pe__input ${validationErrors.sex ? 'pe__input--error' : ''}`}
                   value={sex}
-                  onChange={(e) => setSex(e.target.value)}
+                  onChange={(e) => { setSex(e.target.value); setValidationErrors((p)=>({...p, sex: ''})); }}
                 >
                   <option value="">Select…</option>
                   <option>Female</option>
                   <option>Male</option>
                   <option>Prefer not to say</option>
                 </select>
+                {validationErrors.sex && <span className="pe__error">{validationErrors.sex}</span>}
               </label>
             </div>
 
@@ -250,11 +273,12 @@ function EditProfileModal({ open, onClose, initial }) {
               Address
               <input
                 type="text"
-                className="pe__input"
+                className={`pe__input ${validationErrors.address ? 'pe__input--error' : ''}`}
                 placeholder="Street, city, province"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => { setAddress(e.target.value); setValidationErrors((p)=>({...p, address: ''})); }}
               />
+              {validationErrors.address && <span className="pe__error">{validationErrors.address}</span>}
             </label>
           </div>
         </div>

@@ -66,8 +66,12 @@ export default function Artist() {
 
         {!loading && !errMsg && (
           <div className="artistGrid">
-            {artists.map((a) => (
-              <div key={a.id} className="artistCard">
+            {artists.map((a, i) => (
+              <div
+                key={a.id}
+                className="artistCard"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
                 <Link
                   to={`/artist/${a.id}`}
                   className="artistCard__link"

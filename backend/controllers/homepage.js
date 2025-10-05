@@ -155,7 +155,25 @@ export const getPost = async (req, res) => {
     }
 
 
-    const formattedPosts = posts.map(post => ({
+    // Optionally fetch events to enrich announcements missing eventId
+    let eventIndex = new Map();
+    try {
+      const { data: evts, error: evtErr } = await supabase
+        .from('event')
+        .select('eventId, title, startsAt');
+      if (!evtErr && Array.isArray(evts)) {
+        for (const e of evts) {
+          const key = `${String(e.title||'').toLowerCase()}|${new Date(e.startsAt).toISOString()}`;
+          eventIndex.set(key, e.eventId);
+        }
+      }
+    } catch {}
+
+    // Split announcements vs regular posts
+    const announcementRows = (posts || []).filter(p => p.isAnnouncement === true);
+    const regularRows = (posts || []).filter(p => !p.isAnnouncement);
+
+    const formattedPosts = regularRows.map(post => ({
       id: post.postId,
       user: userMap.get(post.userId) || {
         id: post.userId,
@@ -165,10 +183,37 @@ export const getPost = async (req, res) => {
       text: post.description,
       image: post.image,
       datePosted: post.datePosted,
-      timestamp: new Date(post.datePosted).toLocaleString()
+      timestamp: new Date(post.datePosted).toLocaleString(),
+      isAnnouncement: false,
     }));
 
-    console.log(`📋 Fetched ${formattedPosts.length} posts`);
+    const formattedAnnouncements = announcementRows.map(post => {
+      let evId = post.eventId || null;
+      if (!evId && post.title && post.date) {
+        const k = `${String(post.title).toLowerCase()}|${new Date(post.date).toISOString()}`;
+        evId = eventIndex.get(k) || null;
+      }
+      return {
+        id: post.postId,
+        eventId: evId,
+        title: post.title,
+        date: post.date,
+        venueName: post.venueName,
+        user: userMap.get(post.userId) || {
+          id: post.userId,
+          name: 'Anonymous',
+          avatar: 'https://via.placeholder.com/40'
+        },
+        isAnnouncement: true,
+        datePosted: post.datePosted,
+        timestamp: new Date(post.datePosted).toLocaleString(),
+        // include optional fields if present
+        image: post.image || null,
+        newsfeedId: post.newsfeedId || null,
+      };
+    });
+
+    console.log(`📋 Fetched ${formattedPosts.length} regular posts, ${formattedAnnouncements.length} announcements`);
 
     const {data: reacts, reactError} = await supabase
       .from('react')
@@ -193,12 +238,13 @@ export const getPost = async (req, res) => {
     }
 
     console.log('comment length', comments.length)
-
+    console.log(formattedAnnouncements)
     res.status(200).json({
       message: "Posts fetched successfully",
-      posts: formattedPosts, 
-      reacts, 
-      comments
+      posts: formattedPosts,
+      announcements: formattedAnnouncements,
+      reacts,
+      comments,
     });
 
   } catch (err) {

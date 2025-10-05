@@ -9,7 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import homepageRoutes from "./routes/homepageRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
-
+import eventRoutes from "./routes/eventRoutes.js";
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middleware/auth.js";
 import path from "path";
@@ -46,6 +46,9 @@ app.use("/api/artist", authMiddleware, artistRoutes);
 
 //profile
 app.use("/api/profile", authMiddleware, profileRoutes);
+
+//event
+app.use("/api/event", authMiddleware, eventRoutes);
 
 // Auth routes
 app.use("/api/auth", authRoutes);
