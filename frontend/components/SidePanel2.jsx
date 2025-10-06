@@ -1,6 +1,7 @@
 import "./Sidepanel.css";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+const API = import.meta.env.VITE_API_BASE;
 
 
 export default function SidePanel2() {
@@ -27,7 +28,7 @@ export default function SidePanel2() {
         abortRef.current = controller;
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:3000/api/event/myEvents", {
+        const res = await fetch(`${API}/event/myEvents`, {
           method: "GET",
           credentials: "include",
           signal: controller.signal,
@@ -118,6 +119,12 @@ export default function SidePanel2() {
       <div
         className="card"
         style={{ cursor: "pointer" }}
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate('/toparts')}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('/toparts')}
+        aria-label="View Top Arts Of The Week"
+        title="View Top Arts Of The Week"
       >
         <div className="card__title">Top Arts Of The Week</div>
       </div>
