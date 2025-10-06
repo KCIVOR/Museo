@@ -1,48 +1,75 @@
 import "./Sidepanel.css";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 export default function SidePanel2() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const abortRef = useRef(null);
+  const lastFetchRef = useRef(0);
 
   useEffect(() => {
-    let abort = false;
-    const run = async () => {
+    let mounted = true;
+
+    const fetchEvents = async (force = false) => {
+      // simple throttle (avoid spamming if events fire together)
+      const now = Date.now();
+      if (!force && now - lastFetchRef.current < 2500) return;
+      lastFetchRef.current = now;
+
       try {
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:3000/api/event/getEvents", {
+        const res = await fetch("http://localhost:3000/api/event/myEvents", {
           method: "GET",
           credentials: "include",
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
         const data = await res.json();
-        if (abort) return;
-        const list = Array.isArray(data?.data) ? data.data : [];
-        const now = Date.now();
+        if (!mounted) return;
+        // API returns { events: [...] } for the user's participating events
+        const list = Array.isArray(data?.events) ? data.events : [];
+        const nowTs = Date.now();
         const upcoming = list
           .filter((e) => {
             const end = new Date(e.endsAt || e.startsAt).getTime();
-            return Number.isFinite(end) ? end >= now : false;
+            return Number.isFinite(end) ? end >= nowTs : false;
           })
           .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
           .slice(0, 3);
         setEvents(upcoming);
       } catch (e) {
-        if (!abort) setError(e.message || "Failed to load events");
+        if (!mounted) return;
+        if (e?.name !== 'AbortError') setError(e.message || "Failed to load events");
       } finally {
-        if (!abort) setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-    run();
+
+    // initial fetch
+    fetchEvents(true);
+
+    // refetch when window regains focus or tab becomes visible
+    const onFocus = () => fetchEvents();
+    const onVisibility = () => { if (!document.hidden) fetchEvents(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
-      abort = true;
+      mounted = false;
+      abortRef.current?.abort();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, []);
+  }, [location.pathname]);
 
   const fmtMonth = (dt) => new Date(dt).toLocaleString(undefined, { month: "long" });
   const fmtDay = (dt) => new Date(dt).toLocaleString(undefined, { day: "numeric" });
@@ -56,46 +83,36 @@ export default function SidePanel2() {
           <button className="eBtn" onClick={() => navigate('/upcomingevents')} style={{ margin: 0 }}>View all</button>
         </div>
 
-        {loading && (
-          <div className="event"><div className="event__body"><div className="event__title">Loading…</div></div></div>
-        )}
-        {error && !loading && (
-          <div className="event"><div className="event__body"><div className="event__title">{error}</div></div></div>
-        )}
-        {!loading && !error && events.length === 0 && (
-          <div className="event"><div className="event__body"><div className="event__title">No upcoming events</div></div></div>
-        )}
-        {!loading && !error && events.map((ev, idx) => (
-          <div
-            key={ev.eventId || ev.id}
-            className="event"
-            onClick={() => navigate('/Event', { state: { open: ev.eventId || ev.id } })}
-            style={{
-              cursor: 'pointer',
-              padding: '10px 12px',
-              borderRadius: 12,
-              background: 'var(--card-bg, #fff)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              marginTop: idx === 0 ? 8 : 10
-            }}
-            title={`${ev.title} — ${fmtMonth(ev.startsAt)} ${fmtDay(ev.startsAt)}, ${fmtTime(ev.startsAt)} - ${fmtTime(ev.endsAt || ev.startsAt)}`}
-          >
-            <div className="event__date" style={{ textAlign: 'center', minWidth: 56 }}>
-              <div className="event__month" style={{ fontWeight: 700 }}>{fmtMonth(ev.startsAt).slice(0,3)}</div>
-              <div className="event__day" style={{ fontSize: 18 }}>{fmtDay(ev.startsAt)}</div>
-            </div>
-            <div className="event__body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 12 }}>
-              <div style={{ minWidth: 0 }}>
-                <div className="event__title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</div>
-                <div className="event__time" style={{ fontSize: 12, opacity: 0.75 }}>{fmtTime(ev.startsAt)} - {fmtTime(ev.endsAt || ev.startsAt)}</div>
+        <ul className="spEvList">
+          {loading && (
+            <li className="spEvItem is-loading"><span>Loading…</span></li>
+          )}
+          {error && !loading && (
+            <li className="spEvItem is-error"><span>{error}</span></li>
+          )}
+          {!loading && !error && events.length === 0 && (
+            <li className="spEvItem is-empty"><span>No upcoming events</span></li>
+          )}
+
+          {!loading && !error && events.map((ev) => (
+            <li
+              key={ev.eventId || ev.id}
+              className="spEvItem"
+              onClick={() => navigate('/Event', { state: { open: ev.eventId || ev.id } })}
+              title={`${ev.title} — ${fmtMonth(ev.startsAt)} ${fmtDay(ev.startsAt)}, ${fmtTime(ev.startsAt)} - ${fmtTime(ev.endsAt || ev.startsAt)}`}
+            >
+              <div className="spEvDate">
+                <div className="spEvMonth">{fmtMonth(ev.startsAt).slice(0,3)}</div>
+                <div className="spEvDay">{fmtDay(ev.startsAt)}</div>
               </div>
-              <div aria-hidden style={{ opacity: 0.6 }}>›</div>
-            </div>
-          </div>
-        ))}
+              <div className="spEvBody">
+                <div className="spEvTitle" title={ev.title}>{ev.title}</div>
+                <div className="spEvMeta">{fmtTime(ev.startsAt)} – {fmtTime(ev.endsAt || ev.startsAt)}</div>
+              </div>
+              <div className="spEvChevron" aria-hidden>›</div>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div

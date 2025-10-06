@@ -6,6 +6,21 @@
   justify-content: center;
 }
 
+/* When rendered inside a modal dialog, remove full-page sizing and background */
+.evmDialog .msgPage {
+  min-height: auto;
+  background: transparent;
+}
+.evmDialog .msgWrap {
+  max-width: min(1200px, 96vw);
+  max-height: calc(94vh - 24px);
+  overflow: hidden;           /* contain internal scroll areas */
+}
+.evmDialog .msgSide,
+.evmDialog .msgMain,
+.evmDialog .msgBody,
+.evmDialog .msgList { min-height: 0; }
+
 /* Wider content */
 :root {
   --feed-max: 1440px;
@@ -260,15 +275,19 @@
 }
 
 @media (max-width: 760px) {
-  .msgWrap {
-    grid-template-columns: 1fr;
-  }
+  .msgWrap { grid-template-columns: 1fr; }
   .msgSide {
     order: 2;
   }
   .msgMain {
     order: 1;
   }
+}
+
+/* Make modal version go full-screen-ish on small screens */
+@media (max-width: 760px) {
+  .evmDialog { width: 98vw !important; height: 96vh !important; max-height: 96vh !important; }
+  .evmDialog .msgWrap { max-height: calc(96vh - 24px); }
 }
 
 /* Optional ultra-wide tweak */

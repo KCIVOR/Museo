@@ -211,7 +211,6 @@ export default function UpcomingEvents() {
         {activeFilter === 'Done'
           ? (
             <section className="ueBucket">
-              <h2 className="ueBucketTitle">Done</h2>
               <div className="ueGrid">
                 {filteredUi.map((ev, i) => (
                   <article

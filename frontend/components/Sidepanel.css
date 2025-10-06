@@ -1,6 +1,20 @@
 /* 1) Wrapper (provided by your Layout) owns the scroll */
 /* Sidepanel.css (key parts) */
 
+:root { --nav-h: 64px; }
+
+/* Keep the header visible and pin side panels relative to it */
+.app__header { position: sticky; top: 0; z-index: 40; background: inherit; }
+
+/* Only the main content should scroll, like Facebook */
+.app__main {
+  height: calc(100vh - var(--nav-h, 64px));
+  overflow: auto;
+}
+/* Hide main scrollbar while keeping scrollability */
+.app__main { scrollbar-width: none; }
+.app__main::-webkit-scrollbar { width: 0; height: 0; }
+
 /* Outer wrappers own the scroll */
 .app__side-left,
 .app__side-right {
@@ -16,13 +30,13 @@
   display: block;
   height: 100%;
   overflow: visible;          /* was auto; keep visible */
-  padding: clamp(12px, 2vw, 16px);
+  padding: 16px;
   background: #f3f6f8;
 }
 
 
 /* Left panel look */
-.side--left { border-right: 1px solid #e5e7eb; }
+.side--left { border-right: 0; }
 .side__heading { margin: 20px 0 8px; font-size: 12px; letter-spacing: .04em; color: #a0a3aa; text-transform: uppercase; }
 .side__section { list-style: none; margin: 0 0 10px; padding: 0; }
 .side__link { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; color: #222; text-decoration: none; }
@@ -36,20 +50,54 @@
 .side__avatar { width: 28px; height: 28px; border-radius: 999px; }
 
 /* Right rail */
-.side--right { background: #f7f9fb; border-left: 1px solid #e5e7eb; }
-.card { background: #fff; border: 1px solid #e6e6ea; border-radius: 12px; padding: clamp(10px, 1.6vw, 16px); margin-bottom: 16px; }
+.side--right { background: #f7f9fb; border-left: 0; }
+.card { 
+  background: #fff; 
+  border: 1px solid #e6e6ea; 
+  border-radius: 14px; 
+  padding: clamp(10px, 1.6vw, 16px); 
+  margin-bottom: 16px; 
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
+}
 .card__title { font-weight: 700; font-size: 14px; text-transform: uppercase; color: #333; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card__image { width: 100%; height: auto; border-radius: 8px; display: block; }
 .card__caption { font-size: 12px; color: #333; text-align: center; padding-top: 8px; }
 
 /* Events */
-.event { display: grid; grid-template-columns: minmax(48px, 64px) 1fr; gap: 12px; align-items: center; background: #fff; border: 1px solid #e6e6ea; border-radius: 12px; padding: clamp(8px, 1.4vw, 12px); margin-bottom: 12px; }
-.event__date { display: grid; place-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 6px 0; min-width: 48px; }
-.event__month { font-size: 14px; }
-.event__day { font-weight: 700; }
+.event {
+  display: grid; grid-template-columns: minmax(48px, 64px) 1fr; gap: 12px; align-items: center;
+  border: 1px solid #e6e6ea; border-radius: 14px;
+  padding: clamp(8px, 1.4vw, 12px); margin-bottom: 12px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(2, 6, 23, .06);
+  transition: transform .18s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.side--right .card .event:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, .12);
+  border-color: #e1e4e8;
+}
+.event__date {
+  display: grid; place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 6px 0; min-width: 48px;
+  background: #fff;
+}
+.event__month { font-size: 12px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; opacity: .85; }
+.event__day { font-weight: 900; font-size: 18px; }
 .event__body { min-width: 0; }
-.event__title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event__title { font-weight: 800; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .event__time { color: #6b7280; font-size: 12px; }
+
+/* Compact helper for right-rail list spacing */
+.side--right .card .event + .event { margin-top: 10px; }
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .event { transition: none; }
+  .side--right .card .event:hover { transform: none; box-shadow: 0 6px 16px rgba(2,6,23,.08); }
+}
 
 /* Responsive tweaks for mid-width screens where right rail is visible */
 @media (max-width: 1400px) and (min-width: 1201px) {
@@ -59,20 +107,42 @@
   .event__time { font-size: 11px; }
 }
 
-/* 3) Scrollbar polish (optional, accessible) */
+/* --- Side Panel Upcoming Events: list variant --- */
+.spEvList { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.spEvItem {
+  display: grid;
+  grid-template-columns: 56px 1fr 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: transform .14s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+.spEvItem:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.08); border-color: #e1e4e8; }
+.spEvItem.is-loading, .spEvItem.is-error, .spEvItem.is-empty { justify-content: center; grid-template-columns: 1fr; text-align: center; color: #6b7280; }
+
+.spEvDate {
+  display: grid; place-items: center; min-width: 56px;
+  border: 1px solid #e5e7eb; border-radius: 12px; padding: 6px 0; background: #fff;
+}
+.spEvMonth { font-size: 12px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; opacity: .85; }
+.spEvDay { font-weight: 900; font-size: 18px; }
+
+.spEvBody { min-width: 0; display: grid; gap: 4px; }
+.spEvTitle { font-weight: 800; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spEvMeta { color: #6b7280; font-size: 12px; }
+
+.spEvChevron { color: #94a3b8; }
+.spEvItem:hover .spEvChevron { color: #64748b; }
+
+/* Hide scrollbars for side panels (keep scrollable) */
 .app__side-left,
-.app__side-right {
-  scrollbar-width: thin;                 /* Firefox */
-  scrollbar-color: #cbd5e1 transparent;
-}
+.app__side-right { scrollbar-width: none; }
 .app__side-left::-webkit-scrollbar,
-.app__side-right::-webkit-scrollbar { width: 8px; }
-.app__side-left::-webkit-scrollbar-thumb,
-.app__side-right::-webkit-scrollbar-thumb {
-  background: #cbd5e1; border-radius: 8px;
-}
-.app__side-left::-webkit-scrollbar-track,
-.app__side-right::-webkit-scrollbar-track { background: transparent; }
+.app__side-right::-webkit-scrollbar { width: 0; height: 0; }
 
 /* 4) Responsive widths using clamp for nicer scaling */
 :root { --side-l: clamp(240px, 22vw, 280px); --side-r: clamp(280px, 28vw, 340px); }
@@ -83,3 +153,5 @@
 /* 5) Hide right rail on smaller screens */
 @media (max-width: 1200px) { .side--right { display: none; } }
 @media (max-width: 900px)  { .side--left { display: none; } }
+
+/* end */

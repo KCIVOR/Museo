@@ -1,6 +1,8 @@
 // src/components/Navbar.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import Message from "../src/pages/subPages/message.jsx";
 import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
 import "./Navbar.css";
@@ -10,6 +12,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [msgOpen, setMsgOpen] = useState(false);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -39,6 +42,14 @@ export default function Navbar() {
 
   // Avoid overlapping popovers
   useEffect(() => { if (menuOpen) setNotifOpen(false); }, [menuOpen]);
+
+  // Lock body scroll while message modal is open
+  useEffect(() => {
+    if (!msgOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [msgOpen]);
 
   const goto = (path) => { setMenuOpen(false); navigate(path); };
 
@@ -107,7 +118,7 @@ export default function Navbar() {
             {notifOpen && <NotificationsPopover onClose={() => setNotifOpen(false)} />}
           </div>
 
-          <button className="nav__icon-btn" aria-label="Messages" type="button" onClick={() => navigate(`/message`)}>💬</button>
+          <button className="nav__icon-btn" aria-label="Messages" type="button" onClick={() => setMsgOpen(true)}>💬</button>
 
           {/* Avatar + dropdown */}
           <div className="nav__account">
@@ -146,6 +157,34 @@ export default function Navbar() {
             setTopupOpen(false);
           }}
         />
+      )}
+
+      {/* Messages Modal (overlay via portal to body) */}
+      {msgOpen && createPortal(
+        (
+          <div
+            className="evmOverlay"
+            style={{ zIndex: 3000 }}
+            onMouseDown={(e) => {
+              if (e.currentTarget === e.target) setMsgOpen(false);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <article
+              role="dialog"
+              aria-modal="true"
+              aria-label="Messages"
+              className="evmDialog"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: 'clamp(820px, 92vw, 1100px)', maxHeight: '94vh' }}
+            >
+              <button aria-label="Close" onClick={() => setMsgOpen(false)} className="evmClose">✕</button>
+              <Message />
+            </article>
+          </div>
+        ),
+        document.body
       )}
     </>
   );

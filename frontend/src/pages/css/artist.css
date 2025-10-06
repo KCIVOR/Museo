@@ -6,7 +6,7 @@
   justify-content: center;
 }
 
-/* Feed width */
+/* Feed width (match Events page) */
 :root { --feed-max: 880px; }
 
 .artistFeed {
@@ -16,11 +16,12 @@
   padding: 12px 12px 48px;
 }
 
-/* Responsive grid: 3 per row on desktop, then 2, then 1 */
+/* Responsive grid: match Events grid behavior */
 .artistGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px; /* a bit more space between rows to avoid visual clash */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
 /* Card */
@@ -70,16 +71,9 @@
 }
 
 /* Responsive */
-@media (min-width: 1440px) {
-  :root { --feed-max: 1200px; }
-}
-@media (max-width: 1024px) {
-  :root { --feed-max: 960px; }
-  .artistGrid { grid-template-columns: repeat(2, 1fr); }
-}
+@media (min-width: 1440px) { :root { --feed-max: 960px; } }
+@media (max-width: 1024px) { :root { --feed-max: 760px; } }
 @media (max-width: 768px) {
-  :root { --feed-max: 640px; }
-  .artistGrid { grid-template-columns: 1fr; }
   .artistName { font-size: 16px; }
   .artistAvatar { width: 70%; }
 }
