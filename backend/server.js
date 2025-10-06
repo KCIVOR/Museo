@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 
 // ✅ 1. CORS first
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://zdr90hv7-5173.asse.devtunnels.ms/",
   credentials: true,
 }));
 
@@ -58,7 +58,7 @@ app.use("/api/auth", authRoutes);
 // Create HTTP + Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", credentials: true },
+  cors: { origin: "https://zdr90hv7-5173.asse.devtunnels.ms/", credentials: true },
 });
 // Make io available to controllers
 app.set("io", io);
