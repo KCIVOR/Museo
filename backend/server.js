@@ -20,9 +20,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const allowedOrigin = "https://zdr90hv7-5173.asse.devtunnels.ms";
+
 // ✅ 1. CORS first
 app.use(cors({
-  origin: "https://zdr90hv7-5173.asse.devtunnels.ms/",
+  origin: allowedOrigin,
   credentials: true,
 }));
 
@@ -58,7 +60,7 @@ app.use("/api/auth", authRoutes);
 // Create HTTP + Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "https://zdr90hv7-5173.asse.devtunnels.ms/", credentials: true },
+  cors: { origin: allowedOrigin, credentials: true },
 });
 // Make io available to controllers
 app.set("io", io);
