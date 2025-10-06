@@ -1,10 +1,11 @@
 // src/components/Navbar.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import Message from "../src/pages/subPages/message.jsx";
 import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
+import { useRealtimeNotifications } from "./useRealtimeNotifications";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -15,6 +16,47 @@ export default function Navbar() {
   const [msgOpen, setMsgOpen] = useState(false);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
+
+  // Notifications state lives here so we can receive while popover is closed
+  const [notifItems, setNotifItems] = useState([]);
+
+  // Transform server payload -> UI item (kept in Navbar for reuse)
+  const toItem = useCallback((n) => {
+    if (n?.type === "event_created") {
+      return {
+        id: n.eventId ? `event-${n.eventId}` : crypto.randomUUID(),
+        title: `New event: ${n.title ?? "Untitled"}`,
+        subtitle: n.venueName || "",
+        image: n.image || null,
+        timestamp: n.startsAt || n.createdAt || new Date().toISOString(),
+        href: n.eventId ? `/events/${n.eventId}` : null,
+        unread: true,
+      };
+    }
+    return {
+      id: crypto.randomUUID(),
+      title: "New notification",
+      subtitle: "",
+      image: null,
+      timestamp: new Date().toISOString(),
+      href: null,
+      unread: true,
+    };
+  }, []);
+
+  // Subscribe to socket notifications globally
+  useRealtimeNotifications(useCallback((payload) => {
+    const next = toItem(payload);
+    setNotifItems((prev) => {
+      if (next.id && prev.some((p) => p.id === next.id)) return prev;
+      return [next, ...prev];
+    });
+  }, [toItem]));
+
+  const unreadCount = useMemo(
+    () => notifItems.reduce((acc, it) => acc + (it.unread ? 1 : 0), 0),
+    [notifItems]
+  );
 
   // Close account menu on outside click or ESC
   useEffect(() => {
@@ -95,13 +137,11 @@ export default function Navbar() {
             <span className="nav__searchLabel">Search</span>
           </button>
 
-
+          {/* Coins */}
           <button className="nav__coin" type="button">
             <span className="nav__coin-icon">🟡</span>
             <span className="nav__coin-count" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>5042</span>
           </button>
-
-          
 
           {/* Notifications */}
           <div className="nav__notif-wrap">
@@ -114,10 +154,20 @@ export default function Navbar() {
               onClick={() => setNotifOpen((v) => !v)}
             >
               🔔
+              {unreadCount > 0 && (
+                <span className="nav__notif-badge" aria-label={`${unreadCount} unread`}>{unreadCount}</span>
+              )}
             </button>
-            {notifOpen && <NotificationsPopover onClose={() => setNotifOpen(false)} />}
+            {notifOpen && (
+              <NotificationsPopover
+                onClose={() => setNotifOpen(false)}
+                items={notifItems}
+                setItems={setNotifItems}
+              />
+            )}
           </div>
 
+          {/* Messages */}
           <button className="nav__icon-btn" aria-label="Messages" type="button" onClick={() => setMsgOpen(true)}>💬</button>
 
           {/* Avatar + dropdown */}

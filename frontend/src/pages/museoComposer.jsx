@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./css/museoComposer.css";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function MuseoComposer({
   onSubmit,
@@ -33,7 +34,7 @@ export default function MuseoComposer({
     let abort = false;
     const loadUser = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/profile/getProfile", {
+        const res = await fetch(`${API}/profile/getProfile`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch profile");
@@ -99,7 +100,7 @@ export default function MuseoComposer({
       formData.append("createdAt", new Date().toISOString());
       files.forEach((f) => formData.append("media", f.file));
 
-      const res = await fetch("http://localhost:3000/api/homepage/createPost", {
+      const res = await fetch(`${API}/homepage/createPost`, {
         method: "POST",
         body: formData,
         credentials: "include",

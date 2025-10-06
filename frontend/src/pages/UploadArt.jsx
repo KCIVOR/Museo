@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+const API = import.meta.env.VITE_API_BASE
 // A lightweight modal-style uploader similar in UX to SetProfile
 // Props:
 // - open: boolean
@@ -56,7 +56,7 @@ export default function UploadArt({ open, onClose, onUploaded }) {
       fd.append("description", description);
       fd.append("medium", medium);
 
-      const res = await fetch("http://localhost:3000/api/profile/uploadArt", {
+      const res = await fetch(`${API}/profile/uploadArt`, {
         method: "POST",
         credentials: "include",
         body: fd,

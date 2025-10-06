@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./css/events.css";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function PublishEventModal({ open, onClose, onPublished, mode = "create", initialData = null }) {
   const FALLBACK_COVER = import.meta.env.VITE_FALLBACKEVENTCOVER_URL || "";
@@ -178,8 +179,8 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
       }
 
       const url = mode === "edit" && initialData?.eventId
-        ? `http://localhost:3000/api/event/update/${initialData.eventId}`
-        : "http://localhost:3000/api/event/create";
+        ? `${API}/event/update/${initialData.eventId}`
+        : `${API}/event/create`;
       const method = mode === "edit" ? "PUT" : "POST";
 
       const res = await fetch(url, { method, credentials: "include", body: fd });

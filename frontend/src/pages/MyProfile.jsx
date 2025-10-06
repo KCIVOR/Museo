@@ -3,6 +3,7 @@ import "./css/MyProfile.css";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtGallery from "./subPages/artGallery";
 import UploadArt from "./UploadArt";
+const API = import.meta.env.VITE_API_BASE;
 
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
@@ -96,7 +97,7 @@ function EditProfileModal({ open, onClose, initial }) {
       if (avatar && avatar.file) fd.append("avatar", avatar.file);
       if (cover && cover.file) fd.append("cover", cover.file);
 
-      const res = await fetch("http://localhost:3000/api/profile/updateProfile", {
+      const res = await fetch(`${API}/profile/updateProfile`, {
         method: "POST",
         credentials: "include",
         body: fd,
@@ -336,7 +337,7 @@ export default function MyProfile() {
     if (isFetching) return;
     setIsFetching(true);
     try {
-      const res = await fetch("http://localhost:3000/api/profile/getProfile", {
+      const res = await fetch(`${API}/profile/getProfile`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch profile");
@@ -363,7 +364,7 @@ export default function MyProfile() {
 
   const fetchArts = async () => {
     try{
-      const response = await fetch("http://localhost:3000/api/profile/getArts", {
+      const response = await fetch(`${API}/profile/getArts`, {
         method: "GET",
         credentials: "include",
       });
@@ -382,7 +383,7 @@ export default function MyProfile() {
 
   const fetchRole = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/users/role", {
+      const response = await fetch(`${API}/users/role`, {
         method: "GET",
         credentials: "include",
       });

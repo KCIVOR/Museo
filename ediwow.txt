@@ -4,6 +4,70 @@ git commit -m "Add latest changes"
 git push -u origin main
 
 
+[Start the server]
+File: 
+backend/server.js
+The app creates an HTTP server and attaches Socket.IO to it.
+It allows your frontend at http://localhost:5173 to connect.
+When a browser connects, the server logs: [socket] connected: <id>.
+[Create an event → build a notification]
+File: 
+backend/controllers/eventController.js
+After saving a new event to the database, the backend makes a small message (a “notification” object) with:
+type, eventId, title, venueName, startsAt, createdAt, etc.
+[Server broadcasts the notification]
+File: 
+backend/controllers/eventController.js
+The server sends the message to all connected browsers: io.emit("notification", notification).
+[Browser connects to the server]
+File: 
+frontend/components/notificationsSocket.js
+The frontend creates one shared Socket.IO connection to your backend (base URL like http://localhost:3000).
+It logs when connected or if there is an error.
+[Listen for notifications globally]
+File: 
+frontend/components/useRealtimeNotifications.jsx
+This hook listens for "notification" messages from the socket.
+When a message arrives, it calls your function with the data.
+[Turn the message into a UI item]
+File: 
+frontend/components/Navbar.jsx
+, function toItem(...)
+Converts the raw message into a list item the UI can show:
+Adds an id, title like “New event: …”, subtitle (venue), timestamp, href to the event, and unread: true.
+[Store items and show the badge]
+File: 
+frontend/components/Navbar.jsx
+Keeps all notification items in state: notifItems.
+Shows a red badge on the bell with unread count.
+Opens the popover when you click the bell.
+[Render the popover list]
+File: 
+frontend/components/notificationPopUp.jsx
+Displays each notification with title, time, optional “View” link.
+You can:
+Mark an item read, dismiss it, or mark all read.
+Styling is in 
+frontend/components/Notifications.css
+.
+What happens in order
+You open the site → browser connects to backend socket (
+notificationsSocket.js
+).
+Backend logs your connection (
+server.js
+).
+You create an event → backend saves it and builds a notification (
+eventController.js
+).
+Backend broadcasts it with io.emit to everyone connected.
+Frontend listener (
+useRealtimeNotifications.jsx
+) receives it.
+Navbar.jsx
+ turns it into a UI item and adds it to notifItems.
+Bell shows an unread badge; opening the popover shows the new item.
+
 
 For all protected API calls:
 Make sure to include the authorization header:

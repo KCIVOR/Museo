@@ -12,7 +12,8 @@ import profileRoutes from "./routes/profileRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middleware/auth.js";
-import path from "path";
+import { Server } from "socket.io"
+import http from "http";
 
 dotenv.config();
 
@@ -53,6 +54,25 @@ app.use("/api/event", authMiddleware, eventRoutes);
 // Auth routes
 app.use("/api/auth", authRoutes);
 
-app.listen(PORT, () => {
+
+// Create HTTP + Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "http://localhost:5173", credentials: true },
+});
+// Make io available to controllers
+app.set("io", io);
+
+// On connection, join a global room so we can broadcast easily
+io.on("connection", (socket) => {
+  try {
+    socket.join("all-users");
+    console.log("[socket] connected:", socket.id, "joined room all-users");
+  } catch (e) {
+    console.error("socket connection error:", e);
+  }
+});
+
+server.listen(PORT, () => {
   console.log("Server is running on port", PORT);
 });

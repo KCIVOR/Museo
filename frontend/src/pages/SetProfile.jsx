@@ -1,6 +1,7 @@
 // src/components/SetProfileModal.jsx
 import React, { useEffect, useRef, useState } from "react";
 import "./css/MyProfile.css";
+const API = import.meta.env.VITE_API_BASE;
 
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
@@ -105,7 +106,7 @@ export default function SetProfileModal({ open, onClose, initial }) {
       if (avatar && avatar.file) fd.append("avatar", avatar.file);
       if (cover && cover.file) fd.append("cover", cover.file);
 
-      const res = await fetch("http://localhost:3000/api/profile/updateProfile", {
+      const res = await fetch(`${API}/profile/updateProfile`, {
         method: "POST",
         credentials: "include",
         body: fd,

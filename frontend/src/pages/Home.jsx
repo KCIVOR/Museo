@@ -5,6 +5,7 @@ import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
 import SetProfileModal from "./SetProfile";
 import AnnouncementCard from "./AnnouncementCard.jsx";
+const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
 function getAverageColorFromImageElement(img) {
   const canvas = document.createElement("canvas");
@@ -161,7 +162,7 @@ export default function Home() {
 
   const fetchRole = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/users/role", {
+      const response = await fetch(`${API}/users/role`, {
         method: "GET",
         credentials: "include",
       });
@@ -184,7 +185,7 @@ export default function Home() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3000/api/homepage/getPost", {
+      const response = await fetch(`${API}/homepage/getPost`, {
         method: "GET",
         credentials: "include",
       });
@@ -227,7 +228,7 @@ export default function Home() {
     if (liking[postId]) return;
     setLiking((s) => ({ ...s, [postId]: true }));
     try {
-      const res = await fetch("http://localhost:3000/api/homepage/createReact", {
+      const res = await fetch(`${API}/homepage/createReact`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -256,7 +257,7 @@ export default function Home() {
       const body = (text || "").trim();
       if (!body) return;
 
-      const res = await fetch("http://localhost:3000/api/homepage/createComment", {
+      const res = await fetch(`${API}/homepage/createComment`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -280,7 +281,7 @@ export default function Home() {
 
   const checkProfile = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/profile/profileStatus", {
+      const res = await fetch(`${API}/profile/profileStatus`, {
         method: "GET",
         credentials: "include",
       });

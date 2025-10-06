@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+const API = import.meta.env.VITE_API_BASE;
 
 const ProtectedRoutes = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(null); 
@@ -10,7 +11,7 @@ const ProtectedRoutes = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const authRes = await fetch("http://localhost:3000/api/users/me", {
+        const authRes = await fetch(`${API}/users/me`, {
           method: "GET",
           credentials: "include",
         });
@@ -23,7 +24,7 @@ const ProtectedRoutes = () => {
 
         setIsAuthenticated(true);
 
-        const statRes = await fetch(`http://localhost:3000/api/profile/profileStatus`, {
+        const statRes = await fetch(`${API}/profile/profileStatus`, {
           method: "GET",
           credentials: "include",
           headers: {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"; // Import useState
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function AuthCallback() {
 
       const { access_token, refresh_token } = data.session;
 
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

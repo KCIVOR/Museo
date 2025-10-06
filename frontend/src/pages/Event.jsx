@@ -6,6 +6,7 @@ import EventModal from "./EventModal.jsx";
 import PublishEventModal from "./PublishEventModal.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { NavLink } from "react-router-dom";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function Event() {
   const location = useLocation();
@@ -22,7 +23,7 @@ export default function Event() {
 
   const getEvents = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/event/getEvents", {
+      const res = await fetch(`${API}/event/getEvents`, {
         method: "GET",
         credentials: "include",
       });
@@ -40,7 +41,7 @@ export default function Event() {
   // Fetch role of current user
   const fetchRole = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/users/role", {
+      const response = await fetch(`${API}/users/role`, {
         method: "GET",
         credentials: "include",
       });
@@ -72,7 +73,7 @@ export default function Event() {
           const id = e.eventId || e.id;
           if (!id) return [id, 0];
           try {
-            const res = await fetch('http://localhost:3000/api/event/eventParticipants', {
+            const res = await fetch(`${API}/event/eventParticipants`, {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
@@ -178,7 +179,7 @@ export default function Event() {
     if (!toDelete) return;
     const id = toDelete.eventId || toDelete.id;
     try {
-      const res = await fetch(`http://localhost:3000/api/event/${id}`, {
+      const res = await fetch(`${API}/event/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

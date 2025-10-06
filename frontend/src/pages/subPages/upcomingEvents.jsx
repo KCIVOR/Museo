@@ -3,6 +3,7 @@ import "./css/upcomingEvents.css";
 import "../css/events.css"; // for eActions/eBtn/eBtnGhost to match Event.jsx
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+const API = import.meta.env.VITE_API_BASE;
 
 
 function fmtRange(start, end) {
@@ -63,7 +64,7 @@ export default function UpcomingEvents() {
   const fetchMyEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/event/myEvents", {
+      const res = await fetch(`${API}/event/myEvents`, {
         method: "GET",
         credentials: "include",
       });

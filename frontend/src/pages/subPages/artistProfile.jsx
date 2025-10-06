@@ -3,6 +3,7 @@ import "../css/MyProfile.css";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtistArtGallery from "./artistArtGallery";
 import { useParams } from 'react-router-dom';
+const API = import.meta.env.VITE_API_BASE;
 
 
 const FALLBACK_AVATAR =
@@ -49,7 +50,7 @@ export default function ArtistProfile() {
     if (isFetching) return;
     setIsFetching(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/artist/getArtistById/${id}`, {
+      const res = await fetch(`${API}/artist/getArtistById/${id}`, {
         credentials: "include",
         method: "GET",
       });
@@ -77,7 +78,7 @@ export default function ArtistProfile() {
 
   const fetchArts = async () => {
     try{
-      const response = await fetch(`http://localhost:3000/api/artist/getArts/${id}`, {
+      const response = await fetch(`${API}/artist/getArts/${id}`, {
         method: "GET",
         credentials: "include",
       });
@@ -96,7 +97,7 @@ export default function ArtistProfile() {
 
   const fetchRole = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/artist/getRole/${id}`, {
+      const response = await fetch(`${API}/artist/getRole/${id}`, {
         credentials: "include",
         method: "GET",
       });

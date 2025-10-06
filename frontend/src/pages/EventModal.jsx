@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ConfirmModal from "./ConfirmModal.jsx";
 
 import "./css/events.css";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function EventModal({ open, event, onClose }) {
   const overlayRef = useRef(null);
@@ -34,7 +35,7 @@ export default function EventModal({ open, event, onClose }) {
   const removeParticipantReq = async (userId) => {
     try {
       setRemovingId(userId);
-      const res = await fetch('http://localhost:3000/api/event/removeParticipant', {
+      const res = await fetch(`${API}/event/removeParticipant`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -82,7 +83,7 @@ export default function EventModal({ open, event, onClose }) {
     const check = async () => {
       try {
         if (!open) return;
-        const res = await fetch(`http://localhost:3000/api/event/isJoined?eventId=${encodeURIComponent(event.eventId || event.id)}` ,{
+        const res = await fetch(`${API}/event/isJoined?eventId=${encodeURIComponent(event.eventId || event.id)}` ,{
           method: 'GET',
           credentials: 'include',
         });
@@ -101,7 +102,7 @@ export default function EventModal({ open, event, onClose }) {
     const run = async () => {
       try {
         if (!open) return;
-        const response = await fetch("http://localhost:3000/api/users/role", {
+        const response = await fetch(`${API}/users/role`, {
           method: "GET",
           credentials: "include",
         });
@@ -122,7 +123,7 @@ export default function EventModal({ open, event, onClose }) {
         if (!open || !participantsOpen) return;
         setPLoading(true);
         setPError(null);
-        const res = await fetch(`http://localhost:3000/api/event/eventParticipants`, {
+        const res = await fetch(`${API}/event/eventParticipants`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -147,7 +148,7 @@ export default function EventModal({ open, event, onClose }) {
   const joinEvent = async () => {
     try{
         setIsSubmitting(true);
-        const res = await fetch("http://localhost:3000/api/event/joinEvent", {
+        const res = await fetch(`${API}/event/joinEvent`, {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ProfileModal from "./ProfileModal";
+const API = import.meta.env.VITE_API_BASE;
 
 const ArtGallery = ({
   arts = [],
@@ -87,7 +88,7 @@ const ArtGallery = ({
           const artId = art.artId || art.id;
           if (!artId) return [null, 0];
           try {
-            const res = await fetch("http://localhost:3000/api/profile/getReact", {
+            const res = await fetch(`${API}/profile/getReact`, {
               method: "POST",
               credentials: 'include',
               headers: { "Content-Type": "application/json" },
@@ -117,7 +118,7 @@ const ArtGallery = ({
     if (liking[artId]) return;
     setLiking((s) => ({ ...s, [artId]: true }));
     try {
-      const res = await fetch("http://localhost:3000/api/profile/createReact", {
+      const res = await fetch(`${API}/profile/createReact`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -136,7 +137,7 @@ const ArtGallery = ({
 
       // Reconcile exact count from backend
       try {
-        const res2 = await fetch("http://localhost:3000/api/profile/getReact", {
+        const res2 = await fetch(`${API}/profile/getReact`, {
           method: "POST",
           credentials: 'include',
           headers: { "Content-Type": "application/json" },
@@ -162,7 +163,7 @@ const ArtGallery = ({
       const body = (text || "").trim();
       if (!body) return;
 
-      const res = await fetch("http://localhost:3000/api/profile/createComment", {
+      const res = await fetch(`${API}/profile/createComment`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

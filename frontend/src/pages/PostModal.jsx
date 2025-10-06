@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+const API = import.meta.env.VITE_API_BASE;
 
 // Helper (unchanged)
 function getAverageColorFromImageElement(img) {
@@ -53,7 +54,7 @@ export default function PostModal({
     }
     const loadMe = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/profile/getProfile", {
+        const res = await fetch(`${API}/profile/getProfile`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch profile");
@@ -95,7 +96,7 @@ export default function PostModal({
       setCommentErr(null);
       try {
         const res = await fetch(
-          `http://localhost:3000/api/homepage/getComments?postId=${post.id}`,
+          `${API}/homepage/getComments?postId=${post.id}`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
@@ -160,7 +161,7 @@ export default function PostModal({
 
       // Reconcile with server (ensures final IDs/order)
       const res = await fetch(
-        `http://localhost:3000/api/homepage/getComments?postId=${post.id}`,
+        `${API}/homepage/getComments?postId=${post.id}`,
         { credentials: "include" }
       );
       if (res.ok) {

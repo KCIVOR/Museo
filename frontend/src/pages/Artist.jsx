@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import "./css/artist.css";
 import { useEffect, useState } from "react";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function Artist() {
   const [artists, setArtists] = useState([]);          // fetched list
@@ -26,7 +27,7 @@ export default function Artist() {
     try {
       setLoading(true);
       setErrMsg(null);
-      const res = await fetch("http://localhost:3000/api/artist/getArtist", {
+      const res = await fetch(`${API}/artist/getArtist`, {
         method: "GET",
         credentials: "include",
       });

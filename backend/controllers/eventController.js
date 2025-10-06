@@ -132,10 +132,9 @@ export const createEvent = async (req, res) => {
       admissionNote: _admissionNote || null,
       activities: acts,
       // If you have auth middleware, set userId from it; otherwise null
-      userId: req.user?.id || null,
+      userId: req.user?.id || null
     };
-
-    const { data, error } = await db
+  const { data, error } = await db
       .from('event')
       .insert(payload)
       .select('*')
@@ -144,6 +143,25 @@ export const createEvent = async (req, res) => {
     if (error) {
       console.error('createEvent: supabase error:', error);
       return res.status(500).json({ error: 'Failed to create event' });
+    }
+
+    const notification = {
+      type: "event_created",
+      eventId: data.eventId,
+      title: data.title,
+      startsAt: data.startsAt,
+      venueName: data.venueName,
+      image: data.image || null,
+      createdBy: data.createdBy || null,
+      createdAt: new Date().toISOString()
+    }
+
+    const io = req.app.get("io")
+    if (io) {
+      console.log("[event] emitting notification:", notification)
+      io.emit("notification", notification)
+    } else {
+      console.warn("[event] io not available to emit notification")
     }
 
     // Create an announcement post entry linked to this event
