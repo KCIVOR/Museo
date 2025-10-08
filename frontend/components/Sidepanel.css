@@ -39,7 +39,16 @@
 .side--left { border-right: 0; }
 .side__heading { margin: 20px 0 8px; font-size: 12px; letter-spacing: .04em; color: #a0a3aa; text-transform: uppercase; }
 .side__section { list-style: none; margin: 0 0 10px; padding: 0; }
-.side__link { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; color: #222; text-decoration: none; }
+.side__link { 
+  display: flex; align-items: center; gap: 12px; 
+  padding: 10px 8px; border-radius: 10px; color: #222; 
+  text-decoration: none; 
+  /* Make buttons look like links */
+  border: 0; background: transparent; width: 100%; text-align: left; 
+  font: inherit; line-height: inherit; 
+  cursor: pointer; 
+  -webkit-appearance: none; appearance: none;
+}
 .side__link:hover { background: #ffffff; }
 .side__icon { width: 20px; text-align: center; }
 .side__dot { width: 10px; height: 10px; border-radius: 999px; background: #1f3b74; display: inline-block; }

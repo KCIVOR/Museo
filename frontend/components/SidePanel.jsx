@@ -1,7 +1,7 @@
 // src/components/SidePanel.jsx
 import { NavLink } from "react-router-dom";
 import "./Sidepanel.css"
-export default function SidePanel() {
+export default function SidePanel({ role, onOpenRequests }) {
   return (
     <nav className="side side--left" aria-label="Primary">
       <ul className="side__section">
@@ -10,6 +10,17 @@ export default function SidePanel() {
         <li><NavLink to="/gallery" className="side__link"><span className="side__icon">🖼️</span> Gallery</NavLink></li>
         <li><NavLink to="/marketplace" className="side__link"><span className="side__icon">🛍️</span> Marketplace</NavLink></li>
         <li><NavLink to="/event" className="side__link"><span className="side__icon">📅</span> Events</NavLink></li>
+        {(role === 'admin' || role?.role === 'admin') && (
+          <li>
+            <button
+              type="button"
+              className="side__link"
+              onClick={() => onOpenRequests?.()}
+            >
+              <span className="side__icon">📥</span> Requests
+            </button>
+          </li>
+        )}
       </ul>
 
       <div className="side__heading">You Might Know</div>

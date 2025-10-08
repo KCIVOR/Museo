@@ -6,6 +6,7 @@ const router = express.Router();
 router.get("/me", getCurrentUser);
 router.get("/getall", requirePermission(['admin','artist']), getAllUsers);
 router.get("/role", getRole);
+
 router.get("/:id", getUser);
 router.post("/", createUsers);
 router.put("/:id", updateUser);

@@ -3,22 +3,24 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import Message from "../src/pages/subPages/message.jsx";
+import RegisterArtist from "../src/pages/subPages/registerArtist.jsx";
 import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
 import { useRealtimeNotifications } from "./useRealtimeNotifications";
 import "./Navbar.css";
-
-export default function Navbar() {
+export default function Navbar({ role }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
 
   // Notifications state lives here so we can receive while popover is closed
   const [notifItems, setNotifItems] = useState([]);
+
 
   // Transform server payload -> UI item (kept in Navbar for reuse)
   const toItem = useCallback((n) => {
@@ -92,6 +94,14 @@ export default function Navbar() {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [msgOpen]);
+
+  // Lock body scroll while Register Artist modal is open
+  useEffect(() => {
+    if (!registerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [registerOpen]);
 
   const goto = (path) => { setMenuOpen(false); navigate(path); };
 
@@ -189,7 +199,15 @@ export default function Navbar() {
               <div id="profile-menu" ref={menuRef} className="nav__menu" role="menu" aria-label="Profile options">
                 <button className="nav__menu-item" role="menuitem" onClick={() => goto("/MyProfile")}>My Profile</button>
                 <button className="nav__menu-item" role="menuitem" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>Top‑Up</button>
-                <button className="nav__menu-item" role="menuitem" onClick={() => goto("/registerasartist")}>Register as artist</button>
+                {String(role).trim() === "user" ? (
+                  <button
+                    className="nav__menu-item"
+                    role="menuitem"
+                    onClick={() => { setRegisterOpen(true); setMenuOpen(false); }}
+                  >
+                    Apply as artist
+                  </button>
+                ) : null}
                 <div className="nav__menu-sep" />
                 <button className="nav__menu-item nav__menu-danger" role="menuitem" onClick={logOut}>Log‑out</button>
               </div>
@@ -208,6 +226,13 @@ export default function Navbar() {
           }}
         />
       )}
+
+      {/* Register as Artist Modal */}
+      <RegisterArtist
+        open={registerOpen}
+        onClose={() => setRegisterOpen(false)}
+        onSubmitted={() => setRegisterOpen(false)}
+      />
 
       {/* Messages Modal (overlay via portal to body) */}
       {msgOpen && createPortal(

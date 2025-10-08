@@ -84,14 +84,13 @@ export const getRole = async (req, res) => {
       // Return default role if no profile exists
       return res.json('user');
     }
-    console.log('getRole type:', typeof profile.role);
-    res.json(profile.role || 'user');
+    const cleanRole = (profile.role || 'user').trim();
+    res.json(cleanRole);
     
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error' });
   }
 }
-
 
 //const isMatch = await bcrypt.compare(password, data.password); check password

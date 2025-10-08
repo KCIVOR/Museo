@@ -7,7 +7,6 @@ import Artist from "./pages/Artist";
 import ArtistDetail from "./pages/subPages/artistProfile";
 import Artwork from "./pages/subPages/artwork";
 import MarketplaceItem from "./pages/subPages/marketPlaceItem";
-import RegisterArtist from "./pages/subPages/registerArtist";
 import GalleryAll from "./pages/subPages/galleryAll";
 import Layout from "../components/Layout";
 import MyProfile from "./pages/MyProfile";
@@ -39,7 +38,6 @@ function App() {
           <Route path="/Artist/:id" element={<ArtistDetail />} />
           <Route path="/Gallery/:id" element={<Artwork />} />
           <Route path="/Marketplace/:id" element={<MarketplaceItem />} />
-          <Route path="/RegisterAsArtist" element={<RegisterArtist />} />
           <Route path="/Gallery/category" element={<GalleryAll />} />
           <Route path="/MyProfile" element={<MyProfile />} />
           <Route path="/blindAuction" element={<BlindAuction />} />

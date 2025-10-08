@@ -153,7 +153,44 @@ export const createEvent = async (req, res) => {
       venueName: data.venueName,
       image: data.image || null,
       createdBy: data.createdBy || null,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+    }
+
+
+    // Save notification to database for offline users
+    // Table columns: notificationId, createdAt, type, title, body, data, userId, recipient, isRead
+    try {
+      const insertRow = {
+        type: notification.type,
+        title: `New event: ${notification.title ?? "Untitled"}`,
+        body: _details || null,
+        data: {
+          eventId: notification.eventId,
+          venueName: notification.venueName,
+          startsAt: notification.startsAt,
+          image: notification.image,
+          createdBy: notification.createdBy,
+        },
+        userId: req.user?.id || null, // Who created the event
+        recipient: null, // null = send to everyone (global notification)
+        readByUsers: [], // Initialize empty array - no one has read it yet
+        // createdAt will be defaulted by DB
+      }
+      const { data: notifRow, error: notifErr } = await db
+        .from('notification')
+        .insert(insertRow)
+        .select('*')
+        .single()
+
+      if (notifErr) {
+        console.warn('createEvent: notification insert failed:', notifErr)
+      } else if (notifRow) {
+        // Carry DB identifiers/timestamps back to the emitted payload
+        notification.notificationId = notifRow.notificationId || notifRow.id || undefined
+        notification.createdAt = notifRow.createdAt || notification.createdAt
+      }
+    } catch (e) {
+      console.warn('createEvent: notification insert threw:', e)
     }
 
     const io = req.app.get("io")

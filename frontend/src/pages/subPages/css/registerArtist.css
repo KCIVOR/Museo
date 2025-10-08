@@ -1,10 +1,29 @@
-/* Page */
-.raPage {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px 16px;
+/* Legacy page wrapper (kept for compatibility, unused in modal) */
+.raPage { display: contents; }
+
+/* Appear animations (aligned to events modal) */
+.pe__scrim { animation: raFadeIn 200ms ease-out; }
+@keyframes raFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes raPop {
+  0% { opacity: 0; transform: translateY(8px) scale(.98); }
+  60% { opacity: 1; transform: translateY(0) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Modal body scroll container */
+.raScroll {
+  max-height: min(62vh, 72dvh);
+  overflow: auto;
+  padding: 8px 20px 0;
+}
+
+/* Dialog sizing within pe__dialog */
+.raDialog {
+  width: clamp(720px, 92vw, 900px);
+  animation: raPop 260ms cubic-bezier(.2,.8,.2,1);
 }
 
 /* Card */
@@ -34,8 +53,8 @@
 .raForm {
   display: grid;
   grid-template-columns: 180px 1fr;
-  gap: 14px 16px;       /* row gap / column gap */
-  padding: 20px;
+  gap: 16px 16px;       /* row gap / column gap */
+  padding: 0;
   align-items: center;
 }
 
@@ -62,12 +81,29 @@
   background: #fff;
   transition: border .2s, box-shadow .2s;
 }
+.raInput--error,
+.raForm select.raInput--error,
+.raForm textarea.raInput--error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+.raForm textarea { min-height: 96px; resize: vertical; }
+.raInput::placeholder { color: #9ca3af; }
 .raInput:focus,
 .raForm select:focus,
 .raForm textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
   outline: none;
+}
+
+/* Inline error text under field (aligned to input column) */
+.raFieldError {
+  grid-column: 2 / 3;
+  margin-top: -8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #b91c1c;
 }
 
 /* Age + Sex pair sits inside the FIELD column */
@@ -92,29 +128,66 @@
 /* Dropzone appears after its label (label in col 1, zone in col 2) */
 .raDrop {
   border: 2px dashed #cbd5e1;
-  border-radius: 12px;
-  background: #f9fafb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
   display: grid;
   place-items: center;
-  height: 220px;
+  min-height: 220px;
   padding: 16px;
   cursor: pointer;
-  transition: background .2s, border-color .2s;
+  transition: background .2s, border-color .2s, transform .08s ease-in-out;
   text-align: center;
 }
 .raDrop:hover { background: #f3f6fb; border-color: #93c5fd; }
+.raDrop:active { transform: scale(0.995); }
+.raDrop--active { background: #eef6ff; border-color: #60a5fa; }
 .raDropInner { display: grid; place-items: center; gap: 6px; color: #6b7280; }
 .raCloud { font-size: 28px; }
 .raDropText { font-weight: 700; color: #111; }
 .raDropHint { font-size: 13px; color: #6b7280; }
 
-.raDrop--has { padding: 0; }
+.raDrop--has { padding: 8px; align-items: stretch; }
 .raPreview {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-width: 100%;
+  display: block;
   object-fit: cover;
   border-radius: 10px;
 }
+
+/* Preview grid for up to 2 images */
+.raPreviewGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.raPreviewGrid--two { grid-template-columns: 1fr 1fr; }
+.raPreviewItem {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.raRemoveBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.9);
+  color: #111;
+  cursor: pointer;
+  font-weight: 700;
+  line-height: 1;
+  transition: background .15s, transform .08s;
+}
+.raRemoveBtn:hover { background: #fff; }
+.raRemoveBtn:active { transform: scale(0.96); }
 
 /* Actions span both columns and are centered */
 .raActions {
@@ -140,10 +213,13 @@
 
 /* Responsive: stack labels above fields */
 @media (max-width: 768px) {
-  .raForm { grid-template-columns: 1fr; }
+  .raForm { grid-template-columns: 1fr; gap: 12px; }
   .raLabel { justify-self: start; padding-right: 0; }
   .raRow { grid-column: auto; grid-template-columns: 1fr; }
   .raTitle { font-size: 22px; }
+  .raScroll { max-height: 70dvh; padding: 6px 14px 0; }
+  .raRemoveBtn { width: 32px; height: 32px; }
+  .raDialog { width: 96vw; }
 }
 
 /* Subtle fade-in */

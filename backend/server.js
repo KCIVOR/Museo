@@ -10,10 +10,14 @@ import homepageRoutes from "./routes/homepageRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import requestRoutes from "./routes/requestRoutes.js"
+
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middleware/auth.js";
 import { Server } from "socket.io"
-import http from "http";
+import http, { request } from "http";
+
 
 dotenv.config();
 
@@ -57,6 +61,12 @@ app.use("/api/event", authMiddleware, eventRoutes);
 
 // Auth routes
 app.use("/api/auth", authRoutes);
+
+// notification list (public; add auth if needed)
+app.use("/api/notification",authMiddleware, notificationRoutes);
+
+//request routes
+app.use("/api/request", authMiddleware,requestRoutes)
 
 
 // Create HTTP + Socket.IO

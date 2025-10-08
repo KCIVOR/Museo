@@ -103,14 +103,17 @@ export default function Event() {
       const rawQuery = params.get('open');
       const rawState = location.state && (location.state.open || location.state?.open === 0 ? String(location.state.open) : null);
       const raw = rawState ?? rawQuery;
+      
       if (!raw || !items?.length || selected) return;
       const openKey = String(raw).toLowerCase();
+      
       const match = items.find(e => {
         const a = String(e.eventId || '').toLowerCase();
         const b = String(e.id || '').toLowerCase();
         const c = String(e.title || '').toLowerCase();
         return a === openKey || b === openKey || c === openKey;
       });
+      
       if (match) {
         openEvent(match);
         // If opened via state, clear it so it doesn't keep re-opening
@@ -120,7 +123,9 @@ export default function Event() {
           navigate({ pathname: location.pathname, search }, { replace: true, state: {} });
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error in auto-open effect:', e);
+    }
   }, [items, selected, location.search, location.state]);
 
   const openEvent = (evt) => setSelected({

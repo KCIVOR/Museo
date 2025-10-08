@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { socket } from "./notificationsSocket"
+import { socket } from "../lib/socketClient"
 
 export function useRealtimeNotifications(onNotify) {
   useEffect(() => {
