@@ -1,16 +1,16 @@
-/* Layout.css */
+/* Layout.css - Museum Quality Layout */
 
 /* Root grid: header on top, footer bottom, center row with 3 columns */
 .app {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr auto; /* header, content, footer */
-  grid-template-columns: var(--side-l, 280px) 1fr var(--side-r, 340px); /* left, main, right */
+  grid-template-columns: var(--museo-sidebar-width) 1fr 340px; /* left, main, right */
   grid-template-areas:
     "header header header"
     "sideL  main   sideR"
     "footer footer footer";
-  background: #eef2f5;
+  background: linear-gradient(135deg, var(--museo-stone-50) 0%, var(--museo-forest-50) 100%);
   overflow: visible; /* important: do not clip sticky children */
 }
 
@@ -20,35 +20,38 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #f7f9fb;
-  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  border-bottom: 1px solid var(--museo-stone-200);
+  box-shadow: var(--museo-shadow-sm);
 }
 
 /* Left sidebar: sticky under header, owns its own scroll */
 .app__side-left {
   grid-area: sideL;
   position: sticky;
-  top: var(--nav-h, 64px);
-  height: calc(100vh - var(--nav-h, 64px));
-  overflow: auto;                          /* independent scrollbar */
-  background: #f3f6f8;
-  border-right: 1px solid #e5e7eb;
-  padding: 16px;
+  top: var(--museo-nav-height);
+  height: calc(100vh - var(--museo-nav-height));
+  overflow: auto;
+  background: var(--museo-bg-secondary) !important;
+  border-right: 1px solid var(--museo-border) !important;
+  padding: var(--museo-space-6);
+  color: var(--museo-text-primary) !important;
 
-  contain: layout paint size;              /* optional isolation */
-  overscroll-behavior: contain;            /* prevent scroll chaining */
+  contain: layout paint size;
+  overscroll-behavior: contain;
 }
 
 /* Right rail: sticky under header, owns its own scroll */
 .app__side-right {
   grid-area: sideR;
   position: sticky;
-  top: var(--nav-h, 64px);
-  height: calc(100vh - var(--nav-h, 64px));
-  overflow: auto;                          /* independent scrollbar */
-  background: #f7f9fb;
-  border-left: 1px solid #e5e7eb;
-  padding: 16px;
+  top: var(--museo-nav-height);
+  height: calc(100vh - var(--museo-nav-height));
+  overflow: auto;
+  background: var(--museo-bg-secondary) !important;
+  border-left: 1px solid var(--museo-border) !important;
+  padding: var(--museo-space-6);
+  color: var(--museo-text-primary) !important;
 
   contain: layout paint size;
   overscroll-behavior: contain;
@@ -58,11 +61,12 @@
 .app__main {
   grid-area: main;
   min-width: 0;
-  overflow: auto;                          /* independent scrollbar */
-  padding: 16px;
-  background: #f5f7fa;
+  overflow: auto;
+  padding: var(--museo-space-6);
+  background: var(--museo-white) !important;
+  color: var(--museo-text-primary) !important;
 
-  overscroll-behavior: contain;            /* block scroll chaining */
+  overscroll-behavior: contain;
 }
 
 

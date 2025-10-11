@@ -1,7 +1,6 @@
 /* Page wrapper - match events page exactly */
 .galleryPage {
   min-height: 100vh;
-  background: #f4f6f8;
   display: flex;
   justify-content: center;
 }

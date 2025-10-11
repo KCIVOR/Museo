@@ -1,7 +1,6 @@
 /* Page wrapper */
 .marketPage {
   min-height: 100vh;
-  background: #f4f6f8;
   display: flex;
   justify-content: center;
 }
@@ -32,8 +31,20 @@
   justify-content: space-between;
   padding: 4px 4px 12px;
 }
-.mTitle { font-size: 20px; font-weight: 800; color: #111; }
-.mMore { font-size: 13px; color: #4b5563; text-decoration: none; }
+.mTitle { 
+  font-size: 20px; 
+  font-weight: 800; 
+  color: #1e293b; /* museo-text-primary */
+}
+.mMore { 
+  font-size: 13px; 
+  color: #475569; /* museo-text-secondary */
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.mMore:hover {
+  color: #06b6d4; /* museo-accent */
+}
 
 /* Horizontal row */
 .mRow {
@@ -70,14 +81,14 @@
 .mCaption {
   padding: 10px 12px 6px;
   font-size: 14px;
-  color: #111;
+  color: #1e293b; /* museo-text-primary */
 }
 
 /* Price line */
 .mPrice {
   padding: 0 12px 12px;
   font-weight: 700;
-  color: #c1121f;         /* red price, like your screenshot */
+  color: #ef4444;         /* museo-error for price emphasis */
   font-size: 14px;
 }
 

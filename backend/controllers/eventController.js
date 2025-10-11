@@ -19,6 +19,30 @@ export const getEvents = async (req, res) => {
   }
 };
 
+// GET /event/:id
+export const getEventById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing event id' });
+
+    // First try by eventId (uuid used across app)
+    let row = await db.from('event').select('*').eq('eventId', id).single();
+
+    // If not found and your table also has a numeric 'id', try that as fallback
+    if ((row.error || !row.data)) {
+      row = await db.from('event').select('*').eq('id', id).single();
+    }
+
+    if (row.error || !row.data) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    return res.status(200).json({ event: row.data });
+  } catch (err) {
+    console.error('getEventById: unexpected error:', err);
+    return res.status(500).json({ error: 'Unexpected server error' });
+  }
+};
+
 export const createEvent = async (req, res) => {
   try {
     const {

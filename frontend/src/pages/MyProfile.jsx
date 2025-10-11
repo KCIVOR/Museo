@@ -1,8 +1,21 @@
 // src/pages/MyProfile.jsx
 import "./css/MyProfile.css";
+import "../components/MuseoGalleryContainer.css";
+import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtGallery from "./subPages/artGallery";
 import UploadArt from "./UploadArt";
+import { 
+  MuseoPage, 
+  MuseoFeed, 
+  MuseoHeading, 
+  MuseoCard, 
+  MuseoAvatar, 
+  MuseoBody, 
+  MuseoTitle, 
+  MuseoDesc, 
+  MuseoBtn 
+} from "../components/MuseoGalleryContainer.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 const FALLBACK_AVATAR =
@@ -124,75 +137,275 @@ function EditProfileModal({ open, onClose, initial }) {
   };
 
   return (
-    <div className="pe__scrim" onClick={onClose}>
+    <div 
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(110, 74, 46, 0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '16px',
+        backdropFilter: 'saturate(120%) blur(8px)'
+      }}
+      onClick={onClose}
+    >
       <section
-        className="pe__dialog"
         role="dialog"
         aria-modal="true"
         aria-label="Edit profile"
+        style={{
+          background: 'linear-gradient(135deg, #faf8f5 0%, #fdfcfa 100%)',
+          borderRadius: '16px',
+          border: '2px solid #d4b48a',
+          boxShadow: '0 20px 60px rgba(110, 74, 46, 0.25)',
+          width: '100%',
+          maxWidth: '700px',
+          maxHeight: '95vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          backdropFilter: 'blur(12px)',
+          fontFamily: 'Georgia, Times New Roman, serif'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="pe__header">
-          <h3 className="pe__title">Edit profile</h3>
-          <button className="pe__close" onClick={onClose} aria-label="Close">✕</button>
+        <header style={{
+          padding: '14px 16px 8px',
+          borderBottom: 'none',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <h3 style={{
+            fontSize: '20px',
+            fontWeight: '700',
+            color: '#6e4a2e',
+            margin: 0,
+            fontFamily: 'Georgia, Times New Roman, serif',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            Edit Profile
+          </h3>
+          <button 
+            onClick={onClose} 
+            aria-label="Close"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              background: 'rgba(253, 252, 250, 0.9)',
+              border: '1px solid rgba(212, 180, 138, 0.3)',
+              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '16px',
+              color: '#8b6f4d',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(110, 74, 46, 0.1)',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(212, 180, 138, 0.08)';
+              e.target.style.color = '#b8722c';
+              e.target.style.borderColor = 'rgba(212, 180, 138, 0.35)';
+              e.target.style.transform = 'translateX(1px)';
+              e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(253, 252, 250, 0.9)';
+              e.target.style.color = '#8b6f4d';
+              e.target.style.borderColor = 'rgba(212, 180, 138, 0.3)';
+              e.target.style.transform = 'translateX(0)';
+              e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.1)';
+            }}
+          >
+            ✕
+          </button>
         </header>
 
-        <div className="pe__coverBox">
-          {cover ? (
-            <img className="pe__coverImg" src={cover.url || cover} alt="" />
-          ) : (
-            <div className="pe__coverEmpty">Background photo</div>
-          )}
-          <button
-            type="button"
-            className="pe__coverBtn"
-            onClick={() => pickImage((v) => setCover(v))}
-          >
-            Change cover
-          </button>
-        </div>
-
-        <div className="pe__body">
-          <div className="pe__avatarWrap">
-            {avatar ? (
-              <img className="pe__avatar" src={avatar.url || avatar} alt="" />
+        {/* Modal Body - Scrollable */}
+        <div style={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          padding: '0 16px 16px' 
+        }}>
+          {/* Cover Photo Section */}
+          <div style={{
+            position: 'relative',
+            height: '160px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            marginBottom: '20px',
+            background: 'linear-gradient(135deg, #e8dcc6 0%, #f0e6d2 100%)',
+            border: '1px solid rgba(212, 180, 138, 0.2)'
+          }}>
+            {cover ? (
+              <img 
+                src={cover.url || cover} 
+                alt="Cover" 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
             ) : (
-              <div className="pe__avatarEmpty">Photo</div>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#8b6f4d',
+                fontSize: '16px',
+                fontFamily: 'Georgia, Times New Roman, serif'
+              }}>
+                Background photo
+              </div>
             )}
             <button
               type="button"
-              className="pe__avatarBtn"
-              onClick={() => pickImage((v) => setAvatar(v))}
+              onClick={() => pickImage((v) => setCover(v))}
+              style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                background: 'rgba(253, 252, 250, 0.9)',
+                border: '1px solid rgba(212, 180, 138, 0.3)',
+                borderRadius: '10px',
+                padding: '0 14px',
+                height: '34px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#8b6f4d',
+                cursor: 'pointer',
+                fontFamily: 'Georgia, Times New Roman, serif',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(212, 180, 138, 0.08)';
+                e.target.style.borderColor = 'rgba(212, 180, 138, 0.35)';
+                e.target.style.transform = 'translateX(1px)';
+                e.target.style.boxShadow = '0 1px 4px rgba(110, 74, 46, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(253, 252, 250, 0.9)';
+                e.target.style.borderColor = 'rgba(212, 180, 138, 0.3)';
+                e.target.style.transform = 'translateX(0)';
+                e.target.style.boxShadow = 'none';
+              }}
             >
-              Change photo
+              Change cover
             </button>
           </div>
 
-          <div className="pe__form">
-            <div className="pe__row">
-              <label className="pe__label">
-                First name
-                <input
-                  type="text"
-                  className={`pe__input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
-                  value={firstName}
-                  onChange={(e) => { setFirstName(e.target.value); setValidationErrors((p)=>({...p, firstName: ''})); }}
-                  placeholder="First name"
+          {/* Main Content - Two Column Layout */}
+          <div className="pe__body" style={{
+            display: 'grid',
+            gridTemplateColumns: '160px 1fr',
+            gap: '20px',
+            alignItems: 'start',
+            marginBottom: '16px',
+            padding: '0'
+          }}>
+            {/* Avatar Section */}
+            <div className="pe__avatarWrap" style={{
+              position: 'relative',
+              alignSelf: 'start',
+              width: '160px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: '8px',
+              marginLeft: '0',
+              paddingLeft: '0'
+            }}>
+              {avatar ? (
+                <img 
+                  src={avatar.url || avatar} 
+                  alt="Avatar" 
+                  className="pe__avatar"
+                  style={{
+                    width: '160px',
+                    height: '160px',
+                    borderRadius: '20px',
+                    objectFit: 'cover',
+                    border: '6px solid #faf8f5',
+                    boxShadow: '0 8px 24px rgba(110, 74, 46, 0.15)',
+                    display: 'grid',
+                    placeItems: 'center'
+                  }}
                 />
-                {validationErrors.firstName && <span className="pe__error">{validationErrors.firstName}</span>}
-              </label>
-              <label className="pe__label">
-                Middle name
-                <input
-                  type="text"
-                  className={`pe__input ${validationErrors.middleName ? 'pe__input--error' : ''}`}
-                  value={middleName}
-                  onChange={(e) => { setMiddleName(e.target.value); setValidationErrors((p)=>({...p, middleName: ''})); }}
-                  placeholder="Middle name"
-                />
-                {validationErrors.middleName && <span className="pe__error">{validationErrors.middleName}</span>}
-              </label>
+              ) : (
+                <div className="pe__avatarEmpty" style={{
+                  width: '160px',
+                  height: '160px',
+                  borderRadius: '20px',
+                  background: 'rgba(212, 180, 138, 0.2)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#8b6f4d',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  border: '6px solid #faf8f5',
+                  boxShadow: '0 8px 24px rgba(110, 74, 46, 0.15)',
+                  fontFamily: 'Georgia, Times New Roman, serif'
+                }}>
+                  Photo
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => pickImage((v) => setAvatar(v))}
+                className="pe__avatarBtn"
+                style={{
+                  alignSelf: 'flex-start',
+                  marginLeft: '0'
+                }}
+              >
+                Change photo
+              </button>
             </div>
+
+            {/* Form Fields */}
+            <div className="pe__form" style={{ display: 'grid', gap: '16px' }}>
+              {/* Name Fields Row */}
+              <div className="pe__row" style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                alignItems: 'start'
+              }}>
+                <label className="pe__label">
+                  First name *
+                  <input
+                    type="text"
+                    className={`pe__input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
+                    value={firstName}
+                    onChange={(e) => { setFirstName(e.target.value); setValidationErrors((p)=>({...p, firstName: ''})); }}
+                    placeholder="First name"
+                  />
+                  {validationErrors.firstName && <span className="pe__error">{validationErrors.firstName}</span>}
+                </label>
+                <label className="pe__label">
+                  Middle name
+                  <input
+                    type="text"
+                    className={`pe__input ${validationErrors.middleName ? 'pe__input--error' : ''}`}
+                    value={middleName}
+                    onChange={(e) => { setMiddleName(e.target.value); setValidationErrors((p)=>({...p, middleName: ''})); }}
+                    placeholder="Middle name"
+                  />
+                  {validationErrors.middleName && <span className="pe__error">{validationErrors.middleName}</span>}
+                </label>
+              </div>
 
             <label className="pe__label">
               Last name
@@ -281,19 +494,32 @@ function EditProfileModal({ open, onClose, initial }) {
               />
               {validationErrors.address && <span className="pe__error">{validationErrors.address}</span>}
             </label>
+            </div>
           </div>
         </div>
 
-        <footer className="pe__footer">
-          <button className="pe__btn pe__btn--ghost" onClick={onClose}>Cancel</button>
+        {/* Modal Footer */}
+        <div style={{
+          padding: '8px 16px 14px',
+          borderTop: '1px solid #eef0f2',
+          display: 'flex',
+          gap: '12px',
+          justifyContent: 'flex-end'
+        }}>
+          <button 
+            onClick={onClose}
+            className="pe__btn pe__btn--ghost"
+          >
+            Cancel
+          </button>
           <button
-            className="pe__btn pe__btn--primary"
             onClick={updateProfile}
             disabled={isSubmitting}
+            className={`pe__btn pe__btn--primary ${isSubmitting ? 'pe__btn--primary:disabled' : ''}`}
           >
-            {isSubmitting ? "Saving..." : "Save"}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
-        </footer>
+        </div>
       </section>
     </div>
   );
@@ -313,6 +539,9 @@ export default function MyProfile() {
   const [bio, setBio] = useState("");
   const [about, setAbout] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [loadingArts, setLoadingArts] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [artsLoaded, setArtsLoaded] = useState(false);
   const [role, setRole] = useState("");
   const [arts, setArts] = useState([]);
   const [openUploadArt, setOpenUploadArt] = useState(false);
@@ -359,11 +588,13 @@ export default function MyProfile() {
       console.error(err);
     } finally {
       setIsFetching(false);
+      setProfileLoaded(true);
     }
   };
 
   const fetchArts = async () => {
     try{
+      setLoadingArts(true);
       const response = await fetch(`${API}/profile/getArts`, {
         method: "GET",
         credentials: "include",
@@ -377,6 +608,9 @@ export default function MyProfile() {
       console.log("Fetched arts:", data);
     }catch(err){
       console.error(err);
+    } finally {
+      setLoadingArts(false);
+      setArtsLoaded(true);
     }
   }
 
@@ -423,118 +657,279 @@ export default function MyProfile() {
     // Add your click logic here
   };
 
+  // Show full-page loader first, then render all content
+  if (!(profileLoaded && artsLoaded)) {
+    return (
+      <MuseoPage>
+        <MuseoFeed style={{ gap: '24px' }}>
+          <MuseoLoadingBox
+            show={true}
+            message={MuseoLoadingBox.messages.loading}
+          />
+        </MuseoFeed>
+      </MuseoPage>
+    );
+  }
+
   return (
-    <div className="profilePage">
-      <div className="profileFeed">
+    <MuseoPage>
+      <MuseoFeed style={{ gap: '24px' }}>
         {/* Profile Card */}
-        <section className="pCard">
-          <div className="pCover">
-            <img className="pCoverImg" src={cover || FALLBACK_COVER} alt="Cover" loading="lazy" />
-            <div className="pAvatarRing">
-              <div className="pAvatarWrap">
-                <img
-                  className="pAvatar"
-                  src={avatar || FALLBACK_AVATAR}
-                  alt={`${fullName || "User"} avatar`}
-                  loading="lazy"
-                />
-              </div>
-            </div>
+        <MuseoCard variant="profile" style={{ position: 'relative', overflow: 'hidden', marginBottom: '24px' }}>
+          {/* Cover Image */}
+          <div style={{
+            position: 'relative',
+            height: '200px',
+            background: `linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%)`,
+            backgroundImage: `url(${cover || FALLBACK_COVER})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '16px 16px 0 0'
+          }}>
+            {/* Overlay for better text readability */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%)',
+              borderRadius: '16px 16px 0 0'
+            }} />
+            
+            {/* Edit Button */}
+            <button
+              type="button"
+              onClick={() => setOpenEdit(true)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'var(--museo-white)',
+                border: '2px solid var(--museo-accent)',
+                borderRadius: '8px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: 'var(--museo-primary)',
+                zIndex: 10,
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'var(--museo-accent)';
+                e.target.style.color = 'var(--museo-white)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'var(--museo-white)';
+                e.target.style.color = 'var(--museo-primary)';
+                e.target.style.transform = 'scale(1)';
+              }}
+              title="Edit profile"
+            >
+              ✏️
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="pKebab compact"
-            aria-label="Edit profile"
-            onClick={() => setOpenEdit(true)}
-            title="Edit profile"
-          >
-            ⋯
-          </button>
+          {/* Avatar */}
+          <div style={{
+            position: 'relative',
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: '-60px',
+            marginBottom: '20px',
+            zIndex: 2
+          }}>
+            <MuseoAvatar
+              src={avatar || FALLBACK_AVATAR}
+              alt={`${fullName || "User"} avatar`}
+              size="xl"
+              style={{
+                border: '4px solid var(--museo-white)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+              }}
+            />
+          </div>
 
-          <header className="pHeader">
-            <h1 className="pName" title={fullName || "Unnamed user"}>
+          <MuseoBody style={{ textAlign: 'center', padding: '0 24px 24px' }}>
+            <MuseoTitle style={{ 
+              fontSize: '28px', 
+              marginBottom: '12px',
+              color: 'var(--museo-primary)'
+            }}>
               {fullName || "Unnamed user"}
-            </h1>
-            <div className="pMeta">
-              <div>Sex: {sex || "—"}</div>
-              <div>Address: {address || "—"}</div>
-              {birthdate && (
-                <div>
-                  Birthdate: {new Date(birthdate).toLocaleDateString()} {age !== "" ? `(Age ${age})` : ""}
+            </MuseoTitle>
+            
+            {username && (
+              <div style={{
+                fontSize: '16px',
+                color: 'var(--museo-text-muted)',
+                marginBottom: '16px',
+                fontWeight: '500'
+              }}>
+                @{username}
+              </div>
+            )}
+
+            {bio && (
+              <MuseoDesc style={{
+                fontSize: '16px',
+                fontStyle: 'italic',
+                color: 'var(--museo-text-secondary)',
+                marginBottom: '20px',
+                lineHeight: '1.5'
+              }}>
+                "{bio}"
+              </MuseoDesc>
+            )}
+
+            {/* Profile Details */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              {sex && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--museo-cream)',
+                  border: '1px solid var(--museo-gray-200)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <strong style={{ color: 'var(--museo-primary)' }}>Gender:</strong> {sex}
                 </div>
               )}
-              <div className="pQuickBio">{bio || "—"}</div>
+              {address && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--museo-cream)',
+                  border: '1px solid var(--museo-gray-200)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <strong style={{ color: 'var(--museo-primary)' }}>Location:</strong> {address}
+                </div>
+              )}
+              {birthdate && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--museo-cream)',
+                  border: '1px solid var(--museo-gray-200)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <strong style={{ color: 'var(--museo-primary)' }}>Born:</strong> {age !== "" ? `${age} years old (${new Date(birthdate).toLocaleDateString()})` : new Date(birthdate).toLocaleDateString()}
+                </div>
+              )}
             </div>
-          </header>
 
-          {about && <div className="pBio">{about}</div>}
-        </section>
+            {about && (
+              <div style={{
+                textAlign: 'left',
+                padding: '16px',
+                background: 'var(--museo-cream)',
+                borderRadius: '12px',
+                border: '1px solid var(--museo-gray-200)'
+              }}>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'var(--museo-primary)',
+                  marginBottom: '8px'
+                }}>
+                  About
+                </h4>
+                <p style={{
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'var(--museo-text-secondary)',
+                  margin: 0
+                }}>
+                  {about}
+                </p>
+              </div>
+            )}
+          </MuseoBody>
+        </MuseoCard>
 
-        {/* FIXED: Art galleries only show for artists and admins */}
+        {/* Art galleries for artists and admins */}
         {(role === "artist" || role === "admin") && (
           <>
             {/* Main Artwork Gallery */}
-            <section className="pCard">
-            <ArtGallery
-              arts={arts}
-              title="My Artwork"
-              showStats={true}
-              showActions={true}
-              showUpload={true} // This shows the upload buttons
-              onUploadRequest={() => setOpenUploadArt(true)}
-              onViewArt={handleViewArt}
-              onLikeArt={handleLikeArt}
-              onArtClick={handleArtClick}
-              fallbackImage={FALLBACK_COVER}
-            />
-            </section>
+            <MuseoCard style={{ marginBottom: '24px' }}>
+              <MuseoBody>
+                <MuseoHeading style={{ marginBottom: '20px' }}>My Artwork</MuseoHeading>
+                <ArtGallery
+                  arts={arts}
+                  title=""
+                  showStats={true}
+                  showActions={true}
+                  showUpload={true}
+                  onUploadRequest={() => setOpenUploadArt(true)}
+                  onViewArt={handleViewArt}
+                  onLikeArt={handleLikeArt}
+                  onArtClick={handleArtClick}
+                  fallbackImage={FALLBACK_COVER}
+                />
+              </MuseoBody>
+            </MuseoCard>
 
             {/* Featured Works Gallery */}
-            <section className="pCard">
-              <ArtGallery
-                arts={[]} // Empty for demonstration
-                title="Featured Works"
-                emptyStateTitle="No featured works"
-                emptyStateMessage="Promote your best artwork here!"
-                emptyStateIcon="⭐"
-                showActions={false}
-              />
-            </section>
+            <MuseoCard>
+              <MuseoBody>
+                <MuseoHeading style={{ marginBottom: '20px' }}>Featured Works</MuseoHeading>
+                <ArtGallery
+                  arts={[]}
+                  title=""
+                  emptyStateTitle="No featured works"
+                  emptyStateMessage="Promote your best artwork here!"
+                  emptyStateIcon="⭐"
+                  showActions={false}
+                />
+              </MuseoBody>
+            </MuseoCard>
           </>
         )}
 
-        {/* Optional: Show different content for regular users */}
+        {/* Welcome message for regular users */}
         {role === "user" && (
-          <section className="pCard">
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '60px 20px',
-              background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.03), rgba(147, 51, 234, 0.03))',
-              borderRadius: '20px',
-              border: '2px dashed rgba(79, 70, 229, 0.2)'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: '0.7' }}>🎨</div>
-              <h3 style={{ 
+          <MuseoCard>
+            <MuseoBody style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ 
+                fontSize: '48px', 
+                marginBottom: '16px', 
+                opacity: '0.7' 
+              }}>
+                🎨
+              </div>
+              <MuseoTitle style={{ 
                 fontSize: '22px', 
-                fontWeight: '700', 
-                color: '#374151', 
-                margin: '0 0 8px 0' 
+                color: 'var(--museo-primary)', 
+                marginBottom: '8px' 
               }}>
                 Welcome to the Gallery!
-              </h3>
-              <p style={{ 
-                fontSize: '16px', 
-                margin: '0', 
-                opacity: '0.8',
-                color: '#6b7280'
+              </MuseoTitle>
+              <MuseoDesc style={{ 
+                fontSize: '16px',
+                color: 'var(--museo-text-muted)'
               }}>
                 Explore amazing artwork from talented artists. Upgrade to artist account to showcase your own creations!
-              </p>
-            </div>
-          </section>
+              </MuseoDesc>
+            </MuseoBody>
+          </MuseoCard>
         )}
-      </div>
+      </MuseoFeed>
 
       <EditProfileModal
         open={openEdit}
@@ -560,6 +955,6 @@ export default function MyProfile() {
         onClose={() => { setOpenUploadArt(false); fetchArts(); }}
         onUploaded={() => { fetchArts(); }}
       />
-    </div>
+    </MuseoPage>
   );
 }

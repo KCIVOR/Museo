@@ -16,7 +16,8 @@ const ArtistArtGallery = ({
   className = "",
   loading = false,
   fallbackImage = null,
-  currentUser = null
+  currentUser = null,
+  containerStyle = {}
 }) => {
   const [activePost, setActivePost] = useState(null);
   const [likes, setLikes] = useState({});
@@ -175,10 +176,12 @@ const ArtistArtGallery = ({
   }
 
   return (
-    <div className={className}>
-      <div className="pSectionBar">
-        <h2 className="pSectionTitle">{title}</h2>
-      </div>
+    <div className={`art-gallery ${className}`} style={containerStyle}>
+      {title && (
+        <div className="pSectionBar">
+          <h2 className="pSectionTitle">{title}</h2>
+        </div>
+      )}
 
       {arts.length > 0 ? (
         <div className="pArtGrid">

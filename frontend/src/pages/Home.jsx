@@ -29,8 +29,8 @@ function MuseoHero() {
         <h1 className="mHero__title">Discover, share, and celebrate emerging art</h1>
         <p className="mHero__subtitle">Curated picks, community showcases, and open calls year‑round.</p>
         <div className="mHero__ctaRow">
-          <button className="mHero__btnPrimary">Join Community</button>
-          <button className="mHero__btnGhost">Browse Gallery</button>
+          <button className="btn-hero">Join Community</button>
+          <button className="btn-hero-ghost">Browse Gallery</button>
         </div>
       </div>
     </section>
@@ -98,6 +98,8 @@ function normalizePosts(payload) {
         avatar: fixedAvatar,
       },
       timestamp: fmt(p.timestamp || p.createdAt),
+      // Ensure images property exists for carousel
+      images: Array.isArray(p.image) ? p.image : (p.image ? [p.image] : []),
     };
   });
 }
@@ -127,6 +129,9 @@ export default function Home() {
 
   // profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Expanded posts state
+  const [expandedPosts, setExpandedPosts] = useState({});
 
   // Advanced image load handler with CORS/canvas safety
   const onImageLoad = (idx, e) => {
@@ -179,7 +184,14 @@ export default function Home() {
   const handlePopUp = (postId) => {
     const p = posts.find((p) => p.id === postId);
     if (p) setActivePost(p);
-  }; // pop up para sa pinindot na post 
+  }; // pop up para sa pinindot na post
+
+  const toggleExpanded = (postId) => {
+    setExpandedPosts(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  }; 
 
   // Fetch posts from API
   const fetchPosts = async () => {
@@ -411,7 +423,57 @@ export default function Home() {
                     className="ge"
                     style={{ margin: 0, color: "#111", lineHeight: 1.5 }}
                   >
-                    {item.text}
+                    {(() => {
+                      const maxLength = 150;
+                      const isExpanded = expandedPosts[item.id];
+                      const shouldTruncate = item.text.length > maxLength;
+                      
+                      if (!shouldTruncate) {
+                        return item.text;
+                      }
+                      
+                      if (isExpanded) {
+                        return (
+                          <>
+                            {item.text}
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleExpanded(item.id);
+                              }}
+                              style={{
+                                color: '#888',
+                                cursor: 'pointer',
+                                marginLeft: '5px',
+                                fontSize: '13px'
+                              }}
+                            >
+                              see less
+                            </span>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            {item.text.substring(0, maxLength)}...
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleExpanded(item.id);
+                              }}
+                              style={{
+                                color: '#888',
+                                cursor: 'pointer',
+                                marginLeft: '5px',
+                                fontSize: '13px'
+                              }}
+                            >
+                              see more
+                            </span>
+                          </>
+                        );
+                      }
+                    })()}
                   </p>
                 </div>
               )}
@@ -421,8 +483,9 @@ export default function Home() {
                   className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
                   style={{ background: bg[idx] || "#f2f4f7" }}
                 >
+                  {/* Handle both single image (string) and multiple images (array) */}
                   <img
-                    src={item.image}
+                    src={Array.isArray(item.image) ? item.image[0] : item.image}
                     alt="Post content"
                     className={`postImage ${
                       fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"
@@ -434,23 +497,112 @@ export default function Home() {
                       e.currentTarget.style.display = "none";
                     }}
                   />
+                  {/* Show indicator if multiple images */}
+                  {Array.isArray(item.image) && item.image.length > 1 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'rgba(0,0,0,0.8)',
+                      color: 'white',
+                      padding: '6px 10px',
+                      borderRadius: '16px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      backdropFilter: 'blur(4px)'
+                    }}>
+                      <span style={{ fontSize: '14px', color: 'white' }}>📷</span>
+                      <span style={{ color: 'white' }}>{item.image.length}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="actions" onClick={(e) => e.stopPropagation()}>
+              {/* Elegant Action Bar */}
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  padding: '12px 16px',
+                  borderTop: '1px solid var(--museo-gray-200)',
+                  background: 'var(--museo-white)',
+                  gap: '16px'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Like Button */}
                 <button
-                  className="actionBtn"
-                  aria-label="Like"
                   onClick={() => handleLike(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: '1px solid var(--museo-gray-200)',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: 'var(--museo-text-secondary)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'var(--museo-accent)';
+                    e.target.style.color = 'var(--museo-white)';
+                    e.target.style.borderColor = 'var(--museo-accent)';
+                    e.target.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'none';
+                    e.target.style.color = 'var(--museo-text-secondary)';
+                    e.target.style.borderColor = 'var(--museo-gray-200)';
+                    e.target.style.transform = 'translateY(0)';
+                  }}
+                  aria-label="Like post"
                 >
-                  <span>❤️{likes[item.id] || 0}</span>
+                  <span style={{ fontSize: '14px' }}>❤️</span>
+                  <span>{likes[item.id] || 0}</span>
                 </button>
+
+                {/* Comment Button */}
                 <button
-                  className="actionBtn"
-                  aria-label="Comment"
                   onClick={() => handlePopUp(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'none',
+                    border: '1px solid var(--museo-gray-200)',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    padding: '6px 12px',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: 'var(--museo-text-secondary)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'var(--museo-accent)';
+                    e.target.style.color = 'var(--museo-white)';
+                    e.target.style.borderColor = 'var(--museo-accent)';
+                    e.target.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'none';
+                    e.target.style.color = 'var(--museo-text-secondary)';
+                    e.target.style.borderColor = 'var(--museo-gray-200)';
+                    e.target.style.transform = 'translateY(0)';
+                  }}
+                  aria-label="Comment on post"
                 >
-                  <span>💬{comments[item.id] || 0}</span>
+                  <span style={{ fontSize: '14px' }}>💬</span>
+                  <span>{comments[item.id] || 0}</span>
                 </button>
               </div>
             </div>

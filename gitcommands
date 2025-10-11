@@ -1,0 +1,19 @@
+/*
+git add .
+git commit -m "Add latest changes"
+git push -u origin main
+
+
+
+For all protected API calls:
+Make sure to include the authorization header:
+fetch('http://localhost:3000/api/some-protected-route', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    },
+    credentials: 'include'
+});
+
+*/

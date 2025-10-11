@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import "./css/artist.css";
 import { useEffect, useState } from "react";
+import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Artist() {
@@ -54,13 +55,20 @@ export default function Artist() {
   return (
     <div className="artistPage">
       <div className="artistFeed">
+        {/* Gallery Header */}
+        <h1>Artists</h1>
+        
         {/* Loading / error states */}
-        {loading && (
-          <div className="artistGridMessage">Loading artists…</div>
-        )}
+        <MuseoLoadingBox 
+          show={loading} 
+          message={MuseoLoadingBox.messages.artists} 
+        />
         {errMsg && !loading && (
           <div className="artistGridMessage">
-            {errMsg}
+            Unable to load artist gallery
+            <br />
+            <small style={{ opacity: 0.7, fontSize: '14px' }}>{errMsg}</small>
+            <br />
             <button className="artistRetryBtn" onClick={fetchArtist}>Retry</button>
           </div>
         )}
@@ -71,7 +79,7 @@ export default function Artist() {
               <div
                 key={a.id}
                 className="artistCard"
-                style={{ animationDelay: `${i * 60}ms` }}
+                style={{ animationDelay: `${i * 80}ms` }}
               >
                 <Link
                   to={`/artist/${a.id}`}
@@ -90,7 +98,13 @@ export default function Artist() {
               </div>
             ))}
             {artists.length === 0 && (
-              <div className="artistGridMessage">No artists found.</div>
+              <div className="artistGridMessage">
+                No artists in our gallery yet.
+                <br />
+                <small style={{ opacity: 0.7, fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                  Check back soon for featured artists and their collections.
+                </small>
+              </div>
             )}
           </div>
         )}

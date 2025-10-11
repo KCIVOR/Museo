@@ -1,8 +1,21 @@
-// src/pages/MyProfile.jsx
+// src/pages/subPages/artistProfile.jsx
 import "../css/MyProfile.css";
+import "../../components/MuseoGalleryContainer.css";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtistArtGallery from "./artistArtGallery";
 import { useParams } from 'react-router-dom';
+import { 
+  MuseoPage, 
+  MuseoFeed, 
+  MuseoHeading, 
+  MuseoCard, 
+  MuseoAvatar, 
+  MuseoBody, 
+  MuseoTitle, 
+  MuseoDesc, 
+  MuseoBtn 
+} from "../../components/MuseoGalleryContainer.jsx";
+import MuseoLoadingBox from "../../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 
@@ -26,7 +39,7 @@ export default function ArtistProfile() {
   const [birthdate, setBirthdate] = useState("");
   const [bio, setBio] = useState("");
   const [about, setAbout] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [role, setRole] = useState("");
   const [arts, setArts] = useState([]);
 
@@ -47,7 +60,6 @@ export default function ArtistProfile() {
   }, [birthdate]);
 
   const fetchProfile = async () => {
-    if (isFetching) return;
     setIsFetching(true);
     try {
       const res = await fetch(`${API}/artist/getArtistById/${id}`, {
@@ -111,10 +123,12 @@ export default function ArtistProfile() {
   }; 
 
   useEffect(() => {
-    fetchProfile();
-    fetchRole();
-    fetchArts();
-  }, []);
+    if (id) {
+      fetchProfile();
+      fetchRole();
+      fetchArts();
+    }
+  }, [id]);
 
   const handleCloseEdit = () => {
     setOpenEdit(false);
@@ -138,62 +152,253 @@ export default function ArtistProfile() {
   };
 
   return (
-    <div className="profilePage">
-      <div className="profileFeed">
-        {/* Profile Card */}
-        <section className="pCard">
-          <div className="pCover">
-            <img className="pCoverImg" src={cover || FALLBACK_COVER} alt="Cover" loading="lazy" />
-            <div className="pAvatarRing">
-              <div className="pAvatarWrap">
-                <img
-                  className="pAvatar"
-                  src={avatar || FALLBACK_AVATAR}
-                  alt={`${fullName || "User"} avatar`}
-                  loading="lazy"
-                />
-              </div>
+    <MuseoPage>
+      <MuseoFeed style={{ gap: '24px' }}>
+        {/* Loading State */}
+        <MuseoLoadingBox 
+          show={isFetching} 
+          message={MuseoLoadingBox.messages.profile} 
+        />
+
+        {/* Artist Profile Card */}
+        {!isFetching && (
+        <>
+        <MuseoCard variant="artist" style={{ position: 'relative', overflow: 'hidden', padding: '0', marginBottom: '24px' }}>
+          {/* Cover Image */}
+          <div style={{
+            position: 'relative',
+            height: '200px',
+            background: `linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%)`,
+            backgroundImage: `url(${cover || FALLBACK_COVER})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '16px 16px 0 0',
+            margin: '0',
+            width: '100%'
+          }}>
+            {/* Overlay for better text readability */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%)',
+              borderRadius: '16px 16px 0 0'
+            }} />
+            
+            {/* Artist Badge */}
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              left: '16px',
+              background: 'var(--museo-accent)',
+              color: 'var(--museo-white)',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}>
+              🎨 Artist
             </div>
           </div>
-          <header className="pHeader">
-            <h1 className="pName" title={fullName || "Unnamed user"}>
-              {fullName || "Unnamed user"}
-            </h1>
-            <div className="pMeta">
-              <div>Sex: {sex || "—"}</div>
-              <div>Address: {address || "—"}</div>
-              {birthdate && (
-                <div>
-                  Birthdate: {new Date(birthdate).toLocaleDateString()} {age !== "" ? `(Age ${age})` : ""}
+
+          {/* Avatar */}
+          <div style={{
+            position: 'relative',
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: '-60px',
+            marginBottom: '20px',
+            zIndex: 2
+          }}>
+            <MuseoAvatar
+              src={avatar || FALLBACK_AVATAR}
+              alt={`${fullName || "Artist"} avatar`}
+              size="xl"
+              style={{
+                border: '4px solid var(--museo-white)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+              }}
+            />
+          </div>
+
+          <MuseoBody style={{ textAlign: 'center', padding: '0 24px 24px' }}>
+            <MuseoTitle style={{ 
+              fontSize: '32px', 
+              marginBottom: '8px',
+              color: 'var(--museo-primary)',
+              fontWeight: '800'
+            }}>
+              {fullName || "Unknown Artist"}
+            </MuseoTitle>
+            
+            {bio && (
+              <MuseoDesc style={{
+                fontSize: '18px',
+                fontStyle: 'italic',
+                color: 'var(--museo-text-secondary)',
+                marginBottom: '24px',
+                lineHeight: '1.5',
+                fontWeight: '500'
+              }}>
+                "{bio}"
+              </MuseoDesc>
+            )}
+
+            {/* Artist Stats */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '32px',
+              marginBottom: '24px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  {arts.length}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Artworks
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  {age || '—'}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Years Old
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  ⭐
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Featured
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Details */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              {sex && (
+                <div style={{
+                  padding: '8px 12px',
+                  background: 'var(--museo-gray-50)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)'
+                }}>
+                  <strong>Gender:</strong> {sex}
                 </div>
               )}
-              <div className="pQuickBio">{bio || "—"}</div>
+              {address && (
+                <div style={{
+                  padding: '8px 12px',
+                  background: 'var(--museo-gray-50)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)'
+                }}>
+                  <strong>Location:</strong> {address}
+                </div>
+              )}
+              {birthdate && (
+                <div style={{
+                  padding: '8px 12px',
+                  background: 'var(--museo-gray-50)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: 'var(--museo-text-secondary)'
+                }}>
+                  <strong>Born:</strong> {new Date(birthdate).toLocaleDateString()}
+                </div>
+              )}
             </div>
-          </header>
 
-          {about && <div className="pBio">{about}</div>}
-        </section>
+            {about && (
+              <div style={{
+                textAlign: 'left',
+                padding: '16px',
+                background: 'var(--museo-cream)',
+                borderRadius: '12px',
+                border: '1px solid var(--museo-gray-200)'
+              }}>
+                <h4 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: 'var(--museo-primary)',
+                  marginBottom: '8px'
+                }}>
+                  About the Artist
+                </h4>
+                <p style={{
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'var(--museo-text-secondary)',
+                  margin: 0
+                }}>
+                  {about}
+                </p>
+              </div>
+            )}
+          </MuseoBody>
+        </MuseoCard>
 
-        {/* FIXED: Art galleries only show for artists and admins */}
-        {(role === "artist" || role === "admin") && (
-          <>
-            {/* Main Artwork Gallery */}
-            <section className="pCard">
+        {/* Artist's Artwork Gallery */}
+        <MuseoCard>
+          <MuseoBody>
+            <MuseoHeading style={{ marginBottom: '20px' }}>Artist's Portfolio</MuseoHeading>
             <ArtistArtGallery
               arts={arts}
-              title="Artworks"
+              title=""
               showStats={true}
               showActions={true}
-              showUpload={true} // This shows the upload buttons
               onViewArt={handleViewArt}
               onLikeArt={handleLikeArt}
               onArtClick={handleArtClick}
-              fallbackImage={FALLBACK_COVER}
             />
-            </section>
-          </>
-        )}
-      </div>
-    </div>
+          </MuseoBody>
+        </MuseoCard>
+        </>)}
+      </MuseoFeed>
+    </MuseoPage>
   );
 }

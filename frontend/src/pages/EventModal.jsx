@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ConfirmModal from "./ConfirmModal.jsx";
 
 import "./css/events.css";
+import "../components/MuseoGalleryContainer.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function EventModal({ open, event, onClose }) {
@@ -16,6 +17,7 @@ export default function EventModal({ open, event, onClose }) {
   const [removingId, setRemovingId] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null); // { userId, label }
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
 
 
   // (removed leftover unused getParticipants helper)
@@ -23,11 +25,14 @@ export default function EventModal({ open, event, onClose }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
+    const onResize = () => setIsMobile(window.innerWidth <= 900);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
       document.body.style.overflow = prev;
     };
   }, [open, onClose]);
@@ -207,30 +212,144 @@ export default function EventModal({ open, event, onClose }) {
           ✕
         </button>
 
-        <div className="evmHeroWrap">
+        <div className="evmHeroWrap" style={{ position: 'relative' }}>
           <img src={event.hero} alt="" className="evmHero" />
-          <div className="evmHeroOverlay">
-            <div className="evmHeroTitle">{event.title}</div>
-            <div className="evmHeroBadges">
-              <span className="evmBadge">🗓️ {fmt(event.start)}</span>
-              <span className="evmBadge">📍 {event.venueName}</span>
-            </div>
+          {/* Badges positioned at lower left above image */}
+          <div style={{
+            position: 'absolute',
+            bottom: '16px',
+            left: '16px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            zIndex: 2
+          }}>
+            <span style={{
+              background: 'var(--museo-ivory)',
+              backdropFilter: 'blur(8px)',
+              border: '2px solid var(--museo-gold)',
+              borderRadius: '12px',
+              padding: '6px 12px',
+              boxShadow: '0 4px 12px rgba(212, 180, 138, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: 'var(--museo-charcoal)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              🗓️ {fmt(event.start)}
+            </span>
+            {event.venueName && (
+              <span style={{
+                background: 'var(--museo-ivory)',
+                backdropFilter: 'blur(8px)',
+                border: '2px solid var(--museo-gold)',
+                borderRadius: '12px',
+                padding: '6px 12px',
+                boxShadow: '0 4px 12px rgba(212, 180, 138, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)',
+                fontSize: '12px',
+                fontWeight: '700',
+                color: 'var(--museo-charcoal)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                📍 {event.venueName}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="evmHeader">
-          <h1 className="evmTitle">{event.title}</h1>
-          <div className="evmHeaderBtns">
+        <div className="evmHeader" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          padding: '16px 20px',
+          background: 'linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85))',
+          backdropFilter: 'blur(6px)',
+          borderBottom: '1px solid var(--museo-border)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 2
+        }}>
+          {/* Title - Single Line */}
+          <h1 style={{
+            fontSize: 'clamp(20px, 2.8vw, 28px)',
+            fontWeight: '700',
+            color: 'var(--museo-charcoal)',
+            margin: '0',
+            lineHeight: '1.2',
+            letterSpacing: '-0.01em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {event.title}
+          </h1>
+          
+          {/* Buttons - Second Line */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+            justifyContent: isMobile ? 'center' : 'flex-start'
+          }}>
             {(role === 'admin' || role?.role === 'admin') && (
               <button
-                className="evmCalBtn"
-                style={{ marginRight: 8 }}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  border: '2px solid var(--museo-border)',
+                  background: 'var(--museo-ivory)',
+                  color: 'var(--museo-charcoal)',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  whiteSpace: 'nowrap',
+                  flex: isMobile ? '1 1 auto' : '0 0 auto'
+                }}
                 onClick={() => setParticipantsOpen(true)}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'var(--museo-cream)';
+                  e.target.style.borderColor = 'var(--museo-gold)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'var(--museo-ivory)';
+                  e.target.style.borderColor = 'var(--museo-border)';
+                }}
               >
                 View Participants
               </button>
             )}
-            <button onClick={() => { if (!isEventPast) joinEvent(); }} className="evmCalBtn" disabled={isSubmitting || isEventPast} title={isEventPast ? 'This event has already passed' : undefined}>
+            <button 
+              onClick={() => { if (!isEventPast) joinEvent(); }} 
+              disabled={isSubmitting || isEventPast} 
+              title={isEventPast ? 'This event has already passed' : undefined}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                border: '2px solid var(--museo-gold-dark)',
+                background: 'linear-gradient(135deg, var(--museo-charcoal), var(--museo-navy))',
+                color: 'var(--museo-ivory)',
+                fontWeight: '600',
+                fontSize: '12px',
+                cursor: isSubmitting || isEventPast ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                opacity: isSubmitting || isEventPast ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+                flex: isMobile ? '1 1 auto' : '0 0 auto'
+              }}
+              onMouseEnter={(e) => {
+                if (!isSubmitting && !isEventPast) {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 20px rgba(47, 47, 47, 0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
               {isEventPast
                 ? 'Event Ended'
                 : (isSubmitting ? (joined ? 'Cancelling…' : 'Joining…') : (joined ? 'Cancel' : 'Join Event'))}
@@ -238,51 +357,150 @@ export default function EventModal({ open, event, onClose }) {
           </div>
         </div>
 
-        <div className="evmShell">
-          <div className="evmMain">
-            <section className="evmSection evmCard">
-              <p className="evmP">{event.lead}</p>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr',
+          gap: '20px',
+          padding: isMobile ? '16px' : '20px'
+        }}>
+          <div style={{ display: 'grid', gap: '20px' }}>
+            <section style={{
+              background: 'var(--museo-ivory)',
+              border: '2px solid var(--museo-border)',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 4px 12px var(--museo-shadow)'
+            }}>
+              <p style={{
+                fontSize: '16px',
+                lineHeight: '1.6',
+                color: 'var(--museo-navy)',
+                margin: '0 0 16px'
+              }}>
+                {event.lead}
+              </p>
 
               {event.activities?.length > 0 && (
-                <div>
-                  <div className="evmSectionTitle">🎨 Activities Include</div>
-                  <ul className="evmList evmChips">
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{
+                    fontWeight: '700',
+                    color: 'var(--museo-charcoal)',
+                    fontSize: '18px',
+                    marginBottom: '12px'
+                  }}>
+                    🎨 Activities Include
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
                     {event.activities.map((a, i) => (
-                      <li className="evmChip" key={i}>
+                      <span key={i} style={{
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        border: '2px solid var(--museo-border)',
+                        background: 'var(--museo-cream)',
+                        color: 'var(--museo-charcoal)',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}>
                         {a}
-                      </li>
+                      </span>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
               {event.admission && (
-                <div className="evmInline">
-                  <div className="evmSectionTitle">🎟️ Admission</div>
-                  <p className="evmP evmMuted">{event.admission}</p>
-                  {event.admissionNote && <p className="evmP evmMuted">{event.admissionNote}</p>}
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{
+                    fontWeight: '700',
+                    color: 'var(--museo-charcoal)',
+                    fontSize: '18px',
+                    marginBottom: '8px'
+                  }}>
+                    🎟️ Admission
+                  </div>
+                  <p style={{
+                    fontSize: '15px',
+                    color: 'var(--museo-navy)',
+                    margin: '0 0 8px'
+                  }}>
+                    {event.admission}
+                  </p>
+                  {event.admissionNote && (
+                    <p style={{
+                      fontSize: '15px',
+                      color: 'var(--museo-navy)',
+                      margin: '0'
+                    }}>
+                      {event.admissionNote}
+                    </p>
+                  )}
                 </div>
               )}
             </section>
           </div>
 
-          <aside className="evmSide">
-            <section className="evmSection evmCard">
-              <div className="evmSectionTitle">📍 Venue</div>
-              <p className="evmP">
+          <aside style={{ display: 'grid', gap: '20px', alignSelf: 'start' }}>
+            <section style={{
+              background: 'var(--museo-ivory)',
+              border: '2px solid var(--museo-border)',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 4px 12px var(--museo-shadow)'
+            }}>
+              <div style={{
+                fontWeight: '700',
+                color: 'var(--museo-charcoal)',
+                fontSize: '18px',
+                marginBottom: '12px'
+              }}>
+                📍 Venue
+              </div>
+              <p style={{
+                fontSize: '15px',
+                color: 'var(--museo-navy)',
+                margin: '0',
+                lineHeight: '1.5'
+              }}>
                 {event.venueName}
                 <br />
                 {event.venueAddress}
               </p>
             </section>
 
-            <section className="evmSection evmCard">
-              <div className="evmSectionTitle">🗓️ Date & Time</div>
-              <p className="evmP">
-                <b>Start:</b> {fmt(event.start)}
+            <section style={{
+              background: 'var(--museo-ivory)',
+              border: '2px solid var(--museo-border)',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 4px 12px var(--museo-shadow)'
+            }}>
+              <div style={{
+                fontWeight: '700',
+                color: 'var(--museo-charcoal)',
+                fontSize: '18px',
+                marginBottom: '12px'
+              }}>
+                🗓️ Date & Time
+              </div>
+              <p style={{
+                fontSize: '15px',
+                color: 'var(--museo-navy)',
+                margin: '0 0 8px',
+                lineHeight: '1.5'
+              }}>
+                <strong>Start:</strong> {fmt(event.start)}
               </p>
-              <p className="evmP">
-                <b>End:</b> {fmt(event.end)}
+              <p style={{
+                fontSize: '15px',
+                color: 'var(--museo-navy)',
+                margin: '0',
+                lineHeight: '1.5'
+              }}>
+                <strong>End:</strong> {fmt(event.end)}
               </p>
             </section>
           </aside>

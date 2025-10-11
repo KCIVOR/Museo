@@ -1,7 +1,6 @@
 /* Page wrapper (centered) */
 .uePage {
   min-height: 100vh;
-  background: #f4f6f8;
   display: flex;
   justify-content: center;
 }
@@ -34,8 +33,9 @@
 /* Responsive grid: fluid columns */
 .ueGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: stretch; /* ensure equal height cards */
 }
 .ueGrid > * { min-width: 0; }  /* prevent blowout from long content */
 
@@ -44,6 +44,7 @@
   background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:12px;
   box-shadow:0 1px 2px rgba(0,0,0,.06); overflow:hidden;
   display:flex; flex-direction:column;   /* card is flex column */
+  height: 100%; /* ensure consistent height */
 }
 
 /* Media */
@@ -59,8 +60,8 @@
 
 /* Body */
 .ueBody {
-  display:flex; flex-direction:column; gap:8px; padding:12px;
-  height: 100%;
+  display:flex; flex-direction:column; gap:8px; padding:14px;
+  flex: 1; /* take remaining space */
 }
 .ueName {
   font-weight:900; color:#111; font-size: clamp(15px, 1.8vw, 16px); line-height:1.3;
@@ -86,6 +87,25 @@
 }
 .ueBtn { border:0; background:#111827; color:#fff; cursor:pointer; }
 .ueBtnGhost { border:1px solid #1f2937; background:#fff; color:#111; text-decoration:none; }
+
+/* Override eBtn from events.css to ensure white text */
+.ueCard .eBtn {
+  background: #1e293b !important; /* museo-primary */
+  color: #ffffff !important; /* white text */
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 8px 12px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: .2px !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+}
+.ueCard .eBtn:hover {
+  background: #0f172a !important; /* museo-primary-dark */
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
 
 /* Small screens tweaks */
 @media (max-width: 640px) {

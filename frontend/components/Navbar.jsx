@@ -8,6 +8,34 @@ import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
 import { useRealtimeNotifications } from "./useRealtimeNotifications";
 import "./Navbar.css";
+// Museo inline SVG icons (top-level to avoid re-creation)
+const IconProfile = ({ className = "nav__mi" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+const IconTopUp = ({ className = "nav__mi" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M8 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+const IconArtist = ({ className = "nav__mi" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M4 16c0-4.418 3.582-8 8-8 2.5 0 4 1.5 4 3s-1.5 3-3 3h-1c-1.657 0-3 1.343-3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="17.5" cy="16.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+  </svg>
+);
+const IconLogout = ({ className = "nav__mi" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M15 12H4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <path d="M11 8l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8 4h6a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.2" opacity=".7" />
+  </svg>
+);
+
 export default function Navbar({ role }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,7 +59,7 @@ export default function Navbar({ role }) {
         subtitle: n.venueName || "",
         image: n.image || null,
         timestamp: n.startsAt || n.createdAt || new Date().toISOString(),
-        href: n.eventId ? `/events/${n.eventId}` : null,
+        href: n.eventId ? `/event/${n.eventId}` : null,
         unread: true,
       };
     }
@@ -196,20 +224,30 @@ export default function Navbar({ role }) {
             </button>
 
             {menuOpen && (
-              <div id="profile-menu" ref={menuRef} className="nav__menu" role="menu" aria-label="Profile options">
-                <button className="nav__menu-item" role="menuitem" onClick={() => goto("/MyProfile")}>My Profile</button>
-                <button className="nav__menu-item" role="menuitem" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>Top‑Up</button>
+              <div id="profile-menu" ref={menuRef} className="nav__menu nav__menu--museo" role="menu" aria-label="Profile options">
+                <a className="nav__menu-item" role="menuitem" onClick={() => goto("/MyProfile")}>
+                  <IconProfile />
+                  <span>My Profile</span>
+                </a>
+                <a className="nav__menu-item" role="menuitem" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>
+                  <IconTopUp />
+                  <span>Top‑Up</span>
+                </a>
                 {String(role).trim() === "user" ? (
-                  <button
+                  <a
                     className="nav__menu-item"
                     role="menuitem"
                     onClick={() => { setRegisterOpen(true); setMenuOpen(false); }}
                   >
-                    Apply as artist
-                  </button>
+                    <IconArtist />
+                    <span>Apply as artist</span>
+                  </a>
                 ) : null}
                 <div className="nav__menu-sep" />
-                <button className="nav__menu-item nav__menu-danger" role="menuitem" onClick={logOut}>Log‑out</button>
+                <a className="nav__menu-item nav__menu-danger" role="menuitem" onClick={logOut}>
+                  <IconLogout />
+                  <span>Log‑out</span>
+                </a>
               </div>
             )}
           </div>

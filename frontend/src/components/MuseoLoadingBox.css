@@ -1,0 +1,116 @@
+/* Museum-inspired loading component */
+.museo-loading-box {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--museo-charcoal);
+  background: linear-gradient(135deg, rgba(248,245,240,0.4) 0%, rgba(237,231,219,0.6) 100%);
+  border: 2px solid var(--museo-accent);
+  border-radius: 16px;
+  margin: 32px auto;
+  max-width: 600px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.museo-loading-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--museo-accent) 50%, transparent 100%);
+  animation: museo-loading-shimmer 2s ease-in-out infinite;
+}
+
+.museo-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.museo-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(212, 180, 138, 0.2);
+  border-top: 3px solid var(--museo-accent);
+  border-radius: 50%;
+  animation: museo-spin 1s linear infinite;
+}
+
+.museo-loading-message {
+  font-size: 16px;
+  font-weight: 500;
+  font-family: serif;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  margin: 0;
+  color: var(--museo-primary);
+  line-height: 1.6;
+}
+
+/* Animations */
+@keyframes museo-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes museo-loading-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .museo-loading-box {
+    padding: 32px 16px;
+    margin: 24px 16px;
+  }
+  
+  .museo-loading-message {
+    font-size: 14px;
+  }
+  
+  .museo-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 2px;
+  }
+}
+
+/* Variants */
+.museo-loading-box.compact {
+  padding: 24px 16px;
+  margin: 16px auto;
+}
+
+.museo-loading-box.minimal {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 24px;
+}
+
+.museo-loading-box.inline {
+  display: inline-flex;
+  padding: 12px 20px;
+  margin: 0;
+  max-width: none;
+}
+
+.museo-loading-box.inline .museo-loading-content {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.museo-loading-box.inline .museo-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.museo-loading-box.inline .museo-loading-message {
+  font-size: 14px;
+}

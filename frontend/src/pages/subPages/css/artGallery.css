@@ -1,7 +1,6 @@
 /* Page */
 .profilePage {
     min-height: 100vh;
-    background: #f4f6f8;
     display: flex;
     justify-content: center;
   }
@@ -258,28 +257,49 @@
   }
   
   .pArtBtn--view {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #ef4444 !important;
+    backdrop-filter: blur(10px) !important;
+    border: 2px solid #ef4444 !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
   }
   
   .pArtBtn--view:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.05);
+    background: #ef4444 !important;
+    color: white !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4) !important;
   }
   
   .pArtBtn--like {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #ef4444 !important;
+    backdrop-filter: blur(10px) !important;
+    border: 2px solid #ef4444 !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
   }
   
   .pArtBtn--like:hover {
-    background: rgba(239, 68, 68, 0.9);
-    color: white;
-    transform: scale(1.05);
+    background: #ef4444 !important;
+    color: white !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4) !important;
+  }
+  
+  .pArtBtn--like span {
+    color: #ef4444 !important;
+    font-weight: 700 !important;
+  }
+  
+  .pArtBtn--like:hover span {
+    color: white !important;
+  }
+  
+  .pArtBtn--view svg,
+  .pArtBtn--like svg {
+    stroke: currentColor !important;
   }
   
   /* Empty State */
@@ -397,6 +417,7 @@
     z-index: 1200;
   }
   .pe__dialog {
+    position: relative;
     width: min(760px, 92vw);
     max-height: 92vh;              /* allow scroll */
     background: #fff;
@@ -413,8 +434,31 @@
     padding: 14px 16px 8px;
   }
   .pe__title { margin: 0; font-size: 18px; font-weight: 800; color: #111; }
-  .pe__close { border: 0; background: transparent; font-size: 20px; cursor: pointer; color:#374151; border-radius: 8px; padding: 4px 8px; }
-  .pe__close:hover { background:#f3f4f6; }
+  .pe__close { 
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+  .pe__close:hover { 
+    background: rgba(255, 255, 255, 1);
+    color: #ef4444;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
   
   .pe__coverBox {
     position: relative;

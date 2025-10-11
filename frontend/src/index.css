@@ -1,10 +1,676 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-:root {
-  font-family: 'Poppins', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* Import Museo Design System */
+@import './design-system.css';
 
-  color: #000000;
-  background-color: #FFFFFF;
+/* Force immediate visible changes */
+* {
+  box-sizing: border-box !important;
+}
 
+html, body {
+  background: var(--museo-bg-secondary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  color: var(--museo-text-primary) !important;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   🎨 GLOBAL MUSEO DESIGN SYSTEM
+   Consistent, modern museum-quality design
+   ======================================== */
+
+/* Universal color application */
+* {
+  /* Use the design system colors */
+  --bg-primary: var(--museo-bg-primary) !important;
+  --bg-secondary: var(--museo-bg-secondary) !important;
+  --text-primary: var(--museo-text-primary) !important;
+  --text-secondary: var(--museo-text-secondary) !important;
+  --accent: var(--museo-accent) !important;
+  --border: var(--museo-border) !important;
+}
+
+/* Remove aggressive background overrides that break component styling */
+/* Components should handle their own backgrounds */
+
+/* Base card styling without aggressive overrides */
+.museo-card {
+  background: var(--museo-bg-primary);
+  border: 1px solid var(--museo-border);
+  color: var(--museo-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: var(--museo-radius-lg);
+}
+
+/* Modal content without aggressive overrides */
+.modal-content {
+  background: var(--museo-bg-primary);
+  color: var(--museo-text-primary);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-xl);
+  box-shadow: var(--museo-shadow-xl);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Apply backdrop blur only to modal backdrop, not content */
+.modal-backdrop, .overlay-backdrop, .m-popup__scrim {
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Modal backdrop */
+.modal-backdrop, .overlay-backdrop {
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Modal headers */
+.modal-header, .dialog-header {
+  border-bottom: 1px solid var(--museo-border) !important;
+  padding: 20px !important;
+  background: var(--museo-bg-secondary) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* Modal body */
+.modal-body, .dialog-body {
+  padding: 20px !important;
+  background: var(--museo-white) !important;
+}
+
+/* Modal footer */
+.modal-footer, .dialog-footer {
+  border-top: 1px solid var(--museo-border) !important;
+  padding: 20px !important;
+  background: var(--museo-bg-secondary) !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+}
+
+/* Close button in modals */
+.modal-close, .dialog-close, .close-btn, button[aria-label="Close"] {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  background: rgba(28, 28, 28, 0.1) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  color: var(--museo-text-primary) !important;
+}
+
+.modal-close:hover, .dialog-close:hover, .close-btn:hover, button[aria-label="Close"]:hover {
+  background: rgba(28, 28, 28, 0.2) !important;
+  transform: scale(1.1) !important;
+}
+
+/* PostModal specific fixes */
+.m-popup__dialog {
+  backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+.m-popup__img, .postImage {
+  filter: none !important;
+  backdrop-filter: none !important;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  image-rendering: optimize-contrast !important;
+}
+
+.m-popup__media, .imageBox {
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+/* Ensure all images in modals are crisp */
+.m-popup__dialog img, .modal img, .dialog img {
+  filter: none !important;
+  backdrop-filter: none !important;
+  image-rendering: auto !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  transform: translateZ(0) !important;
+}
+
+/* Remove any inherited blur effects from modal content */
+.m-popup__dialog *, .modal-content *, .dialog * {
+  backdrop-filter: none !important;
+}
+/* ========================================
+   📝 GLOBAL HEADING STYLES
+   Elegant serif typography for all headings
+   ======================================== */
+
+/* All headings use elegant serif fonts */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif !important;
+  color: var(--museo-text-primary) !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 1rem !important;
+  font-feature-settings: "liga" 1, "kern" 1 !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* Specific heading sizes and weights */
+h1 {
+  font-size: 3.75rem !important; /* 60px */
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.025em !important;
+  margin-bottom: 1.5rem !important;
+}
+
+h2 {
+  font-size: 3rem !important; /* 48px */
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 1.25rem !important;
+}
+
+h3 {
+  font-size: 2.25rem !important; /* 36px */
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.015em !important;
+  margin-bottom: 1rem !important;
+}
+
+h4 {
+  font-size: 1.75rem !important; /* 28px */
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 0.75rem !important;
+}
+
+h5 {
+  font-size: 1.375rem !important; /* 22px */
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+h6 {
+  font-size: 1.125rem !important; /* 18px */
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.01em !important;
+  margin-bottom: 0.5rem !important;
+  text-transform: uppercase !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Responsive heading adjustments */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.5rem !important; /* 40px */
+  }
+  
+  h2 {
+    font-size: 2rem !important; /* 32px */
+  }
+  
+  h3 {
+    font-size: 1.75rem !important; /* 28px */
+  }
+  
+  h4 {
+    font-size: 1.5rem !important; /* 24px */
+  }
+}
+
+/* All other text elements */
+p, span, div, label, li, td, th {
+  color: var(--museo-text-primary) !important;
+}
+
+/* All buttons - Default (Normal) */
+button:not(.nav__searchBtn):not(.nav__icon-btn):not(.nav__coin):not(.nav__avatar):not(.btn-delete):not(.btn-danger):not(.btn-success):not(.btn-primary):not(.btn-secondary):not(.btn-accept):not(.btn-approve):not(.btn-cancel):not(.btn-reject):not(.btn-like):not(.btn-heart):not(.btn-comment):not(.btn-share):not(.btn-save):not(.btn-upload):not(.btn-outline):not(.btn-icon):not(.btn-view):not(.btn-calendar):not(.btn-hero):not(.btn-hero-ghost):not(.lrGoogleBtn):not(.btn-outline-primary):not(.btn-outline-secondary):not(.btn-outline-success):not(.btn-outline-danger):not(.btn-outline-warning):not(.btn-outline-info):not(.btn-outline-light):not(.btn-outline-dark):not(.actionBtn):not(.m-popup__btn):not(.mcm__submit) {
+  background: var(--museo-primary) !important;
+  color: var(--museo-text-inverse) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+button:not(.nav__searchBtn):not(.nav__icon-btn):not(.nav__coin):not(.nav__avatar):not(.btn-delete):not(.btn-danger):not(.btn-success):not(.btn-primary):not(.btn-secondary):not(.btn-accept):not(.btn-approve):not(.btn-cancel):not(.btn-reject):not(.btn-like):not(.btn-heart):not(.btn-comment):not(.btn-share):not(.btn-save):not(.btn-upload):not(.btn-outline):not(.btn-icon):not(.btn-view):not(.btn-calendar):not(.btn-hero):not(.btn-hero-ghost):not(.lrGoogleBtn):not(.btn-outline-primary):not(.btn-outline-secondary):not(.btn-outline-success):not(.btn-outline-danger):not(.btn-outline-warning):not(.btn-outline-info):not(.btn-outline-light):not(.btn-outline-dark):not(.actionBtn):not(.m-popup__btn):not(.mcm__submit):hover {
+  background: var(--museo-primary-light) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* === Reusable Button Variants === */
+/* Accept / Approve */
+.btn-accept,
+button.btn-accept,
+.rq__actions .btn-accept,
+.btn-approve,
+button.btn-approve,
+.rq__actions .btn-approve {
+  background: #22c55e !important; /* green-500 */
+  color: #ffffff !important;
+  border: 1px solid #16a34a !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+.btn-accept:hover,
+button.btn-accept:hover,
+.rq__actions .btn-accept:hover,
+.btn-approve:hover,
+button.btn-approve:hover,
+.rq__actions .btn-approve:hover {
+  background: #16a34a !important; /* green-600 */
+  box-shadow: 0 4px 10px -2px rgba(16,185,129,.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Reject / Decline */
+.btn-reject {
+  background: var(--museo-error) !important;
+  color: var(--museo-text-inverse) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+}
+.btn-reject:hover { background: #dc2626 !important; box-shadow: 0 4px 10px -2px rgba(220,38,38,.25) !important; transform: translateY(-1px) !important; }
+
+/* Like / Heart */
+.btn-like {
+  background: #ef4444 !important; /* red-500 */
+  color: #fff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-weight: 700 !important;
+}
+.btn-like:hover { background: #dc2626 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 8px -2px rgba(239,68,68,.3) !important; }
+
+/* Comment */
+.btn-comment {
+  background: #ffffff !important;
+  color: var(--museo-text-primary) !important;
+  border: 1px solid var(--museo-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+}
+.btn-comment:hover { background: var(--museo-bg-secondary) !important; transform: translateY(-1px) !important; }
+
+/* Share */
+.btn-share {
+  background: var(--museo-accent) !important;
+  color: var(--museo-text-inverse) !important;
+  border: 1px solid var(--museo-accent) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-weight: 700 !important;
+}
+.btn-share:hover { background: var(--museo-accent-hover) !important; transform: translateY(-1px) !important; box-shadow: 0 4px 8px -2px rgba(6,182,212,.3) !important; }
+
+/* Save / Bookmark */
+.btn-save {
+  background: #ffffff !important;
+  color: var(--museo-text-primary) !important;
+  border: 1px solid var(--museo-border) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-weight: 600 !important;
+}
+.btn-save:hover { background: #f6f8fc !important; transform: translateY(-1px) !important; }
+
+/* Upload */
+.btn-upload {
+  background: var(--museo-accent) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--museo-accent) !important;
+  border-radius: 10px !important;
+  padding: 8px 14px !important;
+  font-weight: 800 !important;
+}
+.btn-upload:hover { background: var(--museo-accent-hover) !important; transform: translateY(-1px) !important; box-shadow: 0 4px 10px -2px rgba(6,182,212,.28) !important; }
+
+/* Approve (alias of accept) */
+/* .btn-approve shares rules with .btn-accept via grouped selectors above */
+
+/* Cancel (neutral) */
+.btn-cancel {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 8px 14px !important;
+  font-weight: 600 !important;
+}
+.btn-cancel:hover { background: #dbe2ea !important; transform: translateY(-1px) !important; }
+
+/* Outline variants */
+.btn-outline { background: #ffffff !important; border: 1px solid var(--museo-border) !important; color: var(--museo-text-primary) !important; }
+.btn-outline.primary { border-color: #1e293b !important; color: #1e293b !important; }
+.btn-outline.accent { border-color: var(--museo-accent) !important; color: var(--museo-accent) !important; }
+.btn-outline.danger { border-color: var(--museo-error) !important; color: var(--museo-error) !important; }
+.btn-outline:hover { background: #f8fafc !important; }
+
+/* Icon button (circular) */
+.btn-icon {
+  width: 36px; height: 36px; display: inline-grid; place-items: center;
+  border-radius: 999px !important; border: 1px solid var(--museo-border) !important;
+  background: #fff !important; color: var(--museo-text-primary) !important;
+}
+.btn-icon:hover { background: #f8fafc !important; transform: translateY(-1px) !important; }
+
+/* Sizes */
+.btn-sm { height: 30px !important; padding: 0 10px !important; font-size: 12px !important; }
+.btn-md { height: 36px !important; padding: 0 14px !important; font-size: 14px !important; }
+.btn-lg { height: 44px !important; padding: 0 18px !important; font-size: 16px !important; }
+
+/* Animated Heart/Like */
+@keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.btn-heart, .btn-like {
+  background: #ffffff !important;
+  color: #ef4444 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-weight: 700 !important;
+}
+.btn-heart:hover, .btn-like:hover { background: #fff1f2 !important; transform: translateY(-1px) !important; box-shadow: 0 4px 8px -2px rgba(239,68,68,.2) !important; }
+.btn-heart.is-active, .btn-like.is-active, .btn-heart[aria-pressed="true"], .btn-like[aria-pressed="true"], .btn-heart[data-active="true"], .btn-like[data-active="true"] {
+  background: #ef4444 !important; color: #fff !important; border-color: #ef4444 !important; animation: heartPop 220ms ease-in-out; }
+
+/* Comment variants */
+.btn-comment.btn-sm { padding: 4px 10px !important; font-size: 12px !important; }
+.btn-comment.btn-lg { padding: 8px 16px !important; font-size: 15px !important; }
+
+/* View Details (dark primary pill) */
+.btn-view {
+  background: var(--museo-primary) !important;
+  color: var(--museo-text-inverse) !important;
+  border: 1px solid var(--museo-primary-dark) !important;
+  border-radius: 999px !important; /* pill to match cards */
+  padding: 8px 14px !important;
+  font-weight: 700 !important;
+}
+.btn-view:hover { background: var(--museo-primary-dark) !important; transform: translateY(-1px) !important; box-shadow: 0 2px 4px rgba(110, 74, 46, 0.12) !important; }
+
+/* Add to Calendar (accent pill) */
+.btn-calendar {
+  background: var(--museo-primary) !important;
+  color: var(--museo-text-inverse) !important;
+  border: 1px solid var(--museo-primary-dark) !important;
+  border-radius: 999px !important;
+  padding: 8px 14px !important;
+  font-weight: 700 !important;
+}
+.btn-calendar:hover { background: var(--museo-primary-dark) !important; transform: translateY(-1px) !important; box-shadow: 0 2px 6px rgba(110, 74, 46, 0.14) !important; }
+
+/* Hero buttons (homepage banner) */
+.btn-hero {
+  background: var(--museo-primary) !important;
+  color: var(--museo-text-inverse) !important;
+  border: 1px solid var(--museo-primary-dark) !important;
+  border-radius: 999px !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-weight: 700 !important;
+}
+.btn-hero:hover { background: var(--museo-primary-dark) !important; transform: translateY(-1px) !important; box-shadow: 0 2px 4px rgba(110, 74, 46, 0.12) !important; }
+
+.btn-hero-ghost {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.85) !important;
+  border-radius: 999px !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  font-weight: 700 !important;
+}
+.btn-hero-ghost:hover { background: rgba(255,255,255,.15) !important; color: #ffffff !important; }
+
+/* Delete buttons - Red */
+.btn-delete, .btn-danger, button[class*="delete"], button[class*="remove"], button[class*="danger"] {
+  background: var(--museo-error) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-delete:hover, .btn-danger:hover, button[class*="delete"]:hover, button[class*="remove"]:hover, button[class*="danger"]:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2) !important;
+}
+
+/* Success buttons - Green */
+.btn-success, .btn-accept, button[class*="success"], button[class*="accept"], button[class*="approve"] {
+  background: var(--museo-success) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-success:hover, .btn-accept:hover, button[class*="success"]:hover, button[class*="accept"]:hover, button[class*="approve"]:hover {
+  background: #059669 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Primary buttons - Cyan Accent */
+.btn-primary, button[class*="primary"] {
+  background: var(--museo-accent) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-primary:hover, button[class*="primary"]:hover {
+  background: var(--museo-accent-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.2) !important;
+}
+
+/* Secondary buttons - Gray */
+.btn-secondary, button[class*="secondary"], button[class*="cancel"] {
+  background: var(--museo-gray-200) !important;
+  color: var(--museo-text-primary) !important;
+  border: 1px solid var(--museo-border) !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-secondary:hover, button[class*="secondary"]:hover, button[class*="cancel"]:hover {
+  background: var(--museo-gray-300) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Links */
+a {
+  color: var(--museo-accent) !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease !important;
+}
+
+a:hover {
+  color: var(--museo-accent-hover) !important;
+  text-decoration: underline !important;
+}
+
+/* All inputs and form elements */
+input, textarea, select {
+  background: var(--museo-white) !important;
+  color: var(--museo-text-primary) !important;
+  border: 1px solid var(--museo-border) !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--museo-accent) !important;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1) !important;
+  outline: none !important;
+  background: var(--museo-white) !important;
+}
+
+/* Form labels */
+label {
+  font-weight: 500 !important;
+  margin-bottom: 6px !important;
+  display: block !important;
+  color: var(--museo-text-primary) !important;
+  font-size: 14px !important;
+}
+
+/* Notification/Toast styling */
+.notification, .toast-notification {
+  background: var(--museo-white) !important;
+  border: 1px solid var(--museo-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  padding: 16px !important;
+  color: var(--museo-text-primary) !important;
+}
+
+/* Navigation items */
+.nav-item, .side-nav-item, .sidebar-item, .menu-item {
+  color: var(--museo-text-primary) !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav-item:hover, .side-nav-item:hover, .sidebar-item:hover, .menu-item:hover {
+  background: var(--museo-accent-light) !important;
+  color: var(--museo-accent) !important;
+}
+
+/* Tables */
+table, th, td {
+  background: var(--museo-bg-card) !important;
+  color: var(--museo-text-primary) !important;
+  border-color: var(--museo-border) !important;
+}
+
+/* Lists */
+ul, ol, li {
+  color: var(--museo-text-primary) !important;
+}
+
+/* Images and media containers */
+.image-container, .media-container, .gallery-item {
+  background: var(--museo-bg-card) !important;
+  border: 1px solid var(--museo-border) !important;
+}
+
+/* Clean styling */
+
+.nav__brand-text {
+  color: var(--museo-primary) !important;
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  font-family: 'Playfair Display', serif !important;
+}
+
+/* Modern Museo app background */
+.app {
+  background: var(--museo-bg-secondary) !important;
+}
+
+/* Global Reset & Base Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--museo-font-body);
+  font-size: var(--museo-text-base);
+  line-height: 1.7;
+  color: var(--museo-text-primary);
+  background: var(--museo-bg-primary) !important;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Remove default button styles */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Remove default link styles */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Improve image rendering */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
 }

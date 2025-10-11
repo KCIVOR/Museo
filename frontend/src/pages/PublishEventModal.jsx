@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import "./css/events.css";
+import "../components/MuseoGalleryContainer.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function PublishEventModal({ open, onClose, onPublished, mode = "create", initialData = null }) {
   const FALLBACK_COVER = import.meta.env.VITE_FALLBACKEVENTCOVER_URL || "";
   const overlayRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [form, setForm] = useState({
     title: "",
     details: "",
@@ -41,11 +43,14 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
       document.body.style.overflow = prev;
     };
   }, [open, onClose]);
@@ -218,47 +223,189 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
       ref={overlayRef}
       onMouseDown={(e) => e.target === overlayRef.current && onClose?.()}
     >
-      <article role="dialog" aria-modal="true" aria-label="Publish Event" className="evmDialog">
-        <button aria-label="Close" onClick={onClose} className="evmClose">✕</button>
+      <article 
+        role="dialog" 
+        aria-modal="true" 
+        aria-label="Publish Event" 
+        style={{
+          width: isMobile ? '95vw' : 'min(800px, 90vw)',
+          maxHeight: '95vh',
+          overflow: 'auto',
+          background: 'linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%)',
+          borderRadius: isMobile ? '12px' : '20px',
+          boxShadow: '0 12px 32px var(--museo-shadow), 0 4px 12px rgba(212, 180, 138, 0.2)',
+          position: 'relative',
+          padding: '0',
+          border: '2px solid var(--museo-border)',
+          animation: 'evmPop 300ms cubic-bezier(.2,.8,.2,1)'
+        }}
+      >
+        <button 
+          aria-label="Close" 
+          onClick={onClose} 
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            background: 'var(--museo-ivory)',
+            border: '2px solid var(--museo-border)',
+            borderRadius: '8px',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: 'var(--museo-charcoal)',
+            zIndex: 10,
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = 'var(--museo-cream)';
+            e.target.style.borderColor = 'var(--museo-gold)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'var(--museo-ivory)';
+            e.target.style.borderColor = 'var(--museo-border)';
+          }}
+        >
+          ✕
+        </button>
 
-        <div className="pvmHeader">
-          <div className="pvmHeadLeft">
-            <h1 className="evmTitle">Publish New Event</h1>
-            <p className="pvmSub">Add details, set time and venue, attach a cover, and list activities.</p>
-          </div>
+        <div style={{
+          padding: isMobile ? '16px' : '20px',
+          borderBottom: '2px solid var(--museo-border)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85))',
+          backdropFilter: 'blur(6px)'
+        }}>
+          <h1 style={{
+            fontSize: isMobile ? '24px' : '28px',
+            fontWeight: '700',
+            color: 'var(--museo-charcoal)',
+            margin: '0 0 8px',
+            lineHeight: '1.2',
+            letterSpacing: '-0.01em'
+          }}>
+            Publish New Event
+          </h1>
+          <p style={{
+            fontSize: '15px',
+            color: 'var(--museo-navy)',
+            margin: '0',
+            lineHeight: '1.4'
+          }}>
+            Add details, set time and venue, attach a cover, and list activities.
+          </p>
         </div>
 
-        <div className="pvmCoverSection">
+        <div style={{
+          padding: isMobile ? '16px' : '20px',
+          borderBottom: '2px solid var(--museo-border)'
+        }}>
           <div
-            className={`pvmDropzone ${imagePreview ? 'has-image' : ''}`}
+            style={{
+              border: '2px dashed var(--museo-border)',
+              borderRadius: '12px',
+              padding: imagePreview ? '0' : '40px 20px',
+              textAlign: 'center',
+              cursor: !imagePreview ? 'pointer' : 'default',
+              transition: 'all 0.3s ease',
+              background: imagePreview ? 'transparent' : 'var(--museo-cream)',
+              position: 'relative',
+              minHeight: isMobile ? '200px' : '250px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDropFile}
             onClick={!imagePreview ? openPicker : undefined}
           >
             {imagePreview ? (
-              <div className="pvmPreviewWrap">
-                <img src={imagePreview} alt="preview" className="pvmPreviewImg" />
-                <div className="pvmOverlayBtns">
-                  <button type="button" className="pvmGhostSmall" onClick={openPicker}>Change</button>
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <img 
+                  src={imagePreview} 
+                  alt="preview" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '10px'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  display: 'flex',
+                  gap: '8px'
+                }}>
+                  <button 
+                    type="button" 
+                    onClick={openPicker}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: '2px solid var(--museo-border)',
+                      background: 'var(--museo-ivory)',
+                      color: 'var(--museo-charcoal)',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Change
+                  </button>
                   <button
                     type="button"
-                    className="pvmIconBtn"
                     onClick={() => { setImageFile(null); setImagePreview(""); }}
-                  >✕</button>
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      border: '2px solid var(--museo-border)',
+                      background: 'var(--museo-ivory)',
+                      color: 'var(--museo-charcoal)',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="pvmDZInner">
-                <div className="pvmDZIcon">📷</div>
-                <div className="pvmDropHint">Event Cover — drag & drop or click</div>
+              <div>
+                <div style={{
+                  fontSize: '48px',
+                  marginBottom: '12px',
+                  opacity: 0.6
+                }}>
+                  📷
+                </div>
+                <div style={{
+                  fontSize: '16px',
+                  color: 'var(--museo-navy)',
+                  fontWeight: '500'
+                }}>
+                  Event Cover — drag & drop or click
+                </div>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickFile} hidden />
           </div>
         </div>
 
-        <form className="pvmForm" onSubmit={submit}>
-          <div className="pvmGrid">
+        <form onSubmit={submit} style={{ padding: isMobile ? '16px' : '20px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+            gap: '16px'
+          }}>
             <div className="pvmField">
               <label className="pvmLabel">Title</label>
               <input className={`pvmInput ${fieldErrors.title ? 'pvmInputErr' : ''}`} name="title" value={form.title} onChange={update} required aria-invalid={!!fieldErrors.title} />

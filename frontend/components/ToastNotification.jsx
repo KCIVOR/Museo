@@ -6,7 +6,7 @@ import './ToastNotification.css'
 // Reusable toast notification system
 export default function ToastNotification({ 
   position = 'bottom-left', 
-  duration = 6000,
+  duration = 10000,
   maxToasts = 5,
   enableSocket = true,
   customHandlers = {}
@@ -26,8 +26,9 @@ export default function ToastNotification({
       timestamp: Date.now(),
       duration,
       clickAction: (toast) => {
-        if (toast.eventId) {
-          navigate('/Event', { state: { open: toast.eventId } })
+        // Deep link to the event modal route
+        if (toast?.eventId) {
+          navigate(`/event/${toast.eventId}`)
         }
       }
     }),

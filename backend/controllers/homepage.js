@@ -25,14 +25,17 @@ export const createPost = async (req, res) => {
     );
 
     const { description, createdAt } = req.body;
-    const files = req.files || [];
-    const uploadedFiles = [];
-    const createdPosts = [];
+    const files = req.files || {};
+    const uploadedUrls = [];
 
     // Get user ID for folder creation
     const userId = req.user.id;
 
-    for (const file of files) {
+    // Helper function to upload a single file
+    async function uploadOne(fieldName) {
+      const file = files[fieldName]?.[0];
+      if (!file) return null;
+      
       const fileName = `${Date.now()}-${file.originalname}`;
       // Create user-specific folder path
       const filePath = `pics/${userId}/${fileName}`;
@@ -45,7 +48,7 @@ export const createPost = async (req, res) => {
         });
 
       if (error) {
-        console.error("Supabase upload error:", error);
+        console.error(`Supabase upload error for ${fieldName}:`, error);
         throw new Error(error.message);
       }
 
@@ -54,47 +57,50 @@ export const createPost = async (req, res) => {
         .from("uploads")
         .getPublicUrl(data.path);
 
-      // Console log the newly uploaded file URL
       console.log(`🖼️ Uploaded: ${file.originalname}`);
       console.log(`📍 Public URL: ${publicUrlData.publicUrl}`);
 
-      // Store file info
-      uploadedFiles.push({
-        path: data.path,
-        publicUrl: publicUrlData.publicUrl,
-        originalName: file.originalname,
-        size: file.size,
-        mimeType: file.mimetype
-      });
-
-      // Insert into database post table (postId auto-generated)
-      const { data: postData, error: postError } = await supabase
-        .from('post')
-        .insert({
-          userId: userId,
-          description: description || '',
-          image: publicUrlData.publicUrl, // Store the public URL
-          datePosted: new Date().toISOString()
-        })
-        .select();
-
-      if (postError) {
-        console.error("Database insert error:", postError);
-        throw new Error(`Failed to save post: ${postError.message}`);
-      }
-
-      console.log(`💾 Saved to database - Post ID: ${postData[0].postId}`);
-      createdPosts.push(postData[0]);
+      return publicUrlData.publicUrl;
     }
 
-    console.log(`✅ Successfully uploaded ${uploadedFiles.length} files and created ${createdPosts.length} posts for user: ${userId}`);
+    // Upload up to 4 files: file, file2, file3, file4
+    const url1 = await uploadOne("file");
+    const url2 = await uploadOne("file2");
+    const url3 = await uploadOne("file3");
+    const url4 = await uploadOne("file4");
+    
+    // Add non-null URLs to array
+    if (url1) uploadedUrls.push(url1);
+    if (url2) uploadedUrls.push(url2);
+    if (url3) uploadedUrls.push(url3);
+    if (url4) uploadedUrls.push(url4);
+
+    // If no images uploaded, allow text-only post
+    // Insert single post with all images in JSONB field
+    const { data: postData, error: postError } = await supabase
+      .from('post')
+      .insert({
+        userId: userId,
+        description: description || '',
+        image: uploadedUrls.length > 0 ? uploadedUrls : null, // Store array in JSONB
+        datePosted: new Date().toISOString()
+      })
+      .select();
+
+    if (postError) {
+      console.error("Database insert error:", postError);
+      throw new Error(`Failed to save post: ${postError.message}`);
+    }
+
+    console.log(`💾 Saved to database - Post ID: ${postData[0].postId}`);
+    console.log(`✅ Successfully uploaded ${uploadedUrls.length} images and created 1 post for user: ${userId}`);
 
     res.status(201).json({
       message: "Post created successfully",
       description,
       userId,
-      files: uploadedFiles,
-      posts: createdPosts // Include database records
+      images: uploadedUrls,
+      post: postData[0] // Return the single post
     });
 
   } catch (err) {

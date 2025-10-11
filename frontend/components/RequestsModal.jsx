@@ -168,24 +168,6 @@ export default function RequestsModal({
               <span style={{ color:'#6b7280', fontSize:13 }}>Review and act on submissions</span>
             </div>
             <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-              <button 
-                onClick={loadRequests} 
-                disabled={loading}
-                style={{ 
-                  height:38, 
-                  padding:'0 14px', 
-                  borderRadius:10, 
-                  border:'1px solid #3b82f6', 
-                  background:'#3b82f6', 
-                  color:'#fff', 
-                  fontWeight:700, 
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1
-                }}
-                aria-label="Refresh"
-              >
-                🔄 Refresh
-              </button>
               <button aria-label="Close" onClick={onClose} className="evmClose">✕</button>
             </div>
           </div>
@@ -272,13 +254,13 @@ export default function RequestsModal({
                     </div>
                     <div className="rq__actions" style={{ display:'grid', alignContent:'start', gap:8 }} onClick={(e) => e.stopPropagation()}>
                       <button
-                        className="rq__btn rq__btn--accept"
+                        className="btn-accept"
                         onClick={() => handleActionClick(id, 'approve')}
                         disabled={status === 'approved' || status === 'rejected'}
                         style={{ height:34, padding:'0 14px', borderRadius:10, border:'1px solid #16a34a', background: status==='approved' ? '#86efac' : '#22c55e', color:'#062b16', fontWeight:800, cursor: (status==='approved' || status==='rejected') ? 'not-allowed' : 'pointer', opacity: (status==='approved' || status==='rejected') ? 0.6 : 1 }}
                       >{status==='approved' ? 'Approved' : 'Accept'}</button>
                       <button
-                        className="rq__btn rq__btn--reject"
+                        className="btn-reject"
                         onClick={() => handleActionClick(id, 'reject')}
                         disabled={status === 'approved' || status === 'rejected'}
                         style={{ height:34, padding:'0 14px', borderRadius:10, border:'1px solid #dc2626', background: status==='rejected' ? '#fca5a5' : '#ef4444', color:'#fff', fontWeight:800, cursor: (status==='approved' || status==='rejected') ? 'not-allowed' : 'pointer', opacity: (status==='approved' || status==='rejected') ? 0.6 : 1 }}

@@ -198,7 +198,7 @@ const ArtGallery = ({
               </div>
             )}
             {showUpload && (
-              <button className="pUploadBtn" disabled>
+              <button className="btn-upload btn-lg" disabled>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7,10 12,15 17,10"/>
@@ -236,7 +236,7 @@ const ArtGallery = ({
             </div>
           )}
           {showUpload && (
-            <button className="pUploadBtn" onClick={handleUploadClick}>
+            <button className="btn-upload btn-lg" onClick={handleUploadClick}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7,10 12,15 17,10"/>

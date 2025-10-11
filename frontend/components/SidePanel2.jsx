@@ -78,47 +78,46 @@ export default function SidePanel2() {
 
   return (
     <aside className="side side--right" aria-label="Right rail widgets">
-      <div className="card" style={{ padding: 12 }}>
-        <div className="card__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span>Upcoming Events</span>
-          <button className="eBtn" onClick={() => navigate('/upcomingevents')} style={{ margin: 0 }}>View all</button>
+      <div className="museo-card" style={{ padding: 16 }}>
+        <div className="museo-card__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span className="museo-title-text">UPCOMING EVENTS</span>
+          <span className="museo-view-all" onClick={() => navigate('/upcomingevents')}>VIEW ALL</span>
         </div>
 
-        <ul className="spEvList">
+        <ul className="museo-event-list">
           {loading && (
-            <li className="spEvItem is-loading"><span>Loading…</span></li>
+            <li className="museo-event-item museo-event-item--loading"><span>Loading…</span></li>
           )}
           {error && !loading && (
-            <li className="spEvItem is-error"><span>{error}</span></li>
+            <li className="museo-event-item museo-event-item--error"><span>{error}</span></li>
           )}
           {!loading && !error && events.length === 0 && (
-            <li className="spEvItem is-empty"><span>No upcoming events</span></li>
+            <li className="museo-event-item museo-event-item--empty"><span>No upcoming events</span></li>
           )}
 
           {!loading && !error && events.map((ev) => (
             <li
               key={ev.eventId || ev.id}
-              className="spEvItem"
-              onClick={() => navigate('/Event', { state: { open: ev.eventId || ev.id } })}
+              className="museo-event-item"
+              onClick={() => navigate(`/event/${ev.eventId || ev.id}`)}
               title={`${ev.title} — ${fmtMonth(ev.startsAt)} ${fmtDay(ev.startsAt)}, ${fmtTime(ev.startsAt)} - ${fmtTime(ev.endsAt || ev.startsAt)}`}
             >
-              <div className="spEvDate">
-                <div className="spEvMonth">{fmtMonth(ev.startsAt).slice(0,3)}</div>
-                <div className="spEvDay">{fmtDay(ev.startsAt)}</div>
+              <div className="museo-event-date">
+                <div className="museo-event-month">{fmtMonth(ev.startsAt).slice(0,3)}</div>
+                <div className="museo-event-day">{fmtDay(ev.startsAt)}</div>
               </div>
-              <div className="spEvBody">
-                <div className="spEvTitle" title={ev.title}>{ev.title}</div>
-                <div className="spEvMeta">{fmtTime(ev.startsAt)} – {fmtTime(ev.endsAt || ev.startsAt)}</div>
+              <div className="museo-event-body">
+                <div className="museo-event-title" title={ev.title}>{ev.title}</div>
+                <div className="museo-event-meta">{fmtTime(ev.startsAt)} – {fmtTime(ev.endsAt || ev.startsAt)}</div>
               </div>
-              <div className="spEvChevron" aria-hidden>›</div>
+              <div className="museo-event-chevron" aria-hidden>›</div>
             </li>
           ))}
         </ul>
       </div>
 
       <div
-        className="card"
-        style={{ cursor: "pointer" }}
+        className="museo-card museo-card--clickable"
         role="button"
         tabIndex={0}
         onClick={() => navigate('/toparts')}
@@ -126,17 +125,11 @@ export default function SidePanel2() {
         aria-label="View Top Arts Of The Week"
         title="View Top Arts Of The Week"
       >
-        <div className="card__title">Top Arts Of The Week</div>
+        <div className="museo-card__title museo-card__title--center">
+          <span className="museo-title-text">TOP ARTS OF THE WEEK</span>
+        </div>
       </div>
-      <div className="card">
-        <img className="card__image" src="https://picsum.photos/seed/art1/600/240" alt="" />
-        <div className="card__caption">“Lovers” by Aria Bennett</div>
-      </div>
-
-      <div className="card">
-        <img className="card__image" src="https://picsum.photos/seed/art2/600/240" alt="" />
-        <div className="card__caption">“Green Forest” by Gustavo Fring</div>
-      </div>
+      
     </aside>
   );
 }

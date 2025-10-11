@@ -1,7 +1,6 @@
 /* Page wrapper */
 .galleryPage {
   min-height: 100vh;
-  background: #f4f6f8;
   display: flex;
   justify-content: center;
 }
@@ -14,6 +13,7 @@
   max-width: var(--feed-max);
   margin: 0 auto;
   padding: 12px 12px 48px;
+  background: #fff; /* remove outer gray inside the feed */
 }
 
 /* Section block */
@@ -35,12 +35,16 @@
 .gTitle {
   font-size: 20px;
   font-weight: 800;
-  color: #111;
+  color: #1e293b; /* museo-text-primary */
 }
 .gMore {
   font-size: 13px;
-  color: #4b5563;
+  color: #475569; /* museo-text-secondary */
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+.gMore:hover {
+  color: #06b6d4; /* museo-accent */
 }
 
 /* Horizontal scroller row */
@@ -79,7 +83,7 @@
 .gCaption {
   padding: 10px 12px 12px;
   font-size: 14px;
-  color: #111;
+  color: #1e293b; /* museo-text-primary */
 }
 
 /* Responsive */

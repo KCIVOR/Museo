@@ -1,79 +1,223 @@
-/* Page wrapper */
-.artistPage {
-  min-height: 100vh;
-  background: #f4f6f8;
-  display: flex;
-  justify-content: center;
+/* Museum-inspired color palette */
+:root {
+  --feed-max: 880px;
+  --museo-gold: #d4b48a;
+  --museo-gold-light: #e6c9a8;
+  --museo-gold-dark: #c9a876;
+  --museo-navy: #2c3e50;
+  --museo-sage: #8fbc8f;
+  --museo-terracotta: #cd853f;
+  --museo-charcoal: #2f2f2f;
+  --museo-ivory: #fefefe;
+  --museo-cream: #faf8f5;
+  --museo-border: #e8dcc6;
+  --museo-shadow: rgba(212, 180, 138, 0.15);
 }
 
-/* Feed width (match Events page) */
-:root { --feed-max: 880px; }
+/* Page wrapper with elegant gallery background */
+.artistPage {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%);
+  /* Subtle texture overlay */
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(212, 180, 138, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(47, 47, 47, 0.02) 0%, transparent 50%);
+}
 
 .artistFeed {
   width: 100%;
   max-width: var(--feed-max);
   margin: 0 auto;
-  padding: 12px 12px 48px;
+  padding: 24px 12px 48px;
 }
 
-/* Responsive grid: match Events grid behavior */
+/* Responsive grid with elegant spacing */
 .artistGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
   align-items: stretch;
+  padding: 12px 0;
 }
 
-/* Card */
+/* Elegant artist card with museum aesthetics */
 .artistCard {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  padding: 24px;
-  overflow: hidden; /* prevent overlap with animated/hover elements */
-  position: relative; /* create stacking context */
-  /* reveal animation (no layout shift) */
+  background: var(--museo-ivory);
+  border-radius: 16px;
+  border: 2px solid var(--museo-border);
+  box-shadow: 
+    0 4px 12px var(--museo-shadow),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  padding: 32px 24px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  
+  /* Reveal animation */
   opacity: 0;
-  transform: translateY(6px);
-  animation: artistReveal 420ms ease forwards;
+  transform: translateY(12px);
+  animation: artistReveal 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  
+  /* Smooth transitions for hover effects */
+  transition: 
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+  will-change: transform, border-color, box-shadow;
 }
 
-/* Disable hover lift from shared eCard style to prevent row overlap */
+/* Sophisticated hover effects */
 .artistCard:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
-  z-index: 1;
+  transform: translateY(-8px);
+  border-color: var(--museo-gold);
+  background: var(--museo-cream);
+  box-shadow: 
+    0 12px 32px var(--museo-shadow),
+    0 4px 12px rgba(212, 180, 138, 0.2),
+    0 0 0 1px var(--museo-gold-light);
 }
+
 
 @keyframes artistReveal {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Pure circle avatar (no background box) */
+/* Elegant avatar with museum-inspired styling */
 .artistAvatar {
   display: block;
-  width: 64%;
+  width: 72%;
+  max-width: 120px;
   aspect-ratio: 1 / 1;
-  border-radius: 999px;     /* circle */
+  border-radius: 50%;
   object-fit: cover;
-  margin: 0 auto;           /* center */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  margin: 0 auto 20px;
+  border: 3px solid var(--museo-border);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: 
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Name */
+/* Avatar hover effects with accent ring */
+.artistCard:hover .artistAvatar {
+  border-color: var(--museo-gold);
+  box-shadow: 
+    0 6px 20px rgba(212, 180, 138, 0.25),
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    0 0 0 2px var(--museo-gold-light);
+  transform: scale(1.05);
+}
+
+
+/* Artist name with high contrast and elegant typography */
 .artistName {
-  margin-top: 16px;
+  margin-top: 8px;
   text-align: center;
   font-weight: 700;
   font-size: 18px;
-  color: #111;
+  color: var(--museo-charcoal);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  transition: color 0.3s ease;
 }
 
-/* Responsive */
-@media (min-width: 1440px) { :root { --feed-max: 960px; } }
-@media (max-width: 1024px) { :root { --feed-max: 760px; } }
+/* Enhanced name styling on hover */
+.artistCard:hover .artistName {
+  color: var(--museo-navy);
+}
+
+/* Gallery-inspired loading and message states */
+.artistGridMessage {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--museo-charcoal);
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--museo-ivory);
+  border: 2px solid var(--museo-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px var(--museo-shadow);
+  margin: 24px 0;
+}
+
+.artistRetryBtn {
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--museo-gold) 0%, var(--museo-gold-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+}
+
+.artistRetryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 180, 138, 0.4);
+}
+
+.artistRetryBtn:active {
+  transform: translateY(0);
+}
+
+/* Page header styling */
+.artistFeed h1, .artistFeed h2 {
+  color: var(--museo-charcoal);
+  font-weight: 700;
+  margin-bottom: 32px;
+  text-align: center;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+}
+
+.artistFeed h1::after, .artistFeed h2::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--museo-gold) 0%, var(--museo-gold-dark) 100%);
+  margin: 12px auto 0;
+  border-radius: 2px;
+}
+
+/* Responsive adjustments */
+@media (min-width: 1440px) { 
+  :root { --feed-max: 960px; }
+  .artistGrid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+}
+
+@media (max-width: 1024px) { 
+  :root { --feed-max: 760px; }
+  .artistGrid { gap: 20px; }
+}
+
 @media (max-width: 768px) {
   .artistName { font-size: 16px; }
-  .artistAvatar { width: 70%; }
+  .artistAvatar { width: 70%; max-width: 100px; }
+  .artistCard { padding: 24px 20px; }
+  .artistGrid { 
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .artistFeed h1, .artistFeed h2 { font-size: 2rem; }
+}
+
+@media (max-width: 480px) {
+  .artistGrid { 
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .artistCard { margin: 0 8px; }
 }

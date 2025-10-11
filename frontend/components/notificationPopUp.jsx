@@ -20,7 +20,6 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
       // Try to get eventId from multiple possible locations
       const eventId = n.eventId || n.data?.eventId || null;
       
-      
       return {
         id: n.notificationId || (eventId ? `event-${eventId}` : crypto.randomUUID()),
         notificationId: n.notificationId,
@@ -28,9 +27,10 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         subtitle: n.venueName || "",
         image: image,
         timestamp: n.startsAt || n.createdAt || new Date().toISOString(),
-        href: eventId ? `/Event` : null,
+        href: eventId ? `/event/${eventId}` : null,
         eventId: eventId,
         unread: true,
+        onClick: () => navigate(`/event/${eventId}`),
       }
     }
 
@@ -53,7 +53,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
           subtitle: n.body || d.venueName || "",
           image: img,
           timestamp: d.startsAt || n.createdAt || new Date().toISOString(),
-          href: d.eventId ? `/Event` : null,
+          href: d.eventId ? `/event/${d.eventId}` : null,
           eventId: d.eventId,
           unread: !n.isRead,
         }
@@ -226,13 +226,10 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         </div>
         <div className="notif__header-actions">
           {unreadCount > 0 && (
-            <button type="button" className="btn-link" onClick={markAllRead}>
+            <a className="btn-link" onClick={markAllRead}>
               Mark all read
-            </button>
+            </a>
           )}
-          <button type="button" className="btn-icon" aria-label="Close" onClick={onClose}>
-            ✕
-          </button>
         </div>
       </div>
 
@@ -250,8 +247,8 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
               onClick={() => {
                 markRead(n.id, n.notificationId);
                 if (n.eventId) {
-                  navigate('/Event', { state: { open: n.eventId } });
-                  onClose?.(); // Close the notification popover
+                  navigate(`/event/${n.eventId}`);
+                  onClose?.();
                 }
               }}
               onKeyDown={(e) => {
@@ -259,8 +256,8 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
                   e.preventDefault();
                   markRead(n.id, n.notificationId);
                   if (n.eventId) {
-                    navigate('/Event', { state: { open: n.eventId } });
-                    onClose?.(); // Close the notification popover
+                    navigate(`/event/${n.eventId}`);
+                    onClose?.();
                   }
                 }
               }}
@@ -286,7 +283,6 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
               <div 
                 className="notif__avatar" 
                 style={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   display: n.image ? 'none' : 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -314,18 +310,19 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
                 
               </div>
 
-              {/* Dismiss Button */}
-              <button
-                type="button"
+              {/* Dismiss Link */}
+              <a
+                href="#"
                 className="notif__dismiss"
                 aria-label="Dismiss"
                 onClick={(e) => { 
+                  e.preventDefault();
                   e.stopPropagation(); 
                   removeItem(n.id, n.notificationId);
                 }}
               >
-                ✕
-              </button>
+                Close
+              </a>
             </div>
           ))}
         </div>

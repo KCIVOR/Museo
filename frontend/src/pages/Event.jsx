@@ -1,18 +1,37 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import "./css/events.css";
+import "../components/MuseoGalleryContainer.css";
 import EventModal from "./EventModal.jsx";
 import PublishEventModal from "./PublishEventModal.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { NavLink } from "react-router-dom";
+import { 
+  MuseoPage, 
+  MuseoFeed, 
+  MuseoHeading, 
+  MuseoGrid,
+  MuseoCard,
+  MuseoMedia,
+  MuseoBody,
+  MuseoTitle,
+  MuseoDesc,
+  MuseoBadge,
+  MuseoActions,
+  MuseoBtn
+} from "../components/MuseoGalleryContainer.jsx";
+import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Event() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { eventId: routeEventId } = useParams();
   const [events, setEvents] = useState([]);
   const items = events; // use fetched events instead of hardcoded
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [role, setRole] = useState(null);
   const [showPublish, setShowPublish] = useState(false);
@@ -23,6 +42,7 @@ export default function Event() {
 
   const getEvents = async () => {
     try {
+      setLoading(true);
       const res = await fetch(`${API}/event/getEvents`, {
         method: "GET",
         credentials: "include",
@@ -34,9 +54,44 @@ export default function Event() {
       // backend returns { data: [...] }
       setEvents(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching events:", error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // When navigated to /event/:eventId, fetch that event and open the modal
+  useEffect(() => {
+    const openByRoute = async () => {
+      if (!routeEventId) return;
+      try {
+        // Try find in current list first
+        const found = events.find(e => (e.eventId || e.id) == routeEventId);
+        if (found) { openEvent(found); return; }
+        // Fetch all events then locate the one by id
+        const allRes = await fetch(`${API}/event/getEvents`, { credentials: 'include' });
+        if (!allRes.ok) throw new Error('Failed to fetch events');
+        const all = await allRes.json();
+        const list = Array.isArray(all?.data)
+          ? all.data
+          : Array.isArray(all?.events)
+            ? all.events
+            : Array.isArray(all)
+              ? all
+              : [];
+        const byId = list.find(e => (e.eventId || e.id) == routeEventId);
+        if (byId) { openEvent(byId); return; }
+        throw new Error('Event not found');
+      } catch (e) {
+        console.error(e);
+        // If failed, navigate back to list
+        navigate('/event', { replace: true });
+      }
+    };
+    openByRoute();
+    // we want this to run when routeEventId or events change
+  }, [routeEventId, events]);
 
   // Fetch role of current user
   const fetchRole = async () => {
@@ -147,7 +202,12 @@ export default function Event() {
 
   const closeEventModal = () => {
     setSelected(null);
-    // Remove ?open= from URL via React Router so location updates
+    // If opened via deep link /event/:eventId, go back to /Event
+    if (routeEventId) {
+      navigate('/event', { replace: true });
+      return;
+    }
+    // Otherwise remove ?open= from URL if any
     try {
       const params = new URLSearchParams(location.search || '');
       params.delete('open');
@@ -201,61 +261,75 @@ export default function Event() {
   };
 
   return (
-    <div className="eventsPage">
-      <div className="eventsFeed">
-        <div className="eventsBar">
-          <h2 className="eventsHeading">Events</h2>
-          {(role === 'admin' || role?.role === 'admin') && (
+    <MuseoPage>
+      <MuseoFeed>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <MuseoHeading>Events</MuseoHeading>
+        </div>
+
+        {/* Admin Actions */}
+        {(role === 'admin' || role?.role === 'admin') && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginBottom: '32px' 
+          }}>
             <button
               className="evmCalBtn"
               onClick={() => setShowPublish(true)}
             >
               Publish Event
             </button>
-          )}
-        </div>
-        <div className="eventsGrid">
-          {items.map((e, i) => (
-            <article
+          </div>
+        )}
+
+        {/* Loading State */}
+        <MuseoLoadingBox 
+          show={loading} 
+          message={MuseoLoadingBox.messages.events} 
+        />
+
+        {/* Events Grid */}
+        {!loading && (
+          <MuseoGrid columns={3}>
+            {items.map((e, i) => (
+            <MuseoCard
               key={e.eventId || e.id || e.title}
-              className="eCard eReveal"
-              style={{ animationDelay: `${i * 60}ms`, position: 'relative' }}
-              onClick={() => openEvent(e)}
+              variant="event"
+              animationDelay={i * 80}
+              onClick={() => navigate(`/event/${e.eventId || e.id}`)}
             >
-              <img src={e.image} alt="" className="eMedia" />
-              <div
-                className="evmBadge"
-                style={{ position: 'absolute', top: 8, right: 8 }}
-                title="Total participants"
-              >
+              <MuseoMedia src={e.image} alt={e.title} />
+              <MuseoBadge>
                 Participants ({participantCounts[e.eventId || e.id] ?? 0})
-              </div>
-              <div className="eBody">
-                <div className="eTitle">{e.title}</div>
-                <div className="eDesc" title={e.details}>{
-                  (() => {
+              </MuseoBadge>
+              <MuseoBody>
+                <MuseoTitle>{e.title}</MuseoTitle>
+                <MuseoDesc>
+                  {(() => {
                     const text = typeof e.details === 'string' ? e.details : '';
-                    const limit = 140; // characters
+                    const limit = 120; // Reduced for compact design
                     if (text.length <= limit) return text;
                     const clipped = text.slice(0, limit);
-                    // avoid cutting mid-word
                     const trimmed = clipped.replace(/\s+\S*$/, "");
                     return trimmed + "...";
-                  })()
-                }</div>
-                <div className="eActions" onClick={(ev) => ev.stopPropagation()}>
-                  <button className="eBtn" onClick={() => openEvent(e)}>View More</button>
+                  })()}
+                </MuseoDesc>
+                <MuseoActions onClick={(ev) => ev.stopPropagation()}>
+                  <MuseoBtn onClick={() => openEvent(e)}>View More</MuseoBtn>
                   {(role === 'admin' || role?.role === 'admin') && (
                     <>
-                      <button className="eBtn eBtnGhost" onClick={() => openEdit(e)}>Edit</button>
-                      <button className="eBtn eBtnDanger" onClick={() => askDelete(e)}>Delete</button>
+                      <MuseoBtn variant="ghost" onClick={() => openEdit(e)}>Edit</MuseoBtn>
+                      <MuseoBtn variant="danger" onClick={() => askDelete(e)}>Delete</MuseoBtn>
                     </>
                   )}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+                </MuseoActions>
+              </MuseoBody>
+            </MuseoCard>
+            ))}
+          </MuseoGrid>
+        )}
 
         <EventModal open={!!selected} event={selected} onClose={closeEventModal} />
         <PublishEventModal
@@ -285,7 +359,7 @@ export default function Event() {
           onConfirm={confirmDelete}
           onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
         />
-      </div>
-    </div>
+      </MuseoFeed>
+    </MuseoPage>
   );
 }

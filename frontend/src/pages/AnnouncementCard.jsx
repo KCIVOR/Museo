@@ -69,8 +69,8 @@ export default function AnnouncementCard({ post, onClose }) {
         <div className="announce__title">Upcoming “{title}”</div>
         <div className="announce__meta">{dateStr}{venue ? ` • ${venue}` : ""}</div>
         <div className="announce__ctaRow">
-          <button className="btnPrimary" type="button" onClick={handleView}>View details</button>
-          <button className="btnGhost" type="button" onClick={handleIcs}>Add to Calendar</button>
+          <button className="btn-outline-dark" type="button" onClick={handleView}>View Details</button>
+          <button className="btn-outline-dark" type="button" onClick={handleIcs}>Add to Calendar</button>
         </div>
       </div>
       {onClose && (

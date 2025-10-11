@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 const API = import.meta.env.VITE_API_BASE;
 
 // Helper (unchanged)
@@ -22,14 +23,14 @@ function getAverageColorFromImageElement(img) {
   }
   return `rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`;
 }
-
 export default function ProfileModal({
   post,
   onClose,
   onLike,
   onComment,
-  likeCount,
-  currentUser // signed-in user's {name, avatar} (optional)
+  likeCount = {},
+  currentUser = null,
+  containerStyle = {}
 }) {
   const dialogRef = useRef(null);
   const [avgBg, setAvgBg] = useState(post.avgBg || "#f3f4f6");
@@ -189,8 +190,20 @@ export default function ProfileModal({
     return url && /^https?:\/\//i.test(url) ? url : FALLBACK_AVATAR;
   };
 
-  return (
-    <div className="m-popup__scrim" onClick={onClose}>
+  const modalContent = (
+    <div className="m-popup__scrim" onClick={onClose} style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      background: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...containerStyle
+    }}>
       <section
         className="m-popup__dialog"
         role="dialog"
@@ -199,6 +212,15 @@ export default function ProfileModal({
         tabIndex={-1}
         ref={dialogRef}
         onClick={stop}
+        style={{
+          background: 'var(--museo-white)',
+          borderRadius: '16px',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+          border: '2px solid var(--museo-accent)'
+        }}
       >
         <header className="m-popup__header">
           <div className="m-popup__author">
@@ -329,4 +351,7 @@ export default function ProfileModal({
       </section>
     </div>
   );
+
+  // Use React Portal to render modal outside the component tree
+  return createPortal(modalContent, document.body);
 }

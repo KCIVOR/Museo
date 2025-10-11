@@ -19,42 +19,56 @@
 
 .mc__inputWrap {
   position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fafbff;
-  border: 1px solid #e7ebf3;
 }
 .mc__label {
   position: absolute;
-  top: 10px; left: 12px;
-  font-size: 14px; color: #6b7280;
-  transition: all .15s ease;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  font-size: 14px; 
+  color: #6b7280;
+  transition: all 0.2s ease;
   pointer-events: none;
+  background: transparent;
+  z-index: 2;
 }
 .mc__label.is-floating {
-  transform: translateY(-10px);
+  top: -8px;
+  transform: translateY(0);
   font-size: 11px;
   color: #3b82f6;
+  background: #ffffff;
+  padding: 0 4px;
 }
 .mc__ta {
   width: 100%;
   min-height: 44px;
   max-height: 200px;
-  border: 0;
+  border: 1px solid #e7ebf3;
+  border-radius: 14px;
   outline: none;
-  background: transparent;
+  background: #fafbff;
   padding: 22px 12px 12px;
   resize: none;
   color: #111827;
   line-height: 1.45;
   font-size: 14px;
+  position: relative;
+  z-index: 1;
+  transition: border-color 0.15s ease;
 }
-.mc__grid {
-  position: absolute; inset: 0;
-  background-image: linear-gradient(transparent 23px, rgba(59,130,246,.065) 24px),
-                    linear-gradient(90deg, transparent 23px, rgba(59,130,246,.065) 24px);
-  background-size: 24px 24px;
-  opacity: .3; pointer-events: none;
+
+.mc__ta:focus {
+  border-color: #3b82f6;
+}
+
+.mc__inputWrap:focus-within .mc__label:not(.is-floating) {
+  top: -8px;
+  transform: translateY(0);
+  font-size: 11px;
+  color: #3b82f6;
+  background: #fafbff;
+  padding: 0 4px;
 }
 
 /* Chips row */

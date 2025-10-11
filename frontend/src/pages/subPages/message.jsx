@@ -1,6 +1,32 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import "./css/message.css";
 
+// Museo SVG Icons
+const IconSearch = ({ className = "msg-icon" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const IconAttach = ({ className = "msg-icon" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const IconSend = ({ className = "msg-icon" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const IconMenu = ({ className = "msg-icon" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <circle cx="12" cy="12" r="1" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+    <circle cx="12" cy="5" r="1" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+    <circle cx="12" cy="19" r="1" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+  </svg>
+);
+
 // Demo avatars (replace with real)
 const AV = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg";
 const ME = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
@@ -78,9 +104,11 @@ export default function Message() {
       <div className="msgWrap">
         {/* Sidebar */}
         <aside className="msgSide">
-          <div className="msgSideHead">Messages</div>
+          <div className="msgSideHead">
+            <h2 className="msg-title">Messages</h2>
+          </div>
           <div className="msgSearch">
-            <span className="msgSearchIcon">🔍</span>
+            <IconSearch className="msgSearchIcon" />
             <input
               className="msgSearchInput"
               placeholder="Search Messages"
@@ -90,17 +118,19 @@ export default function Message() {
           </div>
           <div className="msgList">
             {filtered.map(p => (
-              <button
+              <a
                 key={p.id}
                 className={`msgItem ${p.id === active ? "is-active" : ""}`}
                 onClick={() => setActive(p.id)}
+                role="button"
+                tabIndex={0}
               >
                 <img className="msgAvatar" src={p.avatar} alt="" />
                 <div className="msgMeta">
                   <div className="msgName">{p.name}</div>
                   <div className="msgNote">{p.note}</div>
                 </div>
-              </button>
+              </a>
             ))}
           </div>
         </aside>
@@ -112,7 +142,9 @@ export default function Message() {
               <img className="msgAvatar msgAvatar--lg" src={activePerson.avatar} alt="" />
               <div className="msgPeerName">{activePerson.name}</div>
             </div>
-            <button className="msgHeadDots" aria-label="Menu">⋯</button>
+            <a className="msgHeadDots" aria-label="Menu" role="button" tabIndex={0}>
+              <IconMenu className="msg-icon" />
+            </a>
           </header>
 
           <section className="msgBody">
@@ -131,7 +163,9 @@ export default function Message() {
 
           {/* Composer */}
           <footer className="msgCompose">
-            <button className="mcBtn" aria-label="Attach">▦</button>
+            <a className="mcBtn" aria-label="Attach" role="button" tabIndex={0}>
+              <IconAttach className="msg-icon" />
+            </a>
             <textarea
               className="mcInput"
               placeholder="Write a message..."
@@ -140,7 +174,9 @@ export default function Message() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
             />
-            <button className="mcSend" onClick={send} aria-label="Send">➤</button>
+            <a className="mcSend" onClick={send} aria-label="Send" role="button" tabIndex={0}>
+              <IconSend className="msg-icon" />
+            </a>
           </footer>
         </main>
       </div>

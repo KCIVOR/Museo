@@ -1,7 +1,7 @@
 /* Page wrapper */
 .artistDetailPage {
   min-height: 100vh;
-  background: #f4f6f8;
+
   display: flex;
   justify-content: center;
 }

@@ -25,6 +25,14 @@ export default function MuseoComposer({
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
+    
+    // If text is empty, reset to original height
+    if (text.trim() === "") {
+      ta.style.height = "48px";
+      return;
+    }
+    
+    // Auto-grow for content
     ta.style.height = "0px";
     ta.style.height = ta.scrollHeight + "px";
   }, [text]);
@@ -98,7 +106,15 @@ export default function MuseoComposer({
       const formData = new FormData();
       formData.append("description", text);
       formData.append("createdAt", new Date().toISOString());
-      files.forEach((f) => formData.append("media", f.file));
+      
+      // Append files with specific field names like registerArtist
+      files.forEach((f, index) => {
+        if (index === 0) {
+          formData.append("file", f.file);
+        } else {
+          formData.append(`file${index + 1}`, f.file);
+        }
+      });
 
       const res = await fetch(`${API}/homepage/createPost`, {
         method: "POST",
@@ -113,6 +129,12 @@ export default function MuseoComposer({
 
       setText("");
       setFiles([]);
+
+      // Reset textarea height to original size
+      if (taRef.current) {
+        taRef.current.style.height = "auto";
+        taRef.current.style.height = "48px"; // Original height
+      }
 
       onSubmit?.(data);
     } catch (err) {
@@ -147,8 +169,8 @@ export default function MuseoComposer({
             onChange={(e) => setText(e.target.value)}
             rows={1}
             aria-label="Write post"
+            placeholder=" "
           />
-          <div className="mc__grid" aria-hidden="true" />
         </div>
 
         {files.length > 0 && (

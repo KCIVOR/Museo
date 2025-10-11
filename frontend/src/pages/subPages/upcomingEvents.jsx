@@ -1,8 +1,22 @@
 import React from "react";
-import "./css/upcomingEvents.css";
-import "../css/events.css"; // for eActions/eBtn/eBtnGhost to match Event.jsx
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { 
+  MuseoPage, 
+  MuseoFeed, 
+  MuseoHeading, 
+  MuseoGrid, 
+  MuseoCard, 
+  MuseoMedia, 
+  MuseoBody, 
+  MuseoTitle, 
+  MuseoDesc, 
+  MuseoBadge, 
+  MuseoActions, 
+  MuseoBtn,
+  MuseoMessage 
+} from '../../components/MuseoGalleryContainer.jsx';
+import MuseoLoadingBox from '../../components/MuseoLoadingBox.jsx';
 const API = import.meta.env.VITE_API_BASE;
 
 
@@ -138,7 +152,8 @@ export default function UpcomingEvents() {
     const nowMs = manilaMidnightMs(new Date());
     const evMs = manilaMidnightMs(dateLike);
     const diff = Math.floor((evMs - nowMs) / 86400000);
-    return diff > 14; // matches bucketLabel "Later"
+    // Later means more than 14 days AND not in next month
+    return diff > 14 && !isNextMonth(dateLike);
   };
   const isDone = (startLike, endLike) => {
     // Consider event done if its end is strictly before now; fallback to start if end missing
@@ -181,116 +196,213 @@ export default function UpcomingEvents() {
   const orderedLabels = ["This Week", "Next Week", "Later"];
 
   const openDetails = (ev) => {
-    navigate('/Event', { state: { open: ev.id } });
+    navigate(`/event/${ev.id}`);
   };
 
   return (
-    <div className="uePage">
-      <div className="ueFeed">
+    <MuseoPage>
+      <MuseoFeed>
         {/* Header */}
-        <div className="ueHead">
-          <div className="ueTitle">
-            <h1>Upcoming Events</h1>
-            <span className="ueCount">{loading ? 'Loading…' : `${total} saved`}</span>
-          </div>
-          <div className="ueActions">
-            <div className="ueFilters">
-              <button className={`ueChip ${activeFilter === 'All' ? 'is-active' : ''}`} onClick={() => setActiveFilter('All')}>All</button>
-              <button className={`ueChip ${activeFilter === 'This Week' ? 'is-active' : ''}`} onClick={() => setActiveFilter('This Week')}>This Week</button>
-              <button className={`ueChip ${activeFilter === 'Next Week' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Next Week')}>Next Week</button>
-              <button className={`ueChip ${activeFilter === 'Next Month' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Next Month')}>Next Month</button>
-              <button className={`ueChip ${activeFilter === 'Later' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Later')}>Later</button>
-              <button className={`ueChip ${activeFilter === 'Done' ? 'is-active' : ''}`} onClick={() => setActiveFilter('Done')}>Done</button>
-            </div>
-          </div>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <MuseoHeading>Upcoming Events</MuseoHeading>
+          {!loading && (
+            <p style={{ 
+              color: 'var(--museo-navy)', 
+              fontSize: '16px',
+              marginTop: '-24px',
+              marginBottom: '0'
+            }}>
+              {`${total} saved events`}
+            </p>
+          )}
         </div>
 
-        {/* Buckets */}
-        {Object.keys(grouped).length === 0 && !loading && (
-          <section className="ueBucket"><h2 className="ueBucketTitle">No upcoming events</h2></section>
+        {/* Loading State */}
+        <MuseoLoadingBox 
+          show={loading} 
+          message={MuseoLoadingBox.messages.events} 
+        />
+
+        {/* Filter Chips */}
+        {!loading && (
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '12px', 
+          marginBottom: '48px',
+          justifyContent: 'center',
+          padding: '0 20px'
+        }}>
+          {['All', 'This Week', 'Next Week', 'Next Month', 'Later', 'Done'].map(filter => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '25px',
+                border: `2px solid ${activeFilter === filter ? 'var(--museo-gold)' : 'var(--museo-border)'}`,
+                background: activeFilter === filter ? 'var(--museo-gold)' : 'var(--museo-ivory)',
+                color: activeFilter === filter ? 'white' : 'var(--museo-charcoal)',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                minWidth: '80px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
         )}
-        {activeFilter === 'Done'
+
+        {/* Empty State */}
+        {Object.keys(grouped).length === 0 && !loading && (
+          <MuseoMessage>
+            No upcoming events found.
+            <br />
+            <small style={{ opacity: 0.7, fontSize: '14px', marginTop: '8px', display: 'block' }}>
+              Check back soon or browse all events to find something interesting.
+            </small>
+          </MuseoMessage>
+        )}
+
+        {/* Event Buckets */}
+        {!loading && activeFilter === 'Done'
           ? (
-            <section className="ueBucket">
-              <div className="ueGrid">
+            <div>
+              <h2 style={{ 
+                color: 'var(--museo-charcoal)', 
+                fontSize: '1.8rem', 
+                marginBottom: '32px',
+                textAlign: 'center',
+                fontWeight: '700',
+                letterSpacing: '-0.01em'
+              }}>
+                Completed Events
+              </h2>
+              <div style={{
+                width: '60px',
+                height: '3px',
+                background: 'linear-gradient(90deg, var(--museo-gold) 0%, var(--museo-gold-dark) 100%)',
+                margin: '-24px auto 32px',
+                borderRadius: '2px'
+              }} />
+              <MuseoGrid columns={3}>
                 {filteredUi.map((ev, i) => (
-                  <article
+                  <MuseoCard
                     key={ev.id}
-                    className="ueCard eCard eReveal"
-                    style={{ animationDelay: `${i * 60}ms` }}
+                    variant="event"
+                    animationDelay={i * 80}
                     onClick={() => openDetails(ev)}
                   >
-                    <div className="ueImgWrap">
-                      <img src={ev.cover} alt="" />
-                      <span className="ueTag">Done</span>
-                    </div>
-
-                    <div className="ueBody">
-                      <div className="ueName" title={ev.title}>{ev.title}</div>
-                      <div className="ueMeta">
-                        <span className="ueDate">{fmtRange(ev.start, ev.end)}</span>
-                        <span className="ueDot">•</span>
-                        <span className="ueVenue">{ev.venue}</span>
+                    <MuseoMedia src={ev.cover} alt={ev.title} />
+                    <MuseoBadge style={{ background: 'var(--museo-sage)', borderColor: 'var(--museo-sage)' }}>
+                      Completed
+                    </MuseoBadge>
+                    <MuseoBody>
+                      <MuseoTitle>{ev.title}</MuseoTitle>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: 'var(--museo-navy)', 
+                        marginBottom: '8px',
+                        fontWeight: '500',
+                        lineHeight: '1.3'
+                      }}>
+                        <div style={{ marginBottom: '2px' }}>
+                          📅 {fmtRange(ev.start, ev.end)}
+                        </div>
+                        {ev.venue && (
+                          <div style={{ color: 'var(--museo-charcoal)', opacity: 0.8 }}>
+                            📍 {ev.venue}
+                          </div>
+                        )}
                       </div>
-                      <p className="ueDesc">{ev.desc}</p>
-
-                      <div className="ueGrow" />
-
-                      <div className="eActions" onClick={(e) => e.stopPropagation()}>
-                        <NavLink className="eBtn" style={{ textDecoration: 'none' }} to="/Event" state={{ open: ev.id }}>
-                          View More
-                        </NavLink>
-                      </div>
-                    </div>
-                  </article>
+                      <MuseoDesc>
+                        {ev.desc}
+                      </MuseoDesc>
+                      <MuseoActions onClick={(e) => e.stopPropagation()}>
+                        <MuseoBtn onClick={() => openDetails(ev)}>
+                          View Details
+                        </MuseoBtn>
+                      </MuseoActions>
+                    </MuseoBody>
+                  </MuseoCard>
                 ))}
-              </div>
-            </section>
+              </MuseoGrid>
+            </div>
           )
           : (
             orderedLabels
               .filter(label => Array.isArray(grouped[label]) && grouped[label].length > 0)
               .map(label => (
-                <section key={label} className="ueBucket">
-                  <h2 className="ueBucketTitle">{label}</h2>
-                  <div className="ueGrid">
+                <div key={label} style={{ marginBottom: '64px' }}>
+                  <h2 style={{ 
+                    color: 'var(--museo-charcoal)', 
+                    fontSize: '1.8rem', 
+                    marginBottom: '32px',
+                    textAlign: 'center',
+                    fontWeight: '700',
+                    letterSpacing: '-0.01em'
+                  }}>
+                    {label}
+                  </h2>
+                  <div style={{
+                    width: '60px',
+                    height: '3px',
+                    background: 'linear-gradient(90deg, var(--museo-gold) 0%, var(--museo-gold-dark) 100%)',
+                    margin: '-24px auto 32px',
+                    borderRadius: '2px'
+                  }} />
+                  <MuseoGrid columns={3}>
                     {grouped[label].map((ev, i) => (
-                      <article
+                      <MuseoCard
                         key={ev.id}
-                        className="ueCard eCard eReveal"
-                        style={{ animationDelay: `${i * 60}ms` }}
+                        variant="event"
+                        animationDelay={i * 80}
                         onClick={() => openDetails(ev)}
                       >
-                        <div className="ueImgWrap">
-                          <img src={ev.cover} alt="" />
-                          <span className="ueTag">Added</span>
-                        </div>
-
-                        <div className="ueBody">
-                          <div className="ueName" title={ev.title}>{ev.title}</div>
-                          <div className="ueMeta">
-                            <span className="ueDate">{fmtRange(ev.start, ev.end)}</span>
-                            <span className="ueDot">•</span>
-                            <span className="ueVenue">{ev.venue}</span>
+                        <MuseoMedia src={ev.cover} alt={ev.title} />
+                        <MuseoBadge>
+                          Saved
+                        </MuseoBadge>
+                        <MuseoBody>
+                          <MuseoTitle>{ev.title}</MuseoTitle>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            color: 'var(--museo-navy)', 
+                            marginBottom: '8px',
+                            fontWeight: '500',
+                            lineHeight: '1.3'
+                          }}>
+                            <div style={{ marginBottom: '2px' }}>
+                              📅 {fmtRange(ev.start, ev.end)}
+                            </div>
+                            {ev.venue && (
+                              <div style={{ color: 'var(--museo-charcoal)', opacity: 0.8 }}>
+                                📍 {ev.venue}
+                              </div>
+                            )}
                           </div>
-                          <p className="ueDesc">{ev.desc}</p>
-
-                          {/* spacer to push buttons down */}
-                          <div className="ueGrow" />
-
-                          <div className="eActions" onClick={(e) => e.stopPropagation()}>
-                            <NavLink className="eBtn" style={{ textDecoration: 'none' }} to="/Event" state={{ open: ev.id }}>
-                              View More
-                            </NavLink>
-                          </div>
-                        </div>
-                      </article>
+                          <MuseoDesc>
+                            {ev.desc}
+                          </MuseoDesc>
+                          <MuseoActions onClick={(e) => e.stopPropagation()}>
+                            <MuseoBtn onClick={() => openDetails(ev)}>
+                              View Details
+                            </MuseoBtn>
+                          </MuseoActions>
+                        </MuseoBody>
+                      </MuseoCard>
                     ))}
-                  </div>
-                </section>
+                  </MuseoGrid>
+                </div>
               ))
           )}
-      </div>
-    </div>
+      </MuseoFeed>
+    </MuseoPage>
   );
 }
