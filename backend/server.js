@@ -12,6 +12,7 @@ import profileRoutes from "./routes/profileRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js"
+import messageRoutes from "./routes/messageRoutes.js"
 
 import cookieParser from "cookie-parser";
 import { authMiddleware } from "./middleware/auth.js";
@@ -68,6 +69,8 @@ app.use("/api/notification",authMiddleware, notificationRoutes);
 //request routes
 app.use("/api/request", authMiddleware,requestRoutes)
 
+app.use("/api/message", authMiddleware, messageRoutes)
+
 
 // Create HTTP + Socket.IO
 const server = http.createServer(app);
@@ -82,6 +85,17 @@ io.on("connection", (socket) => {
   try {
     socket.join("all-users");
     console.log("[socket] connected:", socket.id, "joined room all-users");
+
+    // Join a per-user room so we can target events to a specific user
+    socket.on("join", (userId) => {
+      try {
+        if (!userId) return;
+        socket.join(`user:${userId}`);
+        console.log(`[socket] ${socket.id} joined user room user:${userId}`);
+      } catch (e) {
+        console.error("socket join error:", e);
+      }
+    });
   } catch (e) {
     console.error("socket connection error:", e);
   }

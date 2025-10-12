@@ -118,6 +118,9 @@
   padding: 0 16px 16px;
   display: grid;
   gap: 8px;
+  /* Prevent a single item from stretching to fill available height */
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .msgItem {
@@ -134,6 +137,23 @@
   padding: 12px 14px;
   transition: all 0.3s ease;
   position: relative;
+  /* Ensure each item keeps intrinsic height */
+  align-self: start;
+}
+
+.msgBadge {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  background: var(--museo-accent, #06b6d4);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  z-index: 1;
 }
 
 .msgItem:hover {
@@ -196,6 +216,10 @@
   font-size: 12px;
   color: #8b5a3c;
   font-style: italic;
+  /* Truncate long previews so the row doesn't grow */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* Conversation shell - Museo Theme */
@@ -290,13 +314,15 @@
 }
 
 .bubble {
-  max-width: min(880px, 86vw);
+  max-width: min(56ch, 86vw);
   border: 1px solid rgba(212, 180, 138, 0.3);
   border-radius: 16px;
   padding: 12px 16px;
   box-shadow: 0 2px 8px rgba(110, 74, 46, 0.08);
   backdrop-filter: blur(8px);
   position: relative;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .bubble--me {

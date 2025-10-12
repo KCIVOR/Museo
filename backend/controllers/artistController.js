@@ -7,7 +7,7 @@ export const getArtist = async (req, res) => {
     // 1) Pull artist profiles
     const { data: profs, error } = await supabase
       .from("profile")
-      .select("profileId:profileId, profilePicture, userId, role, username")
+      .select("profileId:profileId, profilePicture, userId, role, username, firstName, lastName, middleName")
       .in("role", ["artist", "admin"]);
 
     if (error) {
@@ -26,18 +26,25 @@ export const getArtist = async (req, res) => {
 
     const artists = [];
     for (const p of profs || []) {
-      let name = "Untitled Artist";
-      try {
-        const { data: authUser, error: authErr } = await supabase.auth.admin.getUserById(p.userId);
-        if (!authErr && authUser?.user) {
-          name =
-            authUser.user.user_metadata?.full_name ||
-            authUser.user.user_metadata?.name ||
-            authUser.user.email?.split("@")[0] ||
-            name;
+      // Prefer profile table full name; fallback to username; final fallback to auth metadata
+      let name = [p.firstName, p.middleName, p.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || p.username || "Untitled Artist";
+
+      if (!name || name === "Untitled Artist") {
+        try {
+          const { data: authUser, error: authErr } = await supabase.auth.admin.getUserById(p.userId);
+          if (!authErr && authUser?.user) {
+            name =
+              authUser.user.user_metadata?.full_name ||
+              authUser.user.user_metadata?.name ||
+              authUser.user.email?.split("@")[0] ||
+              name;
+          }
+        } catch {
+          // ignore; keep current name
         }
-      } catch {
-        // ignore; keep default name
       }
 
       const hero = toPublicUrl(p.profilePicture) || "/assets/artist-placeholder.jpg";

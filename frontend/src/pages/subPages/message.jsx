@@ -1,4 +1,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
+import { io } from "socket.io-client";
+const API = import.meta.env.VITE_API_BASE;
+const SOCKET_URL = (API && API.replace(/\/api\/?$/, "")) || window.location.origin;
 import "./css/message.css";
 
 // Museo SVG Icons
@@ -27,75 +30,407 @@ const IconMenu = ({ className = "msg-icon" }) => (
   </svg>
 );
 
-// Demo avatars (replace with real)
+// Avatar fallback
 const AV = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/2ooze2k90v5e1.jpeg";
-const ME = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg";
-
-// People list
-const PEOPLE = [
-  { id: "jmg", name: "James Morgan McGill", note: "Garfield po", avatar: AV },
-  { id: "nd", name: "Natsuki Deguchi", note: "Halo", avatar: AV },
-  { id: "psh", name: "Park Shin Hye", note: "Musta u tutuy", avatar: AV },
-  { id: "nahyun", name: "Nahyun world", note: "Hello", avatar: AV },
-  { id: "gs", name: "Gintoki Sakata", note: "Meron ba tao diyan?", avatar: AV },
-  { id: "st", name: "Shinsuke Takasugi", note: "Who u?", avatar: AV },
-  { id: "mm", name: "Mae Manila", note: "Busy?", avatar: AV },
-  { id: "sk", name: "Sofia Kurfunina", note: "Are u okay?", avatar: AV },
-  { id: "ad", name: "Alexandra Daddario", note: "Notice me senpai", avatar: AV },
-  { id: "ms", name: "Myrna Sanchez", note: "pa commission hehe", avatar: AV },
-  { id: "gy", name: "Gasai Yuno", note: "Hi", avatar: AV }
-];
-
-// Seed messages
-const SEED = [
-  { id: 1, at: "7:31 pm", from: "them", text: "Pwede po ba pacommsion" },
-  { id: 2, at: "7:34 pm", from: "me", text: "Pwede naman, Ano gusto u?" },
-  { id: 3, at: "7:36 pm", from: "them", text: "Pa paint po" },
-  { id: 4, at: "7:39 pm", from: "me", text: "Magkano budget mo tutuy?" },
-  { id: 5, at: "7:42 pm", from: "them", text: "1500 po" },
-  { id: 6, at: "8:42 pm", from: "me", text: "Okay?" }
-];
 
 export default function Message() {
-  // Correct defaults so the thread always renders
-  const FIRST_ID = PEOPLE?.id || "jmg";
+
+  const [conversations, setConversations] = useState([]);
+  const [activeConvId, setActiveConvId] = useState(null);
+
+  // UI states
+  const [loadingConvs, setLoadingConvs] = useState(false);
+
+  // Optional: the user you picked from search for first-time chat
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState(FIRST_ID);
-  const [threads, setThreads] = useState({ [FIRST_ID]: SEED });
+  const [threads, setThreads] = useState({});
   const [draft, setDraft] = useState("");
+  const [user, setUser] = useState([])
+  const [meAvatar, setMeAvatar] = useState(AV)
+  const [isFetchingMe, setIsFetchingMe] = useState(false)
+  // Unified search support
+  const [searchUsers, setSearchUsers] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const endRef = useRef(null);
+  const socketRef = useRef(null);
 
-  // Filter left list by name or note
-  const filtered = useMemo(() => {
+
+  useEffect(() => {
+    fetchMe()
+    fetchConversations()
+  }, [])
+
+  const findConversationWith = (userId) =>
+    conversations.find(c => c.otherUser?.id === userId) || null;
+
+  const openChatWith = (user) => {
+    const conv = findConversationWith(user.id);
+    if (conv) {
+      // Existing conversation
+      setActiveConvId(conv.conversationId);
+      setSelectedUser(null);
+    } else {
+      // First-time conversation (prepares right panel to send first message)
+      setActiveConvId(null);
+      setSelectedUser(user); // { id, username, profilePicture? }
+    }
+  };
+
+
+  const fetchMe = async () => {
+    setIsFetchingMe(true)
+    try{
+      if (isFetchingMe) return;
+      const res = await fetch(`${API}/users/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+      
+      if (!res.ok) {
+        console.error("ayaw boss");
+        return;
+      }
+      const data = await res.json();
+      setUser(data.id)
+
+      // Fetch my profile to get my avatar for "me" bubbles
+      try {
+        const profRes = await fetch(`${API}/profile/getProfile`, {
+          credentials: "include",
+          method: "GET",
+        });
+        if (profRes.ok) {
+          const prof = await profRes.json();
+          const p = prof?.profile ?? {};
+          if (p.profilePicture) setMeAvatar(p.profilePicture);
+        }
+      } catch (e) {
+        // keep fallback avatar if profile fetch fails
+      }
+
+    }catch(error){
+      console.error("error:", error);
+
+    }finally{
+      setIsFetchingMe(false)
+
+    }
+  }
+
+
+  // Realtime: connect socket once we know user id
+  useEffect(() => {
+    if (!user) return;
+    if (socketRef.current) return; // already connected
+    const s = io(SOCKET_URL, { withCredentials: true });
+    socketRef.current = s;
+
+    s.on("connect", () => {
+      try { s.emit("join", user); } catch {}
+    });
+
+    // Someone sent me a new message
+    s.on("message:new", (payload) => {
+      const { conversationId, message } = payload || {};
+      if (!conversationId || !message) return;
+      const fromMe = message.senderId === user;
+      // Update last preview
+      setConversations((prev) => {
+        const ts = message.created_at || new Date().toISOString();
+        let found = false;
+        const updated = prev.map(c => {
+          if (c.conversationId === conversationId) {
+            found = true;
+            return {
+              ...c,
+              lastMessageContent: message.content,
+              lastMessageAt: ts,
+              unreadCount: c.conversationId === activeConvId ? 0 : (c.unreadCount || 0) + (fromMe ? 0 : 1),
+            };
+          }
+          return c;
+        });
+        if (!found) {
+          // If convo missing (first-time message on receiver), refresh list
+          fetchConversations();
+          return prev;
+        }
+        return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+      });
+
+      // If this thread is active, append and mark read
+      if (conversationId === activeConvId) {
+        const m = {
+          id: message.id || message.messageId,
+          at: new Date(message.created_at || message.createdAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
+          from: message.senderId === user ? "me" : "them",
+          text: message.content,
+        };
+        setThreads(t => ({ ...t, [conversationId]: [...(t[conversationId] || []), m] }));
+        // ensure unread cleared
+        fetch(`${API}/message/markRead/${conversationId}`, { method: 'POST', credentials: 'include' }).catch(() => {});
+      }
+    });
+
+    // Confirmation of my own sent message (useful if we skip refetch)
+    s.on("message:sent", (payload) => {
+      const { conversationId, message } = payload || {};
+      if (!conversationId || !message) return;
+      if (message.senderId !== user) return;
+      const m = {
+        id: message.id || message.messageId,
+        at: new Date(message.created_at || message.createdAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
+        from: "me",
+        text: message.content,
+      };
+      setThreads(t => ({ ...t, [conversationId]: [...(t[conversationId] || []), m] }));
+      setConversations(prev => {
+        const ts = message.created_at || new Date().toISOString();
+        const updated = prev.map(c => (
+          c.conversationId === conversationId
+            ? { ...c, lastMessageContent: message.content, lastMessageAt: ts }
+            : c
+        ));
+        return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+      });
+    });
+
+    return () => {
+      try { s.disconnect(); } catch {}
+      socketRef.current = null;
+    };
+  }, [user, activeConvId]);
+
+
+  const fetchConversations = async () => {
+    try{
+      if (loadingConvs) return;
+      setLoadingConvs(true);
+
+      const res = await fetch(`${API}/message/getConversation`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        console.error("conversations failed", res.status, await res.text());
+        setConversations([]);
+        return;
+      }
+      const data = await res.json();
+
+      const convs = (data.conversations || []).slice().sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+
+      setConversations(convs);
+      if (!activeConvId && convs.length) {
+        setActiveConvId(convs[0].conversationId);
+      }
+    
+    }catch(error){
+      console.error("fetchConversations error:", error);
+      setConversations([]);
+    }finally{
+        setLoadingConvs(false);
+    }
+  }
+
+
+
+  useEffect(() => {
+  if (!activeConvId) return;
+    // Optimistically clear unread badge for this conversation
+    setConversations(prev => prev.map(c => (
+      c.conversationId === activeConvId ? { ...c, unreadCount: 0 } : c
+    )));
+    // Persist unread reset on backend (best-effort)
+    fetch(`${API}/message/markRead/${activeConvId}`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(e => console.error("markRead failed:", e));
+    (async () => {
+      try {
+        const r = await fetch(`${API}/message/getConversation/${activeConvId}?page=1&limit=50`, {
+          credentials: "include",
+        });
+        if (!r.ok) {
+          console.error("load messages failed", r.status, await r.text());
+          return;
+        }
+        const d = await r.json();
+        const msgs = (d.messages || []).map(m => ({
+          id: m.id || m.messageId,
+          at: new Date(m.created_at || m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
+          from: m.senderId ===  user ? "me" : "them",
+          text: m.content,
+        }));
+        setThreads(t => ({ ...t, [activeConvId]: msgs }));
+      } catch (e) {
+        console.error("fetch messages error:", e);
+      }
+    })();
+  }, [activeConvId]);
+  // Filter left list by conversation data
+  const filteredConversations = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return PEOPLE;
-    return PEOPLE.filter(p => p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q));
+    if (!q) return conversations;
+    return conversations.filter(c => {
+      const u = c.otherUser || {};
+      const fullName = [u.firstName, u.middleName, u.lastName].filter(Boolean).join(" ");
+      return (
+        (fullName || "").toLowerCase().includes(q) ||
+        (u.username || "").toLowerCase().includes(q) ||
+        (u.bio || "").toLowerCase().includes(q) ||
+        (c.lastMessageContent || "").toLowerCase().includes(q)
+      );
+    });
+  }, [query, conversations]);
+
+  // Debounced fetch of users when typing (>=2 chars)
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setSearchUsers([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`${API}/users/getall`, { credentials: 'include' });
+        if (!res.ok) { setSearchUsers([]); return; }
+        const data = await res.json();
+        const lower = q.toLowerCase();
+        const mapped = (Array.isArray(data) ? data : [])
+          .map(p => ({
+            id: p.userId || p.profileId || p.id,
+            username: p.username || '',
+            firstName: p.firstName || '',
+            middleName: p.middleName || '',
+            lastName: p.lastName || '',
+            profilePicture: p.profilePicture || null,
+            bio: p.bio || '',
+          }))
+          .filter(u => (
+            [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ').toLowerCase().includes(lower)
+            || (u.username || '').toLowerCase().includes(lower)
+            || (u.bio || '').toLowerCase().includes(lower)
+          ));
+        setSearchUsers(mapped);
+      } catch {}
+      finally { setSearching(false); }
+    }, 250);
+    return () => clearTimeout(t);
   }, [query]);
 
-  const activePerson = PEOPLE.find(p => p.id === active) || PEOPLE;
-  const msgs = threads[active] || [];
+  // Merge conversations + new users (when typing)
+  const leftItems = useMemo(() => {
+    const convItems = filteredConversations.map(c => ({
+      kind: 'conversation',
+      conversationId: c.conversationId,
+      userId: c.otherUser?.id,
+      avatar: c.otherUser?.profilePicture || AV,
+      name: [c.otherUser?.firstName, c.otherUser?.middleName, c.otherUser?.lastName].filter(Boolean).join(' ') || c.otherUser?.username || 'Unknown',
+      subtitle: c.lastMessageContent || 'No messages yet',
+      unread: c.unreadCount || 0,
+    }));
+
+    if (query.trim().length < 2) return convItems;
+
+    const inConv = new Set(conversations.map(c => c.otherUser?.id).filter(Boolean));
+    const newUsers = (searchUsers || [])
+      .filter(u => !inConv.has(u.id) && u.id !== user)
+      .map(u => ({
+        kind: 'new-user',
+        id: `new-${u.id}`,
+        userId: u.id,
+        avatar: u.profilePicture || AV,
+        name: [u.firstName, u.middleName, u.lastName].filter(Boolean).join(' ') || u.username || 'Unknown',
+        subtitle: 'Start conversation',
+        unread: 0,
+    }));
+
+    return [...convItems, ...newUsers];
+  }, [filteredConversations, searchUsers, conversations, user, query]);
+
+  // Resolve selected conversation and peer, and use correct thread key
+  const activeConversation = useMemo(
+    () => conversations.find(c => c.conversationId === activeConvId) || null,
+    [conversations, activeConvId]
+  );
+
+  const currentPeer = useMemo(() => {
+    if (selectedUser) return selectedUser;
+    return activeConversation?.otherUser || null;
+  }, [selectedUser, activeConversation]);
+
+  const msgs = threads[activeConvId] || [];
+
+
 
   // Scroll to bottom on conversation or new message
   useEffect(() => { 
     endRef.current?.scrollIntoView({ behavior: "smooth" }); 
-  }, [active, msgs.length]);
+  }, [activeConvId, msgs.length]);
 
-  const send = () => {
+  const send = async () => {
     const text = draft.trim();
     if (!text) return;
-    const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase();
-    setThreads(t => {
-      const curr = t[active] || [];
-      return { ...t, [active]: [...curr, { id: Date.now(), at: time, from: "me", text }] };
-    });
-    setDraft("");
+    if (isSending) return; // hard guard
+
+    // Determine receiver based on current context
+    const receiverId = (activeConversation && activeConversation.otherUser && activeConversation.otherUser.id)
+      || (selectedUser && selectedUser.id)
+      || null;
+    if (!receiverId) return;
+
+    try {
+      setIsSending(true);
+      const r = await fetch(`${API}/message/send`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiverId, content: text }),
+      });
+      if (!r.ok) {
+        console.error("send failed", r.status, await r.text());
+        return;
+      }
+      const result = await r.json();
+      setDraft("");
+
+      // Ensure we are focused on the correct conversation (covers first-time chats)
+      const convId = result?.conversationId || activeConvId;
+      if (convId && convId !== activeConvId) setActiveConvId(convId);
+
+      // Optimistically update sidebar without full refresh
+      setConversations(prev => {
+        const ts = new Date().toISOString();
+        let found = false;
+        const updated = prev.map(c => {
+          if (c.conversationId === convId) {
+            found = true;
+            return { ...c, lastMessageContent: text, lastMessageAt: ts };
+          }
+          return c;
+        });
+        if (!found) {
+          // First-time chat: pull in the new conversation once backend created it
+          fetchConversations();
+          return prev;
+        }
+        return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+      });
+
+      // Thread will be appended by socket 'message:sent'; no need to refetch here
+    } catch (e) {
+      console.error("send error:", e);
+    }finally{
+      setIsSending(false)
+    }
   };
 
   const onKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      send();
+      if (!isSending) send();
     }
   };
 
@@ -117,21 +452,44 @@ export default function Message() {
             />
           </div>
           <div className="msgList">
-            {filtered.map(p => (
-              <a
-                key={p.id}
-                className={`msgItem ${p.id === active ? "is-active" : ""}`}
-                onClick={() => setActive(p.id)}
-                role="button"
-                tabIndex={0}
-              >
-                <img className="msgAvatar" src={p.avatar} alt="" />
-                <div className="msgMeta">
-                  <div className="msgName">{p.name}</div>
-                  <div className="msgNote">{p.note}</div>
-                </div>
-              </a>
-            ))}
+            {loadingConvs ? (
+              <div className="msgNote" style={{ padding: 12 }}>Loading conversations...</div>
+            ) : leftItems.length === 0 ? (
+              <div className="msgNote" style={{ padding: 12 }}>
+                {query.trim().length < 2 ? "No conversations yet." : (searching ? "Searching..." : "No results")}
+              </div>
+            ) : (
+              leftItems.map(item => (
+                <a
+                  key={item.conversationId || item.id}
+                  className={`msgItem ${item.conversationId && item.conversationId === activeConvId ? 'is-active' : ''}`}
+                  onClick={() => {
+                    if (item.kind === 'conversation') {
+                      setActiveConvId(item.conversationId);
+                      setSelectedUser(null);
+                    } else {
+                      openChatWith({ id: item.userId, username: item.name, profilePicture: item.avatar });
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <img className="msgAvatar" src={item.avatar} alt="" />
+                  <div className="msgMeta">
+                    <div className="msgName" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>{item.name}</span>
+                      {item.kind === 'new-user' && (
+                        <span style={{ fontSize: 10, background: 'var(--museo-accent)', color: '#fff', padding: '2px 6px', borderRadius: 10 }}>New</span>
+                      )}
+                    </div>
+                    <div className="msgNote">{item.subtitle}</div>
+                  </div>
+                  {item.unread > 0 && (
+                    <span className="msgBadge">{item.unread}</span>
+                  )}
+                </a>
+              ))
+            )}
           </div>
         </aside>
 
@@ -139,8 +497,18 @@ export default function Message() {
         <main className="msgMain">
           <header className="msgHead">
             <div className="msgPeer">
-              <img className="msgAvatar msgAvatar--lg" src={activePerson.avatar} alt="" />
-              <div className="msgPeerName">{activePerson.name}</div>
+              <img
+                className="msgAvatar msgAvatar--lg"
+                src={(currentPeer && currentPeer.profilePicture) || AV}
+                alt=""
+              />
+              <div className="msgPeerName">
+                {currentPeer
+                  ? [currentPeer.firstName, currentPeer.middleName, currentPeer.lastName]
+                      .filter(Boolean)
+                      .join(" ") || currentPeer.username || "Conversation"
+                  : "Conversation"}
+              </div>
             </div>
             <a className="msgHeadDots" aria-label="Menu" role="button" tabIndex={0}>
               <IconMenu className="msg-icon" />
@@ -150,12 +518,18 @@ export default function Message() {
           <section className="msgBody">
             {msgs.map(m => (
               <article key={m.id} className={`bubbleRow ${m.from === "me" ? "from-me" : "from-them"}`}>
-                {m.from === "them" && <img className="bubbleAvatar" src={activePerson.avatar} alt="" />}
+                {m.from === "them" && (
+                  <img
+                    className="bubbleAvatar"
+                    src={(currentPeer && currentPeer.profilePicture) || AV}
+                    alt=""
+                  />
+                )}
                 <div className={`bubble ${m.from === "me" ? "bubble--me" : "bubble--them"}`}>
                   <p className="bubbleText">{m.text}</p>
                   <div className="bubbleTime">{m.at}</div>
                 </div>
-                {m.from === "me" && <img className="bubbleAvatar" src={ME} alt="" />}
+                {m.from === "me" && <img className="bubbleAvatar" src={meAvatar || AV} alt="" />}
               </article>
             ))}
             <div ref={endRef} />
@@ -174,7 +548,16 @@ export default function Message() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKey}
             />
-            <a className="mcSend" onClick={send} aria-label="Send" role="button" tabIndex={0}>
+            <a
+              className="mcSend"
+              onClick={() => { if (!isSending) send(); }}
+              aria-label={isSending ? "Sending..." : "Send"}
+              aria-disabled={isSending || !draft.trim()}
+              role="button"
+              tabIndex={0}
+              style={isSending || !draft.trim() ? { opacity: 0.6, pointerEvents: 'none', cursor: 'not-allowed' } : undefined}
+              title={isSending ? "Sending..." : (draft.trim() ? "Send" : "Type a message")}
+            >
               <IconSend className="msg-icon" />
             </a>
           </footer>

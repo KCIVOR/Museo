@@ -4,7 +4,7 @@ import { requirePermission } from "../middleware/permission.js";
 const router = express.Router();
 
 router.get("/me", getCurrentUser);
-router.get("/getall", requirePermission(['admin','artist']), getAllUsers);
+router.get("/getall", requirePermission(['user','admin','artist']), getAllUsers);
 router.get("/role", getRole);
 
 router.get("/:id", getUser);
