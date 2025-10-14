@@ -4,6 +4,7 @@ import "./css/home.css";
 import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
 import SetProfileModal from "./SetProfile";
+import InterestsSelection from "./InterestsSelection";
 import AnnouncementCard from "./AnnouncementCard.jsx";
 const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
@@ -129,6 +130,9 @@ export default function Home() {
 
   // profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
+  
+  // interests selection modal visibility
+  const [showInterestsModal, setShowInterestsModal] = useState(false);
 
   // Expanded posts state
   const [expandedPosts, setExpandedPosts] = useState({});
@@ -311,14 +315,57 @@ export default function Home() {
       if (data.profileStatus === false){
         console.log("Profile needs setup");
         setShowProfileModal(true);
+        return; // Don't check preferences if profile isn't set up yet
       }
 
+      // If profile is set up, check art preferences
+      await checkArtPreferences();
 
     } catch (err) {
       console.error("Error checking profile:", err);
       setShowProfileModal(true);
     }
   };  //checking profile kung nakapag setup naba or no
+
+  const checkArtPreferences = async () => {
+    try {
+      const res = await fetch(`${API}/profile/artPreferenceStatus`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        console.warn("Art preference status request failed:", res.status, res.statusText);
+        // If API fails, show interests modal to be safe
+        setShowInterestsModal(true);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Art preference status:", data);
+      
+      if (data.preferenceStatus === false || !data.preferenceStatus) {
+        console.log("Art preferences need setup");
+        setShowInterestsModal(true);
+      }
+
+    } catch (err) {
+      console.error("Error checking art preferences:", err);
+      // If there's an error, show the modal to ensure preferences are set
+      setShowInterestsModal(true);
+    }
+  };
+
+  const handleInterestsComplete = (selectedInterests) => {
+    // Only close modal if interests were actually selected (not null)
+    if (selectedInterests !== null) {
+      console.log("Interests selection completed:", selectedInterests);
+      setShowInterestsModal(false);
+    } else {
+      console.log("Interests selection cancelled, keeping modal open");
+      // Modal stays open - user must select interests
+    }
+  };
 
   useEffect(() => {
     checkProfile();
@@ -630,6 +677,12 @@ export default function Home() {
           checkProfile();
         }}
         initial={null}
+      />
+
+      {/* Show interests selection modal conditionally */}
+      <InterestsSelection
+        isOpen={showInterestsModal}
+        onClose={handleInterestsComplete}
       />
     </div>
   );

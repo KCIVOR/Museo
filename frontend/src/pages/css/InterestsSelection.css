@@ -1,0 +1,820 @@
+/* ========================================
+   🎨 INTERESTS SELECTION PAGE STYLES
+   Museum-themed interest selection interface
+   ======================================== */
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal overlay */
+.interests-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(26, 15, 8, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Modal content */
+.interests-modal {
+  background: var(--museo-bg-primary);
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(212, 180, 138, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(110, 74, 46, 0.02) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(212, 180, 138, 0.02) 0%, transparent 50%),
+    linear-gradient(135deg, transparent 0%, rgba(212, 180, 138, 0.01) 50%, transparent 100%);
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 25px 50px -12px rgba(26, 15, 8, 0.4),
+    0 0 0 1px rgba(212, 180, 138, 0.1);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  overflow-y: auto;
+  position: relative;
+  animation: modalSlideUp 0.4s ease-out;
+}
+
+@media (min-width: 768px) {
+  .interests-modal {
+    max-width: 1000px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .interests-modal {
+    max-width: 1200px;
+  }
+}
+
+/* Parchment texture overlay */
+.parchment-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(212, 180, 138, 0.008) 2px,
+      rgba(212, 180, 138, 0.008) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(110, 74, 46, 0.005) 2px,
+      rgba(110, 74, 46, 0.005) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 1.5rem;
+}
+
+
+/* Content wrapper */
+.interests-content {
+  position: relative;
+  z-index: 10;
+  padding: 2rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .interests-content {
+    padding: 3rem 2rem;
+  }
+}
+
+/* Header section */
+.interests-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header-icon-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.header-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-accent-hover) 100%);
+  box-shadow: 
+    0 8px 25px -5px rgba(212, 180, 138, 0.4),
+    0 0 0 1px rgba(212, 180, 138, 0.2);
+  font-size: 2rem;
+  transition: all 0.3s ease;
+}
+
+.header-icon:hover {
+  transform: scale(1.05) rotate(5deg);
+  box-shadow: 
+    0 12px 35px -5px rgba(212, 180, 138, 0.5),
+    0 0 0 2px rgba(212, 180, 138, 0.3);
+}
+
+.interests-title {
+  font-family: var(--museo-font-display);
+  color: var(--museo-text-primary);
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin: 0;
+  position: relative;
+  padding-bottom: 1rem;
+  letter-spacing: -0.03em;
+  text-rendering: optimizeLegibility;
+  background: linear-gradient(135deg, var(--museo-text-primary) 0%, var(--museo-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.interests-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--museo-accent) 0%, var(--museo-gold) 50%, var(--museo-accent-hover) 100%);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+}
+
+.interests-description {
+  color: var(--museo-text-secondary);
+  line-height: 1.8;
+  max-width: 36rem;
+  margin: 0 auto 1.5rem;
+  font-size: 1.125rem;
+  font-family: var(--museo-font-heading);
+  font-style: italic;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+}
+
+.interests-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--museo-text-muted);
+  font-family: var(--museo-font-body);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  background: var(--museo-accent-light);
+  border-radius: 2rem;
+  border: 1px solid var(--museo-accent);
+  display: inline-flex;
+}
+
+/* Interest cards masonry grid */
+.interests-grid {
+  column-count: 1;
+  column-gap: 1.5rem;
+  column-fill: balance;
+  margin-bottom: 4rem;
+  orphans: 1;
+  widows: 1;
+}
+
+@media (min-width: 640px) {
+  .interests-grid {
+    column-count: 2;
+    column-gap: 2rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .interests-grid {
+    column-count: 3;
+    column-gap: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .interests-grid {
+    column-count: 4;
+    column-gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .interests-grid {
+    column-count: 4;
+    column-gap: 2rem;
+  }
+}
+
+/* Interest card */
+.interest-card {
+  cursor: pointer;
+  transform-origin: bottom;
+  perspective: 1000px;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.interest-card.animate {
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.card-content {
+  position: relative;
+  padding: 2rem;
+  border-radius: 1.25rem;
+  border: 2px solid var(--museo-border);
+  background: var(--museo-bg-secondary);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(212, 180, 138, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  transform: translateY(0) scale(1) rotateX(0deg);
+  backdrop-filter: blur(1px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.card-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.02) 0%, transparent 50%, rgba(110, 74, 46, 0.01) 100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.card-content:hover {
+  transform: translateY(-6px) scale(1.02) rotateX(2deg);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.15),
+    0 10px 10px -5px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(212, 180, 138, 0.1);
+}
+
+.card-content:hover::before {
+  opacity: 1;
+}
+
+.card-content.selected {
+  transform: translateY(-8px) scale(1.03) rotateX(1deg);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 2px var(--museo-accent-light);
+}
+
+.card-content.selected::before {
+  opacity: 1;
+}
+
+/* Masonry card height variations for dynamic layout */
+.interest-card:nth-child(4n+1) .card-content {
+  min-height: 280px;
+}
+
+.interest-card:nth-child(4n+2) .card-content {
+  min-height: 320px;
+}
+
+.interest-card:nth-child(4n+3) .card-content {
+  min-height: 260px;
+}
+
+.interest-card:nth-child(4n+4) .card-content {
+  min-height: 340px;
+}
+
+/* Additional variations for more organic feel */
+.interest-card:nth-child(6n+1) .card-content {
+  min-height: 300px;
+}
+
+.interest-card:nth-child(8n+1) .card-content {
+  min-height: 240px;
+}
+
+/* Responsive card heights */
+@media (max-width: 640px) {
+  .interest-card:nth-child(4n+1) .card-content,
+  .interest-card:nth-child(4n+2) .card-content,
+  .interest-card:nth-child(4n+3) .card-content,
+  .interest-card:nth-child(4n+4) .card-content,
+  .interest-card:nth-child(6n+1) .card-content,
+  .interest-card:nth-child(8n+1) .card-content {
+    min-height: auto;
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .interest-card:nth-child(4n+1) .card-content {
+    min-height: 260px;
+  }
+  
+  .interest-card:nth-child(4n+2) .card-content {
+    min-height: 300px;
+  }
+  
+  .interest-card:nth-child(4n+3) .card-content {
+    min-height: 240px;
+  }
+  
+  .interest-card:nth-child(4n+4) .card-content {
+    min-height: 320px;
+  }
+}
+
+/* Subtle content positioning variations */
+.interest-card:nth-child(odd) .card-content {
+  padding-top: 2rem;
+}
+
+.interest-card:nth-child(even) .card-content {
+  padding-top: 1.75rem;
+}
+
+@media (max-width: 640px) {
+  .interest-card:nth-child(odd) .card-content,
+  .interest-card:nth-child(even) .card-content {
+    padding-top: 1.5rem;
+  }
+}
+
+/* Ensure proper masonry flow */
+.interest-card {
+  -webkit-column-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Selection indicator */
+.selection-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 2px rgba(255, 255, 255, 0.2);
+  animation: checkmarkBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  backdrop-filter: blur(4px);
+}
+
+@keyframes checkmarkBounce {
+  0% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(90deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Decorative corner accents */
+.corner-accent-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.2;
+}
+
+.corner-accent-top-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 0 0 100% 0;
+}
+
+.corner-accent-bottom {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 2rem;
+  height: 2rem;
+  opacity: 0.2;
+}
+
+.corner-accent-bottom-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 100% 0 0 0;
+}
+
+/* Card SVG icon */
+.card-svg-icon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.25rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.card-svg-icon svg {
+  width: 100%;
+  height: 100%;
+  transition: inherit;
+}
+
+.interest-card:hover .card-svg-icon {
+  transform: scale(1.15) translateY(-2px);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+}
+
+.card-content.selected .card-svg-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* Responsive SVG icon adjustments */
+@media (max-width: 640px) {
+  .card-svg-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .card-svg-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-bottom: 1.125rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-svg-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+/* Card title */
+.card-title {
+  font-family: var(--museo-font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--museo-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-rendering: optimizeLegibility;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.card-title.selected {
+  /* Color will be set dynamically via inline styles */
+  transform: translateY(-1px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Card description */
+.card-description {
+  color: var(--museo-text-muted);
+  line-height: 1.5;
+  font-size: 0.875rem;
+  font-family: var(--museo-font-heading);
+  font-style: italic;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  transition: color 0.3s ease;
+  word-wrap: break-word;
+  hyphens: auto;
+  overflow-wrap: break-word;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card content wrapper */
+.card-text-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-content.selected .card-description {
+  color: var(--museo-text-secondary);
+}
+
+.interest-card:hover .card-description {
+  color: var(--museo-text-primary);
+}
+
+/* Responsive text adjustments */
+@media (max-width: 640px) {
+  .card-title {
+    font-size: 1.125rem;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+  }
+  
+  .card-description {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .card-title {
+    font-size: 1.1875rem;
+    line-height: 1.25;
+  }
+  
+  .card-description {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-title {
+    font-size: 1.1875rem;
+  }
+  
+  .card-description {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+}
+
+/* Hover effect overlay */
+.hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.interest-card:hover .hover-overlay {
+  opacity: 1;
+}
+
+/* Selection summary */
+.selection-summary {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  background: var(--museo-accent-light);
+  border: 1px solid var(--museo-accent);
+  color: var(--museo-text-primary);
+  font-weight: 500;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-continue {
+  border: none;
+  border-radius: var(--museo-radius-xl);
+  padding: 0.75rem 3rem;
+  font-size: var(--museo-text-base);
+  font-weight: 500;
+  color: var(--museo-text-inverse);
+  cursor: pointer;
+  transition: all var(--museo-transition-base);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-continue.enabled {
+  background: linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%);
+  box-shadow: var(--museo-shadow-lg);
+}
+
+.btn-continue.disabled {
+  background: var(--museo-gray-400);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-continue.enabled:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--museo-shadow-xl);
+}
+
+.btn-continue.enabled:active {
+  transform: translateY(0);
+}
+
+/* Progress indicator */
+.progress-section {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.progress-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.progress-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
+
+.progress-dot.active {
+  background: var(--museo-accent);
+}
+
+.progress-dot.inactive {
+  background: var(--museo-border);
+}
+
+.progress-text {
+  color: var(--museo-text-muted);
+  font-size: var(--museo-text-xs);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--museo-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--museo-accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--museo-accent-hover);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .interests-container {
+    padding: 0.5rem;
+  }
+  
+  .interests-modal {
+    max-height: 95vh;
+    border-radius: 1rem;
+  }
+  
+  .interests-title {
+    font-size: 2.5rem;
+    line-height: 1.1;
+  }
+  
+  .interests-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 28rem;
+  }
+  
+  .interests-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .interests-header {
+    margin-bottom: 2rem;
+  }
+  
+  .interests-grid {
+    margin-bottom: 2rem;
+    column-gap: 1rem;
+  }
+  
+  
+  .header-icon {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.5rem;
+  }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 480px) {
+  .interests-title {
+    font-size: 2rem;
+  }
+  
+  .interests-description {
+    font-size: 0.9rem;
+    max-width: 24rem;
+  }
+  
+  .interests-grid {
+    column-gap: 0.75rem;
+  }
+  
+  .interest-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .interests-title {
+    font-size: 3rem;
+  }
+  
+  .interests-description {
+    font-size: 1.0625rem;
+    max-width: 32rem;
+  }
+}

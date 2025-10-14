@@ -1,7 +1,7 @@
 // routes/profileRoutes.js
 import express from "express";
 import multer from "multer";
-import { getProfile, uploadProfileMedia, profileStatus, getArts, createComment, getComments, createReact, getReact, uploadArt } from "../controllers/profileController.js";
+import { artPreferenceStatus, saveArtPreferences, getProfile, uploadProfileMedia, profileStatus, getArts, createComment, getComments, createReact, getReact, uploadArt } from "../controllers/profileController.js";
 
 const router = express.Router();
 
@@ -19,6 +19,8 @@ router.post("/createComment", createComment);
 router.post("/createReact", createReact);
 router.get("/getReact", getReact);
 router.post("/uploadArt", upload.single('image'), uploadArt);
+router.get("/artPreferenceStatus", artPreferenceStatus);
+router.post("/saveArtPreferences", saveArtPreferences);
 
 // Also accept POST with JSON body for ID-based reads
 router.post("/getComments", getComments);

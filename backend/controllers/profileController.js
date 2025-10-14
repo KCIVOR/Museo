@@ -243,6 +243,152 @@ export const profileStatus = async (req, res) => {
 }
 
 
+export const artPreferenceStatus = async (req, res) => {
+  try{
+
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    
+    const userId = req.user.id;
+    const { data: profile, error } = await supabase
+      .from("profile")
+      .select("preferenceStatus")
+      .eq("userId", userId)
+      .maybeSingle(); // Use maybeSingle instead of single to handle no records
+
+
+    if (error) {
+      console.error("preferenceStatus - Supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    // If no profile exists, return false
+    if (!profile) {
+      return res.status(200).json({ preferenceStatus: false });
+    }
+
+    const result = { preferenceStatus: profile.preferenceStatus || false };
+    return res.status(200).json(result);
+    
+  }catch(err){
+    console.error("preferenceStatus error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+export const saveArtPreferences = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const userId = req.user.id;
+    const {
+      classicalArt,
+      contemporaryArt,
+      impressionist,
+      abstractArt,
+      sculpture,
+      photography,
+      digitalArt,
+      streetArt,
+      minimalist,
+      surrealist,
+      landscape,
+      portrait,
+      miniature,
+      expressionist,
+      realism,
+      conceptual
+    } = req.body;
+
+    // First, check if art preferences record exists
+    const { data: existingPrefs, error: checkError } = await supabase
+      .from("artPreference")
+      .select("artPreference")
+      .eq("userId", userId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error("Error checking existing art preferences:", checkError);
+      return res.status(500).json({ error: checkError.message });
+    }
+
+    const preferencesData = {
+      userId,
+      classicalArt: classicalArt || false,
+      contemporaryArt: contemporaryArt || false,
+      impressionist: impressionist || false,
+      abstractArt: abstractArt || false,
+      sculpture: sculpture || false,
+      photography: photography || false,
+      digitalArt: digitalArt || false,
+      streetArt: streetArt || false,
+      minimalist: minimalist || false,
+      surrealist: surrealist || false,
+      landscape: landscape || false,
+      portrait: portrait || false,
+      miniature: miniature || false,
+      expressionist: expressionist || false,
+      realism: realism || false,
+      conceptual: conceptual || false
+    };
+
+    let result;
+    if (existingPrefs) {
+      // Update existing preferences
+      const { data, error } = await supabase
+        .from("artPreference")
+        .update(preferencesData)
+        .eq("userId", userId)
+        .select();
+
+      if (error) {
+        console.error("Error updating art preferences:", error);
+        return res.status(500).json({ error: error.message });
+      }
+      result = data;
+    } else {
+      // Insert new preferences
+      const { data, error } = await supabase
+        .from("artPreference")
+        .insert([preferencesData])
+        .select();
+
+      if (error) {
+        console.error("Error inserting art preferences:", error);
+        return res.status(500).json({ error: error.message });
+      }
+      result = data;
+    }
+
+    // Update profile to mark preferences as set
+    const { error: profileUpdateError } = await supabase
+      .from("profile")
+      .update({ preferenceStatus: true })
+      .eq("userId", userId);
+
+    if (profileUpdateError) {
+      console.error("Error updating profile preference status:", profileUpdateError);
+      return res.status(500).json({ error: profileUpdateError.message });
+    }
+
+    console.log("Art preferences saved successfully for user:", userId);
+    return res.status(200).json({ 
+      message: "Art preferences saved successfully",
+      preferences: result[0]
+    });
+
+  } catch (err) {
+    console.error("saveArtPreferences error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+
+
 export const getArts = async (req, res) =>{
   try{
     const userId = req.user.id;
