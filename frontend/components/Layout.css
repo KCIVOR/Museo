@@ -69,6 +69,19 @@
   overscroll-behavior: contain;
 }
 
+/* Gallery layout: hide right panel, expand main content */
+.app--gallery {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+/* Ensure right sidebar is completely hidden on gallery page */
+.app--gallery .app__side-right {
+  display: none !important;
+}
 
 /* Responsive */
 @media (max-width: 1200px) {
@@ -80,10 +93,19 @@
       "footer footer footer";
   }
 
+  /* Gallery layout remains the same on tablet */
+  .app--gallery {
+    grid-template-columns: var(--museo-sidebar-width) 1fr;
+    grid-template-areas:
+      "header header"
+      "sideL  main"
+      "footer footer";
+  }
 }
 
 @media (max-width: 900px) {
-  .app {
+  .app,
+  .app--gallery {
     grid-template-columns: 1fr;
     grid-template-areas:
       "header"

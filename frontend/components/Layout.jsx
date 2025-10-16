@@ -12,6 +12,7 @@ import ToastNotification from "./ToastNotification";
 export default function Layout() {
   const { pathname } = useLocation();
   const isMessage = pathname.startsWith("/message");
+  const isGallery = pathname === "/Gallery" || pathname === "/gallery";
   const [role, setRole] = useState(null);
   const [requestsOpen, setRequestsOpen] = useState(false);
 
@@ -36,7 +37,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className={`app ${isMessage ? "app--message" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""}`}>
       <header className="app__header">
         <Navbar role={role} />
       </header>
@@ -50,9 +51,11 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <aside className="app__side-right">
-        <SidePanel2 role={role} />
-      </aside>
+      {!isGallery && (
+        <aside className="app__side-right">
+          <SidePanel2 role={role} />
+        </aside>
+      )}
 
       <footer className="app__footer" />
       <RequestsModal open={requestsOpen} onClose={() => setRequestsOpen(false)} />
