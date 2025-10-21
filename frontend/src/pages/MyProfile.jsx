@@ -1,21 +1,11 @@
 // src/pages/MyProfile.jsx
 import "./css/MyProfile.css";
-import "../components/MuseoGalleryContainer.css";
+// Using CSS classes from design-system.css
 import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtGallery from "./subPages/artGallery";
 import UploadArt from "./UploadArt";
-import { 
-  MuseoPage, 
-  MuseoFeed, 
-  MuseoHeading, 
-  MuseoCard, 
-  MuseoAvatar, 
-  MuseoBody, 
-  MuseoTitle, 
-  MuseoDesc, 
-  MuseoBtn 
-} from "../components/MuseoGalleryContainer.jsx";
+// Using CSS classes from design-system.css instead of components
 const API = import.meta.env.VITE_API_BASE;
 
 const FALLBACK_AVATAR =
@@ -138,36 +128,23 @@ function EditProfileModal({ open, onClose, initial }) {
 
   return (
     <div 
+      className="museo-modal-overlay"
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(110, 74, 46, 0.55)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '16px',
-        backdropFilter: 'saturate(120%) blur(8px)'
+        padding: '16px'
       }}
       onClick={onClose}
     >
       <section
+        className="museo-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Edit profile"
         style={{
-          background: 'linear-gradient(135deg, #faf8f5 0%, #fdfcfa 100%)',
           borderRadius: '16px',
-          border: '2px solid #d4b48a',
-          boxShadow: '0 20px 60px rgba(110, 74, 46, 0.25)',
-          width: '100%',
-          maxWidth: '700px',
+          width: 'min(800px, 95vw)',
           maxHeight: '95vh',
-          overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column',
-          backdropFilter: 'blur(12px)',
-          fontFamily: 'Georgia, Times New Roman, serif'
+          flexDirection: 'column'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -644,38 +621,42 @@ export default function MyProfile() {
   // Event handlers for ArtGallery
   const handleViewArt = (art, index) => {
     console.log('Viewing art:', art, 'at index:', index);
-    // Add your view logic here
   };
 
   const handleLikeArt = (art, index) => {
     console.log('Liking art:', art, 'at index:', index);
-    // Add your like logic here
+    // Refresh arts data after like action
+    fetchArts();
   };
 
   const handleArtClick = (art, index) => {
     console.log('Art clicked:', art, 'at index:', index);
-    // Add your click logic here
+  };
+
+  const handleModalClose = () => {
+    // Refresh arts data when modal closes to get updated stats
+    fetchArts();
   };
 
   // Show full-page loader first, then render all content
   if (!(profileLoaded && artsLoaded)) {
     return (
-      <MuseoPage>
-        <MuseoFeed style={{ gap: '24px' }}>
+      <div className="museo-page">
+        <div className="museo-feed" style={{ gap: '24px' }}>
           <MuseoLoadingBox
             show={true}
             message={MuseoLoadingBox.messages.loading}
           />
-        </MuseoFeed>
-      </MuseoPage>
+        </div>
+      </div>
     );
   }
 
   return (
-    <MuseoPage>
-      <MuseoFeed style={{ gap: '24px' }}>
+    <div className="museo-page">
+      <div className="museo-feed" style={{ gap: '24px' }}>
         {/* Profile Card */}
-        <MuseoCard variant="profile" style={{ position: 'relative', overflow: 'hidden', marginBottom: '24px' }}>
+        <div className="museo-card museo-card--artist" style={{ position: 'relative', overflow: 'hidden', padding: '0', marginBottom: '24px' }}>
           {/* Cover Image */}
           <div style={{
             position: 'relative',
@@ -694,6 +675,24 @@ export default function MyProfile() {
               borderRadius: '16px 16px 0 0'
             }} />
             
+            {/* Role Badge */}
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              left: '16px',
+              background: 'var(--museo-accent)',
+              color: 'var(--museo-white)',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}>
+              {role === 'artist' ? '🎨 Artist' : role === 'admin' ? '👑 Admin' : '👤 User'}
+            </div>
+
             {/* Edit Button */}
             <button
               type="button"
@@ -742,10 +741,10 @@ export default function MyProfile() {
             marginBottom: '20px',
             zIndex: 2
           }}>
-            <MuseoAvatar
+            <img
+              className="museo-avatar"
               src={avatar || FALLBACK_AVATAR}
               alt={`${fullName || "User"} avatar`}
-              size="xl"
               style={{
                 border: '4px solid var(--museo-white)',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
@@ -753,14 +752,15 @@ export default function MyProfile() {
             />
           </div>
 
-          <MuseoBody style={{ textAlign: 'center', padding: '0 24px 24px' }}>
-            <MuseoTitle style={{ 
-              fontSize: '28px', 
-              marginBottom: '12px',
-              color: 'var(--museo-primary)'
+          <div className="museo-body" style={{ textAlign: 'center', padding: '0 24px 24px' }}>
+            <h3 className="museo-title" style={{ 
+              fontSize: '32px', 
+              marginBottom: '8px',
+              color: 'var(--museo-primary)',
+              fontWeight: '800'
             }}>
               {fullName || "Unnamed user"}
-            </MuseoTitle>
+            </h3>
             
             {username && (
               <div style={{
@@ -774,16 +774,81 @@ export default function MyProfile() {
             )}
 
             {bio && (
-              <MuseoDesc style={{
-                fontSize: '16px',
+              <p className="museo-desc" style={{
+                fontSize: '18px',
                 fontStyle: 'italic',
                 color: 'var(--museo-text-secondary)',
-                marginBottom: '20px',
-                lineHeight: '1.5'
+                marginBottom: '24px',
+                lineHeight: '1.5',
+                fontWeight: '500'
               }}>
                 "{bio}"
-              </MuseoDesc>
+              </p>
             )}
+
+            {/* User Stats */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '32px',
+              marginBottom: '24px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  {arts.length}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  {role === 'artist' ? 'Artworks' : 'Favorites'}
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  {age || '—'}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Years Old
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: 'var(--museo-accent)',
+                  marginBottom: '4px'
+                }}>
+                  {role === 'artist' ? '🎨' : role === 'admin' ? '👑' : '⭐'}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'var(--museo-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  {role === 'artist' ? 'Artist' : role === 'admin' ? 'Admin' : 'Member'}
+                </div>
+              </div>
+            </div>
 
             {/* Profile Details */}
             <div style={{
@@ -860,16 +925,16 @@ export default function MyProfile() {
                 </p>
               </div>
             )}
-          </MuseoBody>
-        </MuseoCard>
+          </div>
+        </div>
 
         {/* Art galleries for artists and admins */}
         {(role === "artist" || role === "admin") && (
           <>
             {/* Main Artwork Gallery */}
-            <MuseoCard style={{ marginBottom: '24px' }}>
-              <MuseoBody>
-                <MuseoHeading style={{ marginBottom: '20px' }}>My Artwork</MuseoHeading>
+            <div className="museo-card" style={{ marginBottom: '24px' }}>
+              <div className="museo-body">
+                <h1 className="museo-heading" style={{ marginBottom: '20px' }}>My Artwork</h1>
                 <ArtGallery
                   arts={arts}
                   title=""
@@ -880,15 +945,17 @@ export default function MyProfile() {
                   onViewArt={handleViewArt}
                   onLikeArt={handleLikeArt}
                   onArtClick={handleArtClick}
+                  onModalClose={handleModalClose}
                   fallbackImage={FALLBACK_COVER}
+                  currentUser={{ name: fullName, avatar }}
                 />
-              </MuseoBody>
-            </MuseoCard>
+              </div>
+            </div>
 
             {/* Featured Works Gallery */}
-            <MuseoCard>
-              <MuseoBody>
-                <MuseoHeading style={{ marginBottom: '20px' }}>Featured Works</MuseoHeading>
+            <div className="museo-card">
+              <div className="museo-body">
+                <h1 className="museo-heading" style={{ marginBottom: '20px' }}>Featured Works</h1>
                 <ArtGallery
                   arts={[]}
                   title=""
@@ -897,15 +964,15 @@ export default function MyProfile() {
                   emptyStateIcon="⭐"
                   showActions={false}
                 />
-              </MuseoBody>
-            </MuseoCard>
+              </div>
+            </div>
           </>
         )}
 
         {/* Welcome message for regular users */}
         {role === "user" && (
-          <MuseoCard>
-            <MuseoBody style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div className="museo-card">
+            <div className="museo-body" style={{ textAlign: 'center', padding: '60px 20px' }}>
               <div style={{ 
                 fontSize: '48px', 
                 marginBottom: '16px', 
@@ -913,23 +980,23 @@ export default function MyProfile() {
               }}>
                 🎨
               </div>
-              <MuseoTitle style={{ 
+              <h3 className="museo-title" style={{ 
                 fontSize: '22px', 
                 color: 'var(--museo-primary)', 
                 marginBottom: '8px' 
               }}>
                 Welcome to the Gallery!
-              </MuseoTitle>
-              <MuseoDesc style={{ 
+              </h3>
+              <p className="museo-desc" style={{ 
                 fontSize: '16px',
                 color: 'var(--museo-text-muted)'
               }}>
                 Explore amazing artwork from talented artists. Upgrade to artist account to showcase your own creations!
-              </MuseoDesc>
-            </MuseoBody>
-          </MuseoCard>
+              </p>
+            </div>
+          </div>
         )}
-      </MuseoFeed>
+      </div>
 
       <EditProfileModal
         open={openEdit}
@@ -955,6 +1022,6 @@ export default function MyProfile() {
         onClose={() => { setOpenUploadArt(false); fetchArts(); }}
         onUploaded={() => { fetchArts(); }}
       />
-    </MuseoPage>
+    </div>
   );
 }

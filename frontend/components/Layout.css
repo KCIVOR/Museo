@@ -78,8 +78,28 @@
     "footer footer" !important;
 }
 
-/* Ensure right sidebar is completely hidden on gallery page */
-.app--gallery .app__side-right {
+/* Artist profile layout: hide right panel, expand main content */
+.app--artist-profile {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+/* MyProfile layout: hide right panel, expand main content */
+.app--my-profile {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+/* Ensure right sidebar is completely hidden on gallery, artist profile, and myProfile pages */
+.app--gallery .app__side-right,
+.app--artist-profile .app__side-right,
+.app--my-profile .app__side-right {
   display: none !important;
 }
 
@@ -93,8 +113,10 @@
       "footer footer footer";
   }
 
-  /* Gallery layout remains the same on tablet */
-  .app--gallery {
+  /* Gallery, artist profile, and myProfile layouts remain the same on tablet */
+  .app--gallery,
+  .app--artist-profile,
+  .app--my-profile {
     grid-template-columns: var(--museo-sidebar-width) 1fr;
     grid-template-areas:
       "header header"
@@ -105,7 +127,9 @@
 
 @media (max-width: 900px) {
   .app,
-  .app--gallery {
+  .app--gallery,
+  .app--artist-profile,
+  .app--my-profile {
     grid-template-columns: 1fr;
     grid-template-areas:
       "header"

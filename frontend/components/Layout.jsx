@@ -6,13 +6,15 @@ import SidePanel2 from "./SidePanel2";
 import ScrollToTop from "./ScrollToTop";
 import "./Layout.css";
 const API = import.meta.env.VITE_API_BASE;
-import RequestsModal from "./RequestsModal";
+import RequestsModal from "../src/pages/subPages/RequestsModal";
 import ToastNotification from "./ToastNotification";
 
 export default function Layout() {
   const { pathname } = useLocation();
   const isMessage = pathname.startsWith("/message");
   const isGallery = pathname === "/Gallery" || pathname === "/gallery";
+  const isArtistProfile = pathname.startsWith("/artist/");
+  const isMyProfile = pathname === "/MyProfile";
   const [role, setRole] = useState(null);
   const [requestsOpen, setRequestsOpen] = useState(false);
 
@@ -37,7 +39,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""}`}>
       <header className="app__header">
         <Navbar role={role} />
       </header>
@@ -51,7 +53,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {!isGallery && (
+      {!isGallery && !isArtistProfile && !isMyProfile && (
         <aside className="app__side-right">
           <SidePanel2 role={role} />
         </aside>

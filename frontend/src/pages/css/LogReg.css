@@ -4,7 +4,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #f6f9ff 0%, #eef2f7 100%);
+  background: linear-gradient(180deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
   padding: 24px;
 }
 
@@ -13,8 +13,8 @@
   width: min(960px, 96vw);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #ffffff;
-  border: 1px solid #e6e6ea;
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(21, 24, 33, 0.08);
   overflow: hidden;
@@ -39,14 +39,14 @@ h1 {
   font-size: clamp(24px, 2.6vw, 32px);
   font-weight: 800;
   margin: 32px 0 4px;
-  color: #0f172a;
+  color: var(--museo-text-primary);
 }
-.formSub { font-size: 14px; color: #6b7280; }
+.formSub { font-size: 14px; color: var(--museo-text-muted); }
 
 .linkBtn {
   background: none;
   border: 0;
-  color: #2563eb;
+  color: var(--museo-primary);
   cursor: pointer;
   padding: 0 2px;
 }
@@ -56,39 +56,39 @@ form { display: grid; gap: 12px; }
 
 label {
   font-size: 13px;
-  color: #111;
+  color: var(--museo-text-primary);
 }
 input[type="email"],
 input[type="password"],
 input[type="text"] {
   width: 100%;
-  border: 1px solid #e6e6ea;
+  border: 1px solid var(--museo-border);
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 14px;
-  background: #fff;
+  background: var(--museo-white);
   outline: none;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="text"]:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: var(--museo-primary);
+  box-shadow: 0 0 0 3px var(--museo-shadow-light);
 }
 
 input[type="email"]:focus,
 input[type="password"]:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  border-color: var(--museo-primary);
+  box-shadow: 0 0 0 3px var(--museo-shadow-light);
 }
 
 /* Remember + forgot */
-.lrRemember { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #111; }
-.forgot-password { font-size: 12px; color: #6b7280; }
+.lrRemember { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--museo-text-primary); }
+.forgot-password { font-size: 12px; color: var(--museo-text-muted); }
 .or-txt { 
   font-size: 12px; 
-  color: #6b7280; 
+  color: var(--museo-text-muted); 
   text-align: center;
 }
 /* Buttons */
@@ -98,19 +98,19 @@ input[type="password"]:focus {
   height: 44px;
   border-radius: 10px;
   border: 0;
-  background: #1e293b; /* museo-primary */
-  color: #ffffff; /* White text on dark background */
+  background: var(--museo-primary);
+  color: var(--museo-white);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .button-group > button:hover { 
-  background: #0f172a; /* museo-primary-dark */
+  background: var(--museo-primary-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 .button-group > button:focus-visible { 
-  outline: 2px solid #06b6d4; /* museo-accent */
+  outline: 2px solid var(--museo-accent);
   outline-offset: 2px; 
 }
 
@@ -120,9 +120,9 @@ input[type="password"]:focus {
   width: 100%;
   height: 44px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0; /* museo-border */
-  background: #ffffff;
-  color: #1e293b; /* museo-text-primary */
+  border: 1px solid var(--museo-border);
+  background: var(--museo-white);
+  color: var(--museo-text-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -132,11 +132,11 @@ input[type="password"]:focus {
   transition: all 0.2s ease;
 }
 .lrGoogleBtn:hover { 
-  background: #f8fafc; /* museo-gray-50 */
-  border-color: #cbd5e1; /* museo-border-dark */
+  background: var(--museo-bg-hover);
+  border-color: var(--museo-border-hover);
 }
 .lrGoogleBtn:focus-visible { 
-  outline: 2px solid #06b6d4; /* museo-accent */
+  outline: 2px solid var(--museo-accent);
   outline-offset: 2px; 
 }
 
@@ -146,7 +146,7 @@ input[type="password"]:focus {
 .loginRight,
 .login-image-section {
   position: relative;
-  background: #f7f9fc;
+  background: var(--museo-bg-secondary);
 }
 .loginRight img,
 .login-image-section img {
@@ -159,16 +159,16 @@ input[type="password"]:focus {
 /* Footer */
 .signup-text { 
   font-size: 14px; 
-  color: #475569; /* museo-text-secondary */
+  color: var(--museo-text-secondary);
 }
 .signup-text span { 
   font-weight: 700; 
-  color: #06b6d4; /* museo-accent */
+  color: var(--museo-accent);
   cursor: pointer; 
   transition: color 0.2s ease;
 }
 .signup-text span:hover {
-  color: #0891b2; /* museo-accent-hover */
+  color: var(--museo-accent-dark);
   text-decoration: underline;
 }
 

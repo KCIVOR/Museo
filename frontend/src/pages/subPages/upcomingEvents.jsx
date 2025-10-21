@@ -1,22 +1,9 @@
 import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { 
-  MuseoPage, 
-  MuseoFeed, 
-  MuseoHeading, 
-  MuseoGrid, 
-  MuseoCard, 
-  MuseoMedia, 
-  MuseoBody, 
-  MuseoTitle, 
-  MuseoDesc, 
-  MuseoBadge, 
-  MuseoActions, 
-  MuseoBtn,
-  MuseoMessage 
-} from '../../components/MuseoGalleryContainer.jsx';
+// Using CSS classes from design-system.css instead of components
 import MuseoLoadingBox from '../../components/MuseoLoadingBox.jsx';
+import MuseoEmptyState from '../../components/MuseoEmptyState.jsx';
 const API = import.meta.env.VITE_API_BASE;
 
 
@@ -200,11 +187,11 @@ export default function UpcomingEvents() {
   };
 
   return (
-    <MuseoPage>
-      <MuseoFeed>
+    <div className="museo-page">
+      <div className="museo-feed">
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <MuseoHeading>Upcoming Events</MuseoHeading>
+          <h1 className="museo-heading">Upcoming Events</h1>
           {!loading && (
             <p style={{ 
               color: 'var(--museo-navy)', 
@@ -261,13 +248,13 @@ export default function UpcomingEvents() {
 
         {/* Empty State */}
         {Object.keys(grouped).length === 0 && !loading && (
-          <MuseoMessage>
-            No upcoming events found.
-            <br />
-            <small style={{ opacity: 0.7, fontSize: '14px', marginTop: '8px', display: 'block' }}>
-              Check back soon or browse all events to find something interesting.
-            </small>
-          </MuseoMessage>
+          <MuseoEmptyState 
+            title={activeFilter === 'All' ? "No upcoming events found" : `No events found for "${activeFilter}"`}
+            subtitle={activeFilter === 'All' 
+              ? "Check back soon or browse all events to find something interesting."
+              : `Try selecting a different time period or browse all events.`
+            }
+          />
         )}
 
         {/* Event Buckets */}
@@ -291,48 +278,79 @@ export default function UpcomingEvents() {
                 margin: '-24px auto 32px',
                 borderRadius: '2px'
               }} />
-              <MuseoGrid columns={3}>
+              <div className="museo-grid museo-grid--3">
                 {filteredUi.map((ev, i) => (
-                  <MuseoCard
+                  <div
                     key={ev.id}
-                    variant="event"
-                    animationDelay={i * 80}
+                    className="museo-event-card"
+                    style={{ animationDelay: `${i * 0.02}s` }}
                     onClick={() => openDetails(ev)}
                   >
-                    <MuseoMedia src={ev.cover} alt={ev.title} />
-                    <MuseoBadge style={{ background: 'var(--museo-sage)', borderColor: 'var(--museo-sage)' }}>
+                    <img className="museo-event-image" src={ev.cover} alt={ev.title} />
+                    
+                    {/* Event status indicator */}
+                    <div className="event-status event-status--ended">
                       Completed
-                    </MuseoBadge>
-                    <MuseoBody>
-                      <MuseoTitle>{ev.title}</MuseoTitle>
-                      <div style={{ 
-                        fontSize: '13px', 
-                        color: 'var(--museo-navy)', 
-                        marginBottom: '8px',
-                        fontWeight: '500',
-                        lineHeight: '1.3'
-                      }}>
-                        <div style={{ marginBottom: '2px' }}>
-                          📅 {fmtRange(ev.start, ev.end)}
+                    </div>
+
+                    {/* Attendance badge - hide for completed events */}
+                    
+                    <div className="museo-event-content">
+                      <h3 className="museo-title">{ev.title}</h3>
+                      
+                      {/* Event metadata */}
+                      <div className="event-metadata">
+                        <div className="event-metadata-item">
+                          <span>📅</span>
+                          <span>{new Date(ev.start).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                          })}</span>
                         </div>
                         {ev.venue && (
-                          <div style={{ color: 'var(--museo-charcoal)', opacity: 0.8 }}>
-                            📍 {ev.venue}
+                          <div className="event-metadata-item">
+                            <span>📍</span>
+                            <span>{ev.venue}</span>
                           </div>
                         )}
                       </div>
-                      <MuseoDesc>
-                        {ev.desc}
-                      </MuseoDesc>
-                      <MuseoActions onClick={(e) => e.stopPropagation()}>
-                        <MuseoBtn onClick={() => openDetails(ev)}>
+
+                      <p className="museo-desc">
+                        {(() => {
+                          const text = typeof ev.desc === 'string' ? ev.desc : '';
+                          const limit = 85;
+                          if (text.length <= limit) return text;
+                          const clipped = text.slice(0, limit);
+                          const trimmed = clipped.replace(/\s+\S*$/, "");
+                          return trimmed + "...";
+                        })()}
+                      </p>
+                      
+                      <div 
+                        className="museo-actions" 
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '6px',
+                          marginTop: 'auto',
+                          paddingTop: '12px',
+                          opacity: 0,
+                          transform: 'translateY(8px)',
+                          pointerEvents: 'none',
+                          transition: 'opacity 300ms ease, transform 300ms ease',
+                          alignSelf: 'stretch'
+                        }}
+                      >
+                        <button className="museo-btn museo-btn--primary" onClick={() => openDetails(ev)}>
                           View Details
-                        </MuseoBtn>
-                      </MuseoActions>
-                    </MuseoBody>
-                  </MuseoCard>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </MuseoGrid>
+              </div>
             </div>
           )
           : (
@@ -357,52 +375,113 @@ export default function UpcomingEvents() {
                     margin: '-24px auto 32px',
                     borderRadius: '2px'
                   }} />
-                  <MuseoGrid columns={3}>
+                  <div className="museo-grid museo-grid--3">
                     {grouped[label].map((ev, i) => (
-                      <MuseoCard
+                      <div
                         key={ev.id}
-                        variant="event"
-                        animationDelay={i * 80}
+                        className="museo-event-card"
+                        style={{ animationDelay: `${i * 0.02}s` }}
                         onClick={() => openDetails(ev)}
                       >
-                        <MuseoMedia src={ev.cover} alt={ev.title} />
-                        <MuseoBadge>
+                        <img className="museo-event-image" src={ev.cover} alt={ev.title} />
+                        
+                        {/* Event status indicator */}
+                        <div className={`event-status ${
+                          (() => {
+                            const now = new Date();
+                            const startDate = new Date(ev.start);
+                            const endDate = new Date(ev.end);
+                            
+                            if (now < startDate) return 'event-status--upcoming';
+                            if (now >= startDate && now <= endDate) return 'event-status--happening';
+                            return 'event-status--ended';
+                          })()
+                        }`}>
+                          {(() => {
+                            const now = new Date();
+                            const startDate = new Date(ev.start);
+                            const endDate = new Date(ev.end);
+                            
+                            if (now < startDate) return 'Upcoming';
+                            if (now >= startDate && now <= endDate) return 'Live';
+                            return 'Ended';
+                          })()}
+                        </div>
+
+                        {/* Saved badge */}
+                        <div className="event-attendance-badge">
                           Saved
-                        </MuseoBadge>
-                        <MuseoBody>
-                          <MuseoTitle>{ev.title}</MuseoTitle>
-                          <div style={{ 
-                            fontSize: '13px', 
-                            color: 'var(--museo-navy)', 
-                            marginBottom: '8px',
-                            fontWeight: '500',
-                            lineHeight: '1.3'
-                          }}>
-                            <div style={{ marginBottom: '2px' }}>
-                              📅 {fmtRange(ev.start, ev.end)}
+                        </div>
+
+                        <div className="museo-event-content">
+                          <h3 className="museo-title">{ev.title}</h3>
+                          
+                          {/* Event metadata */}
+                          <div className="event-metadata">
+                            <div className={`event-metadata-item ${
+                              new Date(ev.start).toDateString() === new Date().toDateString() ? 'urgent' : ''
+                            }`}>
+                              <span>📅</span>
+                              <span>{new Date(ev.start).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                              })}</span>
                             </div>
                             {ev.venue && (
-                              <div style={{ color: 'var(--museo-charcoal)', opacity: 0.8 }}>
-                                📍 {ev.venue}
+                              <div className="event-metadata-item">
+                                <span>📍</span>
+                                <span>{ev.venue}</span>
                               </div>
                             )}
+                            <div className="event-metadata-item">
+                              <span>🕐</span>
+                              <span>{new Date(ev.start).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}</span>
+                            </div>
                           </div>
-                          <MuseoDesc>
-                            {ev.desc}
-                          </MuseoDesc>
-                          <MuseoActions onClick={(e) => e.stopPropagation()}>
-                            <MuseoBtn onClick={() => openDetails(ev)}>
+
+                          <p className="museo-desc">
+                            {(() => {
+                              const text = typeof ev.desc === 'string' ? ev.desc : '';
+                              const limit = 85;
+                              if (text.length <= limit) return text;
+                              const clipped = text.slice(0, limit);
+                              const trimmed = clipped.replace(/\s+\S*$/, "");
+                              return trimmed + "...";
+                            })()}
+                          </p>
+                          
+                          <div 
+                            className="museo-actions" 
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: '6px',
+                              marginTop: 'auto',
+                              paddingTop: '12px',
+                              opacity: 0,
+                              transform: 'translateY(8px)',
+                              pointerEvents: 'none',
+                              transition: 'opacity 300ms ease, transform 300ms ease',
+                              alignSelf: 'stretch'
+                            }}
+                          >
+                            <button className="museo-btn museo-btn--primary" onClick={() => openDetails(ev)}>
                               View Details
-                            </MuseoBtn>
-                          </MuseoActions>
-                        </MuseoBody>
-                      </MuseoCard>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </MuseoGrid>
+                  </div>
                 </div>
               ))
           )}
-      </MuseoFeed>
-    </MuseoPage>
+      </div>
+    </div>
   );
 }

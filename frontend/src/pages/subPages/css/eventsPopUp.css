@@ -1,60 +1,350 @@
+/* Museo-themed Event Popup - Artistic Design */
 .evmOverlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(17, 24, 39, 0.5);
-  display: grid; place-items: center;
-  padding: 20px;
+  position: fixed; 
+  inset: 0; 
+  z-index: 1000;
+  background: linear-gradient(135deg, 
+    rgba(110, 74, 46, 0.4) 0%, 
+    rgba(139, 111, 71, 0.6) 50%,
+    rgba(212, 180, 138, 0.3) 100%);
+  backdrop-filter: blur(8px);
+  display: grid; 
+  place-items: center;
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .evmDialog {
-  width: min(760px, 96vw);
-  max-height: 92vh;
+  width: min(900px, 95vw);
+  max-height: 90vh;
   overflow: auto;
-  background: #f4f6f8;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  /* Museum exhibition frame styling */
+  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+  border: 8px solid #8b6f47;
+  border-radius: 20px;
+  box-shadow: 
+    0 0 0 3px #d4b48a,
+    0 30px 80px rgba(110, 74, 46, 0.3),
+    0 12px 40px rgba(139, 111, 71, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 2px rgba(212, 180, 138, 0.3);
   position: relative;
-  padding: 16px;
+  padding: 0;
+  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
+/* Elegant close button */
 .evmClose {
-  position: absolute; top: 10px; right: 10px;
-  background: #fff; border: 1px solid #e6e6ea; border-radius: 10px;
-  width: 36px; height: 36px; cursor: pointer;
+  position: absolute; 
+  top: 20px; 
+  right: 20px;
+  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+  border: 2px solid #8b6f47;
+  border-radius: 50%;
+  width: 44px; 
+  height: 44px; 
+  cursor: pointer;
+  font-size: 18px;
+  color: #8b6f47;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 12px rgba(110, 74, 46, 0.2),
+    0 2px 6px rgba(139, 111, 71, 0.1);
+  z-index: 10;
 }
 
+.evmClose:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+  border-color: #d4b48a;
+  transform: scale(1.1);
+  box-shadow: 
+    0 6px 20px rgba(110, 74, 46, 0.3),
+    0 3px 10px rgba(139, 111, 71, 0.15);
+}
+
+/* Museum exhibition hero image */
 .evmHeroWrap {
-  border-radius: 12px; overflow: hidden; background: #eef2f5;
+  position: relative;
+  border-radius: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%);
+  border-bottom: 4px solid #8b6f47;
 }
+
+.evmHeroWrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(139, 111, 71, 0.1) 70%,
+    rgba(110, 74, 46, 0.3) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
 .evmHeroImg {
-  width: 100%; display: block; object-fit: cover; aspect-ratio: 16 / 10;
+  width: 100%; 
+  display: block; 
+  object-fit: cover; 
+  aspect-ratio: 16 / 9;
+  transition: transform 0.3s ease;
 }
 
+.evmHeroWrap:hover .evmHeroImg {
+  transform: scale(1.02);
+}
+
+/* Museum exhibition title section */
 .evmTitleRow {
-  margin-top: 12px;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  margin: 0;
+  padding: 32px 40px 24px;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  gap: 20px;
+  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+  border-bottom: 3px solid #d4b48a;
+  position: relative;
 }
+
+.evmTitleRow::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 32px;
+  right: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #8b6f47, #d4b48a, #8b6f47, transparent);
+}
+
 .evmTitle {
-  font-size: clamp(22px, 3.2vw, 32px);
-  font-weight: 900; color: #111; margin: 0;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 600; 
+  color: #8b6f47; 
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(139, 111, 71, 0.1);
+  flex: 1;
 }
+
+/* Elegant calendar button */
 .evmCta {
-  padding: 10px 16px; border-radius: 12px;
-  border: 1px solid #1f2937; background: #fff; color: #111;
-  font-weight: 700; cursor: pointer;
+  padding: 14px 24px; 
+  border-radius: 16px;
+  border: 2px solid #8b6f47; 
+  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+  color: #8b6f47;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 600; 
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 
+    0 4px 12px rgba(110, 74, 46, 0.15),
+    0 2px 6px rgba(139, 111, 71, 0.1);
+  white-space: nowrap;
 }
-.evmCta:hover { background: #fafafa; }
 
+.evmCta:hover { 
+  background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+  border-color: #d4b48a;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 24px rgba(110, 74, 46, 0.25),
+    0 4px 12px rgba(139, 111, 71, 0.15);
+}
+
+/* Museum information cards */
 .evmCard {
-  margin-top: 12px; background: #fff; border: 1px solid rgba(0,0,0,0.06);
-  border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  padding: 16px;
+  margin: 0 32px 24px;
+  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+  border: 3px solid #d4b48a;
+  border-radius: 16px;
+  box-shadow: 
+    0 6px 20px rgba(110, 74, 46, 0.12),
+    0 2px 8px rgba(139, 111, 71, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  padding: 28px 32px;
+  position: relative;
+  transition: all 0.3s ease;
 }
-.evmLabel { font-weight: 800; color: #111; margin: 8px 0; }
-.evmP { color: #111; font-size: 16px; line-height: 1.6; margin: 6px 0; }
 
-.evmBullets { margin: 4px 0 0 18px; color: #111; display: grid; gap: 6px; }
+.evmCard::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid rgba(212, 180, 138, 0.4);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.evmCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 32px rgba(110, 74, 46, 0.18),
+    0 4px 16px rgba(139, 111, 71, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Museum placard labels */
+.evmLabel { 
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-weight: 700; 
+  color: #8b6f47; 
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #d4b48a;
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Museum text content */
+.evmP { 
+  color: #6b5b47; 
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 16px; 
+  line-height: 1.6; 
+  margin: 12px 0;
+  font-style: italic;
+}
+
+.evmP b {
+  color: #8b6f47;
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Elegant bullet lists */
+.evmBullets { 
+  margin: 16px 0 0 0; 
+  color: #6b5b47; 
+  display: grid; 
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+.evmBullets li {
+  position: relative;
+  padding-left: 24px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.evmBullets li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #d4b48a;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Elegant animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced responsive design */
+@media (max-width: 768px) {
+  .evmDialog { 
+    width: min(95vw, 600px);
+    margin: 16px;
+  }
+  
+  .evmTitleRow { 
+    padding: 24px 28px 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .evmTitle {
+    font-size: clamp(24px, 5vw, 32px);
+    text-align: center;
+  }
+  
+  .evmCta {
+    align-self: center;
+    padding: 12px 20px;
+  }
+  
+  .evmCard {
+    margin: 0 20px 20px;
+    padding: 20px 24px;
+  }
+  
+  .evmLabel {
+    font-size: 16px;
+  }
+}
 
 @media (max-width: 520px) {
-  .evmDialog { padding: 12px; }
-  .evmCta { padding: 8px 12px; }
+  .evmDialog { 
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .evmTitleRow { 
+    padding: 20px 20px 16px;
+  }
+  
+  .evmTitle {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+  
+  .evmCta { 
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+  
+  .evmCard {
+    margin: 0 16px 16px;
+    padding: 16px 20px;
+  }
+  
+  .evmClose {
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
 }

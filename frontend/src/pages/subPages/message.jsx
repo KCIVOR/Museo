@@ -430,8 +430,9 @@ export default function Message() {
   const onKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (!isSending) send();
+      if (!isSending && draft.trim()) send();
     }
+    // Shift+Enter will naturally create a new line in textarea
   };
 
   return (

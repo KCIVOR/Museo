@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import "./css/events.css";
-import "../components/MuseoGalleryContainer.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function PublishEventModal({ open, onClose, onPublished, mode = "create", initialData = null }) {
@@ -219,25 +218,17 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
 
   return (
     <div
-      className="evmOverlay"
+      className="museo-modal-overlay evmOverlay"
       ref={overlayRef}
       onMouseDown={(e) => e.target === overlayRef.current && onClose?.()}
     >
       <article 
+        className="museo-modal evmDialog"
         role="dialog" 
         aria-modal="true" 
         aria-label="Publish Event" 
         style={{
-          width: isMobile ? '95vw' : 'min(800px, 90vw)',
-          maxHeight: '95vh',
-          overflow: 'auto',
-          background: 'linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%)',
-          borderRadius: isMobile ? '12px' : '20px',
-          boxShadow: '0 12px 32px var(--museo-shadow), 0 4px 12px rgba(212, 180, 138, 0.2)',
-          position: 'relative',
-          padding: '0',
-          border: '2px solid var(--museo-border)',
-          animation: 'evmPop 300ms cubic-bezier(.2,.8,.2,1)'
+          borderRadius: isMobile ? '12px' : '20px'
         }}
       >
         <button 

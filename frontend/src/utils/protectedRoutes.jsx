@@ -79,7 +79,7 @@ const ProtectedRoutes = () => {
   }, [location.pathname]);
 
   // 1) Block until checks complete to avoid rendering child routes early
-  if (isLoading) return <div>Loading...</div>;
+  //if (isLoading) return <div>Loading...</div>;
 
   // 2) Unauthenticated => login
   if (isAuthenticated === false) {

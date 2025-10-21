@@ -18,7 +18,7 @@
   /* Card */
   .pCard {
     position: relative;
-    background: #fff;
+    background: var(--museo-white);
     border: 1px solid rgba(0,0,0,.06);
     border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0,0,0,.06);
@@ -33,11 +33,12 @@
     width: 36px; height: 36px;
     display: grid; place-items: center;
     border-radius: 10px;
-    border: 1px solid #e6e6ea;
-    background: #fff; color: #0f172a;
+    border: 1px solid var(--museo-border);
+    background: var(--museo-white); 
+    color: var(--museo-text-primary);
     cursor: pointer;
   }
-  .pKebab:hover { background: #f9fafb; }
+  .pKebab:hover { background: var(--museo-bg-hover); }
   
   /* Cover + avatar overlap */
   .pCover {
@@ -58,10 +59,10 @@
     left: 24px;
     bottom: -64px;
     width: 160px; height: 160px;
-    border: 6px solid #fff;
+    border: 6px solid var(--museo-white);
     border-radius: 999px;
     overflow: hidden;
-    background: #ddd;
+    background: var(--museo-bg-secondary);
     box-shadow: 0 4px 12px rgba(0,0,0,.12);
   }
   .pAvatar {
@@ -93,9 +94,9 @@
   /* About panel */
   .pBio {
     margin-top: 16px;
-    background: #f3f7fb;
-    border: 1px solid #e6eef7;
-    color: #0f172a;
+    background: var(--museo-bg-secondary);
+    border: 1px solid var(--museo-border);
+    color: var(--museo-text-primary);
     border-radius: 10px;
     padding: 14px 16px;
   }
@@ -127,7 +128,7 @@
   
   .pArtCount {
     font-weight: 800;
-    color: #4f46e5;
+    color: var(--museo-primary);
     font-size: 18px;
   }
   

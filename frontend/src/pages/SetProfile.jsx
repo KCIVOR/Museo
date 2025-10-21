@@ -139,9 +139,9 @@ export default function SetProfileModal({ open, onClose, initial }) {
   if (!open) return null;
 
   return (
-    <div className="pe__scrim">
+    <div className="museo-modal-overlay pe__scrim">
       <section
-        className="pe__dialog"
+        className="museo-modal pe__dialog"
         role="dialog"
         aria-modal="true"
         aria-label="Set up your profile"

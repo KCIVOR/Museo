@@ -17,7 +17,7 @@
 
 /* Section */
 .mSection {
-  background: #fff;
+  background: var(--museo-white);
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 12px;
   padding: 16px;
@@ -34,16 +34,16 @@
 .mTitle { 
   font-size: 20px; 
   font-weight: 800; 
-  color: #1e293b; /* museo-text-primary */
+  color: var(--museo-text-primary);
 }
 .mMore { 
   font-size: 13px; 
-  color: #475569; /* museo-text-secondary */
+  color: var(--museo-text-secondary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .mMore:hover {
-  color: #06b6d4; /* museo-accent */
+  color: var(--museo-accent);
 }
 
 /* Horizontal row */
@@ -59,12 +59,12 @@
   -webkit-overflow-scrolling: touch;
 }
 .mRow::-webkit-scrollbar { height: 10px; }
-.mRow::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px; }
+.mRow::-webkit-scrollbar-thumb { background: var(--museo-border); border-radius: 8px; }
 
 /* Card */
 .mCard {
   scroll-snap-align: start;
-  background: #fff;
+  background: var(--museo-white);
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
@@ -73,7 +73,7 @@
 .mMedia {
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: #eef2f5;
+  background: var(--museo-bg-secondary);
   object-fit: cover;
   display: block;
   border-bottom: 1px solid rgba(0,0,0,0.06);
@@ -81,14 +81,14 @@
 .mCaption {
   padding: 10px 12px 6px;
   font-size: 14px;
-  color: #1e293b; /* museo-text-primary */
+  color: var(--museo-text-primary);
 }
 
 /* Price line */
 .mPrice {
   padding: 0 12px 12px;
   font-weight: 700;
-  color: #ef4444;         /* museo-error for price emphasis */
+  color: var(--museo-error);
   font-size: 14px;
 }
 

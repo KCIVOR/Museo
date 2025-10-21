@@ -1,15 +1,24 @@
-/* Gallery Page Styles - Museo Masonry Design */
+/* ========================================
+   🎨 GALLERY PAGE - Museo Theme
+   Beautiful artwork gallery with masonry layout and infinite scroll
+   ======================================== */
 
-/* Main gallery container */
-.gallery-container {
+/* Spinner animation for loading more */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Gallery page container */
+.museo-page--gallery {
   padding: 3rem 2rem;
-  background: linear-gradient(135deg, #faf5f0 0%, #f7fafc 100%);
+  background: transparent;
   min-height: 100vh;
   position: relative;
 }
 
 /* Parchment texture overlay */
-.gallery-container::before {
+.museo-page--gallery::before {
   content: '';
   position: absolute;
   top: 0;
@@ -23,7 +32,7 @@
 }
 
 /* Gallery header */
-.gallery-header {
+.museo-gallery-header {
   text-align: center;
   margin-bottom: 4rem;
   position: relative;
@@ -31,17 +40,17 @@
 }
 
 /* Gallery title */
-.gallery-title {
-  font-family: 'Playfair Display', serif;
+.museo-heading--gallery {
+  font-family: var(--museo-font-display);
   font-size: 3.5rem;
   font-weight: 700;
-  color: #6e4a2e;
+  color: var(--museo-primary);
   margin-bottom: 1rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
-.gallery-title::after {
+.museo-heading--gallery::after {
   content: '';
   position: absolute;
   bottom: -0.5rem;
@@ -49,11 +58,11 @@
   transform: translateX(-50%);
   width: 120px;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #d4b48a, transparent);
+  background: linear-gradient(90deg, transparent, var(--museo-accent), transparent);
   border-radius: 2px;
 }
 
-.gallery-subtitle {
+.museo-gallery-subtitle {
   font-size: 1.2rem;
   color: #8b6f47;
   font-style: italic;
@@ -61,7 +70,7 @@
 }
 
 /* Masonry grid container */
-.gallery-masonry {
+.museo-gallery-masonry {
   column-count: 4;
   column-gap: 2rem;
   column-fill: balance;
@@ -70,11 +79,11 @@
 }
 
 /* Artwork card - Museum frame style */
-.artwork-card {
+.museo-artwork-card {
   background: #fff;
-  border: 8px solid #f8f5f0;
+  border: 8px solid var(--museo-bg-primary);
   box-shadow: 
-    0 0 0 1px #d4b48a,
+    0 0 0 1px var(--museo-accent),
     0 8px 32px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   margin-bottom: 2rem;
@@ -83,9 +92,10 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.artwork-card::before {
+.museo-artwork-card::before {
   content: '';
   position: absolute;
   top: 4px;
@@ -97,16 +107,16 @@
   z-index: 1;
 }
 
-.artwork-card:hover {
+.museo-artwork-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 
-    0 0 0 1px #d4b48a,
+    0 0 0 1px var(--museo-accent),
     0 20px 60px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* Artwork image - Variable heights for masonry */
-.artwork-image {
+.museo-artwork-image {
   width: 100%;
   height: auto;
   object-fit: cover;
@@ -114,45 +124,86 @@
   transition: transform 0.3s ease;
 }
 
-.artwork-card:hover .artwork-image {
+.museo-artwork-card:hover .museo-artwork-image {
   transform: scale(1.05);
 }
 
 /* Museum placard */
-.artwork-placard {
-  background: linear-gradient(135deg, #f8f5f0 0%, #ffffff 100%);
+.museo-artwork-placard {
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, #ffffff 100%);
   padding: 1.5rem;
   border-top: 1px solid rgba(212, 180, 138, 0.2);
   position: relative;
 }
 
-.artwork-placard::before {
+.museo-artwork-placard::before {
   content: '';
   position: absolute;
   top: 0;
   left: 1rem;
   right: 1rem;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #d4b48a, transparent);
+  background: linear-gradient(90deg, transparent, var(--museo-accent), transparent);
 }
 
-.artwork-title {
-  font-family: 'Playfair Display', serif;
+.museo-artwork-title {
+  font-family: var(--museo-font-display);
   font-size: 1.3rem;
   font-weight: 600;
-  color: #6e4a2e;
+  color: var(--museo-primary);
   margin: 0 0 0.5rem 0;
   line-height: 1.3;
 }
 
-.artwork-artist {
+.museo-artwork-artist-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.museo-artist-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(139, 111, 71, 0.3);
+  transition: all 0.3s ease;
+}
+
+.museo-artist-avatar:hover {
+  border-color: #8b6f47;
+  transform: scale(1.05);
+}
+
+.museo-artist-avatar-placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #8b6f47 0%, #a0825d 100%);
+  color: #f4f1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.7rem;
+  border: 1.5px solid rgba(139, 111, 71, 0.3);
+  transition: all 0.3s ease;
+}
+
+.museo-artist-avatar-placeholder:hover {
+  border-color: #8b6f47;
+  transform: scale(1.05);
+}
+
+.museo-artwork-artist {
   font-size: 1rem;
   color: #8b6f47;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   font-style: italic;
 }
 
-.artwork-meta {
+.museo-artwork-meta {
   font-size: 0.85rem;
   color: #a0825d;
   margin: 0;
@@ -161,7 +212,7 @@
   gap: 0.5rem;
 }
 
-.artwork-year {
+.museo-artwork-year {
   background: rgba(212, 180, 138, 0.2);
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
@@ -169,20 +220,27 @@
 }
 
 /* Corner ornaments */
-.artwork-card::after {
+.museo-artwork-card::after {
   content: '';
   position: absolute;
   top: 12px;
   right: 12px;
   width: 8px;
   height: 8px;
-  background: radial-gradient(circle, #d4b48a 0%, transparent 70%);
+  background: radial-gradient(circle, var(--museo-accent) 0%, transparent 70%);
   border-radius: 50%;
   opacity: 0.6;
 }
 
+/* Actions hover animation for event cards */
+.museo-artwork-card:hover .museo-actions {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
 /* Gallery stats */
-.gallery-stats {
+.museo-gallery-stats {
   text-align: center;
   margin-top: 4rem;
   padding: 2rem;
@@ -194,155 +252,173 @@
   z-index: 1;
 }
 
-.gallery-stats-title {
-  font-family: 'Playfair Display', serif;
+.museo-gallery-stats-title {
+  font-family: var(--museo-font-display);
   font-size: 1.5rem;
-  color: #6e4a2e;
+  color: var(--museo-primary);
   margin-bottom: 1rem;
 }
 
-.gallery-stats-text {
+.museo-gallery-stats-text {
   color: #8b6f47;
   font-size: 1rem;
   line-height: 1.6;
 }
 
+/* Top Arts of the Week Section */
+.museo-gallery-section {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, #faf8f5 0%, #f8f5f0 100%);
+  border-radius: 16px;
+  border: 2px solid rgba(212, 180, 138, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.museo-gallery-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d4b48a 0%, #6e4a2e 50%, #d4b48a 100%);
+}
+
+.museo-gallery-section-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.museo-gallery-section-title {
+  font-family: var(--museo-font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(110, 74, 46, 0.1);
+}
+
+.museo-gallery-section-subtitle {
+  color: #8b6f47;
+  font-size: 1rem;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Top Art Card Enhancements */
+.museo-top-art-card {
+  position: relative;
+  transform: scale(1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(212, 180, 138, 0.4);
+  box-shadow: 0 8px 32px rgba(110, 74, 46, 0.15);
+}
+
+.museo-top-art-card:hover {
+  transform: scale(1.02) translateY(-8px);
+  border-color: #d4b48a;
+  box-shadow: 0 16px 48px rgba(110, 74, 46, 0.25);
+}
+
+.museo-top-art-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #d4b48a 0%, #6e4a2e 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.museo-artwork-stats {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.museo-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #6e4a2e;
+  background: rgba(212, 180, 138, 0.2);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
 /* Responsive masonry design */
 @media (max-width: 1200px) {
-  .gallery-masonry {
+  .museo-gallery-masonry {
     column-count: 3;
     column-gap: 1.5rem;
   }
   
-  .gallery-container {
+  .museo-page--gallery {
     padding: 2rem 1.5rem;
   }
   
-  .gallery-title {
+  .museo-heading--gallery {
     font-size: 3rem;
   }
 }
 
 @media (max-width: 900px) {
-  .gallery-masonry {
+  .museo-gallery-masonry {
     column-count: 2;
     column-gap: 1.5rem;
   }
   
-  .gallery-container {
+  .museo-page--gallery {
     padding: 2rem 1rem;
   }
   
-  .gallery-title {
+  .museo-heading--gallery {
     font-size: 2.5rem;
   }
   
-  .artwork-card {
+  .museo-artwork-card {
     margin-bottom: 1.5rem;
   }
 }
 
 @media (max-width: 600px) {
-  .gallery-masonry {
+  .museo-gallery-masonry {
     column-count: 1;
     column-gap: 0;
   }
   
-  .gallery-container {
+  .museo-page--gallery {
     padding: 1.5rem 1rem;
   }
   
-  .gallery-title {
+  .museo-heading--gallery {
     font-size: 2rem;
   }
   
-  .gallery-header {
+  .museo-gallery-header {
     margin-bottom: 2rem;
   }
   
-  .artwork-card {
+  .museo-artwork-card {
     margin-bottom: 1.5rem;
     border-width: 6px;
   }
   
-  .artwork-placard {
+  .museo-artwork-placard {
     padding: 1rem;
   }
   
-  .artwork-title {
+  .museo-artwork-title {
     font-size: 1.1rem;
   }
-}
-
-/* Loading animation for masonry - Optimized for 20+ items */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.artwork-card {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-/* Staggered animation delays - Optimized for 50 items */
-.artwork-card:nth-child(1) { animation-delay: 0.02s; }
-.artwork-card:nth-child(2) { animation-delay: 0.04s; }
-.artwork-card:nth-child(3) { animation-delay: 0.06s; }
-.artwork-card:nth-child(4) { animation-delay: 0.08s; }
-.artwork-card:nth-child(5) { animation-delay: 0.1s; }
-.artwork-card:nth-child(6) { animation-delay: 0.12s; }
-.artwork-card:nth-child(7) { animation-delay: 0.14s; }
-.artwork-card:nth-child(8) { animation-delay: 0.16s; }
-.artwork-card:nth-child(9) { animation-delay: 0.18s; }
-.artwork-card:nth-child(10) { animation-delay: 0.2s; }
-.artwork-card:nth-child(11) { animation-delay: 0.22s; }
-.artwork-card:nth-child(12) { animation-delay: 0.24s; }
-.artwork-card:nth-child(13) { animation-delay: 0.26s; }
-.artwork-card:nth-child(14) { animation-delay: 0.28s; }
-.artwork-card:nth-child(15) { animation-delay: 0.3s; }
-.artwork-card:nth-child(16) { animation-delay: 0.32s; }
-.artwork-card:nth-child(17) { animation-delay: 0.34s; }
-.artwork-card:nth-child(18) { animation-delay: 0.36s; }
-.artwork-card:nth-child(19) { animation-delay: 0.38s; }
-.artwork-card:nth-child(20) { animation-delay: 0.4s; }
-.artwork-card:nth-child(21) { animation-delay: 0.42s; }
-.artwork-card:nth-child(22) { animation-delay: 0.44s; }
-.artwork-card:nth-child(23) { animation-delay: 0.46s; }
-.artwork-card:nth-child(24) { animation-delay: 0.48s; }
-.artwork-card:nth-child(25) { animation-delay: 0.5s; }
-.artwork-card:nth-child(26) { animation-delay: 0.52s; }
-.artwork-card:nth-child(27) { animation-delay: 0.54s; }
-.artwork-card:nth-child(28) { animation-delay: 0.56s; }
-.artwork-card:nth-child(29) { animation-delay: 0.58s; }
-.artwork-card:nth-child(30) { animation-delay: 0.6s; }
-.artwork-card:nth-child(31) { animation-delay: 0.62s; }
-.artwork-card:nth-child(32) { animation-delay: 0.64s; }
-.artwork-card:nth-child(33) { animation-delay: 0.66s; }
-.artwork-card:nth-child(34) { animation-delay: 0.68s; }
-.artwork-card:nth-child(35) { animation-delay: 0.7s; }
-.artwork-card:nth-child(36) { animation-delay: 0.72s; }
-.artwork-card:nth-child(37) { animation-delay: 0.74s; }
-.artwork-card:nth-child(38) { animation-delay: 0.76s; }
-.artwork-card:nth-child(39) { animation-delay: 0.78s; }
-.artwork-card:nth-child(40) { animation-delay: 0.8s; }
-.artwork-card:nth-child(41) { animation-delay: 0.82s; }
-.artwork-card:nth-child(42) { animation-delay: 0.84s; }
-.artwork-card:nth-child(43) { animation-delay: 0.86s; }
-.artwork-card:nth-child(44) { animation-delay: 0.88s; }
-.artwork-card:nth-child(45) { animation-delay: 0.9s; }
-.artwork-card:nth-child(46) { animation-delay: 0.92s; }
-.artwork-card:nth-child(47) { animation-delay: 0.94s; }
-.artwork-card:nth-child(48) { animation-delay: 0.96s; }
-.artwork-card:nth-child(49) { animation-delay: 0.98s; }
-.artwork-card:nth-child(50) { animation-delay: 1s; }
-
-/* For items beyond 50, use a general rule */
-.artwork-card:nth-child(n+51) { 
-  animation-delay: 1.02s; 
 }

@@ -1,20 +1,9 @@
 // src/pages/subPages/artistProfile.jsx
 import "../css/MyProfile.css";
-import "../../components/MuseoGalleryContainer.css";
 import React, { useEffect, useState, useMemo } from "react";
 import ArtistArtGallery from "./artistArtGallery";
 import { useParams } from 'react-router-dom';
-import { 
-  MuseoPage, 
-  MuseoFeed, 
-  MuseoHeading, 
-  MuseoCard, 
-  MuseoAvatar, 
-  MuseoBody, 
-  MuseoTitle, 
-  MuseoDesc, 
-  MuseoBtn 
-} from "../../components/MuseoGalleryContainer.jsx";
+// Using CSS classes from design-system.css instead of components
 import MuseoLoadingBox from "../../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
@@ -81,6 +70,7 @@ export default function ArtistProfile() {
       setAvatar(p.profilePicture || FALLBACK_AVATAR);
       setCover(p.coverPicture || FALLBACK_COVER);
       setAbout(p.about ?? "");
+      setRole(p.role ?? "artist"); // Get role from profile data
     } catch (err) {
       console.error(err);
     } finally {
@@ -106,7 +96,6 @@ export default function ArtistProfile() {
     }
   }
 
-
   const fetchRole = async () => {
     try {
       const response = await fetch(`${API}/artist/getRole/${id}`, {
@@ -127,6 +116,8 @@ export default function ArtistProfile() {
       fetchProfile();
       fetchRole();
       fetchArts();
+    } else {
+      setIsFetching(false);
     }
   }, [id]);
 
@@ -152,8 +143,8 @@ export default function ArtistProfile() {
   };
 
   return (
-    <MuseoPage>
-      <MuseoFeed style={{ gap: '24px' }}>
+    <div className="museo-page">
+      <div className="museo-feed" style={{ gap: '24px' }}>
         {/* Loading State */}
         <MuseoLoadingBox 
           show={isFetching} 
@@ -163,7 +154,7 @@ export default function ArtistProfile() {
         {/* Artist Profile Card */}
         {!isFetching && (
         <>
-        <MuseoCard variant="artist" style={{ position: 'relative', overflow: 'hidden', padding: '0', marginBottom: '24px' }}>
+        <div className="museo-card museo-card--artist" style={{ position: 'relative', overflow: 'hidden', padding: '0', marginBottom: '24px' }}>
           {/* Cover Image */}
           <div style={{
             position: 'relative',
@@ -199,7 +190,7 @@ export default function ArtistProfile() {
               letterSpacing: '0.5px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
             }}>
-              🎨 Artist
+              {role === 'admin' ? '👑 Admin' : '🎨 Artist'}
             </div>
           </div>
 
@@ -212,10 +203,10 @@ export default function ArtistProfile() {
             marginBottom: '20px',
             zIndex: 2
           }}>
-            <MuseoAvatar
+            <img
+              className="museo-avatar"
               src={avatar || FALLBACK_AVATAR}
               alt={`${fullName || "Artist"} avatar`}
-              size="xl"
               style={{
                 border: '4px solid var(--museo-white)',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
@@ -223,18 +214,18 @@ export default function ArtistProfile() {
             />
           </div>
 
-          <MuseoBody style={{ textAlign: 'center', padding: '0 24px 24px' }}>
-            <MuseoTitle style={{ 
+          <div className="museo-body" style={{ textAlign: 'center', padding: '0 24px 24px' }}>
+            <h3 className="museo-title" style={{ 
               fontSize: '32px', 
               marginBottom: '8px',
               color: 'var(--museo-primary)',
               fontWeight: '800'
             }}>
               {fullName || "Unknown Artist"}
-            </MuseoTitle>
+            </h3>
             
             {bio && (
-              <MuseoDesc style={{
+              <p className="museo-desc" style={{
                 fontSize: '18px',
                 fontStyle: 'italic',
                 color: 'var(--museo-text-secondary)',
@@ -243,7 +234,7 @@ export default function ArtistProfile() {
                 fontWeight: '500'
               }}>
                 "{bio}"
-              </MuseoDesc>
+              </p>
             )}
 
             {/* Artist Stats */}
@@ -297,7 +288,7 @@ export default function ArtistProfile() {
                   color: 'var(--museo-accent)',
                   marginBottom: '4px'
                 }}>
-                  ⭐
+                  {role === 'admin' ? '👑' : '🎨'}
                 </div>
                 <div style={{
                   fontSize: '12px',
@@ -305,7 +296,7 @@ export default function ArtistProfile() {
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Featured
+                  {role === 'admin' ? 'Admin' : 'Artist'}
                 </div>
               </div>
             </div>
@@ -379,13 +370,13 @@ export default function ArtistProfile() {
                 </p>
               </div>
             )}
-          </MuseoBody>
-        </MuseoCard>
+          </div>
+        </div>
 
         {/* Artist's Artwork Gallery */}
-        <MuseoCard>
-          <MuseoBody>
-            <MuseoHeading style={{ marginBottom: '20px' }}>Artist's Portfolio</MuseoHeading>
+        <div className="museo-card">
+          <div className="museo-body">
+            <h1 className="museo-heading" style={{ marginBottom: '20px' }}>Artist's Portfolio</h1>
             <ArtistArtGallery
               arts={arts}
               title=""
@@ -394,11 +385,16 @@ export default function ArtistProfile() {
               onViewArt={handleViewArt}
               onLikeArt={handleLikeArt}
               onArtClick={handleArtClick}
+              currentUser={{
+                id: profileId,
+                name: [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Artist',
+                avatar: avatar
+              }}
             />
-          </MuseoBody>
-        </MuseoCard>
+          </div>
+        </div>
         </>)}
-      </MuseoFeed>
-    </MuseoPage>
+      </div>
+    </div>
   );
 }

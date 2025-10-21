@@ -1,10 +1,16 @@
-/* Page - Museo Theme */
+/* ========================================
+   👤 MYPROFILE MODULE - Design System Compatible
+   Profile page styles and edit modal components
+   Uses design-system.css variables and follows modular approach
+   ======================================== */
+
+/* Legacy page wrapper - now using museo-page class */
 .profilePage {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  background: linear-gradient(135deg, #f8f5f0 0%, #faf7f2 100%);
-  font-family: 'Georgia', 'Times New Roman', serif;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
+  font-family: var(--museo-font-body);
 }
 
 /* Width */
@@ -17,13 +23,13 @@
   padding: 0 12px;
 }
 
-/* Card - Museo Theme */
+/* Profile Card - Design System Compatible */
 .pCard {
   position: relative;
-  background: linear-gradient(135deg, #faf8f5 0%, #fdfcfa 100%);
-  border: 1px solid rgba(212, 180, 138, 0.15);
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  border: 1px solid var(--museo-border);
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.06), 0 1px 4px rgba(212, 180, 138, 0.1);
+  box-shadow: 0 4px 12px var(--museo-shadow), 0 1px 4px rgba(212, 180, 138, 0.1);
   padding: 24px;
   margin-bottom: 16px;
   backdrop-filter: blur(4px);
@@ -36,17 +42,17 @@
   width: 36px; height: 36px;
   display: grid; place-items: center;
   border-radius: 10px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
+  border: 1px solid var(--museo-border);
   background: rgba(253, 252, 250, 0.8);
-  color: #8b6f4d;
+  color: var(--museo-text-muted);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 .pKebab:hover { 
-  background: rgba(212, 180, 138, 0.08);
-  border-color: rgba(212, 180, 138, 0.35);
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-border-dark);
   transform: translateX(1px);
-  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
+  box-shadow: 0 1px 4px var(--museo-shadow);
 }
 
 /* Cover + avatar overlap */
@@ -275,49 +281,42 @@
 }
 
 .pArtBtn--view {
-  background: rgba(255, 255, 255, 0.95) !important;
-  color: #ef4444 !important;
-  backdrop-filter: blur(10px) !important;
-  border: 2px solid #ef4444 !important;
-  text-shadow: none !important;
-  font-weight: 700 !important;
+  background: var(--museo-primary);
+  color: var(--museo-text-inverse);
 }
 
 .pArtBtn--view:hover {
-  background: #ef4444 !important;
-  color: white !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4) !important;
+  background: var(--museo-primary-dark);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
 .pArtBtn--like {
-  background: rgba(255, 255, 255, 0.95) !important;
-  color: #ef4444 !important;
-  backdrop-filter: blur(10px) !important;
-  border: 2px solid #ef4444 !important;
-  text-shadow: none !important;
-  font-weight: 700 !important;
+  background: var(--museo-bg-secondary);
+  color: var(--museo-primary);
+  border: 1px solid var(--museo-border);
 }
 
 .pArtBtn--like:hover {
-  background: #ef4444 !important;
-  color: white !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4) !important;
+  background: var(--museo-bg-tertiary);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
 }
 
 .pArtBtn--like span {
-  color: #ef4444 !important;
-  font-weight: 700 !important;
+  color: var(--museo-primary);
+  font-weight: 700;
 }
 
 .pArtBtn--like:hover span {
-  color: white !important;
+  color: white;
 }
 
 .pArtBtn--view svg,
 .pArtBtn--like svg {
-  stroke: currentColor !important;
+  stroke: currentColor;
 }
 
 /* Empty State */
@@ -325,12 +324,12 @@
   text-align: center;
   padding: 60px 20px;
   background: linear-gradient(135deg, 
-    rgba(79, 70, 229, 0.03), 
-    rgba(147, 51, 234, 0.03)
+    var(--museo-bg-secondary) 0%, 
+    var(--museo-bg-tertiary) 100%
   );
-  border: 2px dashed rgba(79, 70, 229, 0.2);
+  border: 2px dashed var(--museo-border);
   border-radius: 20px;
-  color: #6b7280;
+  color: var(--museo-text-secondary);
 }
 
 .pEmptyIcon {
@@ -342,7 +341,7 @@
 .pEmptyState h3 {
   font-size: 22px;
   font-weight: 700;
-  color: #374151;
+  color: var(--museo-primary);
   margin: 0 0 8px 0;
 }
 
@@ -360,9 +359,9 @@
   height: 36px;
   padding: 0 16px;
   border-radius: 10px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(139, 111, 77, 0.8);
-  color: #fff;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-primary);
+  color: var(--museo-text-inverse);
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
@@ -371,9 +370,9 @@
 }
 
 .pUploadBtn:hover {
-  background: rgba(212, 180, 138, 0.08);
-  color: #8b6f4d;
-  border-color: rgba(212, 180, 138, 0.25);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-primary);
+  border-color: var(--museo-border);
   transform: translateX(1px);
   box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
 }
@@ -384,8 +383,8 @@
 }
 
 .pUploadBtn:disabled:hover {
-  background: #fff;
-  color: #111827;
+  background: var(--museo-bg-primary);
+  color: var(--museo-text-inverse);
 }
 
 /* Empty State Upload Button - Larger version */
@@ -397,9 +396,9 @@
   padding: 0 18px;
   margin-top: 16px;
   border-radius: 12px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(139, 111, 77, 0.8);
-  color: #fff;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-primary);
+  color: var(--museo-text-inverse);
   font-weight: 600;
   cursor: pointer;
   font-size: 14px;
@@ -408,9 +407,9 @@
 }
 
 .pEmptyUploadBtn:hover {
-  background: rgba(212, 180, 138, 0.08);
-  color: #8b6f4d;
-  border-color: rgba(212, 180, 138, 0.25);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-primary);
+  border-color: var(--museo-border);
   transform: translateX(1px);
   box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
 }
@@ -434,96 +433,92 @@
   100% { background-position: 200% 0; }
 }
 
-/* Profile Edit Modal (pe__) - Museo Theme */
+/* Profile Edit Modal (pe__) - Uses Standard Modal System */
+
+/* Overlay - inherits from museo-modal-overlay */
 .pe__scrim {
-  position: fixed; inset: 0;
-  background: rgba(110, 74, 46, 0.55);
-  backdrop-filter: saturate(120%) blur(8px);
-  display: grid; place-items: center;
-  z-index: 1200;
-}
-.pe__dialog {
-  position: relative;
-  width: min(760px, 92vw);
-  max-height: 92vh;
-  background: linear-gradient(135deg, #faf8f5 0%, #fdfcfa 100%);
-  border: 2px solid #d4b48a;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(110, 74, 46, 0.25);
-  overflow-y: auto;
   display: grid;
-  gap: 12px;
-  padding-bottom: 16px;
-  backdrop-filter: blur(12px);
-  font-family: 'Georgia', 'Times New Roman', serif;
+  place-items: center;
+}
+
+/* Dialog - inherits from museo-modal */
+.pe__dialog {
+  width: min(800px, 95vw);
+  max-height: 95vh;
+  overflow: auto;
+  font-family: var(--museo-font-body);
 }
 .pe__header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px 8px;
 }
+
 .pe__title { 
   margin: 0; 
   font-size: 20px; 
   font-weight: 700; 
-  color: #6e4a2e;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  color: var(--museo-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
 .pe__close { 
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(253, 252, 250, 0.9);
-  border-radius: 10px;
-  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-secondary);
+  font-size: 18px;
+  font-weight: 700;
   cursor: pointer;
-  color: #8b6f4d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+  display: grid;
+  place-items: center;
   transition: all 0.3s ease;
   z-index: 10;
 }
+
 .pe__close:hover { 
   background: rgba(212, 180, 138, 0.08);
-  color: #b8722c;
   border-color: rgba(212, 180, 138, 0.35);
   transform: translateX(1px);
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.15);
+  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
 }
 
 .pe__coverBox {
   position: relative;
   margin: 0 16px;
   height: clamp(140px, 26vw, 220px);
-  border: 1px solid rgba(212, 180, 138, 0.2);
+  border: 1px solid var(--museo-border);
   border-radius: 16px;
   overflow: hidden;
-  background: linear-gradient(135deg, #e8dcc6 0%, #f0e6d2 100%);
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-bg-primary) 100%);
 }
+
 .pe__coverImg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pe__coverEmpty { width: 100%; height: 100%; display: grid; place-items: center; color:#475569; }
+
+.pe__coverEmpty { width: 100%; height: 100%; display: grid; place-items: center; color: var(--museo-text-muted); }
+
 .pe__coverBtn {
   position: absolute; right: 10px; bottom: 10px;
   height: 34px; padding: 0 14px; border-radius: 10px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(253, 252, 250, 0.9);
-  color: #8b6f4d;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-secondary);
   cursor: pointer;
   font-weight: 600;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--museo-font-body);
   transition: all 0.3s ease;
 }
+
 .pe__coverBtn:hover { 
-  background: rgba(212, 180, 138, 0.08);
-  border-color: rgba(212, 180, 138, 0.35);
+  background: var(--museo-bg-hover);
+  border-color: var(--museo-border-hover);
   transform: translateX(1px);
-  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
+  box-shadow: 0 1px 4px var(--museo-shadow-light);
 }
 
 .pe__body {
@@ -542,33 +537,32 @@
 }
 .pe__avatar, .pe__avatarEmpty {
   width: 160px; height: 160px; border-radius: 20px;
-  border: 6px solid #faf8f5; background: rgba(212, 180, 138, 0.2); object-fit: cover;
-  box-shadow: 0 8px 24px rgba(110, 74, 46, 0.15);
+  border: 6px solid var(--museo-white); background: var(--museo-bg-secondary); object-fit: cover;
+  box-shadow: 0 8px 24px var(--museo-shadow);
   display: grid; place-items: center;
 }
-.pe__avatarEmpty { color:#475569; font-weight: 700; }
+.pe__avatarEmpty { color: var(--museo-text-muted); font-weight: 700; }
 .pe__avatarBtn {
   position: static;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0;
-  height: 32px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(253, 252, 250, 0.9);
-  color: #8b6f4d;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-secondary);
   cursor: pointer;
   font-weight: 600;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: var(--museo-font-body);
   transition: all 0.3s ease;
 }
 .pe__avatarBtn:hover { 
-  background: rgba(212, 180, 138, 0.08);
-  border-color: rgba(212, 180, 138, 0.35);
+  background: var(--museo-bg-hover);
+  border-color: var(--museo-border-hover);
   transform: translateX(1px);
-  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
+  box-shadow: 0 1px 4px var(--museo-shadow-light);
 }
 
 .pe__form {
@@ -585,37 +579,36 @@
   display: grid;
   gap: 6px;
   font-size: 14px;
-  color: #6e4a2e;
   font-weight: 600;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  color: var(--museo-primary);
+  font-family: var(--museo-font-body);
   align-items: start;
 }
 .pe__input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(212, 180, 138, 0.2);
+  border: 1px solid var(--museo-border);
   border-radius: 10px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.6);
-  color: #8b6f4d;
-  font-weight: 500;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  padding: 10px 12px;
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-primary);
+  font-family: var(--museo-font-body);
   align-self: start;
   transition: all 0.3s ease;
 }
 .pe__input:focus {
   outline: none;
-  border-color: rgba(212, 180, 138, 0.4);
-  box-shadow: 0 0 0 2px rgba(212, 180, 138, 0.1);
-  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--museo-border-hover);
+  box-shadow: 0 0 0 2px var(--museo-shadow-light);
+  background: var(--museo-white);
 }
 .pe__input--area {
   min-height: 72px;
   resize: vertical;
-  background: rgba(253, 252, 250, 0.6);
+  background: var(--museo-bg-secondary);
 }
 .pe__input--area:focus {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--museo-white);
 }
 
 .pe__footer {
@@ -624,7 +617,7 @@
   flex-wrap: wrap;                  /* let buttons wrap on small screens */
   gap: 12px;
   padding: 8px 16px 14px;
-  border-top: 1px solid #eef0f2;
+  border-top: 1px solid var(--museo-border);
 }
 .pe__btn {
   height: 36px;
@@ -635,47 +628,47 @@
   width: auto;
 }
 .pe__btn--ghost { 
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(253, 252, 250, 0.8);
-  color: #8b6f4d;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-secondary);
+  font-family: var(--museo-font-body);
 }
 .pe__btn--ghost:hover { 
-  background: rgba(212, 180, 138, 0.08);
-  border-color: rgba(212, 180, 138, 0.35);
+  background: var(--museo-bg-hover);
+  border-color: var(--museo-border-hover);
   transform: translateX(1px);
-  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
+  box-shadow: 0 1px 4px var(--museo-shadow-light);
 }
 .pe__btn--primary { 
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  background: rgba(139, 111, 77, 0.8);
-  color: #ffffff;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  border: 1px solid var(--museo-primary);
+  background: var(--museo-primary);
+  color: var(--museo-white);
+  font-family: var(--museo-font-body);
 }
 .pe__btn--primary:hover { 
-  background: rgba(212, 180, 138, 0.08);
-  color: #8b6f4d;
-  border-color: rgba(212, 180, 138, 0.25);
+  background: var(--museo-bg-hover);
+  color: var(--museo-primary);
+  border-color: var(--museo-border-hover);
   transform: translateX(1px);
-  box-shadow: 0 1px 4px rgba(110, 74, 46, 0.08);
+  box-shadow: 0 4px 12px var(--museo-shadow);
 }
 .pe__btn--primary:disabled { 
-  background:#9ca3af; 
-  border-color:#9ca3af; 
-  color:#fff; 
+  background: var(--museo-text-muted); 
+  border-color: var(--museo-text-muted); 
+  color: var(--museo-white); 
   cursor: not-allowed; 
 }
 
 /* Error styling */
-.pe__input--error { border-color: #dc2626 !important; }
+.pe__input--error { border-color: var(--museo-error) !important; }
 .pe__error { 
-  color: #dc2626; 
+  color: var(--museo-error); 
   font-size: 12px; 
   margin-top: 4px; 
   display: block; 
 }
 .pe__subtitle {
-  color: #6b7280;
+  color: var(--museo-text-muted);
   font-size: 14px;
   margin: 4px 0 0 0;
 }

@@ -1,7 +1,7 @@
 // routes/profileRoutes.js
 import express from "express";
 import multer from "multer";
-import { artPreferenceStatus, saveArtPreferences, getProfile, uploadProfileMedia, profileStatus, getArts, createComment, getComments, createReact, getReact, uploadArt } from "../controllers/profileController.js";
+import { artPreferenceStatus, saveArtPreferences, getProfile, getUserProfile, uploadProfileMedia, profileStatus, getArts, createComment, getComments, createReact, getReact, uploadArt, trackView, getViews } from "../controllers/profileController.js";
 
 const router = express.Router();
 
@@ -12,19 +12,24 @@ const upload = multer({
 });
 
 router.get("/getProfile", getProfile);
+router.post("/getUserProfile", getUserProfile);
 router.get("/getArts", getArts);
 router.post("/createComment", createComment);
 router.get("/getComments", getComments);
 router.post("/createComment", createComment);
 router.post("/createReact", createReact);
 router.get("/getReact", getReact);
-router.post("/uploadArt", upload.single('image'), uploadArt);
+router.post("/uploadArt", upload.array('images', 5), uploadArt);
 router.get("/artPreferenceStatus", artPreferenceStatus);
 router.post("/saveArtPreferences", saveArtPreferences);
 
 // Also accept POST with JSON body for ID-based reads
 router.post("/getComments", getComments);
 router.post("/getReact", getReact);
+
+// View tracking endpoints
+router.post("/trackView", trackView);
+router.post("/getViews", getViews);
 
 router.get("/profileStatus", profileStatus);
 // Upload files then update profile

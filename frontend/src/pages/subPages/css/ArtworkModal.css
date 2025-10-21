@@ -1,0 +1,861 @@
+/* ========================================
+   🎨 ARTWORK MODAL - Museo Theme
+   Beautiful artwork detail modal with comments and likes
+   ======================================== */
+
+/* Use standard modal system from design-system.css */
+
+.artwork-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.artwork-modal {
+  /* Inherits base styling from .museo-modal in design-system.css */
+  max-width: 1200px;
+  max-height: 90vh;
+  width: 100%;
+  position: relative !important;
+  z-index: 10000 !important;
+}
+
+.artwork-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(44, 24, 16, 0.8);
+  color: #f4f1ec;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  z-index: 10;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.artwork-modal-close:hover {
+  background: rgba(44, 24, 16, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(44, 24, 16, 0.4);
+}
+
+.artwork-modal-content {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  height: 90vh;
+  max-height: 800px;
+}
+
+/* ========================================
+   🖼️ IMAGE GALLERY SECTION
+   ======================================== */
+
+.artwork-modal-gallery {
+  background: linear-gradient(135deg, #d4c9b8 0%, #c9bba8 100%);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.artwork-main-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 20px;
+  padding-bottom: 120px; /* Reserve space for fixed thumbnails */
+}
+
+/* When there's only one image, center it perfectly */
+.artwork-main-image.single-image {
+  padding-bottom: 40px; /* Remove extra bottom padding for single images */
+}
+
+.artwork-image {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 15px 60px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  
+  /* Increased max-height for bigger image display */
+  max-height: calc(100vh - 200px);
+  min-height: 400px;
+}
+
+.artwork-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(244, 241, 236, 0.9);
+  color: #2c1810;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.artwork-nav-prev {
+  left: 20px;
+}
+
+.artwork-nav-next {
+  right: 20px;
+}
+
+.artwork-nav-btn:hover {
+  background: rgba(244, 241, 236, 1);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Dot indicators removed - using thumbnails instead */
+
+.artwork-thumbnails {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  overflow-x: auto;
+  min-height: 100px;
+  flex-shrink: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+/* Hide thumbnails when there's only one image */
+.artwork-thumbnails.single-image {
+  display: none;
+}
+
+/* Hide thumbnails when toggled off */
+.artwork-thumbnails.hidden {
+  display: none;
+}
+
+/* Adjust main image when thumbnails are hidden */
+.artwork-main-image.thumbnails-hidden {
+  padding-bottom: 40px; /* Use normal padding when thumbnails are hidden */
+}
+
+/* Thumbnail toggle button */
+.thumbnail-toggle-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(244, 241, 236, 0.95);
+  color: #2c1810;
+  border: 1px solid rgba(212, 180, 138, 0.3);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  z-index: 15;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail-toggle-btn:hover {
+  background: rgba(244, 241, 236, 1);
+  border-color: rgba(212, 180, 138, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.artwork-thumbnail {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.artwork-thumbnail:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.artwork-thumbnail.active {
+  opacity: 1;
+  border-color: #f4f1ec;
+  transform: scale(1.05);
+}
+
+/* ========================================
+   📝 DETAILS SECTION
+   ======================================== */
+
+.artwork-modal-details {
+  padding: 40px;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #faf8f5 0%, #f5f1eb 100%);
+}
+
+.artwork-info {
+  margin-bottom: 40px;
+}
+
+.artwork-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid rgba(107, 66, 38, 0.15);
+}
+
+.artwork-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #2c1810;
+  margin: 0 0 12px 0;
+  font-family: 'Georgia', serif;
+  line-height: 1.2;
+}
+
+.artwork-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #6b4226;
+  font-size: 1.1rem;
+}
+
+.artwork-artist-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.artist-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(107, 66, 38, 0.2);
+  transition: all 0.3s ease;
+}
+
+.artist-avatar:hover {
+  border-color: #6b4226;
+  transform: scale(1.05);
+}
+
+.artist-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #6b4226 0%, #8b7355 100%);
+  color: #f4f1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: 2px solid rgba(107, 66, 38, 0.2);
+  transition: all 0.3s ease;
+}
+
+.artist-avatar-placeholder:hover {
+  border-color: #6b4226;
+  transform: scale(1.05);
+}
+
+.artwork-artist {
+  font-style: italic;
+  font-weight: 500;
+}
+
+.artwork-year {
+  padding: 4px 12px;
+  background: rgba(107, 66, 38, 0.1);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.artwork-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.artwork-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.artwork-detail label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b4226;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.artwork-detail span {
+  font-size: 1rem;
+  color: #2c1810;
+  font-weight: 500;
+}
+
+.artwork-description {
+  margin-bottom: 24px;
+}
+
+.artwork-description h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c1810;
+  margin: 0 0 12px 0;
+  font-family: 'Georgia', serif;
+}
+
+.description-content {
+  position: relative;
+}
+
+.description-text {
+  color: #4a2c1a;
+  line-height: 1.6;
+  font-size: 1rem;
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  white-space: pre-line; /* Preserves line breaks and spaces */
+}
+
+.description-toggle {
+  background: none;
+  border: none;
+  color: #6b4226;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0 0 0;
+  margin-top: 8px;
+  text-decoration: underline;
+  transition: all 0.3s ease;
+  display: block;
+}
+
+.description-toggle:hover {
+  color: #2c1810;
+  text-decoration: none;
+}
+
+.artwork-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(107, 66, 38, 0.1);
+}
+
+.museo-btn--pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(107, 66, 38, 0.2);
+  border-radius: 50px;
+  color: #6b4226;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  min-width: 80px;
+  justify-content: center;
+}
+
+.museo-btn--pill:hover {
+  background: rgba(107, 66, 38, 0.1);
+  border-color: #6b4226;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.2);
+}
+
+.museo-btn--pill.liked {
+  background: rgba(220, 38, 127, 0.1);
+  border-color: #dc267f;
+  color: #dc267f;
+}
+
+.like-icon {
+  font-size: 1rem;
+}
+
+.like-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.artwork-stats {
+  display: flex;
+  gap: 16px;
+  color: #6b4226;
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.artwork-stats span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(107, 66, 38, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(107, 66, 38, 0.1);
+  transition: all 0.3s ease;
+}
+
+.artwork-stats span:hover {
+  background: rgba(107, 66, 38, 0.1);
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   💬 COMMENTS SECTION
+   ======================================== */
+
+.artwork-comments {
+  border-top: 2px solid rgba(107, 66, 38, 0.15);
+  padding-top: 24px;
+}
+
+.comments-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c1810;
+  margin: 0 0 20px 0;
+  font-family: 'Georgia', serif;
+}
+
+.comment-form {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(107, 66, 38, 0.1);
+}
+
+.comment-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid rgba(107, 66, 38, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #2c1810;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 200px;
+  transition: all 0.3s ease;
+  line-height: 1.4;
+  white-space: pre-wrap; /* Preserves line breaks in input */
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: #6b4226;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(107, 66, 38, 0.1);
+}
+
+.comment-input::placeholder {
+  color: rgba(107, 66, 38, 0.6);
+}
+
+.comment-submit {
+  align-self: flex-end;
+  background: linear-gradient(45deg, #2c1810 0%, #4a2c1a 100%);
+  color: #f4f1ec;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(44, 24, 16, 0.2);
+}
+
+.comment-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(44, 24, 16, 0.3);
+}
+
+.comment-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.comments-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.no-comments {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(107, 66, 38, 0.6);
+  font-style: italic;
+}
+
+.comment {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(107, 66, 38, 0.1);
+  transition: all 0.3s ease;
+}
+
+.comment:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.15);
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+}
+
+.comment-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(107, 66, 38, 0.1);
+}
+
+.comment-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #6b4226 0%, #8b7355 100%);
+  color: #f4f1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  border: 2px solid rgba(107, 66, 38, 0.1);
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  margin-bottom: 2px;
+}
+
+.comment-user {
+  font-weight: 600;
+  color: #2c1810;
+  font-size: 0.9rem;
+  display: block;
+}
+
+.comment-time {
+  color: rgba(107, 66, 38, 0.6);
+  font-size: 0.75rem;
+  font-weight: 400;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.comment-text {
+  color: #4a2c1a;
+  line-height: 1.4;
+  margin: 0;
+  font-size: 0.9rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap; /* Preserves line breaks and spaces */
+}
+
+/* ========================================
+   📱 RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .artwork-modal {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .artwork-modal-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  
+  .artwork-modal-details {
+    padding: 20px;
+    max-height: 50vh;
+  }
+  
+  .artwork-main-image {
+    padding: 20px;
+  }
+  
+  .artwork-title {
+    font-size: 1.8rem;
+  }
+  
+  .artwork-details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .artwork-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .artwork-nav-prev {
+    left: 10px;
+  }
+  
+  .artwork-nav-next {
+    right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .artwork-modal-overlay {
+    padding: 10px;
+  }
+  
+  .artwork-modal-details {
+    padding: 15px;
+  }
+  
+  .artwork-title {
+    font-size: 1.5rem;
+  }
+  
+  .artwork-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .artwork-stats {
+    justify-content: center;
+  }
+  
+  /* Comment responsive improvements */
+  .comment {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .comment-avatar img,
+  .comment-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  
+  .comment-header {
+    gap: 6px;
+  }
+  
+  .comment-user {
+    font-size: 0.85rem;
+  }
+  
+  .comment-time {
+    font-size: 0.75rem;
+  }
+  
+  .comment-text {
+    font-size: 0.85rem;
+  }
+  
+  .comment-form {
+    padding: 12px;
+  }
+}
+
+/* ========================================
+   📱 RESPONSIVE LAYOUT FIXES
+   Prevent image overlap on smaller screens
+   ======================================== */
+
+/* Tablet and smaller screens */
+@media (max-width: 1024px) {
+  .artwork-modal-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60vh auto;
+    height: auto;
+    max-height: 95vh;
+  }
+  
+  .artwork-modal-gallery {
+    min-height: 60vh;
+  }
+  
+  .artwork-modal-details {
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 768px) {
+  .artwork-modal {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .artwork-modal-content {
+    grid-template-rows: 50vh auto;
+    height: auto;
+  }
+  
+  .artwork-modal-gallery {
+    min-height: 50vh;
+  }
+  
+  .artwork-main-image {
+    padding: 20px;
+    padding-bottom: 120px; /* Reserve space for fixed thumbnails on mobile */
+  }
+  
+  .artwork-main-image.single-image {
+    padding-bottom: 20px; /* Center single images on mobile */
+  }
+  
+  .artwork-main-image.thumbnails-hidden {
+    padding-bottom: 20px; /* Use normal padding when thumbnails hidden on mobile */
+  }
+  
+  .artwork-image {
+    /* Better constraints for tall images on mobile - reserve space for thumbnails */
+    max-height: calc(50vh - 140px);
+    max-width: calc(95vw - 40px);
+  }
+  
+  .artwork-modal-details {
+    padding: 20px;
+    max-height: 45vh;
+  }
+  
+  .artwork-title {
+    font-size: 1.8rem;
+  }
+  
+  .artwork-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .artwork-nav-prev {
+    left: 10px;
+  }
+  
+  .artwork-nav-next {
+    right: 10px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .artwork-modal-content {
+    grid-template-rows: 45vh auto;
+  }
+  
+  .artwork-modal-gallery {
+    min-height: 45vh;
+  }
+  
+  .artwork-main-image {
+    padding: 15px;
+    padding-bottom: 110px; /* Reserve space for fixed thumbnails on very small screens */
+  }
+  
+  .artwork-main-image.single-image {
+    padding-bottom: 15px; /* Center single images on very small screens */
+  }
+  
+  .artwork-main-image.thumbnails-hidden {
+    padding-bottom: 15px; /* Use normal padding when thumbnails hidden on very small screens */
+  }
+  
+  .artwork-image {
+    /* Even tighter constraints for very small screens - reserve space for thumbnails */
+    max-height: calc(45vh - 130px);
+    max-width: calc(95vw - 30px);
+  }
+  
+  .artwork-modal-details {
+    padding: 15px;
+    max-height: 50vh;
+  }
+  
+  .artwork-title {
+    font-size: 1.5rem;
+  }
+  
+  .artwork-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

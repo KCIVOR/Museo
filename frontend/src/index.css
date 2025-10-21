@@ -239,8 +239,9 @@ p, span, div, label, li, td, th {
   color: var(--museo-text-primary) !important;
 }
 
-/* All buttons - Default (Normal) */
-button:not(.nav__searchBtn):not(.nav__icon-btn):not(.nav__coin):not(.nav__avatar):not(.btn-delete):not(.btn-danger):not(.btn-success):not(.btn-primary):not(.btn-secondary):not(.btn-accept):not(.btn-approve):not(.btn-cancel):not(.btn-reject):not(.btn-like):not(.btn-heart):not(.btn-comment):not(.btn-share):not(.btn-save):not(.btn-upload):not(.btn-outline):not(.btn-icon):not(.btn-view):not(.btn-calendar):not(.btn-hero):not(.btn-hero-ghost):not(.lrGoogleBtn):not(.btn-outline-primary):not(.btn-outline-secondary):not(.btn-outline-success):not(.btn-outline-danger):not(.btn-outline-warning):not(.btn-outline-info):not(.btn-outline-light):not(.btn-outline-dark):not(.actionBtn):not(.m-popup__btn):not(.mcm__submit) {
+/* Default buttons - Only apply to buttons that need default styling */
+button.btn-default, 
+button:not([class]) {
   background: var(--museo-primary) !important;
   color: var(--museo-text-inverse) !important;
   border: none !important;
@@ -253,7 +254,8 @@ button:not(.nav__searchBtn):not(.nav__icon-btn):not(.nav__coin):not(.nav__avatar
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
-button:not(.nav__searchBtn):not(.nav__icon-btn):not(.nav__coin):not(.nav__avatar):not(.btn-delete):not(.btn-danger):not(.btn-success):not(.btn-primary):not(.btn-secondary):not(.btn-accept):not(.btn-approve):not(.btn-cancel):not(.btn-reject):not(.btn-like):not(.btn-heart):not(.btn-comment):not(.btn-share):not(.btn-save):not(.btn-upload):not(.btn-outline):not(.btn-icon):not(.btn-view):not(.btn-calendar):not(.btn-hero):not(.btn-hero-ghost):not(.lrGoogleBtn):not(.btn-outline-primary):not(.btn-outline-secondary):not(.btn-outline-success):not(.btn-outline-danger):not(.btn-outline-warning):not(.btn-outline-info):not(.btn-outline-light):not(.btn-outline-dark):not(.actionBtn):not(.m-popup__btn):not(.mcm__submit):hover {
+button.btn-default:hover, 
+button:not([class]):hover {
   background: var(--museo-primary-light) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;

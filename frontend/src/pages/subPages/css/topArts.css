@@ -27,22 +27,22 @@
   padding: clamp(10px, 1.5vw, 14px) clamp(12px, 2vw, 16px);
 }
 .taHeroTitle {
-  margin: 0; color:#fff; font-weight:900; font-size: clamp(14px, 2.2vw, 18px);
+  margin: 0; color: var(--museo-white); font-weight:900; font-size: clamp(14px, 2.2vw, 18px);
   letter-spacing:.04em; text-transform:uppercase; text-shadow:0 1px 1px rgba(0,0,0,.35);
 }
 .taHeroCount {
   min-width:28px; height:28px; padding:0 8px; display:grid; place-items:center;
-  background: rgba(255,255,255,.92); color:#111; border:1px solid rgba(0,0,0,.06);
+  background: var(--museo-white); color: var(--museo-text-primary); border:1px solid var(--museo-border);
   border-radius:999px; font-size:12px; font-weight:800; box-shadow:0 2px 10px rgba(0,0,0,.12);
 }
 
 /* Winner (Rank #1) */
 .taWinner {
-  display: grid; gap: 8px; text-decoration: none; background:#fff;
+  display: grid; gap: 8px; text-decoration: none; background: var(--museo-white);
   border:1px solid rgba(0,0,0,.06); border-radius: 14px; overflow: hidden;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
-.taWinnerMediaWrap { position: relative; background:#eef2f5; }
+.taWinnerMediaWrap { position: relative; background: var(--museo-bg-secondary); }
 .taWinnerMedia {
   width:100%; display:block; object-fit:cover;
   aspect-ratio: 16 / 9; /* larger, cinematic */
@@ -50,16 +50,16 @@
 }
 .taWinnerInfo { display:grid; gap:6px; padding: 0 12px 12px; }
 .taWinnerTitle {
-  color:#0f172a; font-weight:900; font-size: clamp(18px, 2.2vw, 22px);
+  color: var(--museo-text-primary); font-weight:900; font-size: clamp(18px, 2.2vw, 22px);
   line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .taWinnerMeta { display:flex; gap:8px; flex-wrap:wrap; }
 .taChip {
-  height:24px; padding:0 10px; border-radius:999px; border:1px solid #e6e6ea;
-  background:#fff; color:#111; font-size:12px; font-weight:700;
+  height:24px; padding:0 10px; border-radius:999px; border:1px solid var(--museo-border);
+  background: var(--museo-white); color: var(--museo-text-primary); font-size:12px; font-weight:700;
 }
 .taChipGold {
-  border-color:#f5d75f; background:#fffbe6; color:#7a5d00; font-weight:800;
+  border-color: var(--museo-accent); background: var(--museo-accent-bg); color: var(--museo-accent-dark); font-weight:800;
 }
 
 /* Featured row (Rank #2–#3) */
@@ -69,11 +69,11 @@
 }
 @media (max-width: 680px) { .taFeaturedRow { grid-template-columns: 1fr; } }
 .taFeaturedCard {
-  display: grid; gap:8px; text-decoration:none; background:#fff;
+  display: grid; gap:8px; text-decoration:none; background: var(--museo-white);
   border:1px solid rgba(0,0,0,.06); border-radius:12px; overflow:hidden;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
-.taMediaWrap { position:relative; background:#eef2f5; }
+.taMediaWrap { position:relative; background: var(--museo-bg-secondary); }
 .taMedia {
   width:100%; display:block; object-fit:cover; aspect-ratio:16 / 10;
   border-bottom:1px solid rgba(0,0,0,.06);
@@ -89,26 +89,26 @@
 
 /* Standard cards */
 .taCard {
-  display:grid; gap:8px; text-decoration:none; background:#fff;
+  display:grid; gap:8px; text-decoration:none; background: var(--museo-white);
   border:1px solid rgba(0,0,0,.06); border-radius:12px; overflow:hidden;
   box-shadow:0 1px 2px rgba(0,0,0,.06);
   transition: box-shadow .15s ease, transform .15s ease; cursor:pointer;
 }
 .taCard:hover { box-shadow:0 6px 18px rgba(0,0,0,.08); transform: translateY(-1px); }
 .taInfo { display:grid; gap:6px; padding: 0 10px 10px; text-align:center; }
-.taTitle { color:#0f172a; font-weight:800; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.taTitle { color: var(--museo-text-primary); font-weight:800; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .taMeta { display:flex; gap:6px; justify-content:center; }
 
 /* Badges */
 .taBadge {
   position:absolute; left:8px; top:8px;
-  background:#fff; border:1px solid #e6e6ea; border-radius:999px;
-  padding:4px 10px; font-size:12px; font-weight:800; color:#111;
+  background: var(--museo-white); border:1px solid var(--museo-border); border-radius:999px;
+  padding:4px 10px; font-size:12px; font-weight:800; color: var(--museo-text-primary);
   box-shadow:0 1px 2px rgba(0,0,0,.06);
 }
-.taBadgeGold   { background:#fffbe6; border-color:#f5d75f; color:#7a5d00; }
-.taBadgeSilver { background:#f4f6fb; border-color:#c9d4ff; color:#1e3a8a; }
-.taBadgeBronze { background:#fff3e6; border-color:#ffc899; color:#9a3412; }
+.taBadgeGold   { background: var(--museo-accent-bg); border-color: var(--museo-accent); color: var(--museo-accent-dark); }
+.taBadgeSilver { background: var(--museo-bg-secondary); border-color: var(--museo-primary); color: var(--museo-primary-dark); }
+.taBadgeBronze { background: var(--museo-warning-bg); border-color: var(--museo-warning); color: var(--museo-warning-dark); }
 
 /* Small screen polish */
 @media (max-width: 520px) {

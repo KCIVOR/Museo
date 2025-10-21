@@ -2,27 +2,13 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
-import "./css/events.css";
-import "../components/MuseoGalleryContainer.css";
 import EventModal from "./EventModal.jsx";
 import PublishEventModal from "./PublishEventModal.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { NavLink } from "react-router-dom";
-import { 
-  MuseoPage, 
-  MuseoFeed, 
-  MuseoHeading, 
-  MuseoGrid,
-  MuseoCard,
-  MuseoMedia,
-  MuseoBody,
-  MuseoTitle,
-  MuseoDesc,
-  MuseoBadge,
-  MuseoActions,
-  MuseoBtn
-} from "../components/MuseoGalleryContainer.jsx";
+// Using CSS classes from design-system.css instead of components
 import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
+import MuseoEmptyState from "../components/MuseoEmptyState.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Event() {
@@ -261,11 +247,11 @@ export default function Event() {
   };
 
   return (
-    <MuseoPage>
-      <MuseoFeed>
+    <div className="museo-page">
+      <div className="museo-feed">
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <MuseoHeading>Events</MuseoHeading>
+          <h1 className="museo-heading">Events</h1>
         </div>
 
         {/* Admin Actions */}
@@ -276,7 +262,7 @@ export default function Event() {
             marginBottom: '32px' 
           }}>
             <button
-              className="evmCalBtn"
+              className="museo-btn museo-btn--primary"
               onClick={() => setShowPublish(true)}
             >
               Publish Event
@@ -284,51 +270,125 @@ export default function Event() {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading */}
         <MuseoLoadingBox 
           show={loading} 
           message={MuseoLoadingBox.messages.events} 
         />
 
+        {/* Empty State */}
+        {!loading && items.length === 0 && (
+          <MuseoEmptyState {...MuseoEmptyState.presets.events} />
+        )}
+
         {/* Events Grid */}
-        {!loading && (
-          <MuseoGrid columns={3}>
+        {!loading && items.length > 0 && (
+          <div className="museo-grid museo-grid--3">
             {items.map((e, i) => (
-            <MuseoCard
-              key={e.eventId || e.id || e.title}
-              variant="event"
-              animationDelay={i * 80}
-              onClick={() => navigate(`/event/${e.eventId || e.id}`)}
-            >
-              <MuseoMedia src={e.image} alt={e.title} />
-              <MuseoBadge>
-                Participants ({participantCounts[e.eventId || e.id] ?? 0})
-              </MuseoBadge>
-              <MuseoBody>
-                <MuseoTitle>{e.title}</MuseoTitle>
-                <MuseoDesc>
+              <div
+                key={e.eventId || e.id || e.title}
+                className="museo-event-card"
+                style={{ animationDelay: `${i * 0.02}s` }}
+                onClick={() => navigate(`/event/${e.eventId || e.id}`)}
+              >
+                <img className="museo-event-image" src={e.image} alt={e.title} />
+                {/* Event status indicator */}
+                <div className={`event-status ${
+                  (() => {
+                    const now = new Date();
+                    const startDate = new Date(e.startsAt);
+                    const endDate = new Date(e.endsAt);
+                    
+                    if (now < startDate) return 'event-status--upcoming';
+                    if (now >= startDate && now <= endDate) return 'event-status--happening';
+                    return 'event-status--ended';
+                  })()
+                }`}>
                   {(() => {
-                    const text = typeof e.details === 'string' ? e.details : '';
-                    const limit = 120; // Reduced for compact design
-                    if (text.length <= limit) return text;
-                    const clipped = text.slice(0, limit);
-                    const trimmed = clipped.replace(/\s+\S*$/, "");
-                    return trimmed + "...";
+                    const now = new Date();
+                    const startDate = new Date(e.startsAt);
+                    const endDate = new Date(e.endsAt);
+                    
+                    if (now < startDate) return 'Upcoming';
+                    if (now >= startDate && now <= endDate) return 'Live';
+                    return 'Ended';
                   })()}
-                </MuseoDesc>
-                <MuseoActions onClick={(ev) => ev.stopPropagation()}>
-                  <MuseoBtn onClick={() => openEvent(e)}>View More</MuseoBtn>
-                  {(role === 'admin' || role?.role === 'admin') && (
-                    <>
-                      <MuseoBtn variant="ghost" onClick={() => openEdit(e)}>Edit</MuseoBtn>
-                      <MuseoBtn variant="danger" onClick={() => askDelete(e)}>Delete</MuseoBtn>
-                    </>
-                  )}
-                </MuseoActions>
-              </MuseoBody>
-            </MuseoCard>
+                </div>
+
+                {/* Attendance badge */}
+                <div className="event-attendance-badge">
+                  {participantCounts[e.eventId || e.id] ?? 0} attending
+                </div>
+
+                <div className="museo-event-content">
+                  <h3 className="museo-title">{e.title}</h3>
+                  
+                  {/* Event metadata */}
+                  <div className="event-metadata">
+                    {e.startsAt && (
+                      <div className={`event-metadata-item ${
+                        new Date(e.startsAt).toDateString() === new Date().toDateString() ? 'urgent' : ''
+                      }`}>
+                        <span>📅</span>
+                        <span>{new Date(e.startsAt).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          year: new Date(e.startsAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                        })}</span>
+                      </div>
+                    )}
+                    {e.venue && (
+                      <div className="event-metadata-item">
+                        <span>📍</span>
+                        <span>{e.venue}</span>
+                      </div>
+                    )}
+                    {e.time && (
+                      <div className="event-metadata-item">
+                        <span>🕐</span>
+                        <span>{e.time}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="museo-desc">
+                    {(() => {
+                      const text = typeof e.details === 'string' ? e.details : '';
+                      const limit = 85; // Reduced for better layout
+                      if (text.length <= limit) return text;
+                      const clipped = text.slice(0, limit);
+                      const trimmed = clipped.replace(/\s+\S*$/, "");
+                      return trimmed + "...";
+                    })()}
+                  </p>
+                  <div 
+                    className="museo-actions" 
+                    onClick={(ev) => ev.stopPropagation()}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                      marginTop: 'auto',
+                      paddingTop: '12px',
+                      opacity: 0,
+                      transform: 'translateY(8px)',
+                      pointerEvents: 'none',
+                      transition: 'opacity 300ms ease, transform 300ms ease',
+                      alignSelf: 'stretch'
+                    }}
+                  >
+                    <button className="museo-btn museo-btn--primary" onClick={() => openEvent(e)}>View More</button>
+                    {(role === 'admin' || role?.role === 'admin') && (
+                      <>
+                        <button className="museo-btn museo-btn--secondary" onClick={() => openEdit(e)}>Edit</button>
+                        <button className="museo-btn museo-btn--error" onClick={() => askDelete(e)}>Delete</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             ))}
-          </MuseoGrid>
+          </div>
         )}
 
         <EventModal open={!!selected} event={selected} onClose={closeEventModal} />
@@ -359,7 +419,7 @@ export default function Event() {
           onConfirm={confirmDelete}
           onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
         />
-      </MuseoFeed>
-    </MuseoPage>
+      </div>
+    </div>
   );
 }

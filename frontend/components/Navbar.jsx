@@ -276,7 +276,7 @@ export default function Navbar({ role }) {
       {msgOpen && createPortal(
         (
           <div
-            className="evmOverlay"
+            className="museo-modal-overlay evmOverlay"
             style={{ zIndex: 3000 }}
             onMouseDown={(e) => {
               if (e.currentTarget === e.target) setMsgOpen(false);
@@ -287,7 +287,7 @@ export default function Navbar({ role }) {
               role="dialog"
               aria-modal="true"
               aria-label="Messages"
-              className="evmDialog"
+              className="museo-modal evmDialog"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
               style={{ width: 'clamp(820px, 92vw, 1100px)', maxHeight: '94vh' }}

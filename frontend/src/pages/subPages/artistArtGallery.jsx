@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ProfileModal from "./ProfileModal";
+import ArtistArtworkModal from "./ArtistArtworkModal";
 const API = import.meta.env.VITE_API_BASE;
 
 const ArtistArtGallery = ({
@@ -19,30 +19,32 @@ const ArtistArtGallery = ({
   currentUser = null,
   containerStyle = {}
 }) => {
-  const [activePost, setActivePost] = useState(null);
+  const [selectedArtwork, setSelectedArtwork] = useState(null);
+  const [isArtworkModalOpen, setIsArtworkModalOpen] = useState(false);
   const [likes, setLikes] = useState({});
   const [commenting, setCommenting] = useState({});
   const [comments, setComments] = useState({});
   const [liking, setLiking] = useState({});
 
   const handleArtClick = (art, index) => {
-    const postData = {
+    // Format artwork data for ArtistArtworkModal
+    const artworkData = {
       id: art.artId || art.id || `art-${index}`,
-      image: art.image || art.src || art.url,
-      title: art.title || art.description,
-      text: art.description || art.medium,
-      medium: art.medium || null,
-      timestamp:
-        art.timestamp ||
-        (art.datePosted ? new Date(art.datePosted).toLocaleString() : "Recently"),
-      user: art.user || {
-        name: art.artistName || currentUser?.name || "Artist",
-        avatar: art.artistAvatar || currentUser?.avatar || null,
-      },
-      avgBg: art.avgBg || "#f3f4f6",
+      title: art.title || art.description || `Artwork #${index + 1}`,
+      description: art.description || art.medium || "",
+      medium: art.medium || "Digital Art",
+      image: Array.isArray(art.image) ? art.image : [art.image || art.src || art.url],
+      categories: art.categories || [],
+      datePosted: art.datePosted || new Date().toISOString(),
+      userId: art.userId || currentUser?.id,
+      artist: art.artistName || currentUser?.name || "Artist",
+      artistProfilePicture: art.artistAvatar || currentUser?.avatar || null,
+      featured: art.featured || false,
+      views: art.views || 0
     };
 
-    setActivePost(postData);
+    setSelectedArtwork(artworkData);
+    setIsArtworkModalOpen(true);
     if (onArtClick) onArtClick(art, index);
   };
 
@@ -56,7 +58,29 @@ const ArtistArtGallery = ({
     if (fallbackImage) e.target.src = fallbackImage;
   };
 
-  const closeModal = () => setActivePost(null);
+  const closeModal = () => {
+    setSelectedArtwork(null);
+    setIsArtworkModalOpen(false);
+  };
+
+  const handleStatsUpdate = async (artworkId) => {
+    // Refresh like count for this artwork
+    try {
+      const res = await fetch(`${API}/profile/getReact`, {
+        method: "POST",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artId: artworkId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const exactCount = Array.isArray(data.reactions) ? data.reactions.length : 0;
+        setLikes((prev) => ({ ...prev, [artworkId]: exactCount }));
+      }
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+    }
+  };
 
   useEffect(() => {
     let abort = false;
@@ -109,19 +133,8 @@ const ArtistArtGallery = ({
         return { ...prev, [artId]: Math.max(0, next) };
       });
 
-      try {
-        const res2 = await fetch(`${API}/profile/getReact`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ artId }),
-        });
-        if (res2.ok) {
-          const d2 = await res2.json();
-          const exact = Array.isArray(d2.reactions) ? d2.reactions.length : 0;
-          setLikes((prev) => ({ ...prev, [artId]: exact }));
-        }
-      } catch {}
+      // Reconcile exact count from backend
+      await handleStatsUpdate(artId);
     } catch (err) {
       console.error(err);
     } finally {
@@ -143,6 +156,9 @@ const ArtistArtGallery = ({
       });
       if (!res.ok) throw new Error("Failed to comment");
       setComments((prev) => ({ ...prev, [artId]: (prev[artId] || 0) + 1 }));
+      
+      // Trigger stats update for the modal
+      await handleStatsUpdate(artId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -193,7 +209,7 @@ const ArtistArtGallery = ({
             >
               <div className="pArtImageWrapper">
                 <img
-                  src={art.image || art.src || art.url}
+                  src={Array.isArray(art.image) ? art.image[0] : (art.image || art.src || art.url)}
                   alt={art.description || art.title || art.alt || `Artwork ${index + 1}`}
                   className="pArtImage"
                   loading="lazy"
@@ -222,17 +238,29 @@ const ArtistArtGallery = ({
                           </button>
                         )}
                         {onLikeArt && (
-                          <button
-                            className="pArtBtn pArtBtn--like"
+                          <button 
+                            className={`museo-btn--pill ${likes[art.artId || art.id] > 0 ? 'liked' : ''}`}
                             onClick={(e) => handleLike(e, art.artId || art.id)}
                             disabled={!!liking[art.artId || art.id]}
+                            style={{ 
+                              opacity: liking[art.artId || art.id] ? 0.6 : 1,
+                              cursor: liking[art.artId || art.id] ? 'not-allowed' : 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!liking[art.artId || art.id]) {
+                                e.target.style.backgroundColor = '#eae3dc';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!liking[art.artId || art.id]) {
+                                e.target.style.backgroundColor = '';
+                              }
+                            }}
                           >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                            </svg>
-                            <span style={{ marginLeft: 6 }}>
-                              {likes[art.artId || art.id] || 0}
+                            <span className="like-icon">
+                              {likes[art.artId || art.id] > 0 ? '❤️' : '🤍'}
                             </span>
+                            <span className="like-count">{likes[art.artId || art.id] || 0}</span>
                           </button>
                         )}
                       </div>
@@ -252,14 +280,12 @@ const ArtistArtGallery = ({
         )
       )}
 
-      {activePost && (
-        <ProfileModal
-          post={activePost}
+      {selectedArtwork && isArtworkModalOpen && (
+        <ArtistArtworkModal
+          artwork={selectedArtwork}
+          isOpen={isArtworkModalOpen}
           onClose={closeModal}
-          onLike={handleLike}
-          onComment={handleComment}
-          likeCount={likes}
-          currentUser={currentUser}
+          onStatsUpdate={handleStatsUpdate}
         />
       )}
     </div>

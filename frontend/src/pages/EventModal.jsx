@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import ConfirmModal from "./ConfirmModal.jsx";
 
 import "./css/events.css";
-import "../components/MuseoGalleryContainer.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function EventModal({ open, event, onClose }) {
@@ -195,7 +194,7 @@ export default function EventModal({ open, event, onClose }) {
 
   return (
     <div
-      className="evmOverlay"
+      className="museo-modal-overlay evmOverlay"
       ref={overlayRef}
       onMouseDown={(e) => { if (e.target === overlayRef.current) onClose?.(); e.stopPropagation(); }}
       onClick={(e) => e.stopPropagation()}
@@ -204,7 +203,7 @@ export default function EventModal({ open, event, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label={event.title}
-        className="evmDialog"
+        className="museo-modal evmDialog"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
@@ -212,198 +211,230 @@ export default function EventModal({ open, event, onClose }) {
           ✕
         </button>
 
-        <div className="evmHeroWrap" style={{ position: 'relative' }}>
-          <img src={event.hero} alt="" className="evmHero" />
-          {/* Badges positioned at lower left above image */}
+        {/* Museum Exhibition Hero */}
+        <div style={{ 
+          position: 'relative',
+          background: 'linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%)',
+          borderBottom: '6px solid #8b6f47'
+        }}>
+          <img 
+            src={event.hero} 
+            alt="" 
+            style={{
+              width: '100%',
+              height: '320px',
+              objectFit: 'cover',
+              display: 'block',
+              transition: 'transform 0.3s ease'
+            }}
+          />
+          
+          {/* Museum overlay gradient */}
           <div style={{
             position: 'absolute',
-            bottom: '16px',
-            left: '16px',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, transparent 0%, rgba(139, 111, 71, 0.1) 70%, rgba(110, 74, 46, 0.4) 100%)',
+            pointerEvents: 'none'
+          }} />
+          
+          {/* Museum placard badges */}
+          <div style={{
+            position: 'absolute',
+            bottom: '24px',
+            left: '24px',
+            right: '24px',
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '8px',
-            zIndex: 2
+            gap: '12px',
+            zIndex: 3
           }}>
-            <span style={{
-              background: 'var(--museo-ivory)',
-              backdropFilter: 'blur(8px)',
-              border: '2px solid var(--museo-gold)',
-              borderRadius: '12px',
-              padding: '6px 12px',
-              boxShadow: '0 4px 12px rgba(212, 180, 138, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: 'var(--museo-charcoal)',
+            <div style={{
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+              backdropFilter: 'blur(16px)',
+              border: '3px solid #8b6f47',
+              borderRadius: '16px',
+              padding: '12px 20px',
+              boxShadow: '0 8px 24px rgba(110, 74, 46, 0.3), 0 4px 12px rgba(139, 111, 71, 0.2)',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#8b6f47',
+              fontFamily: 'Georgia, Times New Roman, serif',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px'
+              letterSpacing: '1px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
               🗓️ {fmt(event.start)}
-            </span>
+            </div>
             {event.venueName && (
-              <span style={{
-                background: 'var(--museo-ivory)',
-                backdropFilter: 'blur(8px)',
-                border: '2px solid var(--museo-gold)',
-                borderRadius: '12px',
-                padding: '6px 12px',
-                boxShadow: '0 4px 12px rgba(212, 180, 138, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)',
-                fontSize: '12px',
-                fontWeight: '700',
-                color: 'var(--museo-charcoal)',
+              <div style={{
+                background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                backdropFilter: 'blur(16px)',
+                border: '3px solid #8b6f47',
+                borderRadius: '16px',
+                padding: '12px 20px',
+                boxShadow: '0 8px 24px rgba(110, 74, 46, 0.3), 0 4px 12px rgba(139, 111, 71, 0.2)',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#8b6f47',
+                fontFamily: 'Georgia, Times New Roman, serif',
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px'
+                letterSpacing: '1px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}>
                 📍 {event.venueName}
-              </span>
+              </div>
             )}
           </div>
+          
+          {/* Decorative corner ornaments */}
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            width: '16px',
+            height: '16px',
+            background: 'radial-gradient(circle, #d4b48a 0%, #8b6f47 100%)',
+            borderRadius: '50%',
+            border: '3px solid #faf8f5',
+            boxShadow: '0 4px 12px rgba(110, 74, 46, 0.4)',
+            zIndex: 3
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            width: '16px',
+            height: '16px',
+            background: 'radial-gradient(circle, #d4b48a 0%, #8b6f47 100%)',
+            borderRadius: '50%',
+            border: '3px solid #faf8f5',
+            boxShadow: '0 4px 12px rgba(110, 74, 46, 0.4)',
+            zIndex: 3
+          }} />
         </div>
 
-        <div className="evmHeader" style={{
+        {/* Museum Exhibition Title Section */}
+        <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
-          padding: '16px 20px',
-          background: 'linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85))',
-          backdropFilter: 'blur(6px)',
-          borderBottom: '1px solid var(--museo-border)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 2
+          gap: '20px',
+          padding: '32px 40px 28px',
+          background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+          borderBottom: '4px solid #d4b48a',
+          position: 'relative'
         }}>
-          {/* Title - Single Line */}
+          {/* Decorative accent line */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-2px',
+            left: '32px',
+            right: '32px',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, #8b6f47, #d4b48a, #8b6f47, transparent)',
+            borderRadius: '1px'
+          }} />
+          
+          {/* Exhibition Title */}
           <h1 style={{
-            fontSize: 'clamp(20px, 2.8vw, 28px)',
-            fontWeight: '700',
-            color: 'var(--museo-charcoal)',
+            fontFamily: 'Georgia, Times New Roman, serif',
+            fontSize: 'clamp(28px, 4vw, 42px)',
+            fontWeight: '600',
+            color: '#8b6f47',
             margin: '0',
             lineHeight: '1.2',
-            letterSpacing: '-0.01em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            letterSpacing: '-0.02em',
+            textShadow: '0 2px 4px rgba(139, 111, 71, 0.1)',
+            textAlign: 'center'
           }}>
             {event.title}
           </h1>
           
-          {/* Buttons - Second Line */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-            justifyContent: isMobile ? 'center' : 'flex-start'
-          }}>
-            {(role === 'admin' || role?.role === 'admin') && (
-              <button
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: '2px solid var(--museo-border)',
-                  background: 'var(--museo-ivory)',
-                  color: 'var(--museo-charcoal)',
-                  fontWeight: '600',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  whiteSpace: 'nowrap',
-                  flex: isMobile ? '1 1 auto' : '0 0 auto'
-                }}
-                onClick={() => setParticipantsOpen(true)}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'var(--museo-cream)';
-                  e.target.style.borderColor = 'var(--museo-gold)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'var(--museo-ivory)';
-                  e.target.style.borderColor = 'var(--museo-border)';
-                }}
-              >
-                View Participants
-              </button>
-            )}
-            <button 
-              onClick={() => { if (!isEventPast) joinEvent(); }} 
-              disabled={isSubmitting || isEventPast} 
-              title={isEventPast ? 'This event has already passed' : undefined}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '2px solid var(--museo-gold-dark)',
-                background: 'linear-gradient(135deg, var(--museo-charcoal), var(--museo-navy))',
-                color: 'var(--museo-ivory)',
-                fontWeight: '600',
-                fontSize: '12px',
-                cursor: isSubmitting || isEventPast ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                opacity: isSubmitting || isEventPast ? 0.6 : 1,
-                whiteSpace: 'nowrap',
-                flex: isMobile ? '1 1 auto' : '0 0 auto'
-              }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting && !isEventPast) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 20px rgba(47, 47, 47, 0.25)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              {isEventPast
-                ? 'Event Ended'
-                : (isSubmitting ? (joined ? 'Cancelling…' : 'Joining…') : (joined ? 'Cancel' : 'Join Event'))}
-            </button>
-          </div>
         </div>
 
+        {/* Museum Exhibition Content */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '1.6fr 1fr',
-          gap: '20px',
-          padding: isMobile ? '16px' : '20px'
+          gap: '32px',
+          padding: isMobile ? '24px' : '40px',
+          background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'
         }}>
-          <div style={{ display: 'grid', gap: '20px' }}>
+          <div style={{ display: 'grid', gap: '28px' }}>
+            {/* Main Exhibition Description */}
             <section style={{
-              background: 'var(--museo-ivory)',
-              border: '2px solid var(--museo-border)',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 4px 12px var(--museo-shadow)'
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+              border: '4px solid #d4b48a',
+              borderRadius: '20px',
+              padding: '32px',
+              boxShadow: '0 8px 24px rgba(110, 74, 46, 0.15), 0 4px 12px rgba(139, 111, 71, 0.1)',
+              position: 'relative'
             }}>
+              {/* Inner frame detail */}
+              <div style={{
+                position: 'absolute',
+                top: '3px',
+                left: '3px',
+                right: '3px',
+                bottom: '3px',
+                border: '1px solid rgba(212, 180, 138, 0.4)',
+                borderRadius: '16px',
+                pointerEvents: 'none'
+              }} />
+              
               <p style={{
-                fontSize: '16px',
-                lineHeight: '1.6',
-                color: 'var(--museo-navy)',
-                margin: '0 0 16px'
+                fontSize: '18px',
+                lineHeight: '1.7',
+                color: '#6b5b47',
+                margin: '0 0 24px',
+                fontFamily: 'Georgia, Times New Roman, serif',
+                fontStyle: 'italic'
               }}>
                 {event.lead}
               </p>
 
               {event.activities?.length > 0 && (
-                <div style={{ marginTop: '20px' }}>
+                <div style={{ marginTop: '28px' }}>
                   <div style={{
+                    fontFamily: 'Georgia, Times New Roman, serif',
                     fontWeight: '700',
-                    color: 'var(--museo-charcoal)',
-                    fontSize: '18px',
-                    marginBottom: '12px'
+                    color: '#8b6f47',
+                    fontSize: '20px',
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    borderBottom: '2px solid #d4b48a',
+                    paddingBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
                   }}>
-                    🎨 Activities Include
+                    🎨 Exhibition Activities
                   </div>
                   <div style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: '8px'
+                    gap: '12px'
                   }}>
                     {event.activities.map((a, i) => (
                       <span key={i} style={{
-                        padding: '6px 12px',
-                        borderRadius: '12px',
-                        border: '2px solid var(--museo-border)',
-                        background: 'var(--museo-cream)',
-                        color: 'var(--museo-charcoal)',
-                        fontSize: '13px',
-                        fontWeight: '600'
+                        padding: '10px 16px',
+                        borderRadius: '16px',
+                        border: '2px solid #8b6f47',
+                        background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                        color: '#8b6f47',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        fontFamily: 'Georgia, Times New Roman, serif',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(110, 74, 46, 0.1)'
                       }}>
                         {a}
                       </span>
@@ -413,27 +444,41 @@ export default function EventModal({ open, event, onClose }) {
               )}
 
               {event.admission && (
-                <div style={{ marginTop: '20px' }}>
+                <div style={{ marginTop: '28px' }}>
                   <div style={{
+                    fontFamily: 'Georgia, Times New Roman, serif',
                     fontWeight: '700',
-                    color: 'var(--museo-charcoal)',
-                    fontSize: '18px',
-                    marginBottom: '8px'
+                    color: '#8b6f47',
+                    fontSize: '20px',
+                    marginBottom: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    borderBottom: '2px solid #d4b48a',
+                    paddingBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
                   }}>
-                    🎟️ Admission
+                    🎟️ Admission Details
                   </div>
                   <p style={{
-                    fontSize: '15px',
-                    color: 'var(--museo-navy)',
-                    margin: '0 0 8px'
+                    fontSize: '16px',
+                    color: '#6b5b47',
+                    margin: '0 0 12px',
+                    fontFamily: 'Georgia, Times New Roman, serif',
+                    fontStyle: 'italic',
+                    lineHeight: '1.6'
                   }}>
                     {event.admission}
                   </p>
                   {event.admissionNote && (
                     <p style={{
-                      fontSize: '15px',
-                      color: 'var(--museo-navy)',
-                      margin: '0'
+                      fontSize: '16px',
+                      color: '#6b5b47',
+                      margin: '0',
+                      fontFamily: 'Georgia, Times New Roman, serif',
+                      fontStyle: 'italic',
+                      lineHeight: '1.6'
                     }}>
                       {event.admissionNote}
                     </p>
@@ -443,27 +488,52 @@ export default function EventModal({ open, event, onClose }) {
             </section>
           </div>
 
-          <aside style={{ display: 'grid', gap: '20px', alignSelf: 'start' }}>
+          {/* Museum Information Sidebar */}
+          <aside style={{ display: 'grid', gap: '24px', alignSelf: 'start' }}>
+            {/* Venue Information */}
             <section style={{
-              background: 'var(--museo-ivory)',
-              border: '2px solid var(--museo-border)',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 4px 12px var(--museo-shadow)'
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+              border: '3px solid #d4b48a',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 6px 20px rgba(110, 74, 46, 0.12), 0 3px 10px rgba(139, 111, 71, 0.08)',
+              position: 'relative'
             }}>
+              {/* Inner frame detail */}
               <div style={{
+                position: 'absolute',
+                top: '2px',
+                left: '2px',
+                right: '2px',
+                bottom: '2px',
+                border: '1px solid rgba(212, 180, 138, 0.4)',
+                borderRadius: '16px',
+                pointerEvents: 'none'
+              }} />
+              
+              <div style={{
+                fontFamily: 'Georgia, Times New Roman, serif',
                 fontWeight: '700',
-                color: 'var(--museo-charcoal)',
+                color: '#8b6f47',
                 fontSize: '18px',
-                marginBottom: '12px'
+                marginBottom: '16px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                borderBottom: '2px solid #d4b48a',
+                paddingBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                📍 Venue
+                📍 Exhibition Venue
               </div>
               <p style={{
-                fontSize: '15px',
-                color: 'var(--museo-navy)',
+                fontSize: '16px',
+                color: '#6b5b47',
                 margin: '0',
-                lineHeight: '1.5'
+                lineHeight: '1.6',
+                fontFamily: 'Georgia, Times New Roman, serif',
+                fontStyle: 'italic'
               }}>
                 {event.venueName}
                 <br />
@@ -471,38 +541,154 @@ export default function EventModal({ open, event, onClose }) {
               </p>
             </section>
 
+            {/* Date & Time Information */}
             <section style={{
-              background: 'var(--museo-ivory)',
-              border: '2px solid var(--museo-border)',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 4px 12px var(--museo-shadow)'
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+              border: '3px solid #d4b48a',
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 6px 20px rgba(110, 74, 46, 0.12), 0 3px 10px rgba(139, 111, 71, 0.08)',
+              position: 'relative'
             }}>
+              {/* Inner frame detail */}
               <div style={{
+                position: 'absolute',
+                top: '2px',
+                left: '2px',
+                right: '2px',
+                bottom: '2px',
+                border: '1px solid rgba(212, 180, 138, 0.4)',
+                borderRadius: '16px',
+                pointerEvents: 'none'
+              }} />
+              
+              <div style={{
+                fontFamily: 'Georgia, Times New Roman, serif',
                 fontWeight: '700',
-                color: 'var(--museo-charcoal)',
+                color: '#8b6f47',
                 fontSize: '18px',
-                marginBottom: '12px'
+                marginBottom: '16px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                borderBottom: '2px solid #d4b48a',
+                paddingBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                🗓️ Date & Time
+                🗓️ Exhibition Schedule
               </div>
               <p style={{
-                fontSize: '15px',
-                color: 'var(--museo-navy)',
-                margin: '0 0 8px',
-                lineHeight: '1.5'
+                fontSize: '16px',
+                color: '#6b5b47',
+                margin: '0 0 12px',
+                lineHeight: '1.6',
+                fontFamily: 'Georgia, Times New Roman, serif',
+                fontStyle: 'italic'
               }}>
-                <strong>Start:</strong> {fmt(event.start)}
+                <strong style={{ color: '#8b6f47', fontStyle: 'normal' }}>Opening:</strong> {fmt(event.start)}
               </p>
               <p style={{
-                fontSize: '15px',
-                color: 'var(--museo-navy)',
+                fontSize: '16px',
+                color: '#6b5b47',
                 margin: '0',
-                lineHeight: '1.5'
+                lineHeight: '1.6',
+                fontFamily: 'Georgia, Times New Roman, serif',
+                fontStyle: 'italic'
               }}>
-                <strong>End:</strong> {fmt(event.end)}
+                <strong style={{ color: '#8b6f47', fontStyle: 'normal' }}>Closing:</strong> {fmt(event.end)}
               </p>
             </section>
+
+            {/* Museum Action Buttons - Horizontal Layout */}
+            <div style={{
+              display: 'grid',
+              gap: '12px'
+            }}>
+              {/* Join Event Button */}
+              <button 
+                onClick={() => { if (!isEventPast) joinEvent(); }} 
+                disabled={isSubmitting || isEventPast} 
+                title={isEventPast ? 'This event has already passed' : undefined}
+                style={{
+                  padding: '14px 20px',
+                  borderRadius: '16px',
+                  border: '3px solid #8b6f47',
+                  background: isEventPast ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : 
+                             joined ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' :
+                             'linear-gradient(135deg, #8b6f47 0%, #6b5b47 100%)',
+                  color: '#ffffff',
+                  fontFamily: 'Georgia, Times New Roman, serif',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: isSubmitting || isEventPast ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  opacity: isSubmitting || isEventPast ? 0.7 : 1,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                  boxShadow: '0 4px 16px rgba(110, 74, 46, 0.2), 0 2px 8px rgba(139, 111, 71, 0.1)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSubmitting && !isEventPast) {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 8px 24px rgba(110, 74, 46, 0.3), 0 4px 12px rgba(139, 111, 71, 0.15)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 16px rgba(110, 74, 46, 0.2), 0 2px 8px rgba(139, 111, 71, 0.1)';
+                }}
+              >
+                {isEventPast
+                  ? 'Event Ended'
+                  : (isSubmitting ? (joined ? 'Cancelling…' : 'Joining…') : (joined ? 'Cancel' : 'Join Event'))}
+              </button>
+
+              {/* View Participants Button */}
+              {(role === 'admin' || role?.role === 'admin') && (
+                <button
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: '2px solid #8b6f47',
+                    background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                    color: '#8b6f47',
+                    fontFamily: 'Georgia, Times New Roman, serif',
+                    fontWeight: '600',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 2px 8px rgba(110, 74, 46, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onClick={() => setParticipantsOpen(true)}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)';
+                    e.target.style.borderColor = '#d4b48a';
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)';
+                    e.target.style.borderColor = '#8b6f47';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.1)';
+                  }}
+                >
+                  View Participants
+                </button>
+              )}
+            </div>
           </aside>
         </div>
       </article>

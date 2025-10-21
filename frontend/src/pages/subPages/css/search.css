@@ -8,7 +8,7 @@
 /* Page + centered container matching GalleryAll’s .ga */
 .searchPage {
   min-height: 100vh;
-  background: #f4f6f8;
+  background: var(--museo-bg-primary);
   display: flex;
   justify-content: center;
 }
@@ -40,9 +40,9 @@
 
 .sHero__bg {
   background:
-    radial-gradient(900px 400px at -10% -20%, #dbeafe 0%, transparent 60%),
-    radial-gradient(900px 400px at 110% 120%, #fde68a 0%, transparent 55%),
-    linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    radial-gradient(900px 400px at -10% -20%, var(--museo-primary-light) 0%, transparent 60%),
+    radial-gradient(900px 400px at 110% 120%, var(--museo-accent-light) 0%, transparent 55%),
+    linear-gradient(180deg, var(--museo-primary-dark) 0%, var(--museo-text-primary) 100%);
   filter: saturate(1.03);
 }
 .sHero__overlay {
@@ -55,19 +55,19 @@
   display: grid;
   gap: 8px;
   padding: clamp(12px, 2vw, 16px) clamp(14px, 2.4vw, 20px);
-  color: #fff;
+  color: var(--museo-white);
 }
 .sHero__title {
   margin: 0;
   font-weight: 900;
   line-height: 1.25;
   font-size: clamp(18px, 3.4vw, 28px);
-  color: #e5e7eb;
+  color: var(--museo-text-inverse);
   text-shadow: 0 1px 1px rgba(0,0,0,.25);
 }
 .sHero__subtitle {
   margin: 0;
-  color: #e5e7eb;
+  color: var(--museo-text-inverse);
   font-size: clamp(12px, 2.2vw, 14px);
 }
 .sHero__controls {
@@ -105,9 +105,9 @@
   padding: 8px 12px 0; /* aligns with container padding */
 }
 .sSummary__left { display: flex; gap: 8px; align-items: baseline; }
-.sCount { font-weight: 900; color: #111; }
-.sLabel { color: #6b7280; font-weight: 700; }
-.sQuery { color: #374151; }
+.sCount { font-weight: 900; color: var(--museo-text-primary); }
+.sLabel { color: var(--museo-text-muted); font-weight: 700; }
+.sQuery { color: var(--museo-text-secondary); }
 
 /* Grid */
 .sGrid {
@@ -128,7 +128,7 @@
 }
 .sThumb {
   aspect-ratio: 16 / 10;
-  background: #f2f4f7;
+  background: var(--museo-bg-secondary);
 }
 .sThumb img {
   width: 100%;
@@ -140,14 +140,14 @@
   gap: 2px;
   padding: 10px 12px 12px;
 }
-.sTitle { font-weight: 800; color: #111; }
-.sAuthor { font-size: 13px; color: #374151; }
-.sTag { font-size: 12px; color: #6b7280; font-weight: 700; }
+.sTitle { font-weight: 800; color: var(--museo-text-primary); }
+.sAuthor { font-size: 13px; color: var(--museo-text-secondary); }
+.sTag { font-size: 12px; color: var(--museo-text-muted); font-weight: 700; }
 
 .sEmpty {
   grid-column: 1 / -1;
   text-align: center;
-  color: #6b7280;
+  color: var(--museo-text-muted);
   padding: 20px 0 28px;
 }
 

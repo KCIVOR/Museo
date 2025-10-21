@@ -21,49 +21,69 @@ export const getProfile = async (req, res) => {
 };
 
 // POST /api/profile/uploadArt
-// Accepts multipart/form-data with file field: image; text: title, description, medium
+// Accepts multipart/form-data with files field: images; text: title, description, medium, categories
 export const uploadArt = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    const f = req.file;
-    const { title = "", description = "", medium = "" } = req.body || {};
-    if (!f) return res.status(400).json({ error: "image is required" });
+    const files = req.files || [];
+    const { title = "", description = "", medium = "", categories = "[]" } = req.body || {};
+    if (files.length === 0) return res.status(400).json({ error: "At least one image is required" });
 
     const userId = req.user.id;
     const svc = serviceClient();
 
-    const safeName = f.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
-    const fileName = `${Date.now()}-${safeName}`;
-    const filePath = `pics/${userId}/${fileName}`;
+    // Parse categories
+    let parsedCategories;
+    try {
+      parsedCategories = JSON.parse(categories);
+    } catch (error) {
+      parsedCategories = ["Digital Art"]; // Default fallback
+    }
 
-    const { data: up, error: upErr } = await svc.storage
-      .from("uploads")
-      .upload(filePath, f.buffer, { contentType: f.mimetype, upsert: false });
-    if (upErr) return res.status(500).json({ error: upErr.message });
+    // Upload all images to Supabase storage
+    const uploadedUrls = [];
+    
+    for (const file of files) {
+      const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+      const fileName = `${Date.now()}-${Math.random()}-${safeName}`;
+      const filePath = `pics/${userId}/${fileName}`;
 
-    const pub = svc.storage.from("uploads").getPublicUrl(up.path);
-    const imageUrl = pub?.data?.publicUrl;
+      const { data: up, error: upErr } = await svc.storage
+        .from("uploads")
+        .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: false });
+      if (upErr) return res.status(500).json({ error: upErr.message });
 
+      const pub = svc.storage.from("uploads").getPublicUrl(up.path);
+      const imageUrl = pub?.data?.publicUrl;
+      
+      if (imageUrl) {
+        uploadedUrls.push(imageUrl);
+      }
+    }
+
+    // Use art table with correct schema (no categories field)
+    const artworkData = {
+      title: title.trim(),
+      description: description.trim(),
+      medium: medium.trim(),
+      userId: userId,
+      image: uploadedUrls, // JSONB array for multiple images
+      datePosted: new Date().toISOString(),
+    };
+
+    console.log('Inserting profile artwork data:', artworkData);
+    
     const { data: inserted, error: insertErr } = await supabase
       .from("art")
-      .insert([
-        {
-          userId,
-          title,
-          description,
-          medium,
-          image: imageUrl,
-          datePosted: new Date().toISOString(),
-        },
-      ])
+      .insert(artworkData)
       .select()
       .single();
 
     if (insertErr) return res.status(500).json({ error: insertErr.message });
-    return res.status(201).json({ message: "Art uploaded", art: inserted });
+    return res.status(201).json({ message: "Art uploaded", artwork: inserted });
   } catch (err) {
     console.error("uploadArt error:", err);
     return res.status(500).json({ error: err.message });
@@ -305,11 +325,14 @@ export const saveArtPreferences = async (req, res) => {
     } = req.body;
 
     // First, check if art preferences record exists
-    const { data: existingPrefs, error: checkError } = await supabase
+    const { data: existingPrefsArray, error: checkError } = await supabase
       .from("artPreference")
-      .select("artPreference")
+      .select("*")
       .eq("userId", userId)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
+      
+    const existingPrefs = existingPrefsArray && existingPrefsArray.length > 0 ? existingPrefsArray[0] : null;
 
     if (checkError) {
       console.error("Error checking existing art preferences:", checkError);
@@ -338,7 +361,8 @@ export const saveArtPreferences = async (req, res) => {
 
     let result;
     if (existingPrefs) {
-      // Update existing preferences
+      // Update ALL existing preferences for this user (handles duplicates)
+      console.log(`Updating art preferences for user ${userId}`);
       const { data, error } = await supabase
         .from("artPreference")
         .update(preferencesData)
@@ -349,9 +373,16 @@ export const saveArtPreferences = async (req, res) => {
         console.error("Error updating art preferences:", error);
         return res.status(500).json({ error: error.message });
       }
+      
+      // Log if multiple records were updated
+      if (data && data.length > 1) {
+        console.warn(`⚠️  Updated ${data.length} duplicate art preference records for user ${userId}`);
+      }
+      
       result = data;
     } else {
       // Insert new preferences
+      console.log(`Creating new art preferences for user ${userId}`);
       const { data, error } = await supabase
         .from("artPreference")
         .insert([preferencesData])
@@ -393,7 +424,7 @@ export const getArts = async (req, res) =>{
   try{
     const userId = req.user.id;
 
-    // Fetch this user's arts (profile page scope)
+    // Fetch this user's arts from art table
     const { data: arts, error } = await supabase
       .from("art")
       .select("*")
@@ -440,7 +471,7 @@ export const getArts = async (req, res) =>{
     }
 
     const formattedArts = (arts || []).map(art => ({
-      artId: art.artId,
+      artId: art.artId, // art table uses artId
       user: userMap.get(art.userId) || {
         id: art.userId,
         name: 'Anonymous',
@@ -449,7 +480,7 @@ export const getArts = async (req, res) =>{
       title: art.title || null,
       description: art.description || null,
       medium: art.medium || null,
-      image: art.image,
+      image: art.image, // JSONB array of images
       datePosted: art.datePosted,
       timestamp: art.datePosted ? new Date(art.datePosted).toLocaleString() : null,
     }));
@@ -639,6 +670,144 @@ export const createReact = async (req, res) => {
     });
   } catch (err) {
     console.error("createReact error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// GET user profile by userId (for artwork modal artist info)
+export const getUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    const { data: profile, error } = await supabase
+      .from("profile")
+      .select("userId, firstName, middleName, lastName, profilePicture")
+      .eq("userId", userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No profile found
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ profile });
+  } catch (error) {
+    console.error("getUserProfile error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Track artwork view for artist artworks
+export const trackView = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { artId } = req.body;
+    if (!artId) {
+      return res.status(400).json({ error: "artId is required" });
+    }
+
+    // Use SERVICE_KEY client for database access
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    const userId = req.user.id;
+
+    // Get current artwork views from art table
+    const { data: artwork, error: fetchError } = await supabaseClient
+      .from('art')
+      .select('views')
+      .eq('artId', artId)
+      .single();
+
+    if (fetchError) {
+      console.error("trackView - fetch error:", fetchError);
+      return res.status(500).json({ error: fetchError.message });
+    }
+
+    // Parse existing views (JSONB array of user IDs)
+    let currentViews = artwork.views || [];
+    
+    // Check if user has already viewed this artwork
+    if (currentViews.includes(userId)) {
+      // User already viewed, just return current count
+      return res.status(200).json({ 
+        message: "Already viewed",
+        viewCount: currentViews.length,
+        alreadyViewed: true
+      });
+    }
+
+    // Add user to views array
+    const updatedViews = [...currentViews, userId];
+
+    // Update artwork with new views
+    const { error: updateError } = await supabaseClient
+      .from('art')
+      .update({ views: updatedViews })
+      .eq('artId', artId);
+
+    if (updateError) {
+      console.error("trackView - update error:", updateError);
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    console.log(`📊 View tracked for artist artwork ${artId}: ${updatedViews.length} total views`);
+
+    return res.status(200).json({
+      message: "View tracked successfully",
+      viewCount: updatedViews.length,
+      alreadyViewed: false
+    });
+
+  } catch (err) {
+    console.error("trackView error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// Get artwork view count for artist artworks
+export const getViews = async (req, res) => {
+  try {
+    const { artId } = req.body;
+    
+    if (!artId) {
+      return res.status(400).json({ error: "artId is required" });
+    }
+
+    // Use SERVICE_KEY client for database access
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    const { data: artwork, error } = await supabaseClient
+      .from('art')
+      .select('views')
+      .eq('artId', artId)
+      .single();
+
+    if (error) {
+      console.error("getViews error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    const viewCount = artwork.views ? artwork.views.length : 0;
+
+    return res.status(200).json({ viewCount });
+  } catch (err) {
+    console.error("getViews error:", err);
     return res.status(500).json({ error: err.message });
   }
 };

@@ -29,17 +29,17 @@
 /* Card */
 .raCard {
   width: min(820px, 96vw);
-  background: #fff;
+  background: var(--museo-white);
   border-radius: 16px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 40px var(--museo-shadow-light);
   overflow: hidden;
   animation: fadeIn 0.3s ease;
 }
 
 /* Header */
 .raHead {
-  background: #1d4ed8;
-  color: #fff;
+  background: var(--museo-primary);
+  color: var(--museo-white);
   padding: 16px 20px;
   text-align: center;
 }
@@ -61,7 +61,7 @@
 /* Labels align to the right for neat column */
 .raLabel {
   font-weight: 800;
-  color: #111;
+  color: var(--museo-text-primary);
   font-size: 14px;
   line-height: 1.2;
   justify-self: end;
@@ -74,26 +74,26 @@
 .raForm textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--museo-border);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 15px;
-  background: #fff;
+  background: var(--museo-white);
   transition: border .2s, box-shadow .2s;
 }
 .raInput--error,
 .raForm select.raInput--error,
 .raForm textarea.raInput--error {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  border-color: var(--museo-error);
+  box-shadow: 0 0 0 3px var(--museo-error-bg);
 }
 .raForm textarea { min-height: 96px; resize: vertical; }
-.raInput::placeholder { color: #9ca3af; }
+.raInput::placeholder { color: var(--museo-text-muted); }
 .raInput:focus,
 .raForm select:focus,
 .raForm textarea:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  border-color: var(--museo-primary);
+  box-shadow: 0 0 0 3px var(--museo-shadow-light);
   outline: none;
 }
 
@@ -103,7 +103,7 @@
   margin-top: -8px;
   margin-bottom: 6px;
   font-size: 12px;
-  color: #b91c1c;
+  color: var(--museo-error);
 }
 
 /* Age + Sex pair sits inside the FIELD column */
@@ -120,16 +120,16 @@
 .raCol label {
   font-weight: 600;
   font-size: 13px;
-  color: #333;
+  color: var(--museo-text-secondary);
   margin-bottom: 4px;
   justify-self: start;
 }
 
 /* Dropzone appears after its label (label in col 1, zone in col 2) */
 .raDrop {
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--museo-border);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
   display: grid;
   place-items: center;
   min-height: 220px;
@@ -138,13 +138,13 @@
   transition: background .2s, border-color .2s, transform .08s ease-in-out;
   text-align: center;
 }
-.raDrop:hover { background: #f3f6fb; border-color: #93c5fd; }
+.raDrop:hover { background: var(--museo-bg-hover); border-color: var(--museo-border-hover); }
 .raDrop:active { transform: scale(0.995); }
-.raDrop--active { background: #eef6ff; border-color: #60a5fa; }
-.raDropInner { display: grid; place-items: center; gap: 6px; color: #6b7280; }
+.raDrop--active { background: var(--museo-bg-secondary); border-color: var(--museo-primary); }
+.raDropInner { display: grid; place-items: center; gap: 6px; color: var(--museo-text-muted); }
 .raCloud { font-size: 28px; }
-.raDropText { font-weight: 700; color: #111; }
-.raDropHint { font-size: 13px; color: #6b7280; }
+.raDropText { font-weight: 700; color: var(--museo-text-primary); }
+.raDropHint { font-size: 13px; color: var(--museo-text-muted); }
 
 .raDrop--has { padding: 8px; align-items: stretch; }
 .raPreview {
@@ -178,15 +178,15 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.9);
-  color: #111;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-white);
+  color: var(--museo-text-primary);
   cursor: pointer;
   font-weight: 700;
   line-height: 1;
   transition: background .15s, transform .08s;
 }
-.raRemoveBtn:hover { background: #fff; }
+.raRemoveBtn:hover { background: var(--museo-bg-hover); }
 .raRemoveBtn:active { transform: scale(0.96); }
 
 /* Actions span both columns and are centered */
@@ -200,16 +200,16 @@
 .raBtn {
   padding: 11px 20px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  border: 1px solid var(--museo-border);
+  background: var(--museo-white);
   font-weight: 700;
   cursor: pointer;
   transition: background .2s, transform .1s;
 }
-.raBtn:hover { background: #f3f4f6; }
+.raBtn:hover { background: var(--museo-bg-hover); }
 .raBtn:active { transform: scale(0.98); }
-.raBtn--primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-.raBtn--primary:hover { background: #1e4ed8; }
+.raBtn--primary { background: var(--museo-primary); color: var(--museo-white); border-color: var(--museo-primary); }
+.raBtn--primary:hover { background: var(--museo-primary-dark); }
 
 /* Responsive: stack labels above fields */
 @media (max-width: 768px) {

@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
-import "./css/artist.css";
+import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
+import MuseoEmptyState from "../components/MuseoEmptyState.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Artist() {
@@ -53,10 +53,12 @@ export default function Artist() {
   }, []);
 
   return (
-    <div className="artistPage">
-      <div className="artistFeed">
+    <div className="museo-page">
+      <div className="museo-feed">
         {/* Gallery Header */}
-        <h1>Artists</h1>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 className="museo-heading">Artists</h1>
+        </div>
         
         {/* Loading / error states */}
         <MuseoLoadingBox 
@@ -64,51 +66,48 @@ export default function Artist() {
           message={MuseoLoadingBox.messages.artists} 
         />
         {errMsg && !loading && (
-          <div className="artistGridMessage">
+          <div className="museo-message">
             Unable to load artist gallery
             <br />
             <small style={{ opacity: 0.7, fontSize: '14px' }}>{errMsg}</small>
             <br />
-            <button className="artistRetryBtn" onClick={fetchArtist}>Retry</button>
+            <button className="museo-retry-btn" onClick={fetchArtist}>Retry</button>
           </div>
         )}
 
-        {!loading && !errMsg && (
-          <div className="artistGrid">
+        {/* Empty State */}
+        {!loading && !errMsg && artists.length === 0 && (
+          <MuseoEmptyState {...MuseoEmptyState.presets.artists} />
+        )}
+
+        {/* Artists Grid */}
+        {!loading && !errMsg && artists.length > 0 && (
+          <div className="museo-grid museo-grid--3">
             {artists.map((a, i) => (
               <div
                 key={a.id}
-                className="artistCard"
+                className="museo-card museo-card--artist"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
-                <Link
+                <NavLink
                   to={`/artist/${a.id}`}
-                  className="artistCard__link"
                   style={{ display: "block", textDecoration: "none", color: "inherit" }}
                 >
                   <img
+                    className="museo-avatar"
                     src={a.hero}
                     alt={a.name}
-                    className="artistAvatar"
                     referrerPolicy="no-referrer"
                     onError={(e) => { e.currentTarget.src = "/assets/artist-placeholder.jpg"; }}
                   />
-                  <div className="artistName">{a.name}</div>
-                </Link>
+                  <h3 className="museo-title museo-title--artist">{a.name}</h3>
+                </NavLink>
               </div>
             ))}
-            {artists.length === 0 && (
-              <div className="artistGridMessage">
-                No artists in our gallery yet.
-                <br />
-                <small style={{ opacity: 0.7, fontSize: '14px', marginTop: '8px', display: 'block' }}>
-                  Check back soon for featured artists and their collections.
-                </small>
-              </div>
-            )}
           </div>
         )}
       </div>
     </div>
   );
 }
+
