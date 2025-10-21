@@ -1226,3 +1226,191 @@ export const calculateTopArtsWeekly = async () => {
     console.error('❌ Error in calculateTopArtsWeekly:', error);
   }
 };
+
+
+const getCurrentTopArts = async (req, res) => {
+  try {
+    // Use SERVICE_KEY client for database access
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+    
+    // Get start of current week (Sunday to Saturday - same as generateWeeklyTopArts)
+    const now = new Date();
+    const phTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
+    
+    // Calculate current week (Sunday to Saturday)
+    const weekStart = new Date(phTime);
+    weekStart.setDate(phTime.getDate() - phTime.getDay()); // Go to Sunday
+    weekStart.setHours(0, 0, 0, 0);
+
+    // Query topArtsWeekly data for current week
+    
+    const { data: topArts, error } = await supabase
+      .from('topArtsWeekly')
+      .select('*')  // ← Just get topArtsWeekly data
+      .eq('weekStartDate', weekStart.toISOString())
+      .order('rank_position', { ascending: true });
+
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      topArts: topArts || [],
+      weekStart: weekStart.toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error in getCurrentTopArts:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch top arts',
+      error: error.message
+    });
+  }
+};
+
+
+
+const generateWeeklyTopArts = async () => {
+  try {
+    console.log('🎯 Starting weekly top arts generation...');
+    
+    // Use SERVICE_KEY client for database access
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+    
+    // Get Philippine timezone date (same as your logic)
+    const now = new Date();
+    const phTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
+    
+    // Calculate current week (Sunday to Saturday)
+    const weekStart = new Date(phTime);
+    weekStart.setDate(phTime.getDate() - phTime.getDay()); // Go to Sunday
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Saturday
+    weekEnd.setHours(23, 59, 59, 999);
+
+    console.log(`📅 Calculating top arts for week: ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
+
+    // Check if top arts already exist for this week
+    const { data: existing } = await supabase
+      .from('topArtsWeekly')
+      .select('topArtsWeeklyId')
+      .eq('weekStartDate', weekStart.toISOString())
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log('✅ Top arts already exist for this week');
+      return;
+    }
+
+    // Get ALL artworks (same as your logic)
+    const { data: artworks, error: artworksError } = await supabase
+      .from('galleryart')
+      .select(`
+        galleryArtId,
+        title,
+        image,
+        userId,
+        datePosted,
+        views
+      `);
+
+    if (artworksError) {
+      console.error('❌ Error fetching artworks:', artworksError);
+      return;
+    }
+
+    console.log(`📊 Analyzing ${artworks?.length || 0} total artworks for weekly engagement`);
+
+    if (!artworks || artworks.length === 0) {
+      console.log('ℹ️ No artworks found');
+      return;
+    }
+
+    // Get recent winners (4-week cooldown)
+    const fourWeeksAgo = new Date(weekStart.getTime() - 4 * 7 * 24 * 60 * 60 * 1000); // 4 weeks * 7 days * 24 hours * 60 minutes * 60 seconds * 1000ms
+    const { data: recentWinners } = await supabase
+      .from('topArtsWeekly')
+      .select('galleryArtId')
+      .gte('weekStartDate', fourWeeksAgo.toISOString());
+
+    const recentWinnerIds = new Set(recentWinners?.map(w => w.galleryArtId) || []);
+
+    // Filter out recent winners
+    const eligibleArtworks = artworks.filter(art => !recentWinnerIds.has(art.galleryartid));
+
+    // Calculate engagement scores for all eligible artworks (same logic as your featured art system)
+    const scoredArtworks = await Promise.all(
+      eligibleArtworks.map(async (artwork) => {
+        const engagementScore = await calculateEngagementScore(artwork, supabase);
+        return {
+          ...artwork,
+          engagementScore
+        };
+      })
+    );
+
+    // Sort by engagement score (highest first) and take top 6
+    const topArtworks = scoredArtworks
+      .sort((a, b) => b.engagementScore - a.engagementScore)
+      .slice(0, 6);
+
+    console.log('🏆 Top 6 artworks by engagement this week:', topArtworks.map(art => ({
+      title: art.title,
+      score: art.engagementScore
+    })));
+
+    if (topArtworks.length === 0) {
+      console.log('⚠️ No eligible artworks found for this week');
+      return;
+    }
+
+    // Prepare data for topArtsWeekly table
+    const topArtsData = topArtworks.map((artwork, index) => ({
+      galleryArtId: artwork.galleryArtId,
+      weekStartDate: weekStart.toISOString(),
+      weekEndDate: weekEnd.toISOString(),
+      rank_position: index + 1,
+      engagementScore: artwork.engagementScore,
+      viewsCount: Array.isArray(artwork.views) ? artwork.views.length : 0,
+      likesCount: 0, // Will be calculated by calculateEngagementScore
+      commentCount: 0, // Will be calculated by calculateEngagementScore
+      createdAt: new Date().toISOString()
+    }));
+
+
+    // Insert top arts into topArtsWeekly table
+    const { data: insertedArts, error: insertError } = await supabase
+      .from('topArtsWeekly')
+      .insert(topArtsData);
+
+    if (insertError) throw insertError;
+
+    // Log results (same format as your existing function)
+    for (const [index, artwork] of topArtworks.entries()) {
+      console.log(`🌟 #${index + 1} Top Art: "${artwork.title}" (${artwork.engagementScore} points)`);
+    }
+
+    console.log(`✅ Generated ${topArtworks.length} top arts for week starting ${weekStart.toISOString()}`);
+    
+  } catch (error) {
+    console.error('❌ Error generating weekly top arts:', error);
+  }
+};
+
+// Export the new functions
+export { getCurrentTopArts, generateWeeklyTopArts };

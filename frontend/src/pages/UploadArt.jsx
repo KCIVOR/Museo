@@ -151,8 +151,8 @@ export default function UploadArt({ open, onClose, onUploaded }) {
         {/* Header */}
         <header className="uam-header">
           <div className="uam-header-content">
-            <h3 className="uam-title">Share Your Artwork</h3>
-            <p className="uam-subtitle">Add your creation to the Museo gallery</p>
+            <h3 className="uam-title">Upload Your Artwork</h3>
+            <p className="uam-subtitle">Add your creation to your profile</p>
           </div>
           <button className="uam-close" onClick={onClose}>
             ✕

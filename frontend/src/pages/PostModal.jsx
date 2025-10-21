@@ -12,6 +12,7 @@ export default function PostModal({
   onLike,
   onComment,
   likeCount,
+  likedPosts, // liked posts from homepage
   currentUser // signed-in user's {name, avatar} (optional)
 }) {
   const dialogRef = useRef(null);
@@ -24,8 +25,8 @@ export default function PostModal({
   const [me, setMe] = useState(null); // {name, avatar} from profile
   
   // Like state
-  const [isLiked, setIsLiked] = useState(false);
-  const [localLikeCount, setLocalLikeCount] = useState(Number(likeCount) || 0);
+  const [isLiked, setIsLiked] = useState(likedPosts?.[post.id] || false);
+  const [localLikeCount, setLocalLikeCount] = useState(likeCount?.[post.id] || 0);
   const [isLiking, setIsLiking] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,6 +34,12 @@ export default function PostModal({
   const [showFullscreen, setShowFullscreen] = useState(false);
 
   const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
+
+  // Update local like count and liked state when homepage data changes
+  useEffect(() => {
+    setLocalLikeCount(likeCount?.[post.id] || 0);
+    setIsLiked(likedPosts?.[post.id] || false);
+  }, [likeCount, likedPosts, post.id]);
 
   // Load current user's profile for optimistic UI when currentUser prop isn't passed
   useEffect(() => {
@@ -158,8 +165,8 @@ export default function PostModal({
       await onLike(post.id);
     } catch (error) {
       // Revert on error
-      setIsLiked(isLiked);
-      setLocalLikeCount(Number(likeCount) || 0);
+      setIsLiked(likedPosts?.[post.id] || false);
+      setLocalLikeCount(likeCount?.[post.id] || 0);
       console.error('Failed to like post:', error);
     } finally {
       setIsLiking(false);

@@ -5,6 +5,47 @@
   justify-content: center;
 }
 
+/* Museo Button Pill Style for Like/Comment buttons */
+.museo-btn--pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(107, 66, 38, 0.2);
+  border-radius: 50px;
+  color: #6b4226;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  min-width: 80px;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.museo-btn--pill:hover {
+  background: rgba(107, 66, 38, 0.1);
+  border-color: #6b4226;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.2);
+}
+
+.museo-btn--pill.liked {
+  background: rgba(220, 38, 127, 0.1);
+  border-color: #dc267f;
+  color: #dc267f;
+}
+
+.like-icon {
+  font-size: 1rem;
+}
+
+.like-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 /* Make feed narrower on desktop to read smaller */
 :root {
   --feed-max: 880px;

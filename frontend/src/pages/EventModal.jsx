@@ -695,29 +695,146 @@ export default function EventModal({ open, event, onClose }) {
 
       {participantsOpen && (
         <div
-          className="evmOverlay"
+          className="museo-modal-overlay evmOverlay"
           onMouseDown={(e) => { if (e.currentTarget === e.target) setParticipantsOpen(false); e.stopPropagation(); }}
           onClick={(e) => e.stopPropagation()}
-          style={{ background: 'rgba(0,0,0,0.4)' }}
+          style={{ 
+            background: 'rgba(44, 24, 16, 0.8)',
+            backdropFilter: 'blur(8px)'
+          }}
         >
           <article
             role="dialog"
             aria-modal="true"
             aria-label="Participants"
-            className="evmDialog"
-            style={{ maxWidth: 760, width: 'min(92vw, 760px)' }}
+            className="museo-modal evmDialog"
+            style={{ 
+              maxWidth: 760, 
+              width: 'min(92vw, 760px)',
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+              border: '4px solid #8b6f47',
+              borderRadius: '24px',
+              boxShadow: '0 20px 60px rgba(110, 74, 46, 0.4), 0 8px 24px rgba(139, 111, 71, 0.3)',
+              overflow: 'hidden'
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="evmHeader" style={{ marginBottom: 12 }}>
-              <h2 className="evmTitle" style={{ fontSize: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                Participants({participants.length})
-              </h2>
-              <button className="evmCalBtn" onClick={() => setParticipantsOpen(false)}>Close</button>
+            {/* Museum-style header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%)',
+              padding: '24px 32px',
+              borderBottom: '4px solid #6e4a2e',
+              position: 'relative'
+            }}>
+              {/* Decorative corner ornaments */}
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                width: '12px',
+                height: '12px',
+                background: 'radial-gradient(circle, #faf8f5 0%, #d4b48a 100%)',
+                borderRadius: '50%',
+                border: '2px solid #faf8f5',
+                boxShadow: '0 2px 8px rgba(110, 74, 46, 0.3)'
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                width: '12px',
+                height: '12px',
+                background: 'radial-gradient(circle, #faf8f5 0%, #d4b48a 100%)',
+                borderRadius: '50%',
+                border: '2px solid #faf8f5',
+                boxShadow: '0 2px 8px rgba(110, 74, 46, 0.3)'
+              }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{
+                  fontFamily: 'Georgia, Times New Roman, serif',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#faf8f5',
+                  margin: '0',
+                  textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
+                }}>
+                  Participants ({participants.length})
+                </h2>
+                <button 
+                  onClick={() => setParticipantsOpen(false)}
+                  style={{
+                    background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                    border: '3px solid #8b6f47',
+                    borderRadius: '12px',
+                    padding: '8px 16px',
+                    color: '#8b6f47',
+                    fontFamily: 'Georgia, Times New Roman, serif',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 2px 8px rgba(110, 74, 46, 0.2)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)';
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.2)';
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
-            <section className="evmSection evmCard" style={{ maxHeight: 'min(75vh, 520px)', overflowY: 'auto', overflowX: 'hidden', padding: '8px 16px' }}>
-              {pLoading && <p className="evmP">Loading…</p>}
-              {pError && !pLoading && <p className="evmP evmMuted">{pError}</p>}
+            <section style={{ 
+              maxHeight: 'min(75vh, 520px)', 
+              overflowY: 'auto', 
+              overflowX: 'hidden', 
+              padding: '24px 32px',
+              background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'
+            }}>
+              {pLoading && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '40px',
+                  color: '#8b6f47',
+                  fontFamily: 'Georgia, Times New Roman, serif',
+                  fontSize: '16px',
+                  fontStyle: 'italic'
+                }}>
+                  Loading participants...
+                </div>
+              )}
+              {pError && !pLoading && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '40px',
+                  color: '#dc2626',
+                  fontFamily: 'Georgia, Times New Roman, serif',
+                  fontSize: '16px',
+                  fontStyle: 'italic',
+                  textAlign: 'center'
+                }}>
+                  {pError}
+                </div>
+              )}
               {!pLoading && !pError && (
                 participants.length > 0 ? (
                   <ul className="evmList" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -728,39 +845,105 @@ export default function EventModal({ open, event, onClose }) {
                       const avatar = u.profilePicture || '/assets/user-placeholder.png';
                       const fmtJoined = (dt) => dt ? new Date(dt).toLocaleString(undefined, { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                       return (
-                        <li key={u.userId || u.id || i} className="evmP" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between', flexWrap: 'nowrap', padding: '6px 10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1, maxWidth: 'calc(100% - 260px)', marginRight: 12 }}>
+                        <li key={u.userId || u.id || i} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '16px', 
+                          justifyContent: 'space-between', 
+                          flexWrap: 'nowrap', 
+                          padding: '16px 20px',
+                          marginBottom: '12px',
+                          background: 'linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)',
+                          border: '2px solid #d4b48a',
+                          borderRadius: '16px',
+                          boxShadow: '0 4px 12px rgba(110, 74, 46, 0.1)',
+                          transition: 'all 0.3s ease'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0, flex: 1, maxWidth: 'calc(100% - 260px)', marginRight: '12px' }}>
                             <img
                               src={avatar}
                               alt={fullName || username || 'User'}
-                              style={{ width: 36, height: 36, borderRadius: '999px', objectFit: 'cover', flex: '0 0 auto' }}
+                              style={{ 
+                                width: '48px', 
+                                height: '48px', 
+                                borderRadius: '50%', 
+                                objectFit: 'cover', 
+                                flex: '0 0 auto',
+                                border: '3px solid #8b6f47',
+                                boxShadow: '0 2px 8px rgba(110, 74, 46, 0.2)'
+                              }}
                               onError={(e) => { e.currentTarget.src = '/assets/user-placeholder.png'; }}
                             />
                             <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontWeight: 600 }}>
+                              <div style={{ 
+                                fontWeight: '600',
+                                fontSize: '16px',
+                                color: '#8b6f47',
+                                fontFamily: 'Georgia, Times New Roman, serif',
+                                marginBottom: '4px'
+                              }}>
                                 {fullName || username || 'Unknown'}
-                              </span>
+                              </div>
                               {username && fullName && (
-                                <span className="evmMuted" style={{ marginLeft: 8 }}>
+                                <div style={{ 
+                                  color: '#6b5b47',
+                                  fontSize: '14px',
+                                  fontFamily: 'Georgia, Times New Roman, serif',
+                                  fontStyle: 'italic'
+                                }}>
                                   {username}
-                                </span>
+                                </div>
                               )}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '0 0 auto', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '0 0 auto', whiteSpace: 'nowrap' }}>
                             {u.joinedAt && (
-                              <div className="evmMuted" style={{ fontSize: 12, flex: '0 0 auto' }}>Joined: {fmtJoined(u.joinedAt)}</div>
+                              <div style={{ 
+                                fontSize: '12px', 
+                                flex: '0 0 auto',
+                                color: '#6b5b47',
+                                fontFamily: 'Georgia, Times New Roman, serif',
+                                fontStyle: 'italic',
+                                background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                                padding: '6px 12px',
+                                borderRadius: '12px',
+                                border: '1px solid #d4b48a'
+                              }}>
+                                Joined: {fmtJoined(u.joinedAt)}
+                              </div>
                             )}
                             {(role === 'admin' || role?.role === 'admin') && (
                               <button
                                 aria-label="Remove"
                                 title="Remove"
-                                className="evmCalBtn"
-                                style={{ padding: '4px 8px' }}
+                                style={{ 
+                                  padding: '8px 12px',
+                                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                                  border: '2px solid #991b1b',
+                                  borderRadius: '8px',
+                                  color: '#ffffff',
+                                  fontFamily: 'Georgia, Times New Roman, serif',
+                                  fontWeight: '600',
+                                  fontSize: '12px',
+                                  cursor: removingId === (u.userId || u.id) ? 'not-allowed' : 'pointer',
+                                  transition: 'all 0.3s ease',
+                                  opacity: removingId === (u.userId || u.id) ? 0.7 : 1,
+                                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.2)'
+                                }}
                                 disabled={removingId === (u.userId || u.id)}
                                 onClick={() => {
                                   setConfirmTarget({ userId: (u.userId || u.id), label: fullName || username || 'this user' });
                                   setConfirmOpen(true);
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (removingId !== (u.userId || u.id)) {
+                                    e.target.style.transform = 'translateY(-1px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.transform = 'translateY(0)';
+                                  e.target.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.2)';
                                 }}
                               >
                                 {removingId === (u.userId || u.id) ? 'Removing…' : '✕'}
@@ -772,7 +955,53 @@ export default function EventModal({ open, event, onClose }) {
                     })}
                   </ul>
                 ) : (
-                  <p className="evmP evmMuted">No participants yet.</p>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '60px 40px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #d4b48a 0%, #8b6f47 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '16px',
+                      opacity: 0.6,
+                      border: '3px solid #8b6f47'
+                    }}>
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: '#faf8f5'
+                      }} />
+                    </div>
+                    <div style={{
+                      color: '#8b6f47',
+                      fontFamily: 'Georgia, Times New Roman, serif',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      marginBottom: '8px'
+                    }}>
+                      No Participants Yet
+                    </div>
+                    <div style={{
+                      color: '#6b5b47',
+                      fontFamily: 'Georgia, Times New Roman, serif',
+                      fontSize: '14px',
+                      fontStyle: 'italic',
+                      maxWidth: '300px',
+                      lineHeight: '1.5'
+                    }}>
+                      This exhibition is waiting for its first visitors to join.
+                    </div>
+                  </div>
                 )
               )}
             </section>

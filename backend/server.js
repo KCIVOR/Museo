@@ -15,7 +15,7 @@ import requestRoutes from "./routes/requestRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import galleryRoutes from "./routes/galleryRoutes.js"
 import cookieParser from "cookie-parser";
-import { simpleRotation, promotePopularOldPosts, calculateTopArtsWeekly } from './controllers/galleryController.js';
+import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { authMiddleware } from "./middleware/auth.js";
 import { Server } from "socket.io"
 import http, { request } from "http";
@@ -112,35 +112,37 @@ server.listen(PORT, () => {
   // Counter for re-featuring checks
   let cronRunCount = 0;
   
-  // Daily featured artwork maintenance - runs every day at 12:00 AM
+  // Daily featured artwork maintenance at midnight (Philippine Time)
   cron.schedule('0 0 * * *', async () => {
-    cronRunCount++;
-    console.log('🌅 Running daily featured artwork maintenance at midnight...');
+    console.log(' Running daily featured artwork maintenance...');
     
     try {
       // Run rotation first to manage current featured artworks
-      console.log('🔄 Step 1: Running artwork rotation...');
+      console.log(' Step 1: Running artwork rotation...');
       await simpleRotation();
       
       // Run re-featuring to promote popular old posts
-      console.log('🔍 Step 2: Running popular old posts re-featuring...');
+      console.log(' Step 2: Running popular old posts re-featuring...');
       await promotePopularOldPosts();
       
-      console.log('✅ Daily featured artwork maintenance completed successfully');
+      console.log(' Daily featured artwork maintenance completed successfully');
       
     } catch (error) {
-      console.error('❌ Daily maintenance failed:', error);
+      console.error(' Daily maintenance failed:', error);
     }
+  }, {
+    timezone: "Asia/Manila"
   });
 
-  // Top Arts of the Week - Every Sunday at 11:59 PM Philippine Time
+  // Top Arts of the Week - Every Sunday at 11:59 PM (Philippine Time)
   cron.schedule('59 23 * * 0', async () => {
-    console.log('🏆 Running weekly Top Arts calculation (Sunday 11:59 PM PH Time)...');
+    console.log(' Running weekly Top Arts generation (Sunday 11:59 PM PH Time)...');
     
     try {
-      await calculateTopArtsWeekly();
+      await generateWeeklyTopArts();
+      console.log('✅ Weekly Top Arts generation completed successfully');
     } catch (error) {
-      console.error('❌ Weekly Top Arts calculation failed:', error);
+      console.error('❌ Weekly Top Arts generation failed:', error);
     }
   }, {
     timezone: "Asia/Manila"
@@ -148,8 +150,8 @@ server.listen(PORT, () => {
 
 
   console.log('📅 Cron jobs scheduled:');
-  console.log('   🌅 Featured artwork maintenance: Daily at 12:00 AM');
-  console.log('   🔄 Artwork rotation & re-featuring: Daily at midnight');
-  console.log('   🏆 Top Arts calculation: Every Sunday 11:59 PM (PH Time)');
+  console.log('   🌅 Featured artwork maintenance: Daily at 12:00 AM (PH Time)');
+  console.log('   🔄 Artwork rotation & re-featuring: Daily at midnight (PH Time)');
+  console.log('   🏆 Top Arts generation: Every Sunday 11:59 PM (PH Time)');
   
 });

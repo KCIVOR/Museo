@@ -1,229 +1,426 @@
-/* Legacy page wrapper (kept for compatibility, unused in modal) */
-.raPage { display: contents; }
+/* ========================================
+   🎨 REGISTER ARTIST MODAL - MUSEO THEMED
+   Matches UploadArtModal design patterns
+   ======================================== */
 
-/* Appear animations (aligned to events modal) */
-.pe__scrim { animation: raFadeIn 200ms ease-out; }
-@keyframes raFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes raPop {
-  0% { opacity: 0; transform: translateY(8px) scale(.98); }
-  60% { opacity: 1; transform: translateY(0) scale(1.01); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+/* Use standard modal system from design-system.css */
+
+/* CSS Variables for compatibility */
+:root {
+  --museo-accent: #d4af37;
+  --museo-accent-bg: rgba(212, 175, 55, 0.1);
+  --museo-error-dark: #c82333;
+  --museo-shadow-light: rgba(0, 0, 0, 0.1);
 }
 
-/* Modal body scroll container */
-.raScroll {
-  max-height: min(62vh, 72dvh);
+/* Overlay - inherits from museo-modal-overlay */
+.ra-overlay {
+  display: grid;
+  place-items: center;
   overflow: auto;
-  padding: 8px 20px 0;
 }
 
-/* Dialog sizing within pe__dialog */
-.raDialog {
-  width: clamp(720px, 92vw, 900px);
-  animation: raPop 260ms cubic-bezier(.2,.8,.2,1);
-}
-
-/* Card */
-.raCard {
-  width: min(820px, 96vw);
-  background: var(--museo-white);
-  border-radius: 16px;
-  box-shadow: 0 8px 40px var(--museo-shadow-light);
-  overflow: hidden;
-  animation: fadeIn 0.3s ease;
+/* Modal Container - inherits from museo-modal */
+.ra-modal {
+  width: min(900px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--museo-font-body);
 }
 
 /* Header */
-.raHead {
-  background: var(--museo-primary);
-  color: var(--museo-white);
-  padding: 16px 20px;
-  text-align: center;
-}
-.raTitle {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 900;
-}
-
-/* Form grid: labels left column, fields right column */
-.raForm {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 16px 16px;       /* row gap / column gap */
-  padding: 0;
+.ra-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding: 24px 32px;
+  background: var(--museo-bg-secondary);
+  border-bottom: 2px solid var(--museo-border);
 }
 
-/* Labels align to the right for neat column */
-.raLabel {
-  font-weight: 800;
+.ra-header-content {
+  flex: 1;
+}
+
+.ra-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
   color: var(--museo-text-primary);
-  font-size: 14px;
-  line-height: 1.2;
-  justify-self: end;
-  padding-right: 6px;
 }
 
-/* Controls */
-.raInput,
-.raForm select,
-.raForm textarea {
+.ra-subtitle {
+  font-size: 14px;
+  margin: 0;
+  color: var(--museo-text-secondary);
+}
+
+.ra-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--museo-text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ra-close:hover {
+  background: var(--museo-bg-hover);
+  color: var(--museo-text-primary);
+}
+
+/* Form */
+.ra-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.ra-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Sections */
+.ra-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ra-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--museo-text-primary);
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--museo-border);
+}
+
+/* Fields */
+.ra-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ra-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--museo-text-primary);
+  margin: 0;
+}
+
+.ra-input,
+.ra-textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--museo-border);
+  border: 2px solid var(--museo-border);
   border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 15px;
-  background: var(--museo-white);
-  transition: border .2s, box-shadow .2s;
-}
-.raInput--error,
-.raForm select.raInput--error,
-.raForm textarea.raInput--error {
-  border-color: var(--museo-error);
-  box-shadow: 0 0 0 3px var(--museo-error-bg);
-}
-.raForm textarea { min-height: 96px; resize: vertical; }
-.raInput::placeholder { color: var(--museo-text-muted); }
-.raInput:focus,
-.raForm select:focus,
-.raForm textarea:focus {
-  border-color: var(--museo-primary);
-  box-shadow: 0 0 0 3px var(--museo-shadow-light);
-  outline: none;
-}
-
-/* Inline error text under field (aligned to input column) */
-.raFieldError {
-  grid-column: 2 / 3;
-  margin-top: -8px;
-  margin-bottom: 6px;
-  font-size: 12px;
-  color: var(--museo-error);
-}
-
-/* Age + Sex pair sits inside the FIELD column */
-.raRow {
-  grid-column: 2 / 3;                 /* place in field column */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.raCol {
-  display: grid;
-  gap: 6px;
-}
-.raCol label {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--museo-text-secondary);
-  margin-bottom: 4px;
-  justify-self: start;
-}
-
-/* Dropzone appears after its label (label in col 1, zone in col 2) */
-.raDrop {
-  border: 2px dashed var(--museo-border);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
-  display: grid;
-  place-items: center;
-  min-height: 220px;
-  padding: 16px;
-  cursor: pointer;
-  transition: background .2s, border-color .2s, transform .08s ease-in-out;
-  text-align: center;
-}
-.raDrop:hover { background: var(--museo-bg-hover); border-color: var(--museo-border-hover); }
-.raDrop:active { transform: scale(0.995); }
-.raDrop--active { background: var(--museo-bg-secondary); border-color: var(--museo-primary); }
-.raDropInner { display: grid; place-items: center; gap: 6px; color: var(--museo-text-muted); }
-.raCloud { font-size: 28px; }
-.raDropText { font-weight: 700; color: var(--museo-text-primary); }
-.raDropHint { font-size: 13px; color: var(--museo-text-muted); }
-
-.raDrop--has { padding: 8px; align-items: stretch; }
-.raPreview {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  display: block;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-/* Preview grid for up to 2 images */
-.raPreviewGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  width: 100%;
-}
-.raPreviewGrid--two { grid-template-columns: 1fr 1fr; }
-.raPreviewItem {
-  position: relative;
-  border-radius: 10px;
-  overflow: hidden;
-}
-.raRemoveBtn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  border: 1px solid var(--museo-border);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: inherit;
   background: var(--museo-white);
   color: var(--museo-text-primary);
-  cursor: pointer;
-  font-weight: 700;
-  line-height: 1;
-  transition: background .15s, transform .08s;
+  transition: all 0.2s ease;
 }
-.raRemoveBtn:hover { background: var(--museo-bg-hover); }
-.raRemoveBtn:active { transform: scale(0.96); }
 
-/* Actions span both columns and are centered */
-.raActions {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 6px;
+.ra-input:focus,
+.ra-textarea:focus {
+  outline: none;
+  border-color: var(--museo-primary);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
 }
-.raBtn {
-  padding: 11px 20px;
-  border-radius: 10px;
-  border: 1px solid var(--museo-border);
+
+.ra-input--error,
+.ra-textarea--error {
+  border-color: var(--museo-error);
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.ra-input::placeholder,
+.ra-textarea::placeholder {
+  color: var(--museo-text-muted);
+}
+
+.ra-textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Rows for side-by-side fields */
+.ra-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Error messages */
+.ra-error {
+  font-size: 12px;
+  color: var(--museo-error);
+  margin-top: 4px;
+}
+
+/* Dropzone - Matches UploadArtModal */
+.ra-dropzone {
+  border: 2px dashed var(--museo-border);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ra-dropzone:hover {
+  border-color: var(--museo-primary);
+  background: var(--museo-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--museo-shadow-light);
+}
+
+.ra-dropzone--active {
+  border-color: var(--museo-accent);
+  background: var(--museo-accent-bg);
+  transform: scale(1.02);
+}
+
+.ra-dropzone--has-files {
+  padding: 20px;
+}
+
+.ra-dropzone--error {
+  border-color: var(--museo-error);
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.ra-dropzone-content {
+  position: relative;
+  z-index: 1;
+}
+
+
+.ra-dropzone-text {
+  font-size: 16px;
+  color: var(--museo-text-primary);
+  margin-bottom: 8px;
+}
+
+.ra-dropzone-hint {
+  font-size: 12px;
+  color: var(--museo-text-muted);
+}
+
+.ra-file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Image Previews - Matches UploadArtModal */
+.ra-image-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ra-image-preview {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--museo-border);
   background: var(--museo-white);
-  font-weight: 700;
+}
+
+.ra-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ra-image-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--museo-error);
+  color: var(--museo-white);
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background .2s, transform .1s;
+  font-size: 12px;
+  transition: all 0.2s ease;
 }
-.raBtn:hover { background: var(--museo-bg-hover); }
-.raBtn:active { transform: scale(0.98); }
-.raBtn--primary { background: var(--museo-primary); color: var(--museo-white); border-color: var(--museo-primary); }
-.raBtn--primary:hover { background: var(--museo-primary-dark); }
 
-/* Responsive: stack labels above fields */
+.ra-image-remove:hover {
+  background: var(--museo-error-dark);
+  transform: scale(1.1);
+}
+
+/* Consent */
+.ra-consent-container {
+  margin-top: 4px !important;
+  margin-bottom: 16px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.ra-consent-container .ra-consent-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  color: var(--museo-text-primary) !important;
+  line-height: 1.4 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  font-weight: normal !important;
+}
+
+.ra-consent-container .ra-checkbox {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+  border: 1px solid #ccc !important;
+}
+
+/* Footer */
+.ra-footer {
+  padding: 24px 32px;
+  background: var(--museo-bg-secondary);
+  border-top: 2px solid var(--museo-border);
+}
+
+.ra-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Buttons - Matches UploadArtModal */
+.ra-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--museo-font-body);
+  border: 1px solid transparent;
+  min-width: 120px;
+}
+
+.ra-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ra-btn--secondary {
+  background: var(--museo-white);
+  color: var(--museo-text-primary);
+  border-color: var(--museo-border);
+}
+
+.ra-btn--secondary:hover:not(:disabled) {
+  background: var(--museo-bg-hover);
+  border-color: var(--museo-primary);
+}
+
+.ra-btn--primary {
+  background: var(--museo-primary);
+  color: var(--museo-white);
+  border-color: var(--museo-primary);
+}
+
+.ra-btn--primary:hover:not(:disabled) {
+  background: var(--museo-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--museo-shadow-light);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .raForm { grid-template-columns: 1fr; gap: 12px; }
-  .raLabel { justify-self: start; padding-right: 0; }
-  .raRow { grid-column: auto; grid-template-columns: 1fr; }
-  .raTitle { font-size: 22px; }
-  .raScroll { max-height: 70dvh; padding: 6px 14px 0; }
-  .raRemoveBtn { width: 32px; height: 32px; }
-  .raDialog { width: 96vw; }
+  .ra-modal {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .ra-header,
+  .ra-content,
+  .ra-footer {
+    padding: 16px 20px;
+  }
+  
+  .ra-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .ra-title {
+    font-size: 20px;
+  }
+  
+  .ra-section-title {
+    font-size: 16px;
+  }
+  
+  .ra-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .ra-btn {
+    width: 100%;
+  }
 }
 
-/* Subtle fade-in */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ra-modal {
+  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

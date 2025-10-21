@@ -299,150 +299,284 @@ export default function RequestsModal({
                 const status = (r.status || 'pending').toLowerCase();
                 
                 return (
-                  <div 
+                  <article 
                     key={id} 
-                    className="museo-card" 
-                    style={{ 
-                      display:'grid', 
-                      gridTemplateColumns:'1fr auto', 
-                      gap:'16px', 
-                      padding:'16px', 
-                      cursor:'pointer'
-                    }} 
+                    style={{
+                      background: 'var(--museo-white)',
+                      border: '2px solid var(--museo-border)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'var(--museo-font-body)',
+                      position: 'relative'
+                    }}
                     onClick={() => { setSelectedRequest(r); setDetailOpen(true); }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                      e.currentTarget.style.borderColor = 'var(--museo-accent)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                      e.currentTarget.style.borderColor = 'var(--museo-border)';
+                    }}
                   >
-                    <div style={{ display:'grid', gap:'12px' }}>
-                      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'12px', marginBottom: '8px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap: 'wrap' }}>
-                          <span className="museo-badge" style={{ 
-                            padding:'4px 10px', 
-                            borderRadius:'999px', 
-                            border:'1px solid var(--museo-border)', 
-                            fontSize:'12px', 
-                            fontWeight:'700', 
-                            color:'var(--museo-text-secondary)', 
-                            background:'var(--museo-bg-secondary)', 
-                            textTransform:'capitalize' 
-                          }}>
-                            {type.replace(/_/g,' ')}
-                          </span>
-                          
-                          <h4 className="museo-title" style={{ 
-                            margin: 0,
-                            fontWeight:'800', 
-                            color:'var(--museo-primary)',
-                            fontSize: '16px'
-                          }}>
-                            {name || data.title || r.title || 'Request'}
-                          </h4>
-                        </div>
-                        
-                        <span className="museo-badge" style={{ 
-                          padding:'4px 10px', 
-                          borderRadius:'999px', 
-                          border:'1px solid var(--museo-border)', 
-                          fontSize:'12px', 
-                          fontWeight:'700', 
-                          textTransform:'capitalize',
-                          background: status==='approved' ? '#dcfce7' : status==='rejected' ? '#fee2e2' : 'var(--museo-bg-secondary)',
-                          color: status==='approved' ? '#166534' : status==='rejected' ? '#991b1b' : 'var(--museo-text-secondary)',
-                          flexShrink: 0
+                    {/* Header with badges */}
+                    <header style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '16px',
+                      gap: '12px'
+                    }}>
+                      {/* Left: Type badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          background: 'var(--museo-accent-light)',
+                          color: 'var(--museo-primary)',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          textTransform: 'capitalize',
+                          border: '1px solid var(--museo-accent)',
+                          letterSpacing: '0.025em'
+                        }}>
+                          {type.replace(/_/g,' ')}
+                        </span>
+                      </div>
+                      
+                      {/* Right: Status badge */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          textTransform: 'capitalize',
+                          letterSpacing: '0.025em',
+                          background: status === 'approved' 
+                            ? 'var(--museo-success)' 
+                            : status === 'rejected' 
+                            ? 'var(--museo-error)' 
+                            : 'var(--museo-gray-200)',
+                          color: status === 'approved' || status === 'rejected' 
+                            ? 'var(--museo-white)' 
+                            : 'var(--museo-text-secondary)',
+                          border: `1px solid ${
+                            status === 'approved' 
+                              ? 'var(--museo-success)' 
+                              : status === 'rejected' 
+                              ? 'var(--museo-error)' 
+                              : 'var(--museo-border)'
+                          }`
                         }}>
                           {status}
                         </span>
                       </div>
+                    </header>
+
+                    {/* Main content */}
+                    <div style={{ marginBottom: '16px' }}>
+                      {/* Title */}
+                      <h3 style={{
+                        margin: '0 0 12px 0',
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: 'var(--museo-text-primary)',
+                        fontFamily: 'var(--museo-font-display)',
+                        lineHeight: '1.3'
+                      }}>
+                        {name || data.title || r.title || 'Request'}
+                      </h3>
                       
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:'16px', color:'var(--museo-text-secondary)', fontSize:'13px' }}>
-                        {'userId' in r && <span>User ID: {r.userId}</span>}
-                        {'phone' in data && <span>Phone: {data.phone || '—'}</span>}
-                        {'age' in data && <span>Age: {data.age || '—'}</span>}
-                        {'sex' in data && <span>Sex: {data.sex || '—'}</span>}
-                        {'birthdate' in data && <span>Birthdate: {data.birthdate || '—'}</span>}
-                        {'address' in data && <span>Address: {data.address || '—'}</span>}
-                        {'artworkTitle' in data && <span>Artwork: {data.artworkTitle || '—'}</span>}
-                        {'artId' in data && <span>Art ID: {data.artId || '—'}</span>}
-                        {'startingPrice' in data && <span>Start Price: {data.startingPrice || '—'}</span>}
-                        {'reservePrice' in data && <span>Reserve: {data.reservePrice || '—'}</span>}
-                        {'auctionStart' in data && <span>Auction Start: {data.auctionStart || '—'}</span>}
-                        {'auctionEnd' in data && <span>Auction End: {data.auctionEnd || '—'}</span>}
+                      {/* Metadata */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '8px',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: 'var(--museo-text-secondary)'
+                      }}>
+                        {'userId' in r && <div><strong>User ID:</strong> {r.userId}</div>}
+                        {'phone' in data && <div><strong>Phone:</strong> {data.phone || '—'}</div>}
+                        {'age' in data && <div><strong>Age:</strong> {data.age || '—'}</div>}
+                        {'sex' in data && <div><strong>Sex:</strong> {data.sex || '—'}</div>}
+                        {'birthdate' in data && <div><strong>Birthdate:</strong> {data.birthdate || '—'}</div>}
+                        {'address' in data && <div><strong>Address:</strong> {data.address || '—'}</div>}
+                        {'artworkTitle' in data && <div><strong>Artwork:</strong> {data.artworkTitle || '—'}</div>}
+                        {'artId' in data && <div><strong>Art ID:</strong> {data.artId || '—'}</div>}
+                        {'startingPrice' in data && <div><strong>Start Price:</strong> {data.startingPrice || '—'}</div>}
+                        {'reservePrice' in data && <div><strong>Reserve:</strong> {data.reservePrice || '—'}</div>}
+                        {'auctionStart' in data && <div><strong>Auction Start:</strong> {data.auctionStart || '—'}</div>}
+                        {'auctionEnd' in data && <div><strong>Auction End:</strong> {data.auctionEnd || '—'}</div>}
                       </div>
                       
+                      {/* Images */}
                       {imgs.length > 0 && (
-                        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:'8px' }}>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                          gap: '12px',
+                          marginBottom: '16px'
+                        }}>
                           {imgs.map((src, i) => (
-                            <img 
-                              key={i} 
-                              src={src} 
-                              alt="attachment" 
-                              loading="lazy" 
-                              style={{ 
-                                width:'100%', 
-                                aspectRatio:'4/3', 
-                                objectFit:'cover', 
-                                borderRadius:'10px', 
-                                border:'1px solid var(--museo-border)' 
-                              }} 
-                            />
+                            <div key={i} style={{
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              border: '2px solid var(--museo-border)',
+                              aspectRatio: '4/3'
+                            }}>
+                              <img 
+                                src={src} 
+                                alt="attachment" 
+                                loading="lazy" 
+                                style={{ 
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover'
+                                }} 
+                              />
+                            </div>
                           ))}
                         </div>
                       )}
                       
+                      {/* JSON Data Preview */}
                       {imgs.length === 0 && Object.keys(data).length > 0 && (
-                        <pre style={{ 
-                          margin:0, 
-                          background:'var(--museo-bg-secondary)', 
-                          border:'1px solid var(--museo-border)', 
-                          borderRadius:'10px', 
-                          padding:'12px', 
-                          color:'var(--museo-text-primary)', 
-                          overflow:'auto',
-                          fontSize: '12px'
+                        <details style={{
+                          background: 'var(--museo-bg-secondary)',
+                          border: '1px solid var(--museo-border)',
+                          borderRadius: '12px',
+                          padding: '12px',
+                          marginBottom: '16px'
                         }}>
-                          {JSON.stringify(data, null, 2)}
-                        </pre>
+                          <summary style={{
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            color: 'var(--museo-text-primary)',
+                            marginBottom: '8px'
+                          }}>
+                            View Request Data
+                          </summary>
+                          <pre style={{
+                            margin: 0,
+                            fontSize: '12px',
+                            color: 'var(--museo-text-secondary)',
+                            overflow: 'auto',
+                            fontFamily: 'var(--museo-font-mono)'
+                          }}>
+                            {JSON.stringify(data, null, 2)}
+                          </pre>
+                        </details>
                       )}
                     </div>
                     
-                    <div className="museo-actions" style={{ display:'grid', alignContent:'start', gap:'8px', opacity: 1, transform: 'translateY(0)', pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                    {/* Action buttons */}
+                    <footer 
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'flex-end',
+                        paddingTop: '16px',
+                        borderTop: '1px solid var(--museo-border)'
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
-                        className="museo-btn museo-btn--primary"
                         onClick={() => handleActionClick(id, 'approve')}
                         disabled={status === 'approved' || status === 'rejected'}
-                        style={{ 
-                          background: status==='approved' ? '#86efac' : 'var(--museo-success)',
-                          color: status==='approved' ? '#062b16' : 'var(--museo-white)',
-                          opacity: (status==='approved' || status==='rejected') ? 0.6 : 1,
-                          cursor: (status==='approved' || status==='rejected') ? 'not-allowed' : 'pointer'
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: status === 'approved' || status === 'rejected' ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          background: status === 'approved' ? 'var(--museo-success)' : '#22c55e',
+                          color: 'white',
+                          opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                          if (status !== 'approved' && status !== 'rejected') {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(34, 197, 94, 0.3)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = 'none';
                         }}
                       >
-                        {status==='approved' ? 'Approved' : 'Accept'}
+                        {status === 'approved' ? '✓ Approved' : 'Accept'}
                       </button>
                       
                       <button
-                        className="museo-btn museo-btn--error"
                         onClick={() => handleActionClick(id, 'reject')}
                         disabled={status === 'approved' || status === 'rejected'}
-                        style={{ 
-                          background: status==='rejected' ? '#fca5a5' : 'var(--museo-error)',
-                          opacity: (status==='approved' || status==='rejected') ? 0.6 : 1,
-                          cursor: (status==='approved' || status==='rejected') ? 'not-allowed' : 'pointer'
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: status === 'approved' || status === 'rejected' ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          background: status === 'rejected' ? 'var(--museo-error)' : '#ef4444',
+                          color: 'white',
+                          opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                          if (status !== 'approved' && status !== 'rejected') {
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = '0 4px 8px rgba(239, 68, 68, 0.3)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = 'none';
                         }}
                       >
-                        {status==='rejected' ? 'Rejected' : 'Reject'}
+                        {status === 'rejected' ? '✗ Rejected' : 'Reject'}
                       </button>
                       
                       <button
-                        className="museo-btn museo-btn--secondary"
                         onClick={() => handleActionClick(id, 'delete')}
-                        style={{ 
-                          background: 'var(--museo-text-muted)',
-                          color: 'var(--museo-white)'
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--museo-border)',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          background: 'var(--museo-white)',
+                          color: 'var(--museo-text-muted)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'var(--museo-error)';
+                          e.target.style.color = 'white';
+                          e.target.style.borderColor = 'var(--museo-error)';
+                          e.target.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'var(--museo-white)';
+                          e.target.style.color = 'var(--museo-text-muted)';
+                          e.target.style.borderColor = 'var(--museo-border)';
+                          e.target.style.transform = 'translateY(0)';
                         }}
                       >
                         Delete
                       </button>
-                    </div>
-                  </div>
+                    </footer>
+                  </article>
                 );
               })}
             </div>

@@ -204,9 +204,6 @@ export default function MuseoComposer({
           >
             🖼 Add media
           </button>
-          <button type="button" className="mc__tool" aria-label="Announce event">
-            📅 Event
-          </button>
           <div className="mc__spacer" />
           <button type="submit" className={`mc__post ${canPost ? "" : "is-disabled"}`} disabled={!canPost}>
             Post

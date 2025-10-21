@@ -1,5 +1,6 @@
 // src/pages/home.jsx
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./css/home.css";
 import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
@@ -21,6 +22,16 @@ function getAverageColorFromImageElement(img) {
 }
 
 function MuseoHero() {
+  const navigate = useNavigate();
+
+  const handleBrowseEvents = () => {
+    navigate('/Event');
+  };
+
+  const handleBrowseGallery = () => {
+    navigate('/Gallery');
+  };
+
   return (
     <section className="museoHero">
       <div className="mHero__media"></div>
@@ -30,8 +41,12 @@ function MuseoHero() {
         <h1 className="mHero__title">Discover, share, and celebrate emerging art</h1>
         <p className="mHero__subtitle">Curated picks, community showcases, and open calls year‑round.</p>
         <div className="mHero__ctaRow">
-          <button className="btn-hero">Join Community</button>
-          <button className="btn-hero-ghost">Browse Gallery</button>
+          <button className="btn-hero" onClick={handleBrowseEvents}>
+            Browse Events
+          </button>
+          <button className="btn-hero-ghost" onClick={handleBrowseGallery}>
+            Browse Gallery
+          </button>
         </div>
       </div>
     </section>
@@ -119,6 +134,7 @@ export default function Home() {
   const [liking, setLiking] = useState(false);
   const [comments, setComments] = useState({});
   const [likes, setLikes] = useState({});
+  const [likedPosts, setLikedPosts] = useState({}); // Track which posts are liked by current user
 
   // Image handling states
   const [bg, setBg] = useState({});
@@ -258,6 +274,11 @@ export default function Home() {
       setLikes((prev) => ({
         ...prev,
         [postId]: (prev[postId] || 0) + (data.removed ? -1 : 1),
+      }));
+      // Update liked state
+      setLikedPosts((prev) => ({
+        ...prev,
+        [postId]: !data.removed, // true if like was added, false if removed
       }));
     } catch (err) {
       console.error(err);
@@ -576,81 +597,41 @@ export default function Home() {
                   alignItems: 'center',
                   justifyContent: 'flex-start',
                   padding: '12px 16px',
-                  borderTop: '1px solid var(--museo-gray-200)',
+                  borderTop: '1px solid rgba(107, 66, 38, 0.1)',
                   background: 'var(--museo-white)',
-                  gap: '16px'
+                  gap: '12px'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Like Button */}
+                {/* Like Button - PostModal Style */}
                 <button
+                  className={`museo-btn--pill ${likedPosts[item.id] ? 'liked' : ''}`}
                   onClick={() => handleLike(item.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: 'none',
-                    border: '1px solid var(--museo-gray-200)',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: 'var(--museo-text-secondary)',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'var(--museo-accent)';
-                    e.target.style.color = 'var(--museo-white)';
-                    e.target.style.borderColor = 'var(--museo-accent)';
-                    e.target.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'none';
-                    e.target.style.color = 'var(--museo-text-secondary)';
-                    e.target.style.borderColor = 'var(--museo-gray-200)';
-                    e.target.style.transform = 'translateY(0)';
+                  disabled={liking[item.id]}
+                  style={{ 
+                    opacity: liking[item.id] ? 0.6 : 1,
+                    cursor: liking[item.id] ? 'not-allowed' : 'pointer'
                   }}
                   aria-label="Like post"
                 >
-                  <span style={{ fontSize: '14px' }}>❤️</span>
-                  <span>{likes[item.id] || 0}</span>
+                  <span className="like-icon">
+                    {likedPosts[item.id] ? '❤️' : '🤍'}
+                  </span>
+                  <span className="like-count">{likes[item.id] || 0}</span>
                 </button>
 
-                {/* Comment Button */}
-                <button
+                {/* Comment Stats - PostModal Style */}
+                <div 
+                  className="museo-btn--pill"
                   onClick={() => handlePopUp(item.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: 'none',
-                    border: '1px solid var(--museo-gray-200)',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: 'var(--museo-text-secondary)',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'var(--museo-accent)';
-                    e.target.style.color = 'var(--museo-white)';
-                    e.target.style.borderColor = 'var(--museo-accent)';
-                    e.target.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'none';
-                    e.target.style.color = 'var(--museo-text-secondary)';
-                    e.target.style.borderColor = 'var(--museo-gray-200)';
-                    e.target.style.transform = 'translateY(0)';
-                  }}
-                  aria-label="Comment on post"
+                  style={{ cursor: 'pointer' }}
+                  aria-label="View comments"
                 >
-                  <span style={{ fontSize: '14px' }}>💬</span>
-                  <span>{comments[item.id] || 0}</span>
-                </button>
+                  <span style={{ fontSize: '1rem' }}>💬</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
+                    {comments[item.id] || 0} comments
+                  </span>
+                </div>
               </div>
             </div>
             )
@@ -663,6 +644,7 @@ export default function Home() {
             onLike={handleLike}
             onComment={handleComment}
             likeCount={likes}
+            likedPosts={likedPosts}
             currentUser={currentUser}
           />
         )}

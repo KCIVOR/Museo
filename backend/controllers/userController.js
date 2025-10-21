@@ -94,4 +94,36 @@ export const getRole = async (req, res) => {
   }
 }
 
+export const getPicture = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profile')
+      .select('profilePicture')
+      .eq('userId', userId)
+      .maybeSingle(); 
+
+    if (error) {
+      console.error('Database error in getPicture:', error);
+      throw error;
+    }
+    
+    if (!profile) {
+      return res.json(null);
+    }
+    
+    res.json(profile.profilePicture);
+
+  } catch(error) {
+    console.error('Error in getPicture:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+
 //const isMatch = await bcrypt.compare(password, data.password); check password

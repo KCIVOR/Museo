@@ -30,6 +30,8 @@ export default function Gallery() {
   const [artworkStats, setArtworkStats] = useState({}); // Store stats for each artwork
   const [statsUpdateTrigger, setStatsUpdateTrigger] = useState(0); // Trigger for stats refresh
   const [role, setRole] = useState(null);
+  const [topArtsWeekly, setTopArtsWeekly] = useState([]); // New state for weekly top arts
+  const [isLoadingTopArts, setIsLoadingTopArts] = useState(true);
   // Get featured artworks for rotation (limit to 6 for better UX)
   const featuredArtworks = artworks.filter(art => art.featured === true).slice(0, 6);
   const hasFeaturedArtworks = featuredArtworks.length > 0;
@@ -57,7 +59,6 @@ export default function Gallery() {
       }
 
       const data = await res.json();
-      console.log('Categories response:', data);
       
       if (data.success && data.categories) {
         // Categories now come with counts from the backend
@@ -92,7 +93,6 @@ export default function Gallery() {
       if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
       const data = await response.json();
       setRole(data);
-      console.log("Fetched user:", data);
     } catch (error) {
       console.error("Error fetching user:", error);
     }
@@ -109,13 +109,10 @@ export default function Gallery() {
       });
 
       const data = await res.json();
-      console.log('Art preference response:', data);
       
       if (data.success && data.artPreference) {
         setUserArtPreferences(data.artPreference);
-        console.log('User art preferences set:', data.artPreference);
       } else {
-        console.log('No art preferences found for user');
         setUserArtPreferences(null);
       }
       
@@ -156,14 +153,11 @@ export default function Gallery() {
           setArtworks(prev => {
             const existingIds = new Set(prev.map(art => art.id));
             const newArtworks = data.artworks.filter(art => !existingIds.has(art.id));
-            console.log(`📊 Frontend - Filtering duplicates: ${data.artworks.length} received, ${newArtworks.length} new, ${data.artworks.length - newArtworks.length} duplicates removed`);
             return [...prev, ...newArtworks];
           });
-          console.log(`📊 Frontend - Loaded ${data.artworks.length} more artworks (page ${page})`);
         } else {
           // Replace artworks for new search/filter
           setArtworks(data.artworks);
-          console.log(`📊 Frontend - Fetched ${data.artworks.length} artworks from database (page ${page})`);
         }
         
         // Update pagination state
@@ -177,9 +171,7 @@ export default function Gallery() {
         
         // Debug: Check featured status in fetched data
         const featuredCount = data.artworks.filter(art => art.featured === true).length;
-        console.log(`🌟 Frontend - API returned ${featuredCount} featured artworks`);
         if (featuredCount > 0) {
-          console.log('🌟 Featured artworks from API:', data.artworks.filter(art => art.featured === true).map(art => art.title));
         }
       } else {
         console.error('Failed to fetch artworks:', data.error);
@@ -201,7 +193,6 @@ export default function Gallery() {
 
   // Fetch stats for multiple artworks using batch endpoint
   const fetchArtworkStats = async (artworkIds) => {
-    console.log(`🔍 Batch fetching stats for ${artworkIds.length} artworks (1 API call instead of ${artworkIds.length * 3})`);
     try {
       const response = await fetch(`${API}/gallery/batch-stats`, {
         method: 'POST',
@@ -220,7 +211,6 @@ export default function Gallery() {
       
       if (data.success && data.stats) {
         setArtworkStats(prev => ({ ...prev, ...data.stats }));
-        console.log(`✅ Batch stats loaded for ${artworkIds.length} artworks`);
       } else {
         throw new Error('Invalid response format');
       }
@@ -228,7 +218,6 @@ export default function Gallery() {
       console.error('Error fetching artwork stats:', error);
       
       // Fallback to individual calls if batch fails
-      console.log('🔄 Falling back to individual stats calls...');
       const statsPromises = artworkIds.map(async (artworkId) => {
         try {
           const [viewsRes, likesRes, commentsRes] = await Promise.all([
@@ -316,31 +305,128 @@ export default function Gallery() {
     }
   };
 
+  // Fetch weekly top arts from the new API
+  const fetchTopArtsWeekly = async () => {
+    try {
+      setIsLoadingTopArts(true);
+      const response = await fetch(`${API}/gallery/top-arts-weekly`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.topArts) {
+        // Check if we need to fetch more artworks
+        const missingArtworkIds = data.topArts
+          .map(topArt => topArt.galleryArtId)
+          .filter(id => !artworks.find(art => art.id === id));
+        
+        let allArtworks = [...artworks];
+        
+        // If some artworks are missing, fetch all artworks from API
+        if (missingArtworkIds.length > 0) {
+          try {
+            const artworkResponse = await fetch(`${API}/gallery/artworks?limit=100`, {
+              method: 'GET',
+              credentials: 'include'
+            });
+            const artworkData = await artworkResponse.json();
+            if (artworkData.success && artworkData.artworks) {
+              allArtworks = artworkData.artworks;
+            }
+          } catch (error) {
+            console.error('Failed to fetch artworks from API:', error);
+          }
+        }
+
+        // Map the top arts data to include artwork details
+        const topArtsWithDetails = data.topArts.map(topArt => {
+          const artwork = allArtworks.find(art => art.id === topArt.galleryArtId);
+          if (artwork) {
+            return {
+              ...artwork,
+              rank_position: topArt.rank_position,
+              engagementScore: topArt.engagementScore,
+              weekStart: data.weekStart
+            };
+          }
+          return null;
+        }).filter(Boolean);
+
+        // Sort by rank position
+        const validTopArts = topArtsWithDetails.sort((a, b) => a.rank_position - b.rank_position);
+        
+        setTopArtsWeekly(validTopArts);
+      } else {
+        setTopArtsWeekly([]);
+      }
+    } catch (error) {
+      console.error('Error fetching weekly top arts:', error);
+      setTopArtsWeekly([]);
+    } finally {
+      setIsLoadingTopArts(false);
+    }
+  };
+
   // Load more artworks for infinite scroll
   const loadMoreArtworks = async () => {
     if (!hasMore || isLoadingMore) return;
     
-    // Find a reference element to maintain position relative to
-    const referenceElement = document.querySelector('.museo-artwork-card:nth-last-child(5)');
-    const referenceOffset = referenceElement ? referenceElement.offsetTop : window.pageYOffset;
+    
+
+    // Store multiple reference points for better position maintenance
+    const currentScrollTop = window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const scrollBottom = currentScrollTop + viewportHeight;
+    
+    // Find reference elements at different positions
+    const referenceElements = [
+      document.querySelector('.museo-artwork-card:nth-last-child(10)'),
+      document.querySelector('.museo-artwork-card:nth-last-child(5)'),
+      document.querySelector('.museo-artwork-card:last-child')
+    ].filter(Boolean);
+    
+    const referenceData = referenceElements.map(el => ({
+      element: el,
+      offsetTop: el.offsetTop,
+      id: el.dataset.artworkId || el.querySelector('img')?.alt || 'unknown'
+    }));
+    
     
     const categoryFilter = selectedCategories.length === 0 ? 'all' : selectedCategories.join(',');
     await fetchArtworks(categoryFilter, currentPage + 1, true);
     
-    // Maintain position relative to the reference element
+    // Maintain position using the best available reference
     setTimeout(() => {
-      if (referenceElement) {
-        const newOffset = referenceElement.offsetTop;
-        const offsetDifference = newOffset - referenceOffset;
-        
-        if (Math.abs(offsetDifference) > 10) { // Only adjust if significant change
-          window.scrollBy(0, offsetDifference);
+      let bestReference = null;
+      let smallestChange = Infinity;
+      
+      referenceData.forEach(ref => {
+        if (ref.element && document.contains(ref.element)) {
+          const currentOffset = ref.element.offsetTop;
+          const change = Math.abs(currentOffset - ref.offsetTop);
+          if (change < smallestChange) {
+            smallestChange = change;
+            bestReference = ref;
+          }
         }
+      });
+      
+      if (bestReference && smallestChange > 20) {
+        const newOffset = bestReference.element.offsetTop;
+        const offsetDifference = newOffset - bestReference.offsetTop;
+        
+        window.scrollBy(0, offsetDifference);
       }
-    }, 150); // Slightly longer delay for masonry to settle
+    }, 200); // Longer delay for masonry to fully settle
   };
 
-  // Infinite scroll with Intersection Observer
+  // Infinite scroll with Intersection Observer + Scroll Backup
   useEffect(() => {
     if (!hasMore || isLoadingMore || artworks.length < 20) return;
     
@@ -350,26 +436,29 @@ export default function Gallery() {
     sentinel.style.background = 'transparent';
     sentinel.id = 'scroll-sentinel';
     
-    // Add sentinel to the end of the artworks container
-    const artworksContainer = document.querySelector('.museo-gallery-masonry');
-    if (artworksContainer) {
-      artworksContainer.appendChild(sentinel);
+    // Add sentinel to the end of the MAIN artworks container (not top arts or other sections)
+    const artworksContainers = document.querySelectorAll('.museo-gallery-masonry');
+    const mainArtworksContainer = artworksContainers[artworksContainers.length - 1]; // Get the last one (main gallery)
+    
+    if (mainArtworksContainer) {
+      mainArtworksContainer.appendChild(sentinel);
       
       const observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
           if (entry.isIntersecting && hasMore && !isLoadingMore) {
-            console.log('🚀 Sentinel visible - loading more artworks');
             loadMoreArtworks();
           }
         },
         {
-          rootMargin: '200px', // Trigger 200px before sentinel becomes visible
+          rootMargin: '50px', // Trigger only 50px before sentinel becomes visible
           threshold: 0.1
         }
       );
       
       observer.observe(sentinel);
+      
+      // Disabled scroll listener - using only intersection observer for more precise control
       
       return () => {
         observer.disconnect();
@@ -419,9 +508,11 @@ export default function Gallery() {
   // Fetch stats when artworks are loaded (with debounce)
   useEffect(() => {
     if (artworks.length > 0) {
-      // Debounce stats fetching to prevent excessive calls
+      // Debounce stats fetching to prevent excessive calls - only for visible artworks
       const timeoutId = setTimeout(() => {
-        const artworkIds = artworks.map(artwork => artwork.id);
+        // Only fetch stats for first 30 artworks (visible on screen)
+        const visibleArtworks = artworks.slice(0, 30);
+        const artworkIds = visibleArtworks.map(artwork => artwork.id);
         fetchArtworkStats(artworkIds);
       }, 500); // Wait 500ms before fetching stats
 
@@ -429,12 +520,20 @@ export default function Gallery() {
     }
   }, [artworks]);
 
-  // Refresh all stats when trigger changes (but not when artworks change)
+  // Fetch weekly top arts when artworks are loaded
+  useEffect(() => {
+    if (artworks.length > 0) {
+      fetchTopArtsWeekly();
+    }
+  }, [artworks.length]); // Only depend on length to avoid excessive calls
+
+  // Refresh stats for visible artworks only (not all artworks)
   useEffect(() => {
     if (statsUpdateTrigger > 0 && artworks.length > 0) {
-      const artworkIds = artworks.map(artwork => artwork.id);
-      fetchArtworkStats(artworkIds);
-      console.log('Refreshed all artwork stats due to trigger');
+      // Only fetch stats for first 30 artworks (visible on screen)
+      const visibleArtworks = artworks.slice(0, 30);
+      const visibleArtworkIds = visibleArtworks.map(artwork => artwork.id);
+      fetchArtworkStats(visibleArtworkIds);
     }
   }, [statsUpdateTrigger]); // Remove artworks dependency
 
@@ -444,9 +543,10 @@ export default function Gallery() {
 
     const interval = setInterval(() => {
       if (artworks.length > 0) {
-        const artworkIds = artworks.map(artwork => artwork.id);
-        fetchArtworkStats(artworkIds);
-        console.log('Periodic stats refresh completed (reduced frequency)');
+        // Only refresh stats for first 30 visible artworks
+        const visibleArtworks = artworks.slice(0, 30);
+        const visibleArtworkIds = visibleArtworks.map(artwork => artwork.id);
+        fetchArtworkStats(visibleArtworkIds);
       }
     }, 300000); // 5 minutes instead of 30 seconds (90% reduction!)
 
@@ -526,29 +626,6 @@ export default function Gallery() {
       .filter(key => userArtPreferences[key] === true)
       .map(key => preferenceMapping[key]);
 
-    console.log('User preferred categories:', preferredCategories);
-    
-    // Debug: Log artwork category formats and featured status
-    if (artworksToSort.length > 0) {
-      console.log('🎨 Frontend - Sample artwork data:', {
-        firstArtwork: {
-          title: artworksToSort[0].title,
-          category: artworksToSort[0].category,
-          categories: artworksToSort[0].categories,
-          featured: artworksToSort[0].featured,
-          categoryType: typeof artworksToSort[0].category,
-          categoriesType: typeof artworksToSort[0].categories
-        }
-      });
-      
-      // Check all artworks for featured status
-      const featuredArtworks = artworksToSort.filter(art => art.featured === true);
-      console.log(`🌟 Frontend - Featured artworks found: ${featuredArtworks.length}`);
-      if (featuredArtworks.length > 0) {
-        console.log('🌟 Featured artwork titles:', featuredArtworks.map(art => art.title));
-      }
-    }
-
     // Separate preferred and non-preferred artworks (handle multiple categories)
     const preferredArtworks = artworksToSort.filter(artwork => {
       if (Array.isArray(artwork.categories)) {
@@ -603,11 +680,6 @@ export default function Gallery() {
     // Then add non-preferred artworks to fill remaining space
     arrangedArtworks.push(...nonPreferredArtworks);
 
-    console.log('Row-based arrangement:', {
-      preferredCount: preferredArtworks.length,
-      preferredRows: preferredRows,
-      totalArranged: arrangedArtworks.length
-    });
 
     return arrangedArtworks;
   };
@@ -633,18 +705,6 @@ export default function Gallery() {
 
   // Function to get all categories for an artwork
   const getArtworkCategories = (artwork) => {
-    // Debug: Log the artwork data structure
-    if (artwork.title === 'gegege' || artwork.title === 'test') {
-      console.log('Artwork category debug:', {
-        title: artwork.title,
-        category: artwork.category,
-        categories: artwork.categories,
-        categoryType: typeof artwork.category,
-        categoriesType: typeof artwork.categories,
-        fullArtwork: artwork
-      });
-    }
-
     // Handle single category (string)
     if (typeof artwork.category === 'string') {
       return [artwork.category];
@@ -708,7 +768,6 @@ export default function Gallery() {
 
   // Helper function to open artwork modal
   const openArtworkModal = (artwork, context = 'ARTWORK') => {
-    console.log(`🎨 ${context} CLICKED:`, artwork?.title);
     setSelectedArtwork(artwork);
     setIsArtworkModalOpen(true);
   };
@@ -722,7 +781,6 @@ export default function Gallery() {
   // Handle artwork upload
   const handleArtworkUpload = async (formData) => {
     try {
-      console.log("hi")
       const response = await fetch(`${API}/gallery/upload`, {
         method: 'POST',
         credentials: 'include', // Include cookies for authentication
@@ -735,8 +793,6 @@ export default function Gallery() {
         throw new Error(result.message || 'Upload failed');
       }
 
-      console.log('Upload successful:', result);
-      console.log('🌟 Uploaded artwork featured status:', result.artwork?.featured);
       
       // Refresh artworks list after successful upload (reset to first page)
       setCurrentPage(1);
@@ -753,7 +809,6 @@ export default function Gallery() {
       
       // If the uploaded artwork is featured, it should appear in the hero section
       if (result.artwork?.featured) {
-        console.log('✨ New artwork is featured! It should appear in the hero carousel.');
       }
       
     } catch (error) {
@@ -767,7 +822,16 @@ export default function Gallery() {
       background: 'transparent',
       minHeight: '100vh'
     }}>
-      {/* Artistic Museum Hero Section */}
+      {/* Loading State */}
+      <MuseoLoadingBox 
+        show={isLoadingArtworks} 
+        message={MuseoLoadingBox.messages.gallery} 
+      />
+
+      {/* Main Content - Only show when not loading */}
+      {!isLoadingArtworks && (
+        <>
+          {/* Artistic Museum Hero Section */}
       <div style={{
         background: `
           linear-gradient(145deg, #2c1810 0%, #4a2c1a 15%, #6e4a2e 35%, #8b6f47 60%, #a67c52 85%, #d4b48a 100%),
@@ -1329,30 +1393,8 @@ export default function Gallery() {
       <div className="museo-page museo-page--gallery">
         <div className="museo-feed">
           
-          {/* Top Arts of the Week - Show only when we have artworks */}
-          {(() => {
-            const topArts = filteredArtworks
-              .filter(art => art.top_art_week)
-              .map(art => ({
-                ...art,
-                engagementScore: (artworkStats[art.id]?.views || 0) + 
-                               (artworkStats[art.id]?.likes || 0) * 5 + 
-                               (artworkStats[art.id]?.comments || 0) * 10
-              }))
-              .sort((a, b) => b.engagementScore - a.engagementScore);
-            
-            console.log('🏆 Top Arts Debug (Header):', { 
-              totalArtworks: filteredArtworks.length, 
-              topArtsCount: topArts.length,
-              sortedOrder: topArts.map((art, index) => ({ 
-                rank: index + 1,
-                title: art.title, 
-                engagementScore: art.engagementScore,
-                top_art_week: art.top_art_week 
-              }))
-            });
-            return topArts.length > 0;
-          })() && (
+          {/* Top Arts of the Week - New API-based system */}
+          {!isLoadingTopArts && topArtsWeekly.length > 0 && (
           <div style={{ marginBottom: '80px' }}>
             <div className="museo-gallery-header">
               <h1 className="museo-heading museo-heading--gallery">
@@ -1417,28 +1459,9 @@ export default function Gallery() {
                 padding: '0 20px'
               }}>
                 {(() => {
-                  // Get top arts and sort by engagement score (views + likes*5 + comments*10)
-                  const topArts = filteredArtworks
-                    .filter(art => art.top_art_week)
-                    .map(art => ({
-                      ...art,
-                      engagementScore: (artworkStats[art.id]?.views || 0) + 
-                                     (artworkStats[art.id]?.likes || 0) * 5 + 
-                                     (artworkStats[art.id]?.comments || 0) * 10
-                    }))
-                    .sort((a, b) => b.engagementScore - a.engagementScore)
-                    .slice(0, 6);
+                  // Use the topArtsWeekly data from the new API
+                  const topArts = topArtsWeekly; // Already sorted by rank_position from API
                   
-                  // Debug: Log the sorted order
-                  console.log('🏆 Frontend Top Arts Sorted Order:', topArts.map((art, index) => ({
-                    rank: index + 1,
-                    title: art.title,
-                    engagementScore: art.engagementScore,
-                    views: artworkStats[art.id]?.views || 0,
-                    likes: artworkStats[art.id]?.likes || 0,
-                    comments: artworkStats[art.id]?.comments || 0
-                  })));
-
                   // Helper function to format numbers (e.g., 1000 -> 1K)
                   const formatNumber = (num) => {
                     if (num >= 1000000) {
@@ -1997,6 +2020,7 @@ export default function Gallery() {
                   <div 
                     key={artwork?.id || `section-artwork-${index}`} 
                     className="museo-artwork-card"
+                    data-artwork-id={artwork?.id}
                     style={{ 
                       animationDelay: `${index * 0.02}s`,
                       cursor: 'pointer'
@@ -2009,7 +2033,6 @@ export default function Gallery() {
                       className="museo-artwork-image"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        console.warn(`Failed to load image for artwork: ${artwork.title}`);
                       }}
                       style={{ 
                         height: `${getArtworkHeight(artwork, index)}px !important`,
@@ -2111,6 +2134,7 @@ export default function Gallery() {
               <div 
                 key={`artwork-${artwork?.id || index}-${index}`} 
                 className="museo-artwork-card"
+                data-artwork-id={artwork?.id}
                 style={{ 
                   animationDelay: `${index * 0.02}s`,
                   cursor: 'pointer'
@@ -2123,7 +2147,6 @@ export default function Gallery() {
                   className="museo-artwork-image"
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    console.warn(`Failed to load image for artwork: ${artwork.title}`);
                   }}
                   style={{ 
                     height: `${getArtworkHeight(artwork, index)}px !important`,
@@ -2243,6 +2266,8 @@ export default function Gallery() {
         >
           +
         </button>
+      )}
+        </>
       )}
 
       {/* Upload Art Modal */}

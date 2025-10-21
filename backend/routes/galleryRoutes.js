@@ -1,8 +1,20 @@
 import express from "express";
 import multer from "multer";
-import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, trackArtworkView, getArtworkViews, getBatchArtworkStats } from "../controllers/galleryController.js";
+import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts } from "../controllers/galleryController.js";
 
 const router = express.Router();
+
+// Manual trigger for top arts generation (for testing) - No auth required
+router.post('/trigger-top-arts', async (req, res) => {
+  try {
+    console.log('🚀 Manual trigger received - generating top arts...');
+    await generateWeeklyTopArts();
+    res.json({ success: true, message: 'Top arts generation triggered successfully' });
+  } catch (error) {
+    console.error('Manual trigger failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -59,12 +71,53 @@ router.post('/getViews', getArtworkViews); // Also accept POST for consistency
 // Batch stats endpoint - get stats for multiple artworks in one call
 router.post('/batch-stats', getBatchArtworkStats);
 
-// Manual trigger for Top Arts calculation (for testing)
+// Get current top arts of the week
+router.get('/top-arts-weekly', getCurrentTopArts);
+
+// Debug endpoint to check topArtsWeekly table
+router.get('/debug-top-arts', async (req, res) => {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // Get all records from topArtsWeekly table
+    const { data: allRecords, error } = await supabase
+      .from('topArtsWeekly')
+      .select('*')
+      .order('createdAt', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Debug query error:', error);
+      return res.json({ success: false, error: error.message });
+    }
+
+    res.json({
+      success: true,
+      message: 'Debug info for topArtsWeekly table',
+      totalRecords: allRecords?.length || 0,
+      records: allRecords || [],
+      tableExists: true
+    });
+  } catch (error) {
+    console.error('Debug endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'Debug endpoint failed'
+    });
+  }
+});
+
+// Manual trigger for Top Arts generation (for testing)
 router.post('/trigger-top-arts', async (req, res) => {
   try {
-    const { calculateTopArtsWeekly } = await import('../controllers/galleryController.js');
-    await calculateTopArtsWeekly();
-    res.json({ success: true, message: 'Top Arts calculation completed successfully' });
+    const { generateWeeklyTopArts } = await import('../controllers/galleryController.js');
+    await generateWeeklyTopArts();
+    res.json({ success: true, message: 'Weekly Top Arts generation completed successfully' });
   } catch (error) {
     console.error('❌ Error in manual trigger:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });

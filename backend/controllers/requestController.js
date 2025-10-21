@@ -187,6 +187,11 @@ export const action = async (req, res) => {
           console.warn("Approved but failed to mark request as approved", updErr);
         }
 
+        // Create notification for approved artist request
+        if (reqType === 'artist_verification') {
+          await createArtistRequestNotification(req, userId, 'approved', requestRow);
+        }
+
         return res.status(200).json({
           message: reqType === 'artist_verification' ? "Approved; role set to artist" : "Approved",
           requestId: id,
@@ -214,6 +219,11 @@ export const action = async (req, res) => {
         if (updErr) {
           console.error("Failed to mark rejected request", updErr);
           return res.status(500).json({ error: "Failed to reject request" });
+        }
+
+        // Create notification for rejected artist request
+        if (reqType === 'artist_verification') {
+          await createArtistRequestNotification(req, userId, 'rejected', requestRow);
         }
 
         return res.status(200).json({
@@ -254,5 +264,85 @@ export const deleteRequest = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Helper function to create notifications for artist request actions
+const createArtistRequestNotification = async (req, userId, action, requestRow) => {
+  try {
+    // Get user profile information for the notification
+    const { data: userProfile, error: profileErr } = await db
+      .from("profile")
+      .select("firstName, lastName, profilePicture")
+      .eq("userId", userId)
+      .single();
+
+    if (profileErr) {
+      console.warn('Failed to fetch user profile for notification:', profileErr);
+      return;
+    }
+
+    const userName = `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'User';
+    const isApproved = action === 'approved';
+    
+    const notification = {
+      type: isApproved ? "artist_request_approved" : "artist_request_rejected",
+      requestId: requestRow.requestId,
+      userId: userId,
+      userName: userName,
+      userProfilePicture: userProfile?.profilePicture || null,
+      action: action,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save notification to database
+    const insertRow = {
+      type: notification.type,
+      title: isApproved 
+        ? `🎨 Artist Request Approved` 
+        : `❌ Artist Request Rejected`,
+      body: isApproved 
+        ? `Your request as artist has been approved. You are now an artist!`
+        : `Your request as artist has been rejected.`,
+      data: {
+        requestId: notification.requestId,
+        userId: notification.userId,
+        userName: notification.userName,
+        userProfilePicture: notification.userProfilePicture,
+        action: notification.action
+      },
+      userId: req.user?.id || null, // Admin who performed the action
+      recipient: userId, // Send notification to the user who made the request
+      readByUsers: [], // Initialize empty array
+    };
+
+    const { data: notifRow, error: notifErr } = await db
+      .from('notification')
+      .insert(insertRow)
+      .select('*')
+      .single();
+
+    if (notifErr) {
+      console.warn('Artist request notification insert failed:', notifErr);
+      return;
+    }
+
+    if (notifRow) {
+      notification.notificationId = notifRow.notificationId || notifRow.id;
+      notification.createdAt = notifRow.createdAt || notification.createdAt;
+    }
+
+    // Emit real-time notification via Socket.IO
+    const io = req.app.get("io");
+    if (io) {
+      console.log(`[artist-request] emitting ${action} notification to user ${userId}:`, notification);
+      // Send to specific user room only (not to all users)
+      io.to(`user:${userId}`).emit("notification", notification);
+    } else {
+      console.warn("[artist-request] io not available to emit notification");
+    }
+
+  } catch (error) {
+    console.error('Error creating artist request notification:', error);
   }
 };

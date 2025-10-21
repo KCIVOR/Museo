@@ -8,31 +8,61 @@ import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
 import { useRealtimeNotifications } from "./useRealtimeNotifications";
 import "./Navbar.css";
-// Museo inline SVG icons (top-level to avoid re-creation)
-const IconProfile = ({ className = "nav__mi" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" />
-    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+
+// Professional SVG Icons for Museum Theme
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.35-4.35"/>
   </svg>
 );
-const IconTopUp = ({ className = "nav__mi" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
-    <path d="M8 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    <path d="M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+
+const CoinIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 6v12"/>
+    <path d="M6 12h12"/>
   </svg>
 );
-const IconArtist = ({ className = "nav__mi" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <path d="M4 16c0-4.418 3.582-8 8-8 2.5 0 4 1.5 4 3s-1.5 3-3 3h-1c-1.657 0-3 1.343-3 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="17.5" cy="16.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+
+const BellIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
   </svg>
 );
-const IconLogout = ({ className = "nav__mi" }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <path d="M15 12H4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    <path d="M11 8l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M8 4h6a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.2" opacity=".7" />
+
+const MessageIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const ProfileIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+
+const TopUpIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+    <line x1="1" y1="10" x2="23" y2="10"/>
+  </svg>
+);
+
+const ArtistIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16,17 21,12 16,7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 );
 
@@ -45,6 +75,13 @@ export default function Navbar({ role }) {
   const [registerOpen, setRegisterOpen] = useState(false);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
+
+  // User data state
+  const [userData, setUserData] = useState({
+    avatar: null,
+    username: null,
+    fullName: null
+  });
 
   // Notifications state lives here so we can receive while popover is closed
   const [notifItems, setNotifItems] = useState([]);
@@ -131,6 +168,60 @@ export default function Navbar({ role }) {
     return () => { document.body.style.overflow = prev; };
   }, [registerOpen]);
 
+  // Fetch user data for avatar and profile info
+  useEffect(() => {
+    let abort = false;
+    const fetchUserData = async () => {
+      try {
+        // Fetch profile picture
+        const pictureRes = await fetch(`${window.location.origin.replace(':5173', ':3000')}/api/users/picture`, {
+          method: "GET",
+          credentials: "include",
+        });
+        
+        // Fetch user info
+        const userRes = await fetch(`${window.location.origin.replace(':5173', ':3000')}/api/users/me`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        let profilePicture = null;
+        let userInfo = {};
+
+        if (pictureRes.ok) {
+          profilePicture = await pictureRes.json();
+        } else {
+          console.log('Failed to fetch profile picture:', pictureRes.status, pictureRes.statusText);
+        }
+
+        if (userRes.ok) {
+          userInfo = await userRes.json();
+        } else {
+          console.log('Failed to fetch user info:', userRes.status, userRes.statusText);
+        }
+
+        if (!abort) {
+          setUserData({
+            avatar: profilePicture,
+            username: userInfo.username || null,
+            fullName: userInfo.fullName || userInfo.name || null
+          });
+        }
+      } catch (error) {
+        console.log('Failed to fetch user data:', error);
+        if (!abort) {
+          setUserData({
+            avatar: null,
+            username: null,
+            fullName: null
+          });
+        }
+      }
+    };
+    fetchUserData();
+    return () => { abort = true; };
+  }, []);
+
   const goto = (path) => { setMenuOpen(false); navigate(path); };
 
   const logOut = async () => {
@@ -164,21 +255,25 @@ export default function Navbar({ role }) {
         {/* Right: actions (money + Search button + icons) */}
         <div className="nav__right">
 
-          {/* Search button moved here next to money */}
+          {/* Search button */}
           <button
             type="button"
-            className="nav__searchBtn nav__searchBtn--compact"
+            className="nav__searchBtn"
             aria-label="Go to search"
             onClick={() => navigate("/search")}
           >
-            <span className="nav__searchIcon" aria-hidden="true">🔎</span>
+            <SearchIcon />
             <span className="nav__searchLabel">Search</span>
           </button>
 
           {/* Coins */}
-          <button className="nav__coin" type="button">
-            <span className="nav__coin-icon">🟡</span>
-            <span className="nav__coin-count" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>5042</span>
+          <button 
+            className="nav__coin" 
+            type="button"
+            onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
+          >
+            <CoinIcon />
+            <span className="nav__coin-count">5042</span>
           </button>
 
           {/* Notifications */}
@@ -191,9 +286,15 @@ export default function Navbar({ role }) {
               type="button"
               onClick={() => setNotifOpen((v) => !v)}
             >
-              🔔
+              <BellIcon />
+
               {unreadCount > 0 && (
-                <span className="nav__notif-badge" aria-label={`${unreadCount} unread`}>{unreadCount}</span>
+                <span 
+                  className="nav__notif-badge" 
+                  aria-label={`${unreadCount} unread`}
+                >
+                  {unreadCount}
+                </span>
               )}
             </button>
             {notifOpen && (
@@ -206,7 +307,14 @@ export default function Navbar({ role }) {
           </div>
 
           {/* Messages */}
-          <button className="nav__icon-btn" aria-label="Messages" type="button" onClick={() => setMsgOpen(true)}>💬</button>
+          <button 
+            className="nav__icon-btn" 
+            aria-label="Messages" 
+            type="button" 
+            onClick={() => setMsgOpen(true)}
+          >
+            <MessageIcon /> 
+          </button>
 
           {/* Avatar + dropdown */}
           <div className="nav__account">
@@ -219,18 +327,45 @@ export default function Navbar({ role }) {
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
             >
-              <img className="nav__avatar-img" src="https://pleated-jeans.com/wp-content/uploads/2024/12/funny-random-pictures-12-1-24-10.jpg" alt="" />
+              <img 
+                className="nav__avatar-img" 
+                src={userData.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80"} 
+                alt={userData.fullName || userData.username || "User Avatar"}
+                onError={(e) => {
+                  // First fallback to default avatar
+                  if (e.target.src !== "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80") {
+                    e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80";
+                  } else {
+                    // Final fallback to SVG
+                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23faf8f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
+                  }
+                }}
+              />
               <span className="nav__avatar-caret">▾</span>
             </button>
 
             {menuOpen && (
-              <div id="profile-menu" ref={menuRef} className="nav__menu nav__menu--museo" role="menu" aria-label="Profile options">
-                <a className="nav__menu-item" role="menuitem" onClick={() => goto("/MyProfile")}>
-                  <IconProfile />
-                  <span>My Profile</span>
+              <div 
+                id="profile-menu" 
+                ref={menuRef} 
+                className="nav__menu nav__menu--museo" 
+                role="menu" 
+                aria-label="Profile options"
+              >
+                <a 
+                  className="nav__menu-item" 
+                  role="menuitem" 
+                  onClick={() => goto("/MyProfile")}
+                >
+                  <ProfileIcon />
+                  <span>{userData.fullName || userData.username || "My Profile"}</span>
                 </a>
-                <a className="nav__menu-item" role="menuitem" onClick={() => { setTopupOpen(true); setMenuOpen(false); }}>
-                  <IconTopUp />
+                <a 
+                  className="nav__menu-item" 
+                  role="menuitem" 
+                  onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
+                >
+                  <TopUpIcon />
                   <span>Top‑Up</span>
                 </a>
                 {String(role).trim() === "user" ? (
@@ -239,13 +374,17 @@ export default function Navbar({ role }) {
                     role="menuitem"
                     onClick={() => { setRegisterOpen(true); setMenuOpen(false); }}
                   >
-                    <IconArtist />
-                    <span>Apply as artist</span>
+                    <ArtistIcon />
+                    <span>Apply as Artist</span>
                   </a>
                 ) : null}
                 <div className="nav__menu-sep" />
-                <a className="nav__menu-item nav__menu-danger" role="menuitem" onClick={logOut}>
-                  <IconLogout />
+                <a 
+                  className="nav__menu-item nav__menu-danger" 
+                  role="menuitem" 
+                  onClick={logOut}
+                >
+                  <LogoutIcon />
                   <span>Log‑out</span>
                 </a>
               </div>
