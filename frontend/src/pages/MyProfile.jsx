@@ -118,6 +118,18 @@ function EditProfileModal({ open, onClose, initial }) {
           throw new Error(t || "Failed to update profile");
         }
       }
+      
+      // Dispatch custom event to notify other components about profile update
+      window.dispatchEvent(new CustomEvent('profileUpdated', {
+        detail: { 
+          avatar: avatar?.url || avatar,
+          firstName,
+          lastName,
+          username,
+          bio
+        }
+      }));
+      
       onClose();
     } catch (err) {
       console.error("Update failed:", err);
@@ -169,39 +181,7 @@ function EditProfileModal({ open, onClose, initial }) {
           <button 
             onClick={onClose} 
             aria-label="Close"
-            style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              background: 'rgba(253, 252, 250, 0.9)',
-              border: '1px solid rgba(212, 180, 138, 0.3)',
-              borderRadius: '10px',
-              width: '36px',
-              height: '36px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '16px',
-              color: '#8b6f4d',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 2px 8px rgba(110, 74, 46, 0.1)',
-              zIndex: 10
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(212, 180, 138, 0.08)';
-              e.target.style.color = '#b8722c';
-              e.target.style.borderColor = 'rgba(212, 180, 138, 0.35)';
-              e.target.style.transform = 'translateX(1px)';
-              e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(253, 252, 250, 0.9)';
-              e.target.style.color = '#8b6f4d';
-              e.target.style.borderColor = 'rgba(212, 180, 138, 0.3)';
-              e.target.style.transform = 'translateX(0)';
-              e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.1)';
-            }}
+            className="btn-x"
           >
             ✕
           </button>
@@ -249,37 +229,21 @@ function EditProfileModal({ open, onClose, initial }) {
             )}
             <button
               type="button"
+              className="btn btn-secondary btn-sm"
               onClick={() => pickImage((v) => setCover(v))}
               style={{
                 position: 'absolute',
-                bottom: '10px',
-                right: '10px',
-                background: 'rgba(253, 252, 250, 0.9)',
-                border: '1px solid rgba(212, 180, 138, 0.3)',
-                borderRadius: '10px',
-                padding: '0 14px',
-                height: '34px',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: '#8b6f4d',
-                cursor: 'pointer',
-                fontFamily: 'Georgia, Times New Roman, serif',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(212, 180, 138, 0.08)';
-                e.target.style.borderColor = 'rgba(212, 180, 138, 0.35)';
-                e.target.style.transform = 'translateX(1px)';
-                e.target.style.boxShadow = '0 1px 4px rgba(110, 74, 46, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'rgba(253, 252, 250, 0.9)';
-                e.target.style.borderColor = 'rgba(212, 180, 138, 0.3)';
-                e.target.style.transform = 'translateX(0)';
-                e.target.style.boxShadow = 'none';
+                bottom: '12px',
+                right: '12px',
+                zIndex: 10
               }}
             >
-              Change cover
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+              Change Cover
             </button>
           </div>
 
@@ -340,14 +304,14 @@ function EditProfileModal({ open, onClose, initial }) {
               )}
               <button
                 type="button"
+                className="btn btn-secondary btn-sm"
                 onClick={() => pickImage((v) => setAvatar(v))}
-                className="pe__avatarBtn"
-                style={{
-                  alignSelf: 'flex-start',
-                  marginLeft: '0'
-                }}
               >
-                Change photo
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Change Photo
               </button>
             </div>
 
@@ -360,22 +324,22 @@ function EditProfileModal({ open, onClose, initial }) {
                 gap: '16px',
                 alignItems: 'start'
               }}>
-                <label className="pe__label">
+                <label className="museo-form-label">
                   First name *
                   <input
                     type="text"
-                    className={`pe__input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
+                    className={`museo-input ${validationErrors.firstName ? 'pe__input--error' : ''}`}
                     value={firstName}
                     onChange={(e) => { setFirstName(e.target.value); setValidationErrors((p)=>({...p, firstName: ''})); }}
                     placeholder="First name"
                   />
                   {validationErrors.firstName && <span className="pe__error">{validationErrors.firstName}</span>}
                 </label>
-                <label className="pe__label">
+                <label className="museo-form-label">
                   Middle name
                   <input
                     type="text"
-                    className={`pe__input ${validationErrors.middleName ? 'pe__input--error' : ''}`}
+                    className={`museo-input ${validationErrors.middleName ? 'pe__input--error' : ''}`}
                     value={middleName}
                     onChange={(e) => { setMiddleName(e.target.value); setValidationErrors((p)=>({...p, middleName: ''})); }}
                     placeholder="Middle name"
@@ -384,11 +348,11 @@ function EditProfileModal({ open, onClose, initial }) {
                 </label>
               </div>
 
-            <label className="pe__label">
+            <label className="museo-form-label">
               Last name
               <input
                 type="text"
-                className={`pe__input ${validationErrors.lastName ? 'pe__input--error' : ''}`}
+                className={`museo-input ${validationErrors.lastName ? 'pe__input--error' : ''}`}
                 value={lastName}
                 onChange={(e) => { setLastName(e.target.value); setValidationErrors((p)=>({...p, lastName: ''})); }}
                 placeholder="Last name"
@@ -396,11 +360,11 @@ function EditProfileModal({ open, onClose, initial }) {
               {validationErrors.lastName && <span className="pe__error">{validationErrors.lastName}</span>}
             </label>
 
-            <label className="pe__label">
+            <label className="museo-form-label">
               Username
               <input
                 type="text"
-                className={`pe__input ${validationErrors.username ? 'pe__input--error' : ''}`}
+                className={`museo-input ${validationErrors.username ? 'pe__input--error' : ''}`}
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setValidationErrors((p)=>({...p, username: ''})); }}
                 placeholder="Username"
@@ -408,10 +372,10 @@ function EditProfileModal({ open, onClose, initial }) {
               {validationErrors.username && <span className="pe__error">{validationErrors.username}</span>}
             </label>
 
-            <label className="pe__label">
+            <label className="museo-form-label">
               Bio
               <textarea
-                className={`pe__input pe__input--area ${validationErrors.bio ? 'pe__input--error' : ''}`}
+                className={`museo-input museo-textarea ${validationErrors.bio ? 'pe__input--error' : ''}`}
                 placeholder="Short intro about yourself…"
                 value={bio}
                 onChange={(e) => { setBio(e.target.value); setValidationErrors((p)=>({...p, bio: ''})); }}
@@ -420,10 +384,10 @@ function EditProfileModal({ open, onClose, initial }) {
               {validationErrors.bio && <span className="pe__error">{validationErrors.bio}</span>}
             </label>
 
-            <label className="pe__label">
+            <label className="museo-form-label">
               About
               <textarea
-                className={`pe__input pe__input--area ${validationErrors.about ? 'pe__input--error' : ''}`}
+                className={`museo-input museo-textarea ${validationErrors.about ? 'pe__input--error' : ''}`}
                 placeholder="Write a more detailed description, story, or background…"
                 value={about}
                 onChange={(e) => { setAbout(e.target.value); setValidationErrors((p)=>({...p, about: ''})); }}
@@ -433,21 +397,21 @@ function EditProfileModal({ open, onClose, initial }) {
             </label>
 
             <div className="pe__row">
-              <label className="pe__label">
+              <label className="museo-form-label">
                 Birthdate
                 <input
                   type="date"
-                  className={`pe__input ${validationErrors.birthdate ? 'pe__input--error' : ''}`}
+                  className={`museo-date-input ${validationErrors.birthdate ? 'pe__input--error' : ''}`}
                   value={birthdate || ""}
                   onChange={(e) => { setBirthdate(e.target.value); setValidationErrors((p)=>({...p, birthdate: ''})); }}
                 />
                 {validationErrors.birthdate && <span className="pe__error">{validationErrors.birthdate}</span>}
               </label>
 
-              <label className="pe__label">
+              <label className="museo-form-label">
                 Sex
                 <select
-                  className={`pe__input ${validationErrors.sex ? 'pe__input--error' : ''}`}
+                  className={`museo-dropdown ${validationErrors.sex ? 'pe__input--error' : ''}`}
                   value={sex}
                   onChange={(e) => { setSex(e.target.value); setValidationErrors((p)=>({...p, sex: ''})); }}
                 >
@@ -460,11 +424,11 @@ function EditProfileModal({ open, onClose, initial }) {
               </label>
             </div>
 
-            <label className="pe__label">
+            <label className="museo-form-label">
               Address
               <input
                 type="text"
-                className={`pe__input ${validationErrors.address ? 'pe__input--error' : ''}`}
+                className={`museo-input ${validationErrors.address ? 'pe__input--error' : ''}`}
                 placeholder="Street, city, province"
                 value={address}
                 onChange={(e) => { setAddress(e.target.value); setValidationErrors((p)=>({...p, address: ''})); }}
@@ -479,23 +443,37 @@ function EditProfileModal({ open, onClose, initial }) {
         <div style={{
           padding: '8px 16px 14px',
           borderTop: '1px solid #eef0f2',
-          display: 'flex',
-          gap: '12px',
-          justifyContent: 'flex-end'
         }}>
-          <button 
-            onClick={onClose}
-            className="pe__btn pe__btn--ghost"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={updateProfile}
-            disabled={isSubmitting}
-            className={`pe__btn pe__btn--primary ${isSubmitting ? 'pe__btn--primary:disabled' : ''}`}
-          >
-            {isSubmitting ? "Saving..." : "Save Changes"}
-          </button>
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}>
+            <button className="btn btn-secondary btn-sm" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={updateProfile}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="btn-spinner"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17,21 17,13 7,13 7,21"/>
+                    <polyline points="7,3 7,8 15,8"/>
+                  </svg>
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </section>
     </div>
@@ -696,39 +674,20 @@ export default function MyProfile() {
             {/* Edit Button */}
             <button
               type="button"
+              className="btn btn-secondary btn-sm"
               onClick={() => setOpenEdit(true)}
+              title="Edit profile"
               style={{
                 position: 'absolute',
                 top: '16px',
-                right: '16px',
-                background: 'var(--museo-white)',
-                border: '2px solid var(--museo-accent)',
-                borderRadius: '8px',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '16px',
-                color: 'var(--museo-primary)',
-                zIndex: 10,
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                right: '16px'
               }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'var(--museo-accent)';
-                e.target.style.color = 'var(--museo-white)';
-                e.target.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'var(--museo-white)';
-                e.target.style.color = 'var(--museo-primary)';
-                e.target.style.transform = 'scale(1)';
-              }}
-              title="Edit profile"
             >
-              ✏️
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Edit Profile
             </button>
           </div>
 
@@ -936,7 +895,8 @@ export default function MyProfile() {
               <div className="museo-body">
                 <h1 className="museo-heading" style={{ marginBottom: '20px' }}>My Artwork</h1>
                 <ArtGallery
-                  arts={arts}
+                  enablePagination={true}
+                  fetchUrl="/api/profile/getArts"
                   title=""
                   showStats={true}
                   showActions={true}

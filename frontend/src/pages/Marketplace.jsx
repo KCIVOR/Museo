@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import "./css/marketplace.css";
 
 /* Shared image for all cards (replace with real per-item images later) */
-const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/random-l.jpg";
+const IMG = "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/761ea7b7-f9fb-42da-b0c3-411192d87704/1760981208339-eventfallback.png";
 
 /* Dictionary data with prices */
 const MARKET = {

@@ -8,6 +8,9 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
   const navigate = useNavigate()
   const popRef = useRef(null)
   const [localItems, setLocalItems] = useState([])
+  const [allNotifications, setAllNotifications] = useState([]) // Store all notifications
+  const [displayedCount, setDisplayedCount] = useState(10) // How many to show
+  const [loading, setLoading] = useState(false) // Loading state for "View more"
   const items = itemsProp ?? localItems
   const setItems = setItemsProp ?? setLocalItems
 
@@ -121,7 +124,8 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         })
         
         if (!alive) return
-        apply(() => mapped) // Replace all notifications with filtered/sorted ones
+        setAllNotifications(mapped) // Store all notifications
+        apply(() => mapped.slice(0, displayedCount)) // Show only first 10
       } catch (_) {}
     }
     load()
@@ -142,7 +146,37 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
     }
   }, [onClose])
 
-  const unreadCount = useMemo(() => items.reduce((acc, it) => acc + (it.unread ? 1 : 0), 0), [items])
+  const unreadCount = useMemo(() => allNotifications.reduce((acc, it) => acc + (it.unread ? 1 : 0), 0), [allNotifications])
+  
+  // Function to load more notifications (for infinite scroll)
+  const loadMore = () => {
+    if (loading || !hasMore) return
+    
+    setLoading(true)
+    setTimeout(() => {
+      const newCount = displayedCount + 10
+      setDisplayedCount(newCount)
+      const apply = (updater) => {
+        if (typeof setItemsProp === 'function') setItemsProp(updater)
+        else setItems(updater)
+      }
+      apply(() => allNotifications.slice(0, newCount))
+      setLoading(false)
+    }, 300) // Small delay for better UX
+  }
+  
+  // Check if there are more notifications to load
+  const hasMore = allNotifications.length > displayedCount
+  
+  // Infinite scroll handler
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50 // 50px threshold
+    
+    if (isNearBottom && hasMore && !loading) {
+      loadMore()
+    }
+  }
   // Mark all notifications as read (sync with backend)
   const markAllRead = async () => {
     try {
@@ -152,6 +186,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         credentials: "include" 
       })
       if (res.ok) {
+        setAllNotifications((prev) => prev.map((p) => ({ ...p, unread: false })))
         setItems((prev) => prev.map((p) => ({ ...p, unread: false })))
       }
     } catch (error) {
@@ -169,6 +204,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
           credentials: "include" 
         })
       }
+      setAllNotifications((prev) => prev.map((p) => (p.id === id ? { ...p, unread: false } : p)))
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, unread: false } : p)))
     } catch (error) {
       console.error('Failed to mark as read:', error)
@@ -190,6 +226,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         }
       }
       // Remove from UI regardless of backend success/failure
+      setAllNotifications((prev) => prev.filter((p) => p.id !== id))
       setItems((prev) => prev.filter((p) => p.id !== id))
     } catch (error) {
       console.error('Failed to delete notification:', error)
@@ -215,33 +252,107 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
   }
 
   return (
-    <div ref={popRef} className="notif" role="dialog" aria-label="Notifications" tabIndex={-1}>
-      {/* Header */}
-      <div className="notif__header">
-        <div className="notif__header-left">
-          <span className="notif__header-title">Notifications</span>
+    <div 
+      ref={popRef} 
+      className="dropdown-menu notification-dropdown"
+      role="dialog" 
+      aria-label="Notifications" 
+      tabIndex={-1}
+      style={{
+        position: 'absolute',
+        top: 'calc(100% + 12px)',
+        right: '0',
+        minWidth: '380px',
+        maxWidth: '420px',
+        background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+        border: '2px solid #d4b48a',
+        borderRadius: '16px',
+        boxShadow: '0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3)',
+        padding: '0',
+        zIndex: 1000,
+        opacity: 1,
+        visibility: 'visible',
+        transform: 'translateY(0) scale(1)',
+        transition: 'all 0.3s ease',
+        backdropFilter: 'blur(16px)',
+        fontFamily: 'Georgia, Times New Roman, serif',
+        maxHeight: '480px',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Dropdown Arrow */}
+      <div style={{
+        position: 'absolute',
+        top: '-8px',
+        right: '20px',
+        width: '14px',
+        height: '14px',
+        background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+        borderLeft: '2px solid #d4b48a',
+        borderTop: '2px solid #d4b48a',
+        transform: 'rotate(45deg)',
+        zIndex: -1
+      }} />
+      
+      {/* Notification Header */}
+      <div style={{
+        padding: '20px 24px 16px',
+        borderBottom: '1px solid rgba(212, 180, 138, 0.3)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <h3 style={{
+          margin: '0',
+          fontSize: '18px',
+          fontWeight: '600',
+          color: '#6e4a2e',
+          fontFamily: 'Georgia, Times New Roman, serif'
+        }}>Notifications</h3>
+        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           {unreadCount > 0 && (
-            <span className="notif__chip">{unreadCount}</span>
-          )}
-        </div>
-        <div className="notif__header-actions">
-          {unreadCount > 0 && (
-            <a className="btn-link" onClick={markAllRead}>
+            <button 
+              onClick={markAllRead}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#8b6f47',
+                fontSize: '13px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                transition: 'all 0.3s ease',
+                fontFamily: 'Georgia, Times New Roman, serif'
+              }}
+              onMouseOver={(e) => e.target.style.background = 'rgba(212, 180, 138, 0.1)'}
+              onMouseOut={(e) => e.target.style.background = 'none'}
+            >
               Mark all read
-            </a>
+            </button>
           )}
         </div>
       </div>
-
-      {/* Content */}
-      {items.length === 0 ? (
-        <div className="notif__empty">No notifications yet</div>
-      ) : (
-        <div>
-          {items.map((n) => (
-            <div
+      
+      {/* Notification Items */}
+      <div 
+        style={{maxHeight: '360px', overflowY: 'auto', padding: '8px 0'}}
+        onScroll={handleScroll}
+      >
+        {items.length === 0 ? (
+          <div style={{
+            padding: '40px 24px',
+            textAlign: 'center',
+            color: '#9c8668',
+            fontStyle: 'italic'
+          }}>
+            No notifications yet
+          </div>
+        ) : (
+          <>
+            {items.map((n) => (
+              <div
               key={n.id}
-              className={`notif__item ${n.unread ? 'unread' : ''}`}
+              className="notification-item"
               role="button"
               tabIndex={0}
               onClick={() => {
@@ -261,72 +372,152 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
                   }
                 }
               }}
-              style={{ cursor: n.eventId ? 'pointer' : 'default' }}
+              style={{
+                padding: '16px 24px',
+                borderLeft: n.unread ? '3px solid #d4b48a' : '3px solid transparent',
+                background: n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)' : 'transparent',
+                cursor: n.eventId ? 'pointer' : 'default',
+                transition: 'all 0.3s ease',
+                position: 'relative'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)' : 'rgba(212, 180, 138, 0.05)'}
+              onMouseOut={(e) => e.currentTarget.style.background = n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)' : 'transparent'}
             >
-              {/* Avatar/Image */}
-              {n.image ? (
-                <img
-                  src={n.image}
-                  alt=""
-                  className="notif__avatar"
-                  loading="lazy"
-                  onError={(e) => { 
-                    // Replace with fallback instead of hiding
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              
-              {/* Fallback Avatar - Always present but hidden if image loads */}
-              <div 
-                className="notif__avatar" 
-                style={{ 
-                  display: n.image ? 'none' : 'flex',
+              <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+                {/* Avatar/Image */}
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7c9885 0%, #5a7c65 100%)',
+                  display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                🎨
-              </div>
-
-              {/* Content */}
-              <div className="notif__content">
-                <div className="notif__row">
-                  <div className="notif__title">
-                    {n.title}
-                    {n.unread && <span className="notif__dot"></span>}
-                  </div>
-                  <div className="notif__time">{timeAgo(n.timestamp)}</div>
+                  flexShrink: '0',
+                  overflow: 'hidden'
+                }}>
+                  {n.image ? (
+                    <img
+                      src={n.image}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                      loading="lazy"
+                      onError={(e) => { 
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        parent.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+                      }}
+                    />
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" strokeWidth="2">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  )}
                 </div>
                 
-                {n.subtitle && (
-                  <div className="notif__body">{n.subtitle}</div>
-                )}
+                {/* Content */}
+                <div style={{flex: '1', minWidth: '0'}}>
+                  <h4 style={{
+                    margin: '0 0 4px 0',
+                    fontSize: '15px',
+                    fontWeight: n.unread ? '600' : '500',
+                    color: n.unread ? '#6e4a2e' : '#8b6f47',
+                    lineHeight: '1.3'
+                  }}>{n.title}</h4>
+                  {n.subtitle && (
+                    <p style={{
+                      margin: '0 0 6px 0',
+                      fontSize: '14px',
+                      color: n.unread ? '#8b6f47' : '#9c8668',
+                      lineHeight: '1.4'
+                    }}>{n.subtitle}</p>
+                  )}
+                  <span style={{
+                    fontSize: '12px',
+                    color: n.unread ? '#9c8668' : '#b8a688',
+                    fontStyle: 'italic'
+                  }}>{timeAgo(n.timestamp)}</span>
+                </div>
                 
+                {/* Right column with unread dot and X button */}
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'}}>
+                  {n.unread && (
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#d4b48a',
+                      flexShrink: '0'
+                    }} />
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeItem(n.id, n.notificationId);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#9c8668',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      borderRadius: '4px',
+                      transition: 'all 0.3s ease',
+                      width: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: '0'
+                    }}
+                    onMouseOver={(e) => {e.target.style.background = 'rgba(196, 117, 110, 0.1)'; e.target.style.color = '#c4756e'}}
+                    onMouseOut={(e) => {e.target.style.background = 'none'; e.target.style.color = '#9c8668'}}
+                    aria-label="Remove notification"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-
-              {/* Dismiss Link */}
-              <a
-                href="#"
-                className="notif__dismiss"
-                aria-label="Dismiss"
-                onClick={(e) => { 
-                  e.preventDefault();
-                  e.stopPropagation(); 
-                  removeItem(n.id, n.notificationId);
-                }}
-              >
-                Close
-              </a>
             </div>
-          ))}
-        </div>
-      )}
+            ))}
+            
+            {/* Loading indicator at bottom when scrolling */}
+            {loading && hasMore && (
+              <div style={{
+                padding: '16px 24px',
+                textAlign: 'center',
+                borderTop: '1px solid rgba(212, 180, 138, 0.1)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  color: '#9c8668',
+                  fontSize: '14px',
+                  fontFamily: 'Georgia, Times New Roman, serif'
+                }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    border: '2px solid #d4b48a',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Loading more notifications...
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

@@ -112,16 +112,27 @@ export const createPost = async (req, res) => {
 
 export const getPost = async (req, res) => {
   try {
+    // Extract pagination parameters from query (Gallery style)
+    const { page = 1, limit = 10 } = req.query;
+    
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+    
 
+    // Fetch posts with pagination (Gallery style)
     const { data: posts, error } = await supabase
       .from('post')
       .select('*')
-      .order('datePosted', { ascending: false });
+      .order('datePosted', { ascending: false })
+      .range(offset, offset + limitNum - 1);
 
     if (error) {
-      console.error("Error fetching posts:", error);
+      console.error("❌ Error fetching posts:", error);
       return res.status(500).json({ error: error.message });
     }
+
 
 
     // Get unique user IDs to fetch user data
@@ -175,51 +186,56 @@ export const getPost = async (req, res) => {
       }
     } catch {}
 
-    // Split announcements vs regular posts
-    const announcementRows = (posts || []).filter(p => p.isAnnouncement === true);
-    const regularRows = (posts || []).filter(p => !p.isAnnouncement);
+    // Process all posts (both regular and announcements) in the main posts array
 
-    const formattedPosts = regularRows.map(post => ({
-      id: post.postId,
-      user: userMap.get(post.userId) || {
-        id: post.userId,
-        name: 'Anonymous',
-        avatar: 'https://via.placeholder.com/40'
-      },
-      text: post.description,
-      image: post.image,
-      datePosted: post.datePosted,
-      timestamp: new Date(post.datePosted).toLocaleString(),
-      isAnnouncement: false,
-    }));
-
-    const formattedAnnouncements = announcementRows.map(post => {
-      let evId = post.eventId || null;
-      if (!evId && post.title && post.date) {
-        const k = `${String(post.title).toLowerCase()}|${new Date(post.date).toISOString()}`;
-        evId = eventIndex.get(k) || null;
+    const formattedPosts = posts.map(post => {
+      if (post.isAnnouncement === true) {
+        // Format as announcement post
+        let evId = post.eventId || null;
+        if (!evId && post.title && post.date) {
+          const k = `${String(post.title).toLowerCase()}|${new Date(post.date).toISOString()}`;
+          evId = eventIndex.get(k) || null;
+        }
+        return {
+          id: post.postId,
+          userId: post.userId,  // Add userId at root level for permission checks
+          eventId: evId,
+          title: post.title,
+          date: post.date,
+          venueName: post.venueName,
+          user: userMap.get(post.userId) || {
+            id: post.userId,
+            name: 'Anonymous',
+            avatar: 'https://via.placeholder.com/40'
+          },
+          isAnnouncement: true,
+          datePosted: post.datePosted,
+          timestamp: new Date(post.datePosted).toLocaleString(),
+          text: post.description || '',
+          image: post.image || null,
+          newsfeedId: post.newsfeedId || null,
+        };
+      } else {
+        // Format as regular post
+        return {
+          id: post.postId,
+          userId: post.userId,  // Add userId at root level for permission checks
+          user: userMap.get(post.userId) || {
+            id: post.userId,
+            name: 'Anonymous',
+            avatar: 'https://via.placeholder.com/40'
+          },
+          text: post.description,
+          image: post.image,
+          datePosted: post.datePosted,
+          timestamp: new Date(post.datePosted).toLocaleString(),
+          isAnnouncement: false,
+        };
       }
-      return {
-        id: post.postId,
-        eventId: evId,
-        title: post.title,
-        date: post.date,
-        venueName: post.venueName,
-        user: userMap.get(post.userId) || {
-          id: post.userId,
-          name: 'Anonymous',
-          avatar: 'https://via.placeholder.com/40'
-        },
-        isAnnouncement: true,
-        datePosted: post.datePosted,
-        timestamp: new Date(post.datePosted).toLocaleString(),
-        // include optional fields if present
-        image: post.image || null,
-        newsfeedId: post.newsfeedId || null,
-      };
     });
 
-    console.log(`📋 Fetched ${formattedPosts.length} regular posts, ${formattedAnnouncements.length} announcements`);
+    // Separate announcements for the old announcements field (for backward compatibility)
+    const formattedAnnouncements = formattedPosts.filter(p => p.isAnnouncement === true);
 
     const {data: reacts, reactError} = await supabase
       .from('react')
@@ -231,7 +247,8 @@ export const getPost = async (req, res) => {
       return res.status(500).json({ error: reactError.message });
     }
 
-    console.log('react length', reacts.length)
+    // Get current user ID to check which posts they've liked
+    const currentUserId = req.user?.id;
 
     const {data: comments, commentError} = await supabase
       .from('comment')
@@ -242,15 +259,34 @@ export const getPost = async (req, res) => {
       console.error("Error fetching react:", commentError);
       return res.status(500).json({ error: commentError.message });
     }
+    
+    // Calculate pagination info (Gallery style)
+    const hasMore = formattedPosts.length === limitNum;
 
-    console.log('comment length', comments.length)
-    console.log(formattedAnnouncements)
+    // Create user-specific liked posts array
+    const userLikedPosts = {};
+    if (currentUserId && reacts) {
+      reacts.forEach(react => {
+        if (react.userId === currentUserId && react.postId) {
+          userLikedPosts[react.postId] = true;
+        }
+      });
+    }
+
+
     res.status(200).json({
       message: "Posts fetched successfully",
-      posts: formattedPosts,
-      announcements: formattedAnnouncements,
+      posts: formattedPosts, // Now includes both regular posts and announcements
+      announcements: [], // Empty since announcements are now in posts array
       reacts,
       comments,
+      userLikedPosts, // Add user's liked posts
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: formattedPosts.length,
+        hasMore
+      }
     });
 
   } catch (err) {
@@ -428,6 +464,361 @@ export const getComments = async (req, res) => {
     return res.status(200).json({ comments });
   } catch (err) {
     console.error("getComments error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE /api/homepage/posts/:postId
+export const deletePost = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const { postId } = req.params;
+    if (!postId) {
+      return res.status(400).json({ error: "postId is required" });
+    }
+
+    // First, check if the post exists and get its details
+    const { data: existingPost, error: fetchError } = await supabase
+      .from('post')
+      .select('postId, userId, image')
+      .eq('postId', postId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching post:", fetchError);
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Check if user is authorized to delete (post owner or admin)
+    console.log(`🔐 Delete authorization check for user ${req.user.id}:`);
+    console.log(`🔐 Post owner: ${existingPost.userId}`);
+    console.log(`🔐 User object:`, req.user);
+    
+    // Get user role from database to ensure we have the latest role
+    const { data: userProfile, error: userError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', req.user.id)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = existingPost.userId === req.user.id;
+    const isAdmin = userRole === 'admin';
+    
+    console.log(`🔐 User role: ${userRole}`);
+    console.log(`🔐 Is owner: ${isOwner}`);
+    console.log(`🔐 Is admin: ${isAdmin}`);
+
+    if (!isOwner && !isAdmin) {
+      console.log(`❌ Authorization failed: User ${req.user.id} cannot delete post ${postId}`);
+      return res.status(403).json({ error: "Not authorized to delete this post" });
+    }
+    
+    console.log(`✅ Authorization passed: User ${req.user.id} can delete post ${postId} (owner: ${isOwner}, admin: ${isAdmin})`);
+
+    // Delete associated reactions first
+    const { error: reactError } = await supabase
+      .from('react')
+      .delete()
+      .eq('postId', postId);
+
+    if (reactError) {
+      console.warn("Error deleting reactions:", reactError);
+    }
+
+    // Delete associated comments
+    const { error: commentError } = await supabase
+      .from('comment')
+      .delete()
+      .eq('postId', postId);
+
+    if (commentError) {
+      console.warn("Error deleting comments:", commentError);
+    }
+
+    // Delete images from storage if they exist
+    if (existingPost.image && Array.isArray(existingPost.image)) {
+      console.log(`🗑️ Attempting to delete ${existingPost.image.length} images for post ${postId}`);
+      
+      for (const imageUrl of existingPost.image) {
+        try {
+          console.log(`🗑️ Processing image URL: ${imageUrl}`);
+          
+          // Extract file path from URL - handle different URL formats
+          let filePath = '';
+          
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            // Full Supabase URL format
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            // Relative URL format
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
+          } else {
+            // Fallback: assume it's just the filename and construct path
+            const fileName = imageUrl.split('/').pop();
+            filePath = `pics/${existingPost.userId}/${fileName}`;
+          }
+          
+          console.log(`🗑️ Attempting to delete file path: ${filePath}`);
+
+          const { error: storageError } = await supabase.storage
+            .from('uploads')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.error(`❌ Error deleting image ${filePath}:`, storageError);
+          } else {
+            console.log(`✅ Successfully deleted image: ${filePath}`);
+          }
+        } catch (imageError) {
+          console.error("❌ Error processing image deletion:", imageError);
+        }
+      }
+    } else if (existingPost.image && typeof existingPost.image === 'string') {
+      // Handle single image as string
+      console.log(`🗑️ Processing single image: ${existingPost.image}`);
+      
+      try {
+        let filePath = '';
+        
+        if (existingPost.image.includes('/storage/v1/object/public/uploads/')) {
+          const pathPart = existingPost.image.split('/storage/v1/object/public/uploads/')[1];
+          filePath = pathPart;
+        } else if (existingPost.image.includes('/uploads/')) {
+          const pathPart = existingPost.image.split('/uploads/')[1];
+          filePath = pathPart;
+        } else {
+          const fileName = existingPost.image.split('/').pop();
+          filePath = `pics/${existingPost.userId}/${fileName}`;
+        }
+        
+        console.log(`🗑️ Attempting to delete single image path: ${filePath}`);
+
+        const { error: storageError } = await supabase.storage
+          .from('uploads')
+          .remove([filePath]);
+
+        if (storageError) {
+          console.error(`❌ Error deleting single image ${filePath}:`, storageError);
+        } else {
+          console.log(`✅ Successfully deleted single image: ${filePath}`);
+        }
+      } catch (imageError) {
+        console.error("❌ Error processing single image deletion:", imageError);
+      }
+    } else {
+      console.log(`ℹ️ No images to delete for post ${postId}`);
+    }
+
+    // Finally, delete the post
+    const { error: deleteError } = await supabase
+      .from('post')
+      .delete()
+      .eq('postId', postId);
+
+    if (deleteError) {
+      console.error("Error deleting post:", deleteError);
+      return res.status(500).json({ error: "Failed to delete post" });
+    }
+
+    console.log(`✅ Post ${postId} deleted successfully by user ${req.user.id}`);
+    return res.status(200).json({ 
+      message: "Post deleted successfully",
+      postId: postId
+    });
+
+  } catch (err) {
+    console.error("deletePost error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /api/homepage/posts/:postId
+export const updatePost = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // Use SERVICE_KEY client
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    const { postId } = req.params;
+    const { description, existingImages, imagesToRemove } = req.body;
+    const files = req.files || [];
+
+    console.log(`🔍 Updating post with ID: ${postId}`);
+    console.log(`📝 Description: ${description}`);
+    console.log(`📁 Files received: ${files.length}`);
+
+    if (!postId) {
+      return res.status(400).json({ error: "postId is required" });
+    }
+
+    if (!description || description.trim() === '') {
+      return res.status(400).json({ error: "Description is required" });
+    }
+
+    // First, check if the post exists and get its details
+    const { data: existingPost, error: fetchError } = await supabase
+      .from('post')
+      .select('postId, userId, description, image')
+      .eq('postId', postId)
+      .single();
+
+    console.log(`🔍 Database query result:`, { existingPost, fetchError });
+
+    if (fetchError) {
+      console.error("Error fetching post:", fetchError);
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Check if user is authorized to update (post owner or admin)
+    console.log(`🔐 Update authorization check for user ${req.user.id}:`);
+    console.log(`🔐 Post owner: ${existingPost.userId}`);
+    console.log(`🔐 User object:`, req.user);
+    
+    // Get user role from database to ensure we have the latest role
+    const { data: userProfile, error: userError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', req.user.id)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = existingPost.userId === req.user.id;
+    const isAdmin = userRole === 'admin';
+    
+    console.log(`🔐 User role: ${userRole}`);
+    console.log(`🔐 Is owner: ${isOwner}`);
+    console.log(`🔐 Is admin: ${isAdmin}`);
+
+    if (!isOwner && !isAdmin) {
+      console.log(`❌ Authorization failed: User ${req.user.id} cannot update post ${postId}`);
+      return res.status(403).json({ error: "Not authorized to update this post" });
+    }
+    
+    console.log(`✅ Authorization passed: User ${req.user.id} can update post ${postId} (owner: ${isOwner}, admin: ${isAdmin})`);
+
+    // Handle image uploads
+    const uploadedUrls = [];
+    const userId = req.user.id;
+
+    // Upload new images
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const fileName = `${Date.now()}-${file.originalname}`;
+        const filePath = `pics/${userId}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from("uploads")
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false,
+          });
+
+        if (error) {
+          console.error("Upload error:", error);
+          continue; // Skip this file but continue with others
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("uploads")
+          .getPublicUrl(filePath);
+
+        if (urlData?.publicUrl) {
+          uploadedUrls.push(urlData.publicUrl);
+        }
+      }
+    }
+
+    // Process existing images and handle deletions
+    let finalImages = [];
+    const imagesToDelete = [];
+    
+    // Get original images from database
+    const originalImages = existingPost.image && Array.isArray(existingPost.image) ? existingPost.image : [];
+    
+    // Determine which images to keep (sent from frontend as existingImages)
+    if (existingImages) {
+      const existingImagesArray = Array.isArray(existingImages) ? existingImages : [existingImages];
+      finalImages = [...existingImagesArray];
+      
+      // Find images that were removed (in original but not in existingImages)
+      imagesToDelete.push(...originalImages.filter(img => !existingImagesArray.includes(img)));
+    } else {
+      // If no existingImages sent, assume all original images were removed
+      imagesToDelete.push(...originalImages);
+    }
+
+    // Add newly uploaded images
+    finalImages = [...finalImages, ...uploadedUrls];
+
+    // Remove duplicates
+    finalImages = [...new Set(finalImages)];
+
+    console.log(`🗑️ Images to delete from storage: ${imagesToDelete.length}`);
+    console.log(`📁 Final images after update: ${finalImages.length}`);
+
+    // Delete removed images from Supabase storage
+    for (const imageUrl of imagesToDelete) {
+      try {
+        // Extract file path from URL
+        // URL format: https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/userId/filename
+        const urlParts = imageUrl.split('/uploads/');
+        if (urlParts.length === 2) {
+          const filePath = urlParts[1]; // e.g., "pics/userId/filename"
+          
+          const { error: deleteError } = await supabase.storage
+            .from('uploads')
+            .remove([filePath]);
+            
+          if (deleteError) {
+            console.error(`❌ Failed to delete image from storage: ${filePath}`, deleteError);
+          } else {
+            console.log(`✅ Deleted image from storage: ${filePath}`);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error processing image deletion: ${imageUrl}`, error);
+      }
+    }
+
+    // Update the post (use 'image' field like createPost)
+    const { data: updatedPost, error: updateError } = await supabase
+      .from('post')
+      .update({
+        description: description.trim(),
+        image: finalImages.length > 0 ? finalImages : null
+      })
+      .eq('postId', postId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Error updating post:", updateError);
+      return res.status(500).json({ error: "Failed to update post" });
+    }
+
+    console.log(`✅ Post ${postId} updated successfully by user ${req.user.id}`);
+    return res.status(200).json({
+      message: "Post updated successfully",
+      postId: updatedPost.postId,
+      description: updatedPost.description,
+      images: updatedPost.image, // Use 'image' field from database
+      datePosted: updatedPost.datePosted
+    });
+
+  } catch (err) {
+    console.error("updatePost error:", err);
     return res.status(500).json({ error: err.message });
   }
 };

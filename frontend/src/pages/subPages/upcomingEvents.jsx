@@ -51,8 +51,34 @@ function bucketLabel(dateLike) {
   const nowMs = manilaMidnightMs(new Date());
   const evMs = manilaMidnightMs(dateLike);
   const diffDays = Math.floor((evMs - nowMs) / 86400000);
+  
+  // Get Manila year/month for event and current date
+  const { y: nowY, m: nowM } = (() => {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
+    const y = Number(parts.find(p => p.type === 'year')?.value);
+    const m = Number(parts.find(p => p.type === 'month')?.value);
+    return { y, m };
+  })();
+  
+  const { y: evY, m: evM } = (() => {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit' }).formatToParts(new Date(dateLike));
+    const y = Number(parts.find(p => p.type === 'year')?.value);
+    const m = Number(parts.find(p => p.type === 'month')?.value);
+    return { y, m };
+  })();
+  
+  // Check if it's next month
+  let nextMonthY = nowY; 
+  let nextMonthM = nowM + 1;
+  if (nextMonthM > 12) { 
+    nextMonthM = 1; 
+    nextMonthY += 1; 
+  }
+  
+  // Prioritize time-based buckets over month-based buckets
   if (diffDays <= 7) return "This Week";
   if (diffDays <= 14) return "Next Week";
+  if (evY === nextMonthY && evM === nextMonthM) return "Next Month";
   return "Later";
 }
 
@@ -133,7 +159,17 @@ export default function UpcomingEvents() {
   };
   const isNextMonth = (dateLike) => {
     const { y, m } = getManilaYearMonth(dateLike);
-    return y === nextMonthYM.y && m === nextMonthYM.m;
+    const isInNextMonth = y === nextMonthYM.y && m === nextMonthYM.m;
+    
+    // Only return true if it's in next month AND not in this week or next week
+    if (!isInNextMonth) return false;
+    
+    const nowMs = manilaMidnightMs(new Date());
+    const evMs = manilaMidnightMs(dateLike);
+    const diff = Math.floor((evMs - nowMs) / 86400000);
+    
+    // Exclude if it's within 14 days (This Week or Next Week)
+    return diff > 14;
   };
   const isLater = (dateLike) => {
     const nowMs = manilaMidnightMs(new Date());
@@ -180,7 +216,7 @@ export default function UpcomingEvents() {
   }, [filteredUi, activeFilter]);
 
   const total = filteredUi.length;
-  const orderedLabels = ["This Week", "Next Week", "Later"];
+  const orderedLabels = ["This Week", "Next Week", "Next Month", "Later"];
 
   const openDetails = (ev) => {
     navigate(`/event/${ev.id}`);
@@ -224,21 +260,7 @@ export default function UpcomingEvents() {
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '25px',
-                border: `2px solid ${activeFilter === filter ? 'var(--museo-gold)' : 'var(--museo-border)'}`,
-                background: activeFilter === filter ? 'var(--museo-gold)' : 'var(--museo-ivory)',
-                color: activeFilter === filter ? 'white' : 'var(--museo-charcoal)',
-                fontWeight: '600',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                minWidth: '80px',
-                whiteSpace: 'nowrap'
-              }}
+              className={`btn-filter ${activeFilter === filter ? 'active' : ''}`}
             >
               {filter}
             </button>
@@ -258,7 +280,7 @@ export default function UpcomingEvents() {
         )}
 
         {/* Event Buckets */}
-        {!loading && activeFilter === 'Done'
+        {!loading && activeFilter === 'Done' && filteredUi.length > 0
           ? (
             <div>
               <h2 style={{ 
@@ -343,7 +365,7 @@ export default function UpcomingEvents() {
                           alignSelf: 'stretch'
                         }}
                       >
-                        <button className="museo-btn museo-btn--primary" onClick={() => openDetails(ev)}>
+                        <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
                           View Details
                         </button>
                       </div>
@@ -470,7 +492,7 @@ export default function UpcomingEvents() {
                               alignSelf: 'stretch'
                             }}
                           >
-                            <button className="museo-btn museo-btn--primary" onClick={() => openDetails(ev)}>
+                            <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
                               View Details
                             </button>
                           </div>

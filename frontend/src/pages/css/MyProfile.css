@@ -266,58 +266,9 @@
   gap: 12px;
 }
 
-.pArtBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: capitalize;
-}
+/* Art button styles removed for consistent redesign */
 
-.pArtBtn--view {
-  background: var(--museo-primary);
-  color: var(--museo-text-inverse);
-}
-
-.pArtBtn--view:hover {
-  background: var(--museo-primary-dark);
-  color: white;
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
-}
-
-.pArtBtn--like {
-  background: var(--museo-bg-secondary);
-  color: var(--museo-primary);
-  border: 1px solid var(--museo-border);
-}
-
-.pArtBtn--like:hover {
-  background: var(--museo-bg-tertiary);
-  color: white;
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
-}
-
-.pArtBtn--like span {
-  color: var(--museo-primary);
-  font-weight: 700;
-}
-
-.pArtBtn--like:hover span {
-  color: white;
-}
-
-.pArtBtn--view svg,
-.pArtBtn--like svg {
-  stroke: currentColor;
-}
+/* SVG styles removed with button cleanup */
 
 /* Empty State */
 .pEmptyState {
@@ -502,24 +453,7 @@
 
 .pe__coverEmpty { width: 100%; height: 100%; display: grid; place-items: center; color: var(--museo-text-muted); }
 
-.pe__coverBtn {
-  position: absolute; right: 10px; bottom: 10px;
-  height: 34px; padding: 0 14px; border-radius: 10px;
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-secondary);
-  cursor: pointer;
-  font-weight: 600;
-  font-family: var(--museo-font-body);
-  transition: all 0.3s ease;
-}
-
-.pe__coverBtn:hover { 
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
+/* Cover button styles removed for consistent redesign */
 
 .pe__body {
   display: grid; grid-template-columns: 160px 1fr; gap: 16px;
@@ -542,28 +476,7 @@
   display: grid; place-items: center;
 }
 .pe__avatarEmpty { color: var(--museo-text-muted); font-weight: 700; }
-.pe__avatarBtn {
-  position: static;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-secondary);
-  cursor: pointer;
-  font-weight: 600;
-  font-family: var(--museo-font-body);
-  transition: all 0.3s ease;
-}
-.pe__avatarBtn:hover { 
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
+/* Avatar button styles removed for consistent redesign */
 
 .pe__form {
   display: grid;
@@ -575,147 +488,27 @@
   gap: 16px;                        /* more space between side-by-side inputs */
   align-items: start;               /* prevent tall sibling from stretching the other */
 }
-.pe__label {
-  display: grid;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--museo-primary);
-  font-family: var(--museo-font-body);
-  align-items: start;
-}
-.pe__input {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--museo-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-primary);
-  font-family: var(--museo-font-body);
-  align-self: start;
-  transition: all 0.3s ease;
-}
-.pe__input:focus {
-  outline: none;
-  border-color: var(--museo-border-hover);
-  box-shadow: 0 0 0 2px var(--museo-shadow-light);
-  background: var(--museo-white);
-}
-.pe__input--area {
-  min-height: 72px;
-  resize: vertical;
-  background: var(--museo-bg-secondary);
-}
-.pe__input--area:focus {
-  background: var(--museo-white);
+/* pe__label styles removed - now using museo-form-label from buttons.css */
+/* pe__input styles removed - now using museo-input from buttons.css */
+
+/* Error styling for museo inputs */
+.pe__input--error { 
+  border-color: var(--museo-error) !important; 
 }
 
-.pe__footer {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;                  /* let buttons wrap on small screens */
-  gap: 12px;
-  padding: 8px 16px 14px;
-  border-top: 1px solid var(--museo-border);
-}
-.pe__btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font-weight: 800;
-  cursor: pointer;
-  width: auto;
-}
-.pe__btn--ghost { 
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-secondary);
-  font-family: var(--museo-font-body);
-}
-.pe__btn--ghost:hover { 
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
-.pe__btn--primary { 
-  border: 1px solid var(--museo-primary);
-  background: var(--museo-primary);
-  color: var(--museo-white);
-  font-family: var(--museo-font-body);
-}
-.pe__btn--primary:hover { 
-  background: var(--museo-bg-hover);
-  color: var(--museo-primary);
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 4px 12px var(--museo-shadow);
-}
-.pe__btn--primary:disabled { 
-  background: var(--museo-text-muted); 
-  border-color: var(--museo-text-muted); 
-  color: var(--museo-white); 
-  cursor: not-allowed; 
-}
-
-/* Error styling */
-.pe__input--error { border-color: var(--museo-error) !important; }
 .pe__error { 
   color: var(--museo-error); 
   font-size: 12px; 
   margin-top: 4px; 
   display: block; 
 }
-.pe__subtitle {
-  color: var(--museo-text-muted);
-  font-size: 14px;
-  margin: 4px 0 0 0;
+.pArtGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
 }
-
-.pQuickBio {
-  margin-top: 8px;
-  font-style: italic;
-  color: #374151;
-}
-
-/* Loading Animation */
-.pArtCard.loading {
-  position: relative;
-  overflow: hidden;
-}
-
-.pArtCard.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.4),
-    transparent
-  );
-  animation: shimmer 1.5s infinite;
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  :root { --feed-max: 820px; }
-  .pAvatarWrap { width: 140px; height: 140px; bottom: -56px; }
-  .pHeader { margin-top: 80px; }
-  .pName { font-size: 34px; }
-  
-  .pArtGrid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-  }
-  
-  .pArtCard {
-    border-radius: 16px;
-  }
+.pArtCard {
+  border-radius: 16px;
   
   .pArtImageWrapper {
     border-radius: 12px 12px 0 0;
@@ -750,10 +543,7 @@
     gap: 8px;
   }
   
-  .pArtBtn {
-    padding: 6px 10px;
-    font-size: 13px;
-  }
+  /* Responsive art button styles removed */
   
   .pSectionBar {
     flex-direction: column;

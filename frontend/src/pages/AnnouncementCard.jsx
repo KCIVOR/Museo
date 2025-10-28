@@ -69,8 +69,22 @@ export default function AnnouncementCard({ post, onClose }) {
         <div className="announce__title">Upcoming “{title}”</div>
         <div className="announce__meta">{dateStr}{venue ? ` • ${venue}` : ""}</div>
         <div className="announce__ctaRow">
-          <button className="btn-outline-dark" type="button" onClick={handleView}>View Details</button>
-          <button className="btn-outline-dark" type="button" onClick={handleIcs}>Add to Calendar</button>
+          <button className="btn btn-primary btn-sm" type="button" onClick={handleView}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            View Details
+          </button>
+          <button className="btn btn-secondary btn-sm" type="button" onClick={handleIcs}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Add to Calendar
+          </button>
         </div>
       </div>
       {onClose && (

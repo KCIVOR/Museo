@@ -22,12 +22,13 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
-  background: #fff !important;
-  color: #111 !important;
-  border: 1px solid #e6e6ea !important;
-  border-radius: 8px;
-  box-shadow: none !important;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: #444;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 6px;
   outline: none;
   appearance: none;
 }
@@ -44,23 +45,7 @@
   background: #f6f0e9 !important;
 }
 
-/* Neutralize design-system button variants inside dropdown */
-.nav__menu .museo-btn,
-.nav__menu .museo-btn--primary,
-.nav__menu .museo-btn--secondary,
-.nav__menu .museo-btn--accent,
-.nav__menu .museo-btn--success,
-.nav__menu .museo-btn--warning,
-.nav__menu .museo-btn--error {
-  background: #fff !important;
-  color: #111 !important;
-  border: 1px solid #e6e6ea !important;
-  box-shadow: none !important;
-}
-.nav__menu .museo-btn:hover,
-.nav__menu .museo-btn:focus-visible {
-  background: #f6f0e9 !important;
-}
+/* Button overrides removed for consistent redesign */
 
 /* Left (brand) */
 .nav__brand { 
@@ -99,37 +84,7 @@
   align-items: center;
 }
 
-/* Search button */
-.nav__searchBtn {
-  display: inline-flex !important; 
-  align-items: center !important; 
-  justify-content: center !important; 
-  gap: 8px !important;
-  height: 40px !important; 
-  padding: 0 16px !important;
-  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%) !important; 
-  color: #8b6f47 !important;
-  border: 2px solid #8b6f47 !important; 
-  border-radius: 12px !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
-  font-weight: 600 !important; 
-  font-size: 14px !important;
-  cursor: pointer !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1) !important;
-}
-
-.nav__searchBtn:hover { 
-  background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%) !important;
-  border-color: #d4b48a !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2) !important;
-}
-
-.nav__searchBtn:focus-visible { 
-  outline: 2px solid var(--museo-accent); 
-  outline-offset: 2px; 
-}
+/* Search button styles removed for consistent redesign */
 
 .nav__searchIcon { 
   font-size: 16px; 
@@ -153,46 +108,7 @@
   gap: 10px; 
 }
 
-.nav__icon-btn, .nav__coin, .nav__avatar {
-  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%); 
-  border: 2px solid #8b6f47; 
-  border-radius: 12px; 
-  height: 40px; 
-  padding: 0 12px; 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 8px;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #8b6f47;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
-}
-
-.nav__coin {
-  background: linear-gradient(135deg, #d4b48a 0%, #8b6f47 100%);
-  color: #faf8f5;
-  border-color: #6e4a2e;
-}
-
-.nav__coin-count { 
-  font-weight: 700; 
-  color: #faf8f5;
-  font-size: 14px;
-  text-shadow: 0 1px 2px rgba(44, 24, 16, 0.3);
-}
-
-.nav__avatar {
-  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%) !important;
-  border: 2px solid #8b6f47 !important;
-  border-radius: 50% !important;
-  padding: 4px !important;
-  width: 44px !important;
-  height: 44px !important;
-  position: relative !important;
-}
+/* Icon button, coin, and avatar styles removed for consistent redesign */
 
 .nav__avatar-img { 
   width: 32px; 
@@ -281,13 +197,13 @@
   position: absolute; 
   right: 0; 
   top: calc(100% + 10px);
-  min-width: 240px; 
+  min-width: 200px; 
   background: linear-gradient(135deg, #f8f5f0 0%, #faf7f2 100%); 
   border: 2px solid #d4b48a; 
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(110, 74, 46, 0.2), 0 4px 12px rgba(212, 180, 138, 0.3);
+  box-shadow: 0 12px 30px rgba(110, 74, 46, 0.2), 0 4px 12px rgba(212, 180, 138, 0.3); 
   padding: 12px; 
-  z-index: 200;
+  z-index: 300;
   backdrop-filter: blur(12px);
   font-family: 'Georgia', 'Times New Roman', serif;
 }
@@ -295,18 +211,16 @@
   width: 100%; 
   text-align: left; 
   padding: 12px 16px; 
-  border: 1px solid rgba(212, 180, 138, 0.4); 
-  background: rgba(250, 247, 242, 0.9) !important; 
-  border-radius: 12px;
-  font-size: 14px; 
-  color: #6e4a2e !important; 
-  font-weight: 500;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  border: 1px solid transparent; 
+  border-radius: 10px; 
+  background: transparent; 
+  color: #6e4a2e; 
+  text-decoration: none; 
   cursor: pointer; 
-  position: relative; 
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1) !important;
-  appearance: none;
+  font-size: 14px; 
+  font-weight: 500; 
+  line-height: 1.4;
+  font-family: 'Georgia', 'Times New Roman', serif;
   transition: all 0.3s ease;
   letter-spacing: 0.3px;
 }
@@ -366,7 +280,6 @@
 .modal-overlay {
   position: fixed; 
   inset: 0; 
-  background: rgba(0,0,0,0.45);
   display: grid; 
   place-items: center; 
   z-index: 300;

@@ -13,7 +13,11 @@ export default function PostModal({
   onComment,
   likeCount,
   likedPosts, // liked posts from homepage
-  currentUser // signed-in user's {name, avatar} (optional)
+  currentUser, // signed-in user's {name, avatar} (optional)
+  onEdit,
+  onDelete,
+  onReport,
+  role // user role for admin permissions
 }) {
   const dialogRef = useRef(null);
 
@@ -32,6 +36,8 @@ export default function PostModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [openMenus, setOpenMenus] = useState({}); // Track which post menus are open
 
   const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
 
@@ -74,7 +80,13 @@ export default function PostModal({
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (Object.values(openMenus).some(isOpen => isOpen)) {
+          setOpenMenus({});
+        } else {
+          onClose();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     dialogRef.current?.focus();
@@ -82,7 +94,21 @@ export default function PostModal({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [onClose, openMenus]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const isClickInsideDropdown = event.target.closest('.dropdown-container');
+      
+      if (!isClickInsideDropdown) {
+        setOpenMenus({});
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
+  }, []);
 
   // Load comments when opened
   useEffect(() => {
@@ -111,6 +137,32 @@ export default function PostModal({
   }, [post.id]);
 
   const stop = (e) => e.stopPropagation();
+
+  // Menu functions
+  const toggleMenu = (postId, event) => {
+    event.stopPropagation();
+    setOpenMenus(prev => {
+      // If clicking the same menu that's already open, close it
+      if (prev[postId]) {
+        return {
+          ...prev,
+          [postId]: false
+        };
+      }
+      
+      // Close all other menus and open this one
+      return {
+        [postId]: true
+      };
+    });
+  };
+
+  const closeMenu = (postId) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [postId]: false
+    }));
+  };
 
   const submitComment = async (e) => {
     e.preventDefault();
@@ -179,6 +231,33 @@ export default function PostModal({
     return url && /^https?:\/\//i.test(url) ? url : FALLBACK_AVATAR;
   };
 
+  // Helper function to format description with proper line breaks
+  const formatDescription = (text) => {
+    if (!text) return '';
+    // Preserve line breaks and format text
+    return text.replace(/\n/g, '<br />');
+  };
+
+  // Helper function to truncate description
+  const getTruncatedDescription = (text, maxLength = 150) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return formatDescription(text);
+    
+    // Find a good breaking point (space or punctuation)
+    let truncateAt = maxLength;
+    const breakPoints = ['. ', '! ', '? ', ', ', ' '];
+    
+    for (let breakPoint of breakPoints) {
+      const lastIndex = text.lastIndexOf(breakPoint, maxLength);
+      if (lastIndex > maxLength * 0.7) { // Don't break too early
+        truncateAt = lastIndex + breakPoint.length;
+        break;
+      }
+    }
+    
+    return formatDescription(text.substring(0, truncateAt).trim());
+  };
+
   const images = post.images || [post.image];
   
   if (!post) return null;
@@ -186,10 +265,120 @@ export default function PostModal({
   const modalContent = (
     <div className="museo-modal-overlay artwork-modal-overlay" onClick={onClose}>
       <div className="museo-modal artwork-modal" onClick={stop}>
-        {/* Close Button */}
-        <button className="artwork-modal-close" onClick={onClose}>
-          ✕
-        </button>
+        {/* Header Controls */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '20px', 
+          right: '20px', 
+          display: 'flex', 
+          gap: '8px', 
+          zIndex: 100 
+        }}>
+          {/* Dropdown Menu - Exact copy from Home.jsx */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1000
+            }}
+            className="dropdown-container"
+          >
+            <button
+              className="btn-more"
+              onClick={(e) => toggleMenu(post.id, e)}
+              aria-label="More options"
+            >
+              ⋯
+            </button>
+            
+            {/* Dropdown Menu */}
+            {openMenus[post.id] && (
+              <div 
+                className="dropdown-menu show"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Edit option - for admin or post owner */}
+                {onEdit && (role === 'admin' || currentUser?.id === post.userId) && (
+                  <button
+                    className="dropdown-item"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(post.id);
+                      closeMenu(post.id);
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                  </button>
+                )}
+
+                {/* Report option - for all users except post owner */}
+                {onReport && currentUser?.id !== post.userId && (
+                  <button
+                    className="dropdown-item"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReport(post.id);
+                      closeMenu(post.id);
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                      <line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    Report
+                  </button>
+                )}
+
+                {/* Delete option - for admin or post owner */}
+                {onDelete && (role === 'admin' || currentUser?.id === post.userId) && (
+                  <button
+                    className="dropdown-item danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(post.id);
+                      closeMenu(post.id);
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3,6 5,6 21,6"/>
+                      <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                      <line x1="10" y1="11" x2="10" y2="17"/>
+                      <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Close Button */}
+          <button 
+            className="btn-x" 
+            onClick={onClose}
+            style={{
+              background: 'rgba(44, 24, 16, 0.8)',
+              color: '#f4f1ec',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            ✕
+          </button>
+        </div>
 
         <div className="artwork-modal-content">
           {/* Left Side - Image Gallery */}
@@ -290,9 +479,22 @@ export default function PostModal({
               {(post.text || post.description) && (
                 <div className="artwork-description">
                   <div className="description-content">
-                    <p className="description-text">
-                      {post.text || post.description}
-                    </p>
+                    <p 
+                      className="description-text"
+                      dangerouslySetInnerHTML={{
+                        __html: isDescriptionExpanded 
+                          ? formatDescription(post.text || post.description)
+                          : getTruncatedDescription(post.text || post.description)
+                      }}
+                    />
+                    {(post.text || post.description).length > 150 && (
+                      <button 
+                        className="description-toggle"
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      >
+                        {isDescriptionExpanded ? 'Show Less' : 'Show More'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -300,7 +502,7 @@ export default function PostModal({
               {/* Like and Stats */}
               <div className="artwork-actions">
                 <button 
-                  className={`museo-btn--pill ${isLiked ? 'liked' : ''}`}
+                  className={`btn-social like ${isLiked ? 'active' : ''}`}
                   onClick={handleLike}
                   disabled={isLiking}
                   style={{ 
@@ -308,14 +510,17 @@ export default function PostModal({
                     cursor: isLiking ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <span className="like-icon">
-                    {isLiked ? '❤️' : '🤍'}
-                  </span>
-                  <span className="like-count">{localLikeCount}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  <span className="count">{localLikeCount}</span>
                 </button>
-                <div className="artwork-stats">
-                  <span>💬 {comments.length} comments</span>
-                </div>
+                <button className="btn-social comment">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                  </svg>
+                  <span className="count">{comments.length}</span>
+                </button>
               </div>
             </div>
 
@@ -341,7 +546,7 @@ export default function PostModal({
                   />
                   <button 
                     type="submit" 
-                    className="comment-submit"
+                    className="btn btn-primary btn-sm"
                     disabled={!commentText.trim() || isSubmittingComment}
                   >
                     {isSubmittingComment ? 'Posting...' : 'Post Comment'}

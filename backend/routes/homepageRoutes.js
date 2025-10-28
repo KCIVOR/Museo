@@ -1,5 +1,5 @@
 import express from "express";
-import { createPost, upload, getPost, createReact, createComment, getReact, getComments } from "../controllers/homepage.js";
+import { createPost, upload, getPost, createReact, createComment, getReact, getComments, deletePost, updatePost } from "../controllers/homepage.js";
 import { requirePermission } from "../middleware/permission.js";
 
 const router = express.Router();
@@ -14,6 +14,10 @@ router.get("/getPost", getPost);
 router.post("/createReact",createReact);
 router.post("/createComment", createComment);
 router.get("/getComments", getComments);
+
+// Post management routes
+router.delete("/posts/:postId", deletePost);
+router.put("/posts/:postId", upload.array('images', 5), updatePost);
 
 //requirePermission(['admin','artist','user'])
 

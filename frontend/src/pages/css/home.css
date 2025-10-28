@@ -5,50 +5,17 @@
   justify-content: center;
 }
 
-/* Museo Button Pill Style for Like/Comment buttons */
-.museo-btn--pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(107, 66, 38, 0.2);
-  border-radius: 50px;
-  color: #6b4226;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  min-width: 80px;
-  justify-content: center;
-  font-size: 0.9rem;
-}
-
-.museo-btn--pill:hover {
-  background: rgba(107, 66, 38, 0.1);
-  border-color: #6b4226;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.2);
-}
-
-.museo-btn--pill.liked {
-  background: rgba(220, 38, 127, 0.1);
-  border-color: #dc267f;
-  color: #dc267f;
-}
-
-.like-icon {
-  font-size: 1rem;
-}
-
-.like-count {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
+/* Button styles removed for consistent redesign */
 
 /* Make feed narrower on desktop to read smaller */
 :root {
   --feed-max: 880px;
+}
+
+/* Spinner animation for loading more posts */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Wider, centered content column (uses same var as Navbar) */
@@ -100,17 +67,24 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: clamp(12px, 2.5vw, 20px) clamp(14px, 2.2vw, 20px);
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px);
   color: var(--museo-white);
   min-height: 0;
 }
+/* Text group for better spacing */
+.mHero__textGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .mHero__eyebrow {
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--museo-white) !important;
+  color: var(--museo-white);
   font-size: clamp(10px, 1.8vw, 12px);
 }
 .mHero__title {
@@ -118,81 +92,29 @@
   font-weight: 700;
   line-height: 1.15;
   font-size: clamp(18px, 3.2vw, 28px);
-  color: var(--museo-white) !important;
+  color: var(--museo-white);
   text-shadow: 0 2px 6px var(--museo-shadow), 0 0 24px var(--museo-shadow-light);
-  font-family: 'Playfair Display', serif !important;
+  font-family: 'Playfair Display', serif;
 }
 .mHero__subtitle {
   margin: 0;
-  color: var(--museo-white) !important;
+  color: var(--museo-white);
   font-size: clamp(11px, 2vw, 14px);
   text-shadow: 0 1px 3px var(--museo-shadow);
   line-height: 1.4;
 }
 /* Balanced and responsive */
 .mHero__ctaRow {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* perfectly balanced */
-  gap: 10px;
-  align-items: stretch;
-  min-width: 0;
-  flex-shrink: 0;
-}
-.mHero__ctaRow .btn-hero,
-.mHero__ctaRow .btn-hero-ghost {
-  height: 38px;
-  width: 100%;
-  max-width: 100%;
-  display: inline-flex;
+  display: flex;
+  gap: 16px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s ease;
+  flex-wrap: wrap;
 }
-.mHero__btnPrimary,
-.mHero__btnGhost {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 1 1 180px;
+/* Hero button styling - only layout, let buttons.css handle sizing */
+.mHero__ctaRow .btn {
+  flex: 1;
   min-width: 0;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-.mHero__btnPrimary { 
-  background: var(--museo-accent); /* Cyan accent */
-  color: var(--museo-white); /* White text on dark background */
-  border: 1px solid var(--museo-accent-dark);
-  font-weight: 600;
-}
-.mHero__btnPrimary:hover { 
-  background: var(--museo-accent-dark); /* Darker cyan */
-  color: var(--museo-white);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px var(--museo-shadow-light);
-}
-.mHero__btnGhost { 
-  background: transparent; 
-  color: var(--museo-white); /* White text on transparent (dark hero) background */
-  border: 1px solid var(--museo-white);
-  font-weight: 600;
-}
-.mHero__btnGhost:hover { 
-  background: var(--museo-overlay-light); 
-  color: var(--museo-white);
-  border-color: var(--museo-white);
 }
 
 @media (max-width: 768px) {
@@ -329,7 +251,7 @@
   transition: all 0.3s ease;
 }
 .actionBtn:hover { 
-  background: var(--museo-bg-hover) !important;
+  background: var(--museo-bg-hover);
   border-color: var(--museo-border-hover);
   transform: translateX(1px);
   box-shadow: 0 1px 4px var(--museo-shadow-light);
@@ -374,41 +296,9 @@
   min-width: 0;
 }
 
-/* Equal, shorter buttons with truncation */
-.btnPrimary,
-.btnGhost {
-  display:inline-flex; align-items:center; justify-content:center;
-  height:44px;                 /* unified fixed height */
-  padding:0 16px;              /* same horizontal padding */
-  border-radius:12px;          /* same rounded corners */
-  font-weight:800;
-  font-size:14px;
-  cursor:pointer;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  box-sizing: border-box; /* include border in final height */
-  line-height: 1;            /* avoid extra vertical expansion */
-  vertical-align: middle;
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;                 /* reset UA margins */
-}
+/* Button styles removed for consistent redesign */
 
-/* Visual styles per variant */
-.btnPrimary { border:1px solid var(--museo-text-primary); background: var(--museo-text-primary); color: var(--museo-white); }
-.btnGhost { border:1px solid var(--museo-text-primary); background: var(--museo-white); color: var(--museo-text-primary); }
-.btnPrimary:focus-visible, .btnGhost:focus-visible { outline: 2px solid var(--museo-accent); outline-offset: 2px; }
-
-.announce__close {
-  border:0; background:transparent; color: #475569; cursor:pointer;
-  font-size:18px; padding:2px 6px; border-radius:8px; line-height:1;
-  align-self: start;
-}
-.announce__close:hover { background: #e6f0ff; }
+/* Announce close button styles removed for consistent redesign */
 
 .announce:nth-of-type(1) { background: #eef7ff; border-color: #cfe3ff; }
 .announce:nth-of-type(2) { background: #f3f7ef; border-color: #cfe8bf; }
@@ -471,58 +361,14 @@
   display:grid; grid-template-columns:auto auto auto 1fr auto; align-items:center; gap:8px;
   border-top:1px solid var(--museo-border); padding-top:8px;
 }
-.tool {
-  display: inline-flex; 
-  align-items: center; 
-  gap: 6px;
-  height: 34px; 
-  padding: 0 10px; 
-  border-radius: 8px; 
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary); 
-  color: var(--museo-text-secondary); 
-  cursor: pointer; 
-  font-size: 13px;
-  font-family: var(--museo-font-body);
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-.tool:hover { 
-  background: var(--museo-bg-hover) !important;
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
-.composer__spacer { width:100%; }
-.postBtn { 
-  height: 36px; 
-  padding: 0 14px; 
-  border-radius: 10px; 
-  border: 1px solid var(--museo-primary); 
-  background: var(--museo-primary); 
-  color: var(--museo-white); 
-  font-weight: 600; 
-  font-family: var(--museo-font-body);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.postBtn:hover {
-  background: var(--museo-primary-dark);
-  color: var(--museo-white);
-  border-color: var(--museo-primary-dark);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
-.postBtn.is-disabled { opacity:.5; cursor:not-allowed; }
+/* Tool and post button styles removed for consistent redesign */
 
 /* ============ Responsive ============ */
 @media (max-width:700px) {
   .composer { grid-template-columns:36px 1fr; }
   .composer__avatar { width:36px; height:36px; }
-  .tool { display:none; }
   .announce { padding: 12px; }
   .announce__title { font-size: 16px; }
-  .btnPrimary, .btnGhost { height: 38px; }
 }
 
 @media (max-width: 520px) {
@@ -542,6 +388,65 @@
   .name { font-size: 13px; }
   .desc { font-size: 11.5px; }
   .avatar { width: 34px; height: 34px; }
+}
+
+/* ===== Post Content Styles ===== */
+.postContent {
+  padding: 10px 12px;
+  border-top: 1px solid var(--museo-border-light);
+}
+
+.postText {
+  margin: 0;
+  color: var(--museo-text-primary);
+  line-height: 1.5;
+}
+
+.expandToggle {
+  color: var(--museo-text-muted);
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.imageIndicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--museo-white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.imageIcon {
+  font-size: 14px;
+  color: var(--museo-white);
+}
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 16px;
+  border-top: 1px solid var(--museo-border-light);
+  background: var(--museo-white);
+  gap: 12px;
+}
+
+/* Let buttons.css handle all button styling - no overrides */
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  h1 { font-size: 2.5rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.75rem; }
 }
 
 /* ===== Shared image helpers (used by modal too) ===== */
@@ -630,19 +535,7 @@
   display: flex; gap: 8px;
   border-top: 1px solid var(--museo-border); padding-top: 10px;
 }
-.m-popup__btn {
-  display: inline-flex; gap: 6px; align-items: center;
-  padding: 6px 10px; border-radius: 8px;
-  border: 1px solid var(--museo-border); background: var(--museo-white); cursor: pointer;
-  font-weight: 500; color: var(--museo-text-primary); font-size: 13px; line-height: 1;
-  transition: all 0.2s ease;
-}
-.m-popup__btn:hover { 
-  background: var(--museo-white);
-  border-color: var(--museo-accent);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px var(--museo-shadow-light);
-}
+/* Modal button styles removed for consistent redesign */
 
 /* Comments + non-overlapping composer */
 .m-popup__comments { display: grid; gap: 10px; margin-top: 4px; }
@@ -676,17 +569,7 @@
   color: var(--museo-text-primary);
   box-sizing: border-box;
 }
-.m-popup__postBtn {
-  justify-self: end;          /* sits on its own row, right aligned */
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 10px;
-  border: 0;
-  background: var(--museo-text-primary);
-  color: var(--museo-white);
-  font-weight: 800;
-  cursor: pointer;
-}
+/* Post button styles removed for consistent redesign */
 /* ===== Modal comment (mcm__) ===== */
 .mcm__composer {
   display: grid;
@@ -714,21 +597,7 @@
   align-items: center;
   gap: 8px;
 }
-.mcm__submit {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 0;
-  background: var(--museo-primary);
-  color: var(--museo-white);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.mcm__submit:hover {
-  background: var(--museo-primary-dark);
-  transform: translateY(-1px);
-}
+/* Submit button styles removed for consistent redesign */
 .mcm__title {
   margin: 16px 0 8px;
   font-size: 16px;

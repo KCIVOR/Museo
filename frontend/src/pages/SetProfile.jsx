@@ -165,7 +165,6 @@ export default function SetProfileModal({ open, onClose, initial }) {
           )}
           <button
             type="button"
-            className="pe__coverBtn"
             onClick={() => pickImage((v) => setCover(v))}
           >
             Change cover
@@ -188,7 +187,6 @@ export default function SetProfileModal({ open, onClose, initial }) {
             )}
             <button
               type="button"
-              className="pe__avatarBtn"
               onClick={() => pickImage((v) => setAvatar(v))}
             >
               Change photo
@@ -312,7 +310,6 @@ export default function SetProfileModal({ open, onClose, initial }) {
 
         <footer className="pe__footer">
           <button
-            className="pe__btn pe__btn--primary"
             onClick={async () => { await updateProfile(); }}
             disabled={isSubmitting}
           >

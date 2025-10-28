@@ -151,20 +151,7 @@
   justify-content: flex-end;  /* keep it on the right side */
   width: 100%;            /* match the parent form width */
 }
-.btnPrimary {
-  width: 100%;            /* full width of .buyActions */
-  height: 44px;
-  border-radius: 12px;
-  border: 0;
-  background: #111827;
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-.btnSecondary {
-  height: 44px; border-radius: 12px; border: 1px solid #1f2937;
-  background: #fff; color: #111; font-weight: 700; cursor: pointer;
-}
+/* Button styles removed for consistent redesign */
 .optionGroup { display: grid; gap: 8px; }
 .optionLabel { font-size: 12px; text-transform: uppercase; color:#6b7280; letter-spacing:.06em; }
 .optionRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

@@ -207,7 +207,7 @@ export default function EventModal({ open, event, onClose }) {
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <button aria-label="Close" onClick={onClose} className="evmClose">
+        <button aria-label="Close" onClick={onClose} className="btn btn-ghost btn-sm evmClose">
           ✕
         </button>
 
@@ -610,39 +610,7 @@ export default function EventModal({ open, event, onClose }) {
                 onClick={() => { if (!isEventPast) joinEvent(); }} 
                 disabled={isSubmitting || isEventPast} 
                 title={isEventPast ? 'This event has already passed' : undefined}
-                style={{
-                  padding: '14px 20px',
-                  borderRadius: '16px',
-                  border: '3px solid #8b6f47',
-                  background: isEventPast ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : 
-                             joined ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' :
-                             'linear-gradient(135deg, #8b6f47 0%, #6b5b47 100%)',
-                  color: '#ffffff',
-                  fontFamily: 'Georgia, Times New Roman, serif',
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  cursor: isSubmitting || isEventPast ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.3s ease',
-                  opacity: isSubmitting || isEventPast ? 0.7 : 1,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.8px',
-                  boxShadow: '0 4px 16px rgba(110, 74, 46, 0.2), 0 2px 8px rgba(139, 111, 71, 0.1)',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting && !isEventPast) {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 8px 24px rgba(110, 74, 46, 0.3), 0 4px 12px rgba(139, 111, 71, 0.15)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 16px rgba(110, 74, 46, 0.2), 0 2px 8px rgba(139, 111, 71, 0.1)';
-                }}
+                className="btn btn-primary btn-sm"
               >
                 {isEventPast
                   ? 'Event Ended'
@@ -652,38 +620,8 @@ export default function EventModal({ open, event, onClose }) {
               {/* View Participants Button */}
               {(role === 'admin' || role?.role === 'admin') && (
                 <button
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    border: '2px solid #8b6f47',
-                    background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-                    color: '#8b6f47',
-                    fontFamily: 'Georgia, Times New Roman, serif',
-                    fontWeight: '600',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    boxShadow: '0 2px 8px rgba(110, 74, 46, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
                   onClick={() => setParticipantsOpen(true)}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)';
-                    e.target.style.borderColor = '#d4b48a';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)';
-                    e.target.style.borderColor = '#8b6f47';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.1)';
-                  }}
+                  className="btn btn-secondary btn-sm"
                 >
                   View Participants
                 </button>
@@ -769,31 +707,7 @@ export default function EventModal({ open, event, onClose }) {
                 </h2>
                 <button 
                   onClick={() => setParticipantsOpen(false)}
-                  style={{
-                    background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-                    border: '3px solid #8b6f47',
-                    borderRadius: '12px',
-                    padding: '8px 16px',
-                    color: '#8b6f47',
-                    fontFamily: 'Georgia, Times New Roman, serif',
-                    fontWeight: '600',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    boxShadow: '0 2px 8px rgba(110, 74, 46, 0.2)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(110, 74, 46, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(110, 74, 46, 0.2)';
-                  }}
+                  className="btn btn-secondary btn-sm"
                 >
                   Close
                 </button>
@@ -916,34 +830,11 @@ export default function EventModal({ open, event, onClose }) {
                               <button
                                 aria-label="Remove"
                                 title="Remove"
-                                style={{ 
-                                  padding: '8px 12px',
-                                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-                                  border: '2px solid #991b1b',
-                                  borderRadius: '8px',
-                                  color: '#ffffff',
-                                  fontFamily: 'Georgia, Times New Roman, serif',
-                                  fontWeight: '600',
-                                  fontSize: '12px',
-                                  cursor: removingId === (u.userId || u.id) ? 'not-allowed' : 'pointer',
-                                  transition: 'all 0.3s ease',
-                                  opacity: removingId === (u.userId || u.id) ? 0.7 : 1,
-                                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.2)'
-                                }}
+                                className="btn btn-danger btn-sm"
                                 disabled={removingId === (u.userId || u.id)}
                                 onClick={() => {
                                   setConfirmTarget({ userId: (u.userId || u.id), label: fullName || username || 'this user' });
                                   setConfirmOpen(true);
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (removingId !== (u.userId || u.id)) {
-                                    e.target.style.transform = 'translateY(-1px)';
-                                    e.target.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.transform = 'translateY(0)';
-                                  e.target.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.2)';
                                 }}
                               >
                                 {removingId === (u.userId || u.id) ? 'Removing…' : '✕'}

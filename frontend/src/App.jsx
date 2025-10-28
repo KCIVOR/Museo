@@ -19,6 +19,7 @@ import BlindAuction from "./pages/subPages/blindAuction";
 import UpcomingEvents from "./pages/subPages/upcomingEvents"
 import TopArts from "./pages/subPages/topArts"
 import Search from "./pages/subPages/Search";
+
 function App() {
   return (
     <Routes>
@@ -44,7 +45,7 @@ function App() {
           <Route path="/blindAuction" element={<BlindAuction />} />
           <Route path="/marketplace/category" element={<MarketplaceAll />} />
           <Route path="/upcomingEvents" element={<UpcomingEvents />} />
-          <Route path="/topArts" element={<TopArts />} />
+          <Route path="/topArts" element={<TopArts />} /> 
           <Route path="/Search" element={<Search/>}/>
         </Route>
 

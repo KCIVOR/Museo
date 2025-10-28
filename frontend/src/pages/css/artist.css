@@ -147,30 +147,7 @@
   margin: 24px 0;
 }
 
-.artistRetryBtn {
-  margin-top: 16px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, var(--museo-gold) 0%, var(--museo-gold-dark) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
-}
-
-.artistRetryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 180, 138, 0.4);
-}
-
-.artistRetryBtn:active {
-  transform: translateY(0);
-}
+/* Artist retry button styles removed for consistent redesign */
 
 /* Page header styling */
 .artistFeed h1, .artistFeed h2 {

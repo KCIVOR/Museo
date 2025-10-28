@@ -89,15 +89,7 @@
   gap: 10px;
   margin-top: 12px;
 }
-.adBtn {
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid #e6e6ea;
-  background: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.adBtn:hover { background: #f9fafb; }
+/* Artist detail button styles removed for consistent redesign */
 
 /* Bio panel */
 .adBio {

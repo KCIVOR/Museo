@@ -178,47 +178,7 @@
   flex-wrap: wrap;
 }
 
-.rdm-badge {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-secondary);
-  border: 1px solid var(--museo-border);
-}
-
-.rdm-status {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.rdm-status--pending {
-  background: var(--museo-warning-bg);
-  color: var(--museo-warning-text);
-  border: 1px solid var(--museo-warning);
-}
-
-.rdm-status--approved {
-  background: var(--museo-success-bg);
-  color: var(--museo-success-text);
-  border: 1px solid var(--museo-success);
-}
-
-.rdm-status--rejected {
-  background: var(--museo-error-bg);
-  color: var(--museo-error-text);
-  border: 1px solid var(--museo-error);
-}
+/* Using button.css design system classes */
 
 .rdm-meta-small {
   display: flex;
@@ -475,7 +435,7 @@ body.generating-pdf .no-screen {
     display: block;
   }
 
-  .rdm-badge {
+  .btn-type {
     font-family: 'Times New Roman', Times, serif;
     font-size: 11pt;
     font-weight: bold;
@@ -486,7 +446,7 @@ body.generating-pdf .no-screen {
     border-radius: 0;
   }
 
-  .rdm-status {
+  .btn-status {
     font-family: 'Times New Roman', Times, serif;
     font-size: 11pt;
     font-weight: bold;

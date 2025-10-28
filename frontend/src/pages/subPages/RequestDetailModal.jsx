@@ -73,13 +73,27 @@ export default function RequestDetailModal({ open, request, onClose }) {
         <div className="rdm-header no-print">
           <h2 className="rdm-title">Request Details</h2>
           <div className="rdm-actions">
-            <button className="rdm-pdf-btn" onClick={handleDownloadPDF} aria-label="Download PDF">
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={handleDownloadPDF} 
+              aria-label="Download PDF"
+            >
               📄 Download PDF
             </button>
-            <button className="rdm-print-btn" onClick={handlePrint} aria-label="Print">
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={handlePrint} 
+              aria-label="Print"
+            >
               🖨️ Print
             </button>
-            <button className="rdm-close" onClick={onClose} aria-label="Close">✕</button>
+            <button 
+              className="btn-x btn-x--ghost" 
+              onClick={onClose} 
+              aria-label="Close"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
@@ -91,8 +105,8 @@ export default function RequestDetailModal({ open, request, onClose }) {
           <div className="rdm-section">
             <div className="rdm-header-info">
               <div>
-                <span className="rdm-badge">{type.replace(/_/g, ' ')}</span>
-                <span className={`rdm-status rdm-status--${status}`}>{status}</span>
+                <span className={`btn-type ${type.replace(/_/g, '-')}`}>{type.replace(/_/g, ' ')}</span>
+                <span className={`btn-status ${status}`}>{status}</span>
               </div>
               <div className="rdm-meta-small">
                 <span>Request ID: <strong>{id}</strong></span>

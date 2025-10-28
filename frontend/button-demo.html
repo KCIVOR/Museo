@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museo Button Design System</title>
+    <link rel="stylesheet" href="src/styles/buttons.css">
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #6e4a2e;
+            text-align: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin: 3rem 0 1rem 0;
+            color: #8b6f47;
+            border-bottom: 2px solid #d4b48a;
+            padding-bottom: 0.5rem;
+        }
+        
+        h3 {
+            font-size: 1.2rem;
+            margin: 2rem 0 0.5rem 0;
+            color: #6e4a2e;
+        }
+        
+        .demo-section {
+            margin-bottom: 3rem;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .button-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .usage-box {
+            background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 2px solid #d4b48a;
+            margin-top: 3rem;
+        }
+        
+        code {
+            background: #e8dcc6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .loading-demo {
+            position: relative;
+        }
+        
+        .loading-demo.loading {
+            color: transparent;
+        }
+        
+        .loading-demo.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            color: white;
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Demo specific styles */
+        .demo-dropdown {
+            margin: 20px 0;
+        }
+        
+        /* Profile dropdown specific styles */
+        .profile-item:hover {
+            background: rgba(212, 180, 138, 0.15) !important;
+            color: #5a3e28 !important;
+            transform: translateX(2px);
+        }
+        
+        .profile-item.danger:hover {
+            background: rgba(196, 117, 110, 0.1) !important;
+            color: #a85d56 !important;
+        }
+        
+        /* Enhanced profile dropdown styles */
+        .enhanced-profile-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 24px rgba(110, 74, 46, 0.25);
+            border-color: #b8722c;
+        }
+        
+        .enhanced-profile-item:hover {
+            background: linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%) !important;
+            border-color: rgba(212, 180, 138, 0.3) !important;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+        }
+        
+        .enhanced-profile-item.danger:hover {
+            background: linear-gradient(135deg, rgba(196, 117, 110, 0.1) 0%, rgba(196, 117, 110, 0.05) 100%) !important;
+            border-color: rgba(196, 117, 110, 0.3) !important;
+            color: #a85d56 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Museo Button Design System</h1>
+        
+        <!-- Primary Buttons -->
+        <div class="demo-section">
+            <h2>Primary Button Variants</h2>
+            <div class="button-row">
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-secondary">Secondary Button</button>
+                <button class="btn btn-success">Success Button</button>
+                <button class="btn btn-danger">Danger Button</button>
+                <button class="btn btn-ghost">Ghost Button</button>
+            </div>
+        </div>
+
+        <!-- Museo Theme Buttons -->
+        <div class="demo-section">
+            <h2>Museo Theme Buttons</h2>
+            <div class="button-row">
+                <button class="btn btn-museo">Museo Primary</button>
+                <button class="btn btn-museo-secondary">Museo Secondary</button>
+                <button class="btn btn-museo-ghost">Museo Ghost</button>
+            </div>
+        </div>
+
+        <!-- Button Sizes -->
+        <div class="demo-section">
+            <h2>Button Sizes</h2>
+            <div class="button-row">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Default</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+                <button class="btn btn-primary btn-xl">Extra Large</button>
+            </div>
+        </div>
+
+        <!-- Icon Buttons -->
+        <div class="demo-section">
+            <h2>Icon Buttons</h2>
+            <div class="button-row">
+                <button class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Delete
+                </button>
+                <button class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                </button>
+                <button class="btn btn-icon btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 5v14m7-7H5"/>
+                    </svg>
+                </button>
+                <button class="btn btn-icon btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- More/Edit Buttons -->
+        <div class="demo-section">
+            <h2>More/Edit Buttons</h2>
+            <div class="button-row">
+                <button class="btn-more" title="More options">⋯</button>
+                <button class="btn-more btn-sm" title="More options (Small)">⋯</button>
+                <button class="btn-more btn-lg" title="More options (Large)">⋯</button>
+                <button class="btn-more-dark" title="More options (Dark)">⋯</button>
+                <button class="btn-more-ghost" title="More options (Ghost)">⋯</button>
+            </div>
+            
+            <h3>In Context - Art Gallery Cards</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <!-- Art Card 1 -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 16px;
+                    position: relative;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <button class="btn-more" style="position: absolute; top: 12px; right: 12px;" title="Edit artwork">⋯</button>
+                    <div style="
+                        width: 100%;
+                        height: 120px;
+                        background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #faf8f5;
+                        font-size: 24px;
+                    ">🎨</div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 16px;">Sunset Painting</h4>
+                    <p style="margin: 0; color: #8b6f47; font-size: 14px;">By Artist Name</p>
+                </div>
+
+                <!-- Art Card 2 -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 16px;
+                    position: relative;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <button class="btn-more-ghost" style="position: absolute; top: 12px; right: 12px;" title="Edit artwork">⋯</button>
+                    <div style="
+                        width: 100%;
+                        height: 120px;
+                        background: linear-gradient(135deg, #7c9885 0%, #5a7c65 100%);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #faf8f5;
+                        font-size: 24px;
+                    ">🖼️</div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 16px;">Abstract Art</h4>
+                    <p style="margin: 0; color: #8b6f47; font-size: 14px;">By Another Artist</p>
+                </div>
+            </div>
+
+            <h3>In Context - User Profile</h3>
+            <div style="
+                background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                border: 2px solid #d4b48a;
+                border-radius: 12px;
+                padding: 20px;
+                position: relative;
+                box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                max-width: 300px;
+            ">
+                <button class="btn-more" style="position: absolute; top: 16px; right: 16px;" title="Edit profile">⋯</button>
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face" 
+                         style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid #d4b48a;" alt="User">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 18px;">John Artist</h4>
+                        <p style="margin: 0; color: #8b6f47; font-size: 14px;">Digital Artist</p>
+                    </div>
+                </div>
+                <p style="margin: 0; color: #8b6f47; font-size: 14px; line-height: 1.4;">
+                    "Creating beautiful digital art that captures the essence of modern life."
+                </p>
+            </div>
+        </div>
+
+        <!-- X Buttons -->
+        <div class="demo-section">
+            <h2>X Buttons (Close/Remove)</h2>
+            
+            <h3>Basic X Buttons</h3>
+            <div class="button-row">
+                <button class="btn-x" title="Close">✕</button>
+                <button class="btn-x btn-x--small" title="Close (Small)">✕</button>
+                <button class="btn-x btn-x--large" title="Close (Large)">✕</button>
+                <button class="btn-x btn-x--circle" title="Close (Circle)">✕</button>
+            </div>
+            
+            <h3>X Button Variants</h3>
+            <div class="button-row">
+                <button class="btn-x" title="Default">✕</button>
+                <button class="btn-x btn-x--danger" title="Danger">✕</button>
+                <button class="btn-x btn-x--ghost" title="Ghost">✕</button>
+                <button class="btn-x btn-x--overlay" title="Overlay" style="position: relative; z-index: 1;">✕</button>
+            </div>
+            
+            <h3>In Context - Modal Headers</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <!-- Modal Example 1 -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 0;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                    max-width: 400px;
+                ">
+                    <div style="
+                        padding: 20px 24px;
+                        border-bottom: 1px solid rgba(212, 180, 138, 0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 18px;">Edit Profile</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">Update your profile information</p>
+                        </div>
+                        <button class="btn-x" title="Close modal">✕</button>
+                    </div>
+                    <div style="padding: 20px 24px; color: #8b6f47;">
+                        Modal content goes here...
+                    </div>
+                </div>
+
+                <!-- Modal Example 2 -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 0;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                    max-width: 400px;
+                ">
+                    <div style="
+                        padding: 20px 24px;
+                        border-bottom: 1px solid rgba(212, 180, 138, 0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 18px;">Delete Artwork</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">This action cannot be undone</p>
+                        </div>
+                        <button class="btn-x btn-x--danger" title="Close modal">✕</button>
+                    </div>
+                    <div style="padding: 20px 24px; color: #8b6f47;">
+                        Are you sure you want to delete this artwork?
+                    </div>
+                </div>
+            </div>
+            
+            <h3>In Context - Image Previews</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <!-- Image Preview 1 -->
+                <div style="
+                    position: relative;
+                    background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+                    border-radius: 8px;
+                    height: 120px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #faf8f5;
+                    font-size: 24px;
+                ">
+                    🎨
+                    <button class="btn-x btn-x--small btn-x--overlay" 
+                            style="position: absolute; top: 8px; right: 8px;" 
+                            title="Remove image">✕</button>
+                </div>
+
+                <!-- Image Preview 2 -->
+                <div style="
+                    position: relative;
+                    background: linear-gradient(135deg, #7c9885 0%, #5a7c65 100%);
+                    border-radius: 8px;
+                    height: 120px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #faf8f5;
+                    font-size: 24px;
+                ">
+                    🖼️
+                    <button class="btn-x btn-x--circle btn-x--overlay" 
+                            style="position: absolute; top: 8px; right: 8px;" 
+                            title="Remove image">✕</button>
+                </div>
+            </div>
+            
+            <h3>In Context - Tag/Chip Removal</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 1px solid #d4b48a;
+                    border-radius: 20px;
+                    padding: 6px 8px 6px 12px;
+                    font-size: 14px;
+                    color: #6e4a2e;
+                ">
+                    Abstract Art
+                    <button class="btn-x btn-x--small btn-x--ghost" title="Remove tag">✕</button>
+                </div>
+                
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 1px solid #d4b48a;
+                    border-radius: 20px;
+                    padding: 6px 8px 6px 12px;
+                    font-size: 14px;
+                    color: #6e4a2e;
+                ">
+                    Digital Art
+                    <button class="btn-x btn-x--small btn-x--ghost" title="Remove tag">✕</button>
+                </div>
+                
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 1px solid #d4b48a;
+                    border-radius: 20px;
+                    padding: 6px 8px 6px 12px;
+                    font-size: 14px;
+                    color: #6e4a2e;
+                ">
+                    Photography
+                    <button class="btn-x btn-x--small btn-x--ghost" title="Remove tag">✕</button>
+                </div>
+            </div>
+            
+            <div class="usage-box">
+                <h3 style="margin-top: 0; color: #6e4a2e;">Usage Examples</h3>
+                <p><strong>Basic X Button:</strong> <code>&lt;button class="btn-x"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Small X Button:</strong> <code>&lt;button class="btn-x btn-x--small"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Large X Button:</strong> <code>&lt;button class="btn-x btn-x--large"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Circular X Button:</strong> <code>&lt;button class="btn-x btn-x--circle"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Danger X Button:</strong> <code>&lt;button class="btn-x btn-x--danger"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Ghost X Button:</strong> <code>&lt;button class="btn-x btn-x--ghost"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Overlay X Button:</strong> <code>&lt;button class="btn-x btn-x--overlay"&gt;✕&lt;/button&gt;</code></p>
+                <p><strong>Combined Classes:</strong> <code>&lt;button class="btn-x btn-x--small btn-x--circle btn-x--danger"&gt;✕&lt;/button&gt;</code></p>
+            </div>
+        </div>
+
+        <!-- Dropdown Menus -->
+        <div class="demo-section">
+            <h2>Dropdown Menus</h2>
+            
+            <h3>Basic Dropdowns</h3>
+            <div class="button-row">
+                <!-- Basic Dropdown -->
+                <div class="dropdown demo-dropdown">
+                    <button class="btn-more dropdown-trigger" onclick="toggleDropdown(this)">⋯</button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit
+                        </button>
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M8 17l4 4 4-4m-4-5v9"/>
+                                <path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/>
+                            </svg>
+                            Download
+                        </button>
+                        <hr class="dropdown-separator">
+                        <button class="dropdown-item danger">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dark Dropdown -->
+                <div class="dropdown demo-dropdown">
+                    <button class="btn-more-dark dropdown-trigger" onclick="toggleDropdown(this)">⋯</button>
+                    <div class="dropdown-menu dark">
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            View
+                        </button>
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                            </svg>
+                            Share
+                        </button>
+                        <hr class="dropdown-separator">
+                        <button class="dropdown-item danger">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M16 4v12l-4-2-4 2V4"/>
+                            </svg>
+                            Archive
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Large Dropdown -->
+                <div class="dropdown demo-dropdown">
+                    <button class="btn btn-museo dropdown-trigger" onclick="toggleDropdown(this)">
+                        Actions
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu lg">
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 5v14m7-7H5"/>
+                            </svg>
+                            Create New Artwork
+                        </button>
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                            </svg>
+                            Send Message
+                        </button>
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/>
+                            </svg>
+                            Invite Collaborator
+                        </button>
+                        <hr class="dropdown-separator">
+                        <button class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Feature Artwork
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Notification Dropdown</h3>
+            <div style="position: relative; display: inline-block; margin: 20px 20px 20px 200px;">
+                <!-- Notification Button -->
+                <button class="nav-btn nav-btn-icon" onclick="toggleDropdown(this)" style="position: relative;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="nav-badge">3</span>
+                </button>
+                
+                <!-- Notification Dropdown Menu -->
+                <div class="dropdown-menu notification-dropdown" style="
+                    position: absolute;
+                    top: calc(100% + 12px);
+                    right: 0;
+                    min-width: 380px;
+                    max-width: 420px;
+                    background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 16px;
+                    box-shadow: 0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3);
+                    padding: 0;
+                    z-index: 1000;
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(-10px) scale(0.95);
+                    transition: all 0.3s ease;
+                    backdrop-filter: blur(16px);
+                    font-family: 'Georgia', 'Times New Roman', serif;
+                    max-height: 480px;
+                    overflow: hidden;
+                ">
+                    <!-- Dropdown Arrow -->
+                    <div style="
+                        position: absolute;
+                        top: -8px;
+                        right: 20px;
+                        width: 14px;
+                        height: 14px;
+                        background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                        border-left: 2px solid #d4b48a;
+                        border-top: 2px solid #d4b48a;
+                        transform: rotate(45deg);
+                        z-index: -1;
+                    "></div>
+                    
+                    <!-- Notification Header -->
+                    <div style="
+                        padding: 20px 24px 16px;
+                        border-bottom: 1px solid rgba(212, 180, 138, 0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <h3 style="
+                            margin: 0;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Notifications</h3>
+                        <button style="
+                            background: none;
+                            border: none;
+                            color: #8b6f47;
+                            font-size: 13px;
+                            cursor: pointer;
+                            padding: 4px 8px;
+                            border-radius: 6px;
+                            transition: all 0.3s ease;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        " onmouseover="this.style.background='rgba(212, 180, 138, 0.1)'" onmouseout="this.style.background='none'">
+                            Mark all read
+                        </button>
+                    </div>
+                    
+                    <!-- Notification Items -->
+                    <div style="max-height: 360px; overflow-y: auto; padding: 8px 0;">
+                        <!-- Notification Item 1 - Unread -->
+                        <div class="notification-item" style="
+                            padding: 16px 24px;
+                            border-left: 3px solid #d4b48a;
+                            background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            position: relative;
+                        " onmouseover="this.style.background='linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)'">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <div style="
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    background: linear-gradient(135deg, #7c9885 0%, #5a7c65 100%);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex-shrink: 0;
+                                ">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" stroke-width="2">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <h4 style="
+                                        margin: 0 0 4px 0;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                        color: #6e4a2e;
+                                        line-height: 1.3;
+                                    ">Your artwork was featured!</h4>
+                                    <p style="
+                                        margin: 0 0 6px 0;
+                                        font-size: 14px;
+                                        color: #8b6f47;
+                                        line-height: 1.4;
+                                    ">"Mountain Landscape" has been featured in today's top picks.</p>
+                                    <span style="
+                                        font-size: 12px;
+                                        color: #9c8668;
+                                        font-style: italic;
+                                    ">2 minutes ago</span>
+                                </div>
+                                <div style="
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background: #d4b48a;
+                                    flex-shrink: 0;
+                                    margin-top: 6px;
+                                "></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Item 2 - Unread -->
+                        <div class="notification-item" style="
+                            padding: 16px 24px;
+                            border-left: 3px solid #d4b48a;
+                            background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.background='linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)'">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <div style="
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    background: linear-gradient(135deg, #8b7db8 0%, #7169a6 100%);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex-shrink: 0;
+                                ">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <h4 style="
+                                        margin: 0 0 4px 0;
+                                        font-size: 15px;
+                                        font-weight: 600;
+                                        color: #6e4a2e;
+                                        line-height: 1.3;
+                                    ">New follower</h4>
+                                    <p style="
+                                        margin: 0 0 6px 0;
+                                        font-size: 14px;
+                                        color: #8b6f47;
+                                        line-height: 1.4;
+                                    ">Sarah Chen started following you.</p>
+                                    <span style="
+                                        font-size: 12px;
+                                        color: #9c8668;
+                                        font-style: italic;
+                                    ">1 hour ago</span>
+                                </div>
+                                <div style="
+                                    width: 8px;
+                                    height: 8px;
+                                    border-radius: 50%;
+                                    background: #d4b48a;
+                                    flex-shrink: 0;
+                                    margin-top: 6px;
+                                "></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Item 3 - Read -->
+                        <div class="notification-item" style="
+                            padding: 16px 24px;
+                            border-left: 3px solid transparent;
+                            background: transparent;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.background='rgba(212, 180, 138, 0.05)'" onmouseout="this.style.background='transparent'">
+                            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                                <div style="
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    background: linear-gradient(135deg, #e6b85c 0%, #d4a843 100%);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex-shrink: 0;
+                                ">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a3e28" stroke-width="2">
+                                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <h4 style="
+                                        margin: 0 0 4px 0;
+                                        font-size: 15px;
+                                        font-weight: 500;
+                                        color: #8b6f47;
+                                        line-height: 1.3;
+                                    ">New comment on your artwork</h4>
+                                    <p style="
+                                        margin: 0 0 6px 0;
+                                        font-size: 14px;
+                                        color: #9c8668;
+                                        line-height: 1.4;
+                                    ">Alex commented: "Beautiful composition!"</p>
+                                    <span style="
+                                        font-size: 12px;
+                                        color: #b8a688;
+                                        font-style: italic;
+                                    ">3 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification Footer -->
+                    <div style="
+                        padding: 16px 24px;
+                        border-top: 1px solid rgba(212, 180, 138, 0.3);
+                        text-align: center;
+                    ">
+                        <button style="
+                            background: none;
+                            border: none;
+                            color: #8b6f47;
+                            font-size: 14px;
+                            cursor: pointer;
+                            padding: 8px 16px;
+                            border-radius: 8px;
+                            transition: all 0.3s ease;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                            font-weight: 500;
+                        " onmouseover="this.style.background='rgba(212, 180, 138, 0.1)'; this.style.color='#6e4a2e'" onmouseout="this.style.background='none'; this.style.color='#8b6f47'">
+                            View all notifications
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Profile Dropdown Menu</h3>
+            <div style="position: relative; display: inline-block; margin: 20px 20px 20px 200px;">
+                <!-- Profile Avatar Button -->
+                <button class="nav-btn nav-btn-avatar" onclick="toggleDropdown(this)" style="position: relative;">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" 
+                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" alt="User Avatar">
+                </button>
+                
+                <!-- Profile Dropdown Menu -->
+                <div class="dropdown-menu profile-dropdown" style="
+                    position: absolute;
+                    top: calc(100% + 12px);
+                    right: 0;
+                    min-width: 220px;
+                    background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 16px;
+                    box-shadow: 0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3);
+                    padding: 16px;
+                    z-index: 1000;
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(-10px) scale(0.95);
+                    transition: all 0.3s ease;
+                    backdrop-filter: blur(16px);
+                    font-family: 'Georgia', 'Times New Roman', serif;
+                ">
+                    <!-- Dropdown Arrow -->
+                    <div style="
+                        position: absolute;
+                        top: -8px;
+                        right: 20px;
+                        width: 14px;
+                        height: 14px;
+                        background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                        border-left: 2px solid #d4b48a;
+                        border-top: 2px solid #d4b48a;
+                        transform: rotate(45deg);
+                        z-index: -1;
+                    "></div>
+                    
+                    <!-- Profile Menu Items -->
+                    <button class="dropdown-item profile-item" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        width: 100%;
+                        padding: 12px 16px;
+                        border: none;
+                        background: transparent;
+                        color: #6e4a2e;
+                        font-size: 15px;
+                        font-weight: 500;
+                        text-align: left;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-family: 'Georgia', 'Times New Roman', serif;
+                        margin-bottom: 4px;
+                    ">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span>My Profile</span>
+                    </button>
+                    
+                    <button class="dropdown-item profile-item" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        width: 100%;
+                        padding: 12px 16px;
+                        border: none;
+                        background: transparent;
+                        color: #6e4a2e;
+                        font-size: 15px;
+                        font-weight: 500;
+                        text-align: left;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-family: 'Georgia', 'Times New Roman', serif;
+                        margin-bottom: 4px;
+                    ">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span>Top-Up</span>
+                    </button>
+                    
+                    <!-- Separator -->
+                    <hr style="
+                        height: 1px;
+                        background: linear-gradient(90deg, transparent, #d4b48a, transparent);
+                        margin: 12px 0;
+                        border: none;
+                    ">
+                    
+                    <button class="dropdown-item profile-item danger" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        width: 100%;
+                        padding: 12px 16px;
+                        border: none;
+                        background: transparent;
+                        color: #c4756e;
+                        font-size: 15px;
+                        font-weight: 500;
+                        text-align: left;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-family: 'Georgia', 'Times New Roman', serif;
+                    ">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16,17 21,12 16,7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        <span>Log-out</span>
+                    </button>
+                </div>
+            </div>
+
+            <h3>Text Field Design System</h3>
+            <div style="margin: 20px 0;">
+                
+                <!-- Basic Text Fields -->
+                <h4>Basic Text Fields</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    
+                    <!-- Standard Text Field -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Full Name</label>
+                        <input 
+                            type="text" 
+                            placeholder="Enter your full name"
+                            class="museo-input"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #d4b48a;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                            "
+                            onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                            onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                        >
+                    </div>
+                    
+                    <!-- Email Field -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Email Address</label>
+                        <input 
+                            type="email" 
+                            placeholder="your@email.com"
+                            class="museo-input"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #d4b48a;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                            "
+                            onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                            onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                        >
+                    </div>
+                    
+                </div>
+                
+                <!-- Search Fields -->
+                <h4>Search Fields</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    
+                    <!-- Search with Icon -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Search Artworks</label>
+                        <div style="position: relative;">
+                            <input 
+                                type="search" 
+                                placeholder="Search for artworks, artists, or styles..."
+                                class="museo-input-search"
+                                style="
+                                    width: 100%;
+                                    padding: 12px 16px 12px 48px;
+                                    border: 2px solid #d4b48a;
+                                    border-radius: 12px;
+                                    background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                    color: #6e4a2e;
+                                    font-size: 15px;
+                                    font-family: 'Georgia', 'Times New Roman', serif;
+                                    transition: all 0.3s ease;
+                                    box-sizing: border-box;
+                                    outline: none;
+                                "
+                                onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                                onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                            >
+                            <svg style="
+                                position: absolute;
+                                left: 16px;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                width: 16px;
+                                height: 16px;
+                                color: #8b6f47;
+                                pointer-events: none;
+                            " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Search -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Filter by Category</label>
+                        <div style="position: relative;">
+                            <input 
+                                type="text" 
+                                placeholder="Type to filter categories..."
+                                class="museo-input-filter"
+                                style="
+                                    width: 100%;
+                                    padding: 12px 48px 12px 16px;
+                                    border: 2px solid #d4b48a;
+                                    border-radius: 12px;
+                                    background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                    color: #6e4a2e;
+                                    font-size: 15px;
+                                    font-family: 'Georgia', 'Times New Roman', serif;
+                                    transition: all 0.3s ease;
+                                    box-sizing: border-box;
+                                    outline: none;
+                                "
+                                onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                                onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                            >
+                            <svg style="
+                                position: absolute;
+                                right: 16px;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                width: 16px;
+                                height: 16px;
+                                color: #8b6f47;
+                                pointer-events: none;
+                            " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Textarea Fields -->
+                <h4>Textarea Fields</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    
+                    <!-- Description Textarea -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Artwork Description</label>
+                        <textarea 
+                            placeholder="Describe your artwork, inspiration, and techniques used..."
+                            class="museo-textarea"
+                            rows="4"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #d4b48a;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                                resize: vertical;
+                                min-height: 100px;
+                            "
+                            onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                            onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                        ></textarea>
+                    </div>
+                    
+                    <!-- Comments Textarea -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Leave a Comment</label>
+                        <textarea 
+                            placeholder="Share your thoughts about this artwork..."
+                            class="museo-textarea-comment"
+                            rows="3"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #d4b48a;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                                resize: vertical;
+                                min-height: 80px;
+                            "
+                            onfocus="this.style.borderColor='#b8722c'; this.style.boxShadow='0 0 0 3px rgba(212, 180, 138, 0.2)'; this.style.background='linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)'"
+                            onblur="this.style.borderColor='#d4b48a'; this.style.boxShadow='none'; this.style.background='linear-gradient(135deg, #ffffff 0%, #faf8f5 100%)'"
+                        ></textarea>
+                    </div>
+                    
+                </div>
+                
+                <!-- Special Input States -->
+                <h4>Input States</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    
+                    <!-- Success State -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Username (Available)</label>
+                        <input 
+                            type="text" 
+                            value="artist_gallery"
+                            class="museo-input-success"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #7c9885;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #f0f9f2 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                            "
+                        >
+                        <div style="
+                            margin-top: 6px;
+                            font-size: 12px;
+                            color: #5a7c65;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                            font-style: italic;
+                        ">✓ Username is available</div>
+                    </div>
+                    
+                    <!-- Error State -->
+                    <div>
+                        <label style="
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #6e4a2e;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                        ">Email (Invalid)</label>
+                        <input 
+                            type="email" 
+                            value="invalid-email"
+                            class="museo-input-error"
+                            style="
+                                width: 100%;
+                                padding: 12px 16px;
+                                border: 2px solid #c4756e;
+                                border-radius: 12px;
+                                background: linear-gradient(135deg, #fdf2f2 0%, #faf8f5 100%);
+                                color: #6e4a2e;
+                                font-size: 15px;
+                                font-family: 'Georgia', 'Times New Roman', serif;
+                                transition: all 0.3s ease;
+                                box-sizing: border-box;
+                                outline: none;
+                            "
+                        >
+                        <div style="
+                            margin-top: 6px;
+                            font-size: 12px;
+                            color: #a85d56;
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                            font-style: italic;
+                        ">✗ Please enter a valid email address</div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Date Picker and Dropdown Fields -->
+                <h4>Date Picker & Dropdown Fields</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    
+                    <!-- Date Picker -->
+                    <div>
+                        <label class="museo-form-label">Birth Date</label>
+                        <input type="date" class="museo-date-input" value="1990-01-01">
+                    </div>
+                    
+                    <!-- Gender Dropdown -->
+                    <div>
+                        <label class="museo-form-label">Gender</label>
+                        <select class="museo-dropdown">
+                            <option value="">Select gender...</option>
+                            <option value="female">Female</option>
+                            <option value="male">Male</option>
+                            <option value="non-binary">Non-binary</option>
+                            <option value="prefer-not-to-say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Disabled Examples -->
+                    <div>
+                        <label class="museo-form-label">Disabled Date</label>
+                        <input type="date" class="museo-date-input" value="2023-12-25" disabled>
+                    </div>
+                    
+                    <div>
+                        <label class="museo-form-label">Disabled Dropdown</label>
+                        <select class="museo-dropdown" disabled>
+                            <option value="disabled">This dropdown is disabled</option>
+                        </select>
+                    </div>
+                    
+                </div>
+                
+            </div>
+
+            <h3>Real-world Context</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <!-- Art Card with Dropdown -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 16px;
+                    position: relative;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <div class="dropdown" style="position: absolute; top: 12px; right: 12px;">
+                        <button class="btn-more dropdown-trigger" onclick="toggleDropdown(this)" title="Artwork options">⋯</button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                View Details
+                            </button>
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit Artwork
+                            </button>
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M8 17l4 4 4-4m-4-5v9"/>
+                                    <path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/>
+                                </svg>
+                                Download
+                            </button>
+                            <hr class="dropdown-separator">
+                            <button class="dropdown-item danger">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Delete Artwork
+                            </button>
+                        </div>
+                    </div>
+                    <div style="
+                        width: 100%;
+                        height: 120px;
+                        background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #faf8f5;
+                        font-size: 24px;
+                    ">🎨</div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 16px;">Mountain Landscape</h4>
+                    <p style="margin: 0; color: #8b6f47; font-size: 14px;">Oil on Canvas • 2024</p>
+                </div>
+
+                <!-- User Profile with Dropdown -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 20px;
+                    position: relative;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <div class="dropdown" style="position: absolute; top: 16px; right: 16px;">
+                        <button class="btn-more-ghost dropdown-trigger" onclick="toggleDropdown(this)" title="Profile options">⋯</button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                View Profile
+                            </button>
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                </svg>
+                                Send Message
+                            </button>
+                            <button class="dropdown-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                                </svg>
+                                Follow Artist
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                        <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face" 
+                             style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid #d4b48a;" alt="User">
+                        <div>
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 18px;">Sarah Chen</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">Contemporary Artist</p>
+                        </div>
+                    </div>
+                    <p style="margin: 0; color: #8b6f47; font-size: 14px; line-height: 1.4;">
+                        "Exploring the intersection of traditional techniques and modern themes."
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal & Request Buttons -->
+        <div class="demo-section">
+            <h2>Modal & Request Buttons</h2>
+            
+            <h3>Filter/Tab Buttons</h3>
+            <div class="button-row">
+                <button class="btn-filter active">All</button>
+                <button class="btn-filter">Artist Verification</button>
+                <button class="btn-filter">Content Reports</button>
+                <button class="btn-filter">Feature Requests</button>
+            </div>
+            
+            <h3>Status Badges</h3>
+            <div class="button-row">
+                <span class="btn-status approved">Approved</span>
+                <span class="btn-status pending">Pending</span>
+                <span class="btn-status rejected">Rejected</span>
+                <span class="btn-status review">Under Review</span>
+            </div>
+            
+            <h3>Request Type Badges</h3>
+            <div class="button-row">
+                <span class="btn-type">General</span>
+                <span class="btn-type artist-verification">Artist Verification</span>
+                <span class="btn-type content-report">Content Report</span>
+                <span class="btn-type feature-request">Feature Request</span>
+            </div>
+            
+            <h3>Modal Action Buttons</h3>
+            <div class="button-row">
+                <button class="btn-modal-action approve">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Approve Request
+                </button>
+                <button class="btn-modal-action reject">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                    Reject Request
+                </button>
+                <button class="btn-modal-action neutral">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    Send Message
+                </button>
+            </div>
+
+            <h3>Request Modal Example</h3>
+            <div style="
+                background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                border: 2px solid #d4b48a;
+                border-radius: 16px;
+                padding: 24px;
+                margin-top: 1rem;
+                box-shadow: 0 8px 25px rgba(110, 74, 46, 0.2);
+                max-width: 600px;
+            ">
+                <!-- Modal Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 20px; font-family: Georgia, serif;">User Requests</h3>
+                        <p style="margin: 0; color: #8b6f47; font-size: 14px;">Review and act on submissions</p>
+                    </div>
+                    <button class="btn-more" onclick="alert('Close modal')">✕</button>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button class="btn-filter active" onclick="setActiveFilter(this)">All</button>
+                    <button class="btn-filter" onclick="setActiveFilter(this)">Artist Verification</button>
+                    <button class="btn-filter" onclick="setActiveFilter(this)">Content Reports</button>
+                </div>
+
+                <!-- Search Bar -->
+                <div style="margin-bottom: 20px;">
+                    <input type="text" placeholder="Search name, title, type, request ID, user ID" style="
+                        width: 100%;
+                        padding: 10px 16px;
+                        border: 2px solid #d4b48a;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-family: Georgia, serif;
+                        background: #faf8f5;
+                        color: #6e4a2e;
+                        box-sizing: border-box;
+                    ">
+                </div>
+
+                <!-- Request Items -->
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Request Item 1 -->
+                    <div style="
+                        background: linear-gradient(135deg, #f0e6d2 0%, #e8dcc6 100%);
+                        border: 1px solid #d4b48a;
+                        border-radius: 12px;
+                        padding: 16px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 16px;
+                    ">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <span class="btn-type artist-verification">Artist Verification</span>
+                                <span style="font-size: 12px; color: #8b6f47;">#REQ-2024-001</span>
+                            </div>
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 16px;">Sarah Chen - Portfolio Verification</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">Submitted 2 hours ago • 15 artworks attached</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="btn-status pending">Pending</span>
+                            <div class="dropdown">
+                                <button class="btn-more dropdown-trigger" onclick="toggleDropdown(this)">⋯</button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        View Details
+                                    </button>
+                                    <button class="dropdown-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M20 6L9 17l-5-5"/>
+                                        </svg>
+                                        Approve
+                                    </button>
+                                    <button class="dropdown-item danger">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M18 6L6 18M6 6l12 12"/>
+                                        </svg>
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Item 2 -->
+                    <div style="
+                        background: linear-gradient(135deg, #f0e6d2 0%, #e8dcc6 100%);
+                        border: 1px solid #d4b48a;
+                        border-radius: 12px;
+                        padding: 16px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 16px;
+                    ">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <span class="btn-type content-report">Content Report</span>
+                                <span style="font-size: 12px; color: #8b6f47;">#REQ-2024-002</span>
+                            </div>
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 16px;">Report: Inappropriate Content</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">Submitted 1 day ago • Artwork ID: ART-789</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="btn-status approved">Approved</span>
+                            <div class="dropdown">
+                                <button class="btn-more dropdown-trigger" onclick="toggleDropdown(this)">⋯</button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        View Details
+                                    </button>
+                                    <button class="dropdown-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                        </svg>
+                                        Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #d4b48a;">
+                    <button class="btn-modal-action neutral">Close</button>
+                    <button class="btn-modal-action approve">Bulk Approve</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Button States -->
+        <div class="demo-section">
+            <h2>Button States</h2>
+            <div class="button-row">
+                <button class="btn btn-primary">Normal</button>
+                <button class="btn btn-primary" disabled>Disabled</button>
+                <button class="btn btn-primary loading-demo" onclick="this.classList.add('loading'); setTimeout(() => this.classList.remove('loading'), 3000)">
+                    Click for Loading
+                </button>
+            </div>
+        </div>
+
+        <!-- Special Variants -->
+        <div class="demo-section">
+            <h2>Special Variants</h2>
+            <div class="button-column">
+                <div class="button-row">
+                    <button class="btn btn-primary btn-pill">Pill Button</button>
+                    <button class="btn btn-museo btn-pill">Museo Pill</button>
+                </div>
+                <button class="btn btn-primary btn-block">Block Button (Full Width)</button>
+            </div>
+        </div>
+
+        <!-- Button Groups -->
+        <div class="demo-section">
+            <h2>Button Groups</h2>
+            <div class="btn-group">
+                <button class="btn btn-secondary">Left</button>
+                <button class="btn btn-secondary">Center</button>
+                <button class="btn btn-secondary">Right</button>
+            </div>
+        </div>
+
+        <!-- Navigation Bar Buttons -->
+        <div class="demo-section">
+            <h2>Navigation Bar Buttons</h2>
+            
+            <!-- Mock Navigation Bar -->
+            <div style="
+                background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%);
+                border: 2px solid #d4b48a;
+                border-radius: 16px;
+                padding: 16px 24px;
+                margin-bottom: 2rem;
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+                gap: 20px;
+                box-shadow: 0 4px 20px rgba(110, 74, 46, 0.1);
+            ">
+                <!-- Left: Brand -->
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="
+                        width: 40px; 
+                        height: 40px; 
+                        background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #faf8f5;
+                        font-weight: bold;
+                        font-size: 18px;
+                    ">🏛️</div>
+                    <span style="
+                        font-family: 'Georgia', serif;
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: #6e4a2e;
+                    ">Museo</span>
+                </div>
+
+                <!-- Center: Search -->
+                <button class="nav-btn nav-btn-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Search artworks...
+                </button>
+
+                <!-- Right: Actions -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+                    <!-- Coin Button -->
+                    <button class="nav-btn nav-btn-coin">
+                        <span style="font-size: 14px;">🪙</span>
+                        5042
+                    </button>
+                    
+                    <!-- Notification Button -->
+                    <button class="nav-btn nav-btn-icon" style="position: relative;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                        <span class="nav-badge">3</span>
+                    </button>
+                    
+                    <!-- Messages Button -->
+                    <button class="nav-btn nav-btn-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Avatar Button -->
+                    <button class="nav-btn nav-btn-avatar">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" alt="User Avatar">
+                    </button>
+                </div>
+            </div>
+
+            <h3>Individual Navigation Components</h3>
+            <div class="button-row">
+                <button class="nav-btn nav-btn-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Search artworks...
+                </button>
+            </div>
+            
+            <div class="button-row">
+                <button class="nav-btn nav-btn-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </button>
+                
+                <button class="nav-btn nav-btn-icon" style="position: relative;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span class="nav-badge">5</span>
+                </button>
+                
+                <button class="nav-btn nav-btn-coin">
+                    <span style="font-size: 14px;">🪙</span>
+                    5042
+                </button>
+                
+                <button class="nav-btn nav-btn-avatar">
+                    <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face" alt="User Avatar">
+                </button>
+            </div>
+        </div>
+
+        <!-- Real-world Examples -->
+        <div class="demo-section">
+            <h2>Real-world Examples</h2>
+            
+            <h3>Form Actions</h3>
+            <div class="button-row" style="justify-content: flex-end;">
+                <button class="btn btn-ghost">Cancel</button>
+                <button class="btn btn-primary">Save Changes</button>
+            </div>
+
+            <h3>Content Actions</h3>
+            <div class="button-row">
+                <button class="btn btn-museo">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    View Gallery
+                </button>
+                <button class="btn btn-museo-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 5v14m7-7H5"/>
+                    </svg>
+                    Upload Art
+                </button>
+            </div>
+
+            <h3>Social Actions</h3>
+            <div class="btn-social-group">
+                <button class="btn-social like" onclick="toggleSocial(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <span class="count">24</span>
+                </button>
+                <button class="btn-social comment" onclick="toggleSocial(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    <span class="count">8</span>
+                </button>
+                <button class="btn-social share" onclick="toggleSocial(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                    <span class="count">12</span>
+                </button>
+                <button class="btn-social bookmark" onclick="toggleSocial(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                    </svg>
+                </button>
+                <button class="btn-social view" onclick="toggleSocial(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span class="count">47</span>
+                </button>
+            </div>
+
+            <h3>Social Button Variants</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Compact Social Buttons -->
+                <div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 14px;">Compact Size</h4>
+                    <div class="btn-social-group compact">
+                        <button class="btn-social like compact active">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span class="count">156</span>
+                        </button>
+                        <button class="btn-social comment compact">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                            </svg>
+                            <span class="count">23</span>
+                        </button>
+                        <button class="btn-social share compact">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                            </svg>
+                            <span class="count">7</span>
+                        </button>
+                        <button class="btn-social view compact">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span class="count">7</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Large Social Buttons -->
+                <div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 14px;">Large Size</h4>
+                    <div class="btn-social-group lg">
+                        <button class="btn-social like lg">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            Like Artwork
+                        </button>
+                        <button class="btn-social view lg">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            View Details
+                        </button>
+                        <button class="btn-social follow lg active">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 010 7.75"/>
+                            </svg>
+                            Following
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Icon-Only Social Buttons -->
+                <div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 14px;">Icon Only</h4>
+                    <div class="btn-social-group">
+                        <button class="btn-social like icon-only" title="Like">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-social comment icon-only active" title="Comment">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-social bookmark icon-only" title="Save">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-social view icon-only" title="View">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        <button class="btn-social share icon-only" title="Share">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Social Actions in Context</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <!-- Artwork Card with Social Actions -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <div style="
+                        width: 100%;
+                        height: 160px;
+                        background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #faf8f5;
+                        font-size: 32px;
+                    ">🎨</div>
+                    <h4 style="margin: 0 0 8px 0; color: #6e4a2e; font-size: 16px;">Digital Landscape</h4>
+                    <p style="margin: 0 0 12px 0; color: #8b6f47; font-size: 14px;">by Alex Chen</p>
+                    
+                    <div class="btn-social-group">
+                        <button class="btn-social like active" onclick="toggleSocial(this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span class="count">42</span>
+                        </button>
+                        <button class="btn-social comment" onclick="toggleSocial(this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                            </svg>
+                            <span class="count">12</span>
+                        </button>
+                        <button class="btn-social bookmark" onclick="toggleSocial(this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Artist Profile with Follow Button -->
+                <div style="
+                    background: linear-gradient(135deg, #faf8f5 0%, #f0e6d2 100%);
+                    border: 2px solid #d4b48a;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.1);
+                ">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face" 
+                             style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid #d4b48a;" alt="Artist">
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 4px 0; color: #6e4a2e; font-size: 18px;">Maria Rodriguez</h4>
+                            <p style="margin: 0; color: #8b6f47; font-size: 14px;">Digital Artist • 2.3k followers</p>
+                        </div>
+                    </div>
+                    <p style="margin: 0 0 16px 0; color: #8b6f47; font-size: 14px; line-height: 1.4;">
+                        "Creating vibrant digital art that bridges traditional and contemporary styles."
+                    </p>
+                    <button class="btn-social follow lg" onclick="toggleSocial(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 010 7.75"/>
+                        </svg>
+                        Follow Artist
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Instructions -->
+        <div class="usage-box">
+            <h2 style="margin-top: 0; border: none; padding: 0;">📚 How to Use</h2>
+            <p><strong>Basic Usage:</strong> Add the base <code>btn</code> class plus a variant class:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>btn btn-primary</code> - Main action buttons</li>
+                <li><code>btn btn-museo</code> - Museum-themed buttons</li>
+                <li><code>btn btn-ghost</code> - Subtle action buttons</li>
+            </ul>
+            <p><strong>Navigation Buttons:</strong> Special classes for navigation bar:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>nav-btn nav-btn-search</code> - Search button</li>
+                <li><code>nav-btn nav-btn-icon</code> - Icon buttons (notifications, etc.)</li>
+                <li><code>nav-btn nav-btn-coin</code> - Currency/coin display</li>
+                <li><code>nav-btn nav-btn-avatar</code> - Avatar button</li>
+            </ul>
+            <p><strong>More/Edit Buttons:</strong> Small buttons for options menus:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>btn-more</code> - Default more button (⋯)</li>
+                <li><code>btn-more-dark</code> - Dark variant</li>
+                <li><code>btn-more-ghost</code> - Transparent variant</li>
+                <li>Add <code>btn-sm</code> or <code>btn-lg</code> for size variants</li>
+            </ul>
+            <p><strong>Sizes:</strong> Add <code>btn-sm</code>, <code>btn-lg</code>, or <code>btn-xl</code></p>
+            <p><strong>Special:</strong> Use <code>btn-block</code> for full width, <code>btn-pill</code> for rounded, <code>btn-icon</code> for icon-only</p>
+            <p><strong>Dropdowns:</strong> Combine with more buttons for elegant menus:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>dropdown</code> - Container for dropdown</li>
+                <li><code>dropdown-menu</code> - The menu itself</li>
+                <li><code>dropdown-item</code> - Individual menu items</li>
+                <li><code>dropdown-separator</code> - Visual separator</li>
+                <li>Add <code>dark</code>, <code>sm</code>, <code>lg</code> classes for variants</li>
+            </ul>
+            <p><strong>Modal & Request Buttons:</strong> Special buttons for admin interfaces:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>btn-filter</code> - Filter/tab buttons (add <code>active</code> for selected)</li>
+                <li><code>btn-status approved/pending/rejected/review</code> - Status badges</li>
+                <li><code>btn-type artist-verification/content-report/feature-request</code> - Request type badges</li>
+                <li><code>btn-modal-action approve/reject/neutral</code> - Modal action buttons</li>
+            </ul>
+            <p><strong>Social Action Buttons:</strong> Elegant interaction buttons for content:</p>
+            <ul style="margin-left: 1.5rem;">
+                <li><code>btn-social like/comment/share/bookmark/follow</code> - Social interaction buttons</li>
+                <li><code>btn-social-group</code> - Container for grouping social buttons</li>
+                <li>Add <code>active</code> for engaged state, <code>compact</code>/<code>lg</code> for sizes</li>
+                <li>Add <code>icon-only</code> for icon-only buttons</li>
+                <li>Use <code>.count</code> span for displaying interaction counts</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Dropdown functionality
+        function toggleDropdown(button) {
+            // Check if this is a notification dropdown (has notification-dropdown class)
+            const notificationDropdown = button.nextElementSibling;
+            if (notificationDropdown && notificationDropdown.classList.contains('notification-dropdown')) {
+                // Handle notification dropdown
+                const isOpen = notificationDropdown.style.opacity === '1';
+                
+                // Close all dropdowns first
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                    menu.style.transform = 'translateY(-10px) scale(0.95)';
+                });
+                document.querySelectorAll('.dropdown.open').forEach(d => {
+                    d.classList.remove('open');
+                    d.querySelector('.dropdown-menu').classList.remove('show');
+                });
+                
+                // Toggle current notification dropdown
+                if (!isOpen) {
+                    notificationDropdown.style.opacity = '1';
+                    notificationDropdown.style.visibility = 'visible';
+                    notificationDropdown.style.transform = 'translateY(0) scale(1)';
+                }
+                return;
+            }
+            
+            // Check if this is a profile dropdown (has profile-dropdown or enhanced-profile-dropdown class)
+            const profileDropdown = button.nextElementSibling;
+            if (profileDropdown && (profileDropdown.classList.contains('profile-dropdown') || profileDropdown.classList.contains('enhanced-profile-dropdown'))) {
+                // Handle profile dropdown
+                const isOpen = profileDropdown.style.opacity === '1';
+                
+                // Close all dropdowns first
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                    menu.style.transform = 'translateY(-10px) scale(0.95)';
+                });
+                document.querySelectorAll('.dropdown.open').forEach(d => {
+                    d.classList.remove('open');
+                    d.querySelector('.dropdown-menu').classList.remove('show');
+                });
+                
+                // Toggle current profile dropdown
+                if (!isOpen) {
+                    profileDropdown.style.opacity = '1';
+                    profileDropdown.style.visibility = 'visible';
+                    profileDropdown.style.transform = 'translateY(0) scale(1)';
+                }
+                return;
+            }
+            
+            // Handle regular dropdowns
+            const dropdown = button.closest('.dropdown');
+            if (!dropdown) return;
+            
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const isOpen = dropdown.classList.contains('open');
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown.open').forEach(d => {
+                d.classList.remove('open');
+                d.querySelector('.dropdown-menu').classList.remove('show');
+            });
+            document.querySelectorAll('.profile-dropdown').forEach(menu => {
+                menu.style.opacity = '0';
+                menu.style.visibility = 'hidden';
+                menu.style.transform = 'translateY(-10px) scale(0.95)';
+            });
+            
+            // Toggle current dropdown
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                menu.classList.add('show');
+            }
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            // Check if click is outside any dropdown, profile dropdown, or notification dropdown
+            if (!event.target.closest('.dropdown') && 
+                !event.target.closest('.nav-btn-avatar') && 
+                !event.target.closest('.profile-dropdown') &&
+                !event.target.closest('.enhanced-profile-dropdown') &&
+                !event.target.closest('.enhanced-profile-btn') &&
+                !event.target.closest('.nav-btn-icon') &&
+                !event.target.closest('.notification-dropdown')) {
+                // Close regular dropdowns
+                document.querySelectorAll('.dropdown.open').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                    dropdown.querySelector('.dropdown-menu').classList.remove('show');
+                });
+                
+                // Close profile dropdowns
+                document.querySelectorAll('.profile-dropdown, .enhanced-profile-dropdown').forEach(menu => {
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                    if (menu.classList.contains('enhanced-profile-dropdown')) {
+                        menu.style.transform = 'translateY(-15px) scale(0.9)';
+                    } else {
+                        menu.style.transform = 'translateY(-10px) scale(0.95)';
+                    }
+                });
+                
+                // Close notification dropdowns
+                document.querySelectorAll('.notification-dropdown').forEach(menu => {
+                    menu.style.opacity = '0';
+                    menu.style.visibility = 'hidden';
+                    menu.style.transform = 'translateY(-10px) scale(0.95)';
+                });
+            }
+        });
+        
+        // Handle dropdown item clicks
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('.dropdown-item') || event.target.closest('.notification-item')) {
+                const item = event.target.closest('.dropdown-item') || event.target.closest('.notification-item');
+                const dropdown = item.closest('.dropdown');
+                const profileDropdown = item.closest('.profile-dropdown');
+                const notificationDropdown = item.closest('.notification-dropdown');
+                
+                // Close the dropdown
+                if (dropdown) {
+                    dropdown.classList.remove('open');
+                    dropdown.querySelector('.dropdown-menu').classList.remove('show');
+                } else if (profileDropdown) {
+                    profileDropdown.style.opacity = '0';
+                    profileDropdown.style.visibility = 'hidden';
+                    profileDropdown.style.transform = 'translateY(-10px) scale(0.95)';
+                } else if (notificationDropdown) {
+                    // Don't close notification dropdown when clicking items - let user browse
+                    // notificationDropdown.style.opacity = '0';
+                    // notificationDropdown.style.visibility = 'hidden';
+                    // notificationDropdown.style.transform = 'translateY(-10px) scale(0.95)';
+                }
+                
+                // Optional: Show what was clicked
+                console.log('Clicked:', item.textContent.trim());
+            }
+        });
+        
+        // Filter button functionality
+        function setActiveFilter(button) {
+            // Remove active class from all filter buttons in the same group
+            const filterGroup = button.parentElement;
+            filterGroup.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            console.log('Filter changed to:', button.textContent.trim());
+        }
+        
+        // Social button functionality
+        function toggleSocial(button) {
+            const isActive = button.classList.contains('active');
+            const countElement = button.querySelector('.count');
+            
+            if (isActive) {
+                button.classList.remove('active');
+                // Decrease count if it exists
+                if (countElement) {
+                    const currentCount = parseInt(countElement.textContent);
+                    countElement.textContent = Math.max(0, currentCount - 1);
+                }
+            } else {
+                button.classList.add('active');
+                // Increase count if it exists
+                if (countElement) {
+                    const currentCount = parseInt(countElement.textContent);
+                    countElement.textContent = currentCount + 1;
+                }
+                
+                // Special handling for follow button
+                if (button.classList.contains('follow')) {
+                    const textContent = button.textContent.trim();
+                    if (textContent.includes('Follow')) {
+                        button.innerHTML = button.innerHTML.replace('Follow Artist', 'Following');
+                        button.innerHTML = button.innerHTML.replace('Follow', 'Following');
+                    }
+                }
+            }
+            
+            // Handle follow button text change when deactivating
+            if (!isActive && button.classList.contains('follow')) {
+                button.innerHTML = button.innerHTML.replace('Following', 'Follow Artist');
+            }
+            
+            console.log('Social action:', button.className, isActive ? 'deactivated' : 'activated');
+        }
+    </script>
+</body>
+</html>

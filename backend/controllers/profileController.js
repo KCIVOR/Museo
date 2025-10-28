@@ -409,27 +409,38 @@ export const saveArtPreferences = async (req, res) => {
     console.log("Art preferences saved successfully for user:", userId);
     return res.status(200).json({ 
       message: "Art preferences saved successfully",
-      preferences: result[0]
+      preferences: result[0],
+      success: true
     });
 
-  } catch (err) {
-    console.error("saveArtPreferences error:", err);
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Error in saveArtPreferences:", error);
+    return res.status(500).json({ error: error.message });
   }
-}
+};
 
+export const getArts = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
 
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
+    
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
 
-export const getArts = async (req, res) =>{
-  try{
-    const userId = req.user.id;
-
-    // Fetch this user's arts from art table
+    // Fetch this user's arts from art table with pagination
     const { data: arts, error } = await supabase
       .from("art")
       .select("*")
       .eq("userId", userId)
-      .order("datePosted", { ascending: false });
+      .order("datePosted", { ascending: false })
+      .range(offset, offset + limitNum - 1);
 
     if (error) {
       console.error("getArts - Supabase error:", error);
@@ -472,6 +483,7 @@ export const getArts = async (req, res) =>{
 
     const formattedArts = (arts || []).map(art => ({
       artId: art.artId, // art table uses artId
+      id: art.artId, // Add id field for React keys
       user: userMap.get(art.userId) || {
         id: art.userId,
         name: 'Anonymous',
@@ -485,7 +497,31 @@ export const getArts = async (req, res) =>{
       timestamp: art.datePosted ? new Date(art.datePosted).toLocaleString() : null,
     }));
 
-    return res.status(200).json(formattedArts);
+    // Get total count for pagination
+    const { count: totalCount, error: countError } = await supabase
+      .from("art")
+      .select("*", { count: 'exact', head: true })
+      .eq("userId", userId);
+
+    if (countError) {
+      console.warn("getArts - Count error:", countError);
+    }
+
+    // Calculate pagination info
+    const hasMore = formattedArts.length === limitNum;
+
+    return res.status(200).json({
+      success: true,
+      artworks: formattedArts,
+      arts: formattedArts, // Backward compatibility
+      total: totalCount || formattedArts.length,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: formattedArts.length,
+        hasMore
+      }
+    });
 
   }catch(error){
     console.error("getArts error:", error);
@@ -704,6 +740,128 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+// GET specific user's artworks with pagination (for artist profile pages)
+export const getUserArts = async (req, res) => {
+  try {
+    const { userId: username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ error: "username is required" });
+    }
+    
+    // First, get the actual userId from the username
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profile')
+      .select('userId')
+      .eq('username', username)
+      .single();
+    
+    if (profileError || !userProfile) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const actualUserId = userProfile.userId;
+    
+    // Extract pagination parameters from query
+    const { page = 1, limit = 10 } = req.query;
+    
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Fetch specific user's arts from art table with pagination
+    const { data: arts, error } = await supabase
+      .from("art")
+      .select("*")
+      .eq("userId", actualUserId)
+      .order("datePosted", { ascending: false })
+      .range(offset, offset + limitNum - 1);
+
+    if (error) {
+      console.error("getUserArts - Supabase error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    // Build user map from profile
+    const userIds = [...new Set((arts || []).map(a => a.userId))];
+    const userMap = new Map();
+
+    if (userIds.length) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profile')
+        .select('userId, firstName, lastName, profilePicture')
+        .in('userId', userIds);
+
+      if (profileError) {
+        console.warn('getUserArts: failed to fetch profiles', profileError);
+      } else if (profiles && profiles.length) {
+        for (const pr of profiles) {
+          const fullName = [pr.firstName, pr.lastName].filter(Boolean).join(' ').trim() || 'Anonymous';
+          userMap.set(pr.userId, {
+            id: pr.userId,
+            name: fullName,
+            avatar: pr.profilePicture || 'https://via.placeholder.com/40',
+          });
+        }
+      }
+    }
+
+    for (const uid of userIds) {
+      if (!userMap.has(uid)) {
+        userMap.set(uid, {
+          id: uid,
+          name: 'Anonymous',
+          avatar: 'https://via.placeholder.com/40',
+        });
+      }
+    }
+
+    const formattedArts = (arts || []).map(art => ({
+      artId: art.artId,
+      id: art.artId,
+      user: userMap.get(art.userId) || {
+        id: art.userId,
+        name: 'Anonymous',
+        avatar: 'https://via.placeholder.com/40',
+      },
+      title: art.title || null,
+      description: art.description || null,
+      medium: art.medium || null,
+      image: art.image,
+      datePosted: art.datePosted,
+      timestamp: art.datePosted ? new Date(art.datePosted).toLocaleString() : null,
+    }));
+
+    // Get total count for pagination
+    const { count: totalCount, error: countError } = await supabase
+      .from("art")
+      .select("*", { count: 'exact', head: true })
+      .eq("userId", actualUserId);
+
+    if (countError) {
+      console.warn("getUserArts - Count error:", countError);
+    }
+
+    return res.status(200).json({
+      success: true,
+      artworks: formattedArts,
+      arts: formattedArts,
+      total: totalCount || formattedArts.length,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: formattedArts.length,
+        hasMore: formattedArts.length === limitNum
+      }
+    });
+
+  } catch (error) {
+    console.error("getUserArts error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // Track artwork view for artist artworks
 export const trackView = async (req, res) => {
   try {
@@ -809,5 +967,266 @@ export const getViews = async (req, res) => {
   } catch (err) {
     console.error("getViews error:", err);
     return res.status(500).json({ error: err.message });
+  }
+};
+
+// Update artwork
+export const updateArt = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { artId } = req.params;
+    const { title, description, medium, existingImages, imagesToRemove } = req.body;
+    const newImageFiles = req.files || [];
+
+    // Get user role to check admin permissions
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    const userRole = userProfile?.role || 'user';
+
+    // Verify artwork exists and get current data
+    const { data: artwork, error: fetchError } = await supabase
+      .from('art')
+      .select('userId, image')
+      .eq('artId', artId)
+      .single();
+
+    if (fetchError || !artwork) {
+      return res.status(404).json({ error: 'Artwork not found' });
+    }
+
+    // Allow if user is admin OR artwork owner
+    if (artwork.userId !== userId && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized to update this artwork' });
+    }
+
+    // Handle image updates
+    let finalImages = [];
+    
+    // Add existing images that weren't removed
+    if (existingImages) {
+      const existingArray = Array.isArray(existingImages) ? existingImages : [existingImages];
+      finalImages = [...existingArray];
+    }
+
+    // Upload new images if any
+    if (newImageFiles && newImageFiles.length > 0) {
+      for (const file of newImageFiles) {
+        try {
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.originalname}`;
+          const filePath = `pics/${userId}/${fileName}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('uploads')
+            .upload(filePath, file.buffer, {
+              contentType: file.mimetype,
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            continue;
+          }
+
+          const { data: urlData } = supabase.storage
+            .from('uploads')
+            .getPublicUrl(filePath);
+
+          finalImages.push(urlData.publicUrl);
+        } catch (uploadErr) {
+          console.error('Error uploading image:', uploadErr);
+        }
+      }
+    }
+
+    // Delete removed images from storage
+    if (imagesToRemove && imagesToRemove.length > 0) {
+      const imagesToDeleteArray = Array.isArray(imagesToRemove) ? imagesToRemove : [imagesToRemove];
+      
+      for (const imageUrl of imagesToDeleteArray) {
+        try {
+          let filePath = '';
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
+          } else {
+            const fileName = imageUrl.split('/').pop();
+            filePath = `pics/${artwork.userId}/${fileName}`;
+          }
+
+          const { error: storageError } = await supabase.storage
+            .from('uploads')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.error(`Error deleting image ${filePath}:`, storageError);
+          } else {
+            console.log(`Successfully deleted image: ${filePath}`);
+          }
+        } catch (imageError) {
+          console.error("Error processing image deletion:", imageError);
+        }
+      }
+    }
+
+    // Update artwork
+    const { data, error } = await supabase
+      .from('art')
+      .update({
+        title: title || null,
+        description: description || null,
+        medium: medium || null,
+        image: finalImages.length > 0 ? finalImages : null,
+        datePosted: new Date().toISOString()
+      })
+      .eq('artId', artId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Failed to update artwork' });
+    }
+
+    res.json({ success: true, artwork: data });
+  } catch (err) {
+    console.error('Update artwork error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Delete artwork
+export const deleteArt = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { artId } = req.params;
+
+    // Get user role to check admin permissions
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    const userRole = userProfile?.role || 'user';
+
+    // Verify artwork exists and get artwork data including images
+    const { data: artwork, error: fetchError } = await supabase
+      .from('art')
+      .select('userId, image')
+      .eq('artId', artId)
+      .single();
+
+    if (fetchError || !artwork) {
+      return res.status(404).json({ error: 'Artwork not found' });
+    }
+
+    // Allow if user is admin OR artwork owner
+    if (artwork.userId !== userId && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized to delete this artwork' });
+    }
+
+    // Delete images from storage if they exist
+    if (artwork.image && Array.isArray(artwork.image)) {
+      console.log(`🗑️ Attempting to delete ${artwork.image.length} images for artwork ${artId}`);
+      
+      for (const imageUrl of artwork.image) {
+        try {
+          console.log(`🗑️ Processing image URL: ${imageUrl}`);
+          
+          // Extract file path from URL - handle different URL formats
+          let filePath = '';
+          
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            // Full Supabase URL format
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            // Relative URL format
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
+          } else {
+            // Fallback: assume it's just the filename and construct path
+            const fileName = imageUrl.split('/').pop();
+            filePath = `pics/${artwork.userId}/${fileName}`;
+          }
+          
+          console.log(`🗑️ Attempting to delete file path: ${filePath}`);
+
+          const { error: storageError } = await supabase.storage
+            .from('uploads')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.error(`❌ Error deleting image ${filePath}:`, storageError);
+          } else {
+            console.log(`✅ Successfully deleted image: ${filePath}`);
+          }
+        } catch (imageError) {
+          console.error("❌ Error processing image deletion:", imageError);
+        }
+      }
+    } else if (artwork.image && typeof artwork.image === 'string') {
+      // Handle single image as string
+      try {
+        console.log(`🗑️ Processing single image: ${artwork.image}`);
+        
+        let filePath = '';
+        if (artwork.image.includes('/storage/v1/object/public/uploads/')) {
+          const pathPart = artwork.image.split('/storage/v1/object/public/uploads/')[1];
+          filePath = pathPart;
+        } else if (artwork.image.includes('/uploads/')) {
+          const pathPart = artwork.image.split('/uploads/')[1];
+          filePath = pathPart;
+        } else {
+          const fileName = artwork.image.split('/').pop();
+          filePath = `pics/${artwork.userId}/${fileName}`;
+        }
+        
+        console.log(`🗑️ Attempting to delete single image path: ${filePath}`);
+
+        const { error: storageError } = await supabase.storage
+          .from('uploads')
+          .remove([filePath]);
+
+        if (storageError) {
+          console.error(`❌ Error deleting single image ${filePath}:`, storageError);
+        } else {
+          console.log(`✅ Successfully deleted single image: ${filePath}`);
+        }
+      } catch (imageError) {
+        console.error("❌ Error processing single image deletion:", imageError);
+      }
+    }
+
+    // Delete artwork from database
+    const { error } = await supabase
+      .from('art')
+      .delete()
+      .eq('artId', artId);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: 'Failed to delete artwork' });
+    }
+
+    res.json({ success: true, message: 'Artwork deleted successfully' });
+  } catch (err) {
+    console.error('Delete artwork error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 };

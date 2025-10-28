@@ -7,6 +7,8 @@ import PostModal from "./PostModal";
 import SetProfileModal from "./SetProfile";
 import InterestsSelection from "./InterestsSelection";
 import AnnouncementCard from "./AnnouncementCard.jsx";
+import ConfirmModal from "./ConfirmModal";
+import EditPostModal from "./subPages/EditPostModal";
 const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
 function getAverageColorFromImageElement(img) {
@@ -37,14 +39,16 @@ function MuseoHero() {
       <div className="mHero__media"></div>
       <div className="mHero__overlay"></div>
       <div className="mHero__content">
-        <div className="mHero__eyebrow">Community Showcase</div>
-        <h1 className="mHero__title">Discover, share, and celebrate emerging art</h1>
-        <p className="mHero__subtitle">Curated picks, community showcases, and open calls year‑round.</p>
+        <div className="mHero__textGroup">
+          <div className="mHero__eyebrow">Community Showcase</div>
+          <h1 className="mHero__title">Discover, share, and celebrate emerging art</h1>
+          <p className="mHero__subtitle">Curated picks, community showcases, and open calls year‑round.</p>
+        </div>
         <div className="mHero__ctaRow">
-          <button className="btn-hero" onClick={handleBrowseEvents}>
+          <button className="btn btn-primary btn-sm" onClick={handleBrowseEvents}>
             Browse Events
           </button>
-          <button className="btn-hero-ghost" onClick={handleBrowseGallery}>
+          <button className="btn btn-primary btn-sm" onClick={handleBrowseGallery}>
             Browse Gallery
           </button>
         </div>
@@ -125,10 +129,15 @@ export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
+
+  // Pagination states (Gallery style)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const POSTS_PER_PAGE = 10;
 
   const [commenting, setCommenting] = useState({});
   const [liking, setLiking] = useState(false);
@@ -139,10 +148,17 @@ export default function Home() {
   // Image handling states
   const [bg, setBg] = useState({});
   const [ratioClass, setRatioClass] = useState({});
+
+  // Post menu states
+  const [openMenus, setOpenMenus] = useState({}); // Track which post menus are open
   const [fit, setFit] = useState({});
 
   // Modal state
   const [activePost, setActivePost] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
 
   // profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -187,19 +203,45 @@ export default function Home() {
 
   const fetchRole = async () => {
     try {
+      // Fetch user role
       const response = await fetch(`${API}/users/role`, {
         method: "GET",
         credentials: "include",
       });
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
       const data = await response.json();
+      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
       setRole(data);
-      console.log("Fetched user:", data);
+      
     } catch (error) {
-      console.error("Error fetching user:", error);
-      setUser(null);
+      console.error("Error fetching role:", error);
+      setRole(null);
     }
-  }; // fetch role ng user para malaman kung artist, user or admin
+  };
+
+  // Separate function to fetch current user data
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch(`${API}/users/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        // Extract user ID from the response
+        if (userData.id) {
+          const currentUserData = { 
+            id: userData.id, 
+            userId: userData.id 
+          };
+          setCurrentUser(currentUserData);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+      setCurrentUser(null);
+    }
+  };
 
   const handlePopUp = (postId) => {
     const p = posts.find((p) => p.id === postId);
@@ -213,47 +255,100 @@ export default function Home() {
     }));
   }; 
 
-  // Fetch posts from API
-  const fetchPosts = async () => {
+  // Fetch posts from API with pagination (Gallery style)
+  const fetchPosts = async (page = 1, append = false) => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API}/homepage/getPost`, {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      const response = await fetch(`${API}/homepage/getPost?page=${page}&limit=${POSTS_PER_PAGE}`, {
         method: "GET",
         credentials: "include",
       });
+      
       if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
 
       const data = await response.json();
       const normalized = normalizePosts(data);
-      setPosts(normalized);
-      const anns = Array.isArray(data.announcements)
-        ? [...data.announcements].sort((a, b) => {
-            const da = new Date(a.datePosted).getTime() || 0;
-            const db = new Date(b.datePosted).getTime() || 0;
-            return db - da; // newest first
-          })
-        : [];
-      setAnnouncements(anns);
+      
+      if (data.message === "Posts fetched successfully" && normalized) {
+        if (append) {
+          // Append to existing posts for infinite scroll, avoiding duplicates
+          setPosts(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPosts = normalized.filter(p => !existingIds.has(p.id));
+            return [...prev, ...newPosts];
+          });
+        } else {
+          setPosts(normalized);
+          // Only set announcements on first page
+          const anns = Array.isArray(data.announcements)
+            ? [...data.announcements].sort((a, b) => {
+                const da = new Date(a.datePosted).getTime() || 0;
+                const db = new Date(b.datePosted).getTime() || 0;
+                return db - da; // newest first
+              })
+            : [];
+          setAnnouncements(anns);
+        }
 
-      const reactCounts = {};
-      (data.reacts || []).forEach((r) => {
-        reactCounts[r.postId] = (reactCounts[r.postId] || 0) + 1;
-      });
-      setLikes(reactCounts);
+        // Update hasMore based on pagination info or post count
+        if (data.pagination) {
+          setHasMore(data.pagination.hasMore);
+        } else {
+          setHasMore(normalized.length === POSTS_PER_PAGE);
+        }
 
-      const commentCounts = {};
-      (data.comments || []).forEach((c) => {
-        commentCounts[c.postId] = (commentCounts[c.postId] || 0) + 1;
-      });
-      setComments(commentCounts);
+        const reactCounts = {};
+        (data.reacts || []).forEach((r) => {
+          reactCounts[r.postId] = (reactCounts[r.postId] || 0) + 1;
+        });
+        setLikes(reactCounts);
+
+        // Set user's liked posts from backend response
+        if (data.userLikedPosts) {
+          if (append) {
+            // For infinite scroll, merge with existing liked posts
+            setLikedPosts(prev => ({
+              ...prev,
+              ...data.userLikedPosts
+            }));
+          } else {
+            // For initial load, replace all liked posts
+            setLikedPosts(data.userLikedPosts);
+          }
+        }
+
+      } else {
+        console.error('Failed to fetch posts:', data.error);
+        if (!append) {
+          setPosts([]);
+        }
+      }
 
       setError(null);
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError(err.message);
+      if (!append) {
+        setPosts([]);
+      }
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
+  };
+
+  // Load more posts for infinite scroll (Gallery style)
+  const loadMorePosts = async () => {
+    if (!hasMore || isLoadingMore) return;
+    
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    await fetchPosts(nextPage, true);
   }; 
 
   const handleLike = async (postId) => {
@@ -331,10 +426,8 @@ export default function Home() {
       }
 
       const data = await res.json();
-      console.log("Profile status:", data);
       
       if (data.profileStatus === false){
-        console.log("Profile needs setup");
         setShowProfileModal(true);
         return; // Don't check preferences if profile isn't set up yet
       }
@@ -363,10 +456,8 @@ export default function Home() {
       }
 
       const data = await res.json();
-      console.log("Art preference status:", data);
       
       if (data.preferenceStatus === false || !data.preferenceStatus) {
-        console.log("Art preferences need setup");
         setShowInterestsModal(true);
       }
 
@@ -380,29 +471,180 @@ export default function Home() {
   const handleInterestsComplete = (selectedInterests) => {
     // Only close modal if interests were actually selected (not null)
     if (selectedInterests !== null) {
-      console.log("Interests selection completed:", selectedInterests);
       setShowInterestsModal(false);
     } else {
-      console.log("Interests selection cancelled, keeping modal open");
       // Modal stays open - user must select interests
     }
   };
 
+
   useEffect(() => {
     checkProfile();
-    fetchPosts();
-    fetchRole();
+    fetchPosts(1, false); // Initial load
+    fetchRole(); // Fetch user role
+    fetchCurrentUser(); // Fetch current user data
   }, []);
 
+
+  // Intersection Observer for infinite scroll (Gallery style)
+  useEffect(() => {
+    const sentinel = document.createElement('div');
+    sentinel.style.height = '1px';
+    sentinel.style.width = '100%';
+    
+    const feedContainer = document.querySelector('.feed');
+    
+    if (feedContainer) {
+      feedContainer.appendChild(sentinel);
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            loadMorePosts();
+          }
+        },
+        {
+          rootMargin: '100px', // Trigger 100px before sentinel becomes visible
+          threshold: 0.1
+        }
+      );
+      
+      observer.observe(sentinel);
+      
+      return () => {
+        observer.disconnect();
+        if (sentinel.parentNode) {
+          sentinel.parentNode.removeChild(sentinel);
+        }
+      };
+    }
+  }, [hasMore, isLoadingMore, posts.length, loadMorePosts]);
+
   const handleNewPost = (newPostData) => {
-    console.log("New post created:", newPostData);
-    fetchPosts();
+    // Reload the page to show the new post with fresh data
+    console.log('📝 New post created, reloading page...');
+    window.location.reload();
   };
 
   const closeModal = () => {
     setActivePost(null);
-    fetchPosts(); // re-fetch posts after modal closes
+    // Removed fetchPosts() - no need to refetch all posts when just closing a view modal
   };
+
+  // Menu functions
+  const toggleMenu = (postId, event) => {
+    event.stopPropagation();
+    setOpenMenus(prev => {
+      // If clicking the same menu that's already open, close it
+      if (prev[postId]) {
+        return {
+          ...prev,
+          [postId]: false
+        };
+      }
+      
+      // Otherwise, close all other menus and open this one
+      const newState = {};
+      Object.keys(prev).forEach(key => {
+        newState[key] = false;
+      });
+      newState[postId] = true;
+      
+      return newState;
+    });
+  };
+
+  const closeMenu = (postId) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [postId]: false
+    }));
+  };
+
+  const handleDelete = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setPostToDelete(post);
+      setShowConfirmDelete(true);
+      closeMenu(postId);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
+    
+    try {
+      const res = await fetch(`${API}/homepage/posts/${postToDelete.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        setPosts(prev => prev.filter(p => p.id !== postToDelete.id));
+        setShowConfirmDelete(false);
+        setPostToDelete(null);
+        
+        // Automatically refresh the page after successful deletion
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        const errorData = await res.json();
+        console.error('Failed to delete post:', errorData.error);
+        setShowConfirmDelete(false);
+        setPostToDelete(null);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      setShowConfirmDelete(false);
+      setPostToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDelete(false);
+    setPostToDelete(null);
+  };
+
+  const handleReport = (postId) => {
+    // Implement report functionality
+    console.log('Report functionality to be implemented for post:', postId);
+    closeMenu(postId);
+  };
+
+  const handleEdit = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setEditingPost(post);
+      setShowEditModal(true);
+      closeMenu(postId);
+    }
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    // Reload the page to show the updated post with fresh data
+    console.log('✏️ Post updated, reloading page...');
+    window.location.reload();
+  };
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside any dropdown container
+      const isClickInsideDropdown = event.target.closest('.dropdown-container');
+      
+      if (!isClickInsideDropdown) {
+        setOpenMenus({});
+      }
+    };
+    
+    // Only add listener if there are open menus
+    if (Object.values(openMenus).some(isOpen => isOpen)) {
+      document.addEventListener('click', handleClickOutside, true);
+      return () => document.removeEventListener('click', handleClickOutside, true);
+    }
+  }, [openMenus]);
 
   return (
     <div className="page">
@@ -456,41 +698,128 @@ export default function Home() {
               <AnnouncementCard key={`ann-${item.id || idx}`} post={item} />
             ) : (
             <div
-              key={item.id}
+              key={item.id || `post-${idx}`}
               className="card"
-              onClick={() => handlePopUp(item.id)}
+              style={{
+                position: 'relative',
+                overflow: 'visible',
+                zIndex: openMenus[item.id] ? 1001 : 'auto'
+              }}
+              onClick={() => {
+                // Close any open menus when clicking on post
+                setOpenMenus({});
+                handlePopUp(item.id);
+              }}
             >
               <div className="cardHeader">
                 <img
-                  src={item.user.avatar || FALLBACK_AVATAR}
+                  src={item.user?.avatar || FALLBACK_AVATAR}
                   onError={(e) => {
                     if (e.currentTarget.src !== FALLBACK_AVATAR) {
                       e.currentTarget.src = FALLBACK_AVATAR;
                     }
                   }}
-                  alt={item.user.name}
+                  alt={item.user?.name || 'User'}
                   className="avatar"
                   decoding="async"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                 />
                 <div className="meta">
-                  <div className="name">{item.user.name}</div>
+                  <div className="name">{item.user?.name || 'Anonymous'}</div>
                   <div className="desc">{item.timestamp}</div>
+                </div>
+                
+                {/* More/Edit Button */}
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    marginLeft: 'auto',
+                    zIndex: 1000
+                  }}
+                  className="dropdown-container"
+                >
+                  <button
+                    className="btn-more"
+                    onClick={(e) => toggleMenu(item.id, e)}
+                    aria-label="More options"
+                  >
+                    ⋯
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {openMenus[item.id] && (
+                    <div 
+                      className="dropdown-menu show"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        zIndex: 99999,
+                        position: 'absolute',
+                        top: '100%',
+                        right: '0',
+                        marginTop: '8px'
+                      }}
+                    >
+                      {/* Edit option - for admin or post owner */}
+                      {(role === 'admin' || currentUser?.id === item.userId) && (
+                        <button
+                          className="dropdown-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(item.id);
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Edit
+                        </button>
+                      )}
+
+                      {/* Report option - for all users except post owner */}
+                      {currentUser?.id !== item.userId && (
+                        <button
+                          className="dropdown-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReport(item.id);
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                            <line x1="4" y1="22" x2="4" y2="15"/>
+                          </svg>
+                          Report
+                        </button>
+                      )}
+
+                      {/* Delete option - for admin or post owner */}
+                      {(role === 'admin' || currentUser?.id === item.userId) && (
+                        <button
+                          className="dropdown-item danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                          </svg>
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {item.text && (
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    borderTop: "1px solid rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <p
-                    className="ge"
-                    style={{ margin: 0, color: "#111", lineHeight: 1.5 }}
-                  >
+                <div className="postContent">
+                  <p className="ge postText">
                     {(() => {
                       const maxLength = 150;
                       const isExpanded = expandedPosts[item.id];
@@ -509,12 +838,8 @@ export default function Home() {
                                 e.stopPropagation();
                                 toggleExpanded(item.id);
                               }}
-                              style={{
-                                color: '#888',
-                                cursor: 'pointer',
-                                marginLeft: '5px',
-                                fontSize: '13px'
-                              }}
+                              className="expandToggle"
+                              style={{ fontSize: '13px' }}
                             >
                               see less
                             </span>
@@ -529,12 +854,8 @@ export default function Home() {
                                 e.stopPropagation();
                                 toggleExpanded(item.id);
                               }}
-                              style={{
-                                color: '#888',
-                                cursor: 'pointer',
-                                marginLeft: '5px',
-                                fontSize: '13px'
-                              }}
+                              className="expandToggle"
+                              style={{ fontSize: '13px' }}
                             >
                               see more
                             </span>
@@ -567,75 +888,97 @@ export default function Home() {
                   />
                   {/* Show indicator if multiple images */}
                   {Array.isArray(item.image) && item.image.length > 1 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '12px',
-                      right: '12px',
-                      background: 'rgba(0,0,0,0.8)',
-                      color: 'white',
-                      padding: '6px 10px',
-                      borderRadius: '16px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                      backdropFilter: 'blur(4px)'
-                    }}>
-                      <span style={{ fontSize: '14px', color: 'white' }}>📷</span>
-                      <span style={{ color: 'white' }}>{item.image.length}</span>
+                    <div className="imageIndicator">
+                      <span className="imageIcon">📷</span>
+                      <span>{item.image.length}</span>
                     </div>
                   )}
                 </div>
               )}
 
               {/* Elegant Action Bar */}
-              <div 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  padding: '12px 16px',
-                  borderTop: '1px solid rgba(107, 66, 38, 0.1)',
-                  background: 'var(--museo-white)',
-                  gap: '12px'
+              {/* Like and Stats */}
+              <div className="actionBar"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Close any open menus when interacting with action bar
+                  setOpenMenus({});
                 }}
-                onClick={(e) => e.stopPropagation()}
               >
-                {/* Like Button - PostModal Style */}
+                {/* Like Button 1 - Social Actions */}
                 <button
-                  className={`museo-btn--pill ${likedPosts[item.id] ? 'liked' : ''}`}
+                  className={`btn-social like ${likedPosts[item.id] ? 'active' : ''}`}
                   onClick={() => handleLike(item.id)}
                   disabled={liking[item.id]}
-                  style={{ 
-                    opacity: liking[item.id] ? 0.6 : 1,
-                    cursor: liking[item.id] ? 'not-allowed' : 'pointer'
-                  }}
                   aria-label="Like post"
                 >
-                  <span className="like-icon">
-                    {likedPosts[item.id] ? '❤️' : '🤍'}
-                  </span>
-                  <span className="like-count">{likes[item.id] || 0}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  <span className="count">{likes[item.id] || 0}</span>
                 </button>
-
-                {/* Comment Stats - PostModal Style */}
-                <div 
-                  className="museo-btn--pill"
+                {/* Comment Button - Social Actions */}
+                <button 
+                  className="btn-social comment"
                   onClick={() => handlePopUp(item.id)}
-                  style={{ cursor: 'pointer' }}
                   aria-label="View comments"
                 >
-                  <span style={{ fontSize: '1rem' }}>💬</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                    {comments[item.id] || 0} comments
-                  </span>
-                </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                  </svg>
+                  <span className="count">{comments[item.id] || 0}</span>
+                </button>
               </div>
             </div>
             )
           ))}
+
+        {/* Loading more posts indicator */}
+        {isLoadingMore && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '40px 20px',
+            color: '#8b6f47',
+            fontSize: '14px',
+            fontStyle: 'italic'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                border: '2px solid #d4b48a',
+                borderTop: '2px solid #8b6f47',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+              Loading more posts...
+            </div>
+          </div>
+        )}
+
+
+        {/* End of posts indicator */}
+        {!hasMore && posts.length > 0 && !loading && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '40px 20px',
+            color: '#8b6f47',
+            fontSize: '14px',
+            fontStyle: 'italic',
+            borderTop: '1px solid rgba(212, 180, 138, 0.2)',
+            marginTop: '20px'
+          }}>
+            You've reached the end of the feed
+          </div>
+        )}
 
         {activePost && (
           <PostModal
@@ -646,6 +989,10 @@ export default function Home() {
             likeCount={likes}
             likedPosts={likedPosts}
             currentUser={currentUser}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onReport={handleReport}
+            role={role}
           />
         )}
       </div>
@@ -665,6 +1012,28 @@ export default function Home() {
       <InterestsSelection
         isOpen={showInterestsModal}
         onClose={handleInterestsComplete}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        open={showConfirmDelete}
+        title="Delete Post"
+        message={`Are you sure you want to delete this post? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingPost(null);
+        }}
+        post={editingPost}
+        onPostUpdated={handlePostUpdated}
       />
     </div>
   );

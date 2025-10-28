@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts } from "../controllers/galleryController.js";
+import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt } from "../controllers/galleryController.js";
 
 const router = express.Router();
 
@@ -73,6 +73,12 @@ router.post('/batch-stats', getBatchArtworkStats);
 
 // Get current top arts of the week
 router.get('/top-arts-weekly', getCurrentTopArts);
+
+// Update gallery artwork
+router.put('/artwork/:galleryArtId', upload.array('images', 5), updateGalleryArt);
+
+// Delete gallery artwork
+router.delete('/artwork/:galleryArtId', deleteGalleryArt);
 
 // Debug endpoint to check topArtsWeekly table
 router.get('/debug-top-arts', async (req, res) => {

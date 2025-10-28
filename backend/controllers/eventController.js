@@ -1,18 +1,39 @@
-
 import db from '../database/db.js';
 
 export const getEvents = async (req, res) => {
   try {
+    // Extract pagination parameters from query (Homepage style)
+    const { page = 1, limit = 10 } = req.query;
+    
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+    
+    // Fetch events with pagination
     const { data, error } = await db
       .from('event')
-      .select("*")
-      .order('startsAt', { ascending: true });
+      .select('*')
+      .order('startsAt', { ascending: true })
+      .range(offset, offset + limitNum - 1);
 
     if (error) {
       console.error('getEvents: supabase error:', error);
       return res.status(500).json({ error: 'Failed to fetch events' });
     }
-    return res.status(200).json({ data });
+    
+    // Check if there are more events
+    const hasMore = data.length === limitNum;
+    
+    return res.status(200).json({ 
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: data.length,
+        hasMore
+      }
+    });
   } catch (err) {
     console.error('getEvents: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });

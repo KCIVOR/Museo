@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import MuseoLoadingBox from '../components/MuseoLoadingBox';
 import MuseoEmptyState from '../components/MuseoEmptyState';
@@ -32,6 +32,7 @@ export default function Gallery() {
   const [role, setRole] = useState(null);
   const [topArtsWeekly, setTopArtsWeekly] = useState([]); // New state for weekly top arts
   const [isLoadingTopArts, setIsLoadingTopArts] = useState(true);
+  const hasLoadedTopArts = useRef(false); // Track if we've already loaded top arts
   // Get featured artworks for rotation (limit to 6 for better UX)
   const featuredArtworks = artworks.filter(art => art.featured === true).slice(0, 6);
   const hasFeaturedArtworks = featuredArtworks.length > 0;
@@ -520,12 +521,15 @@ export default function Gallery() {
     }
   }, [artworks]);
 
-  // Fetch weekly top arts when artworks are loaded
+  // Fetch weekly top arts once when artworks are first loaded
   useEffect(() => {
-    if (artworks.length > 0) {
+    // Only fetch if we have artworks and haven't loaded top arts yet
+    if (artworks.length > 0 && !hasLoadedTopArts.current) {
+      console.log('🎯 Fetching top arts for the first time');
+      hasLoadedTopArts.current = true; // Mark as loaded to prevent refetch
       fetchTopArtsWeekly();
     }
-  }, [artworks.length]); // Only depend on length to avoid excessive calls
+  }, [artworks.length > 0]); // Only depend on whether artworks exist (boolean), not the actual length
 
   // Refresh stats for visible artworks only (not all artworks)
   useEffect(() => {
@@ -1875,7 +1879,7 @@ export default function Gallery() {
                   {categories.filter(cat => cat.name !== 'All').map(category => (
                   <button
                     key={category.name}
-                    className="btn-category"
+                    className={`btn-filter ${selectedCategories.includes(category.name) ? 'active' : ''}`}
                     onClick={() => {
                       let newCategories;
                       if (selectedCategories.includes(category.name)) {
@@ -1886,20 +1890,6 @@ export default function Gallery() {
                       
                       // Use the new handler that resets pagination
                       handleCategoryChange(newCategories);
-                    }}
-                    style={{
-                      background: selectedCategories.includes(category.name) ? '#ece2d6' : 'white',
-                      color: '#2c1810',
-                      border: '1px solid #d4af37',
-                      padding: '12px 20px',
-                      borderRadius: '25px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      fontFamily: 'Georgia, serif',
-                      outline: 'none',
-                      transition: 'background-color 0.2s ease',
-                      whiteSpace: 'nowrap'
                     }}
                   >
                     {category.name} ({category.count || 0})
@@ -1945,52 +1935,28 @@ export default function Gallery() {
                         {selectedCategories.map((category) => (
                           <span
                             key={category}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              background: '#ece2d6',
-                              color: '#2c1810',
-                              padding: '6px 12px',
-                              borderRadius: '20px',
-                              fontSize: '13px',
-                              fontWeight: '600',
-                              border: '1px solid #d4af37'
+                            className="btn-chip"
+                            onClick={() => {
+                              const newCategories = selectedCategories.filter(cat => cat !== category);
+                              handleCategoryChange(newCategories);
                             }}
+                            style={{ cursor: 'pointer' }}
                           >
                             {category}
+                            <span style={{ marginLeft: '6px', fontSize: '16px', opacity: 0.7 }}>×</span>
                           </span>
                         ))}
                       </div>
                     </div>
                     
                     <button
+                      className="btn btn-museo-ghost btn-sm"
                       onClick={() => {
                         handleCategoryChange([]); // Clear all filters and reset pagination
-                      }}
-                      style={{
-                        background: 'transparent',
-                        color: '#6b4226',
-                        border: '2px solid rgba(107,66,38,0.3)',
-                        padding: '8px 18px',
-                        borderRadius: '25px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        fontFamily: 'Georgia, serif'
-                      }}
-                      onMouseOver={(e) => {
-                        e.target.style.background = '#2c1810';
-                        e.target.style.color = '#f8f5f0';
-                        e.target.style.borderColor = '#2c1810';
-                      }}
-                      onMouseOut={(e) => {
-                        e.target.style.background = 'transparent';
-                        e.target.style.color = '#6b4226';
-                        e.target.style.borderColor = 'rgba(107,66,38,0.3)';
+                        setPage(1); // Reset pagination
                       }}
                     >
-                      Clear All Filters
+                      Clear All
                     </button>
                   </div>
                 </div>
@@ -2260,7 +2226,7 @@ export default function Gallery() {
       {/* Floating Action Button - Bottom Right - Only for admin/artist */}
       {(role === 'admin' || role === 'artist') && (
         <button
-          className="museo-floating-btn"
+          className="museo-btn museo-btn--primary museo-floating-btn"
           onClick={() => setIsUploadModalOpen(true)}
           title="Add Artwork"
         >

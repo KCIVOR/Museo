@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
@@ -25,11 +25,22 @@ export default function Event() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const [participantCounts, setParticipantCounts] = useState({}); // { [eventId]: number }
+  
+  // Pagination states (Homepage style)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const EVENTS_PER_PAGE = 10;
 
-  const getEvents = async () => {
+  const getEvents = async (page = 1, append = false) => {
     try {
-      setLoading(true);
-      const res = await fetch(`${API}/event/getEvents`, {
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const res = await fetch(`${API}/event/getEvents?page=${page}&limit=${EVENTS_PER_PAGE}`, {
         method: "GET",
         credentials: "include",
       });
@@ -37,38 +48,82 @@ export default function Event() {
         throw new Error(`Failed to fetch events: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
-      // backend returns { data: [...] }
-      setEvents(Array.isArray(data?.data) ? data.data : []);
+      // backend returns { data: [...], pagination: {...} }
+      const fetchedEvents = Array.isArray(data?.data) ? data.data : [];
+      
+      if (append) {
+        // Append to existing events for infinite scroll, avoiding duplicates
+        setEvents(prev => {
+          const existingIds = new Set(prev.map(e => e.eventId || e.id));
+          const newEvents = fetchedEvents.filter(e => !existingIds.has(e.eventId || e.id));
+          return [...prev, ...newEvents];
+        });
+      } else {
+        // Replace events for initial load
+        setEvents(fetchedEvents);
+      }
+      
+      // Update hasMore based on pagination info
+      if (data.pagination) {
+        setHasMore(data.pagination.hasMore);
+      } else {
+        setHasMore(fetchedEvents.length === EVENTS_PER_PAGE);
+      }
     } catch (error) {
       console.error("Error fetching events:", error);
-      setEvents([]);
+      if (!append) {
+        setEvents([]);
+      }
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   // When navigated to /event/:eventId, fetch that event and open the modal
+  const hasOpenedEventRef = useRef(false);
+  
   useEffect(() => {
     const openByRoute = async () => {
-      if (!routeEventId) return;
+      if (!routeEventId) {
+        hasOpenedEventRef.current = false;
+        return;
+      }
+      
+      // If we already opened this event, don't do it again
+      if (hasOpenedEventRef.current) return;
+      
       try {
         // Try find in current list first
         const found = events.find(e => (e.eventId || e.id) == routeEventId);
-        if (found) { openEvent(found); return; }
-        // Fetch all events then locate the one by id
-        const allRes = await fetch(`${API}/event/getEvents`, { credentials: 'include' });
-        if (!allRes.ok) throw new Error('Failed to fetch events');
-        const all = await allRes.json();
-        const list = Array.isArray(all?.data)
-          ? all.data
-          : Array.isArray(all?.events)
-            ? all.events
-            : Array.isArray(all)
-              ? all
-              : [];
-        const byId = list.find(e => (e.eventId || e.id) == routeEventId);
-        if (byId) { openEvent(byId); return; }
-        throw new Error('Event not found');
+        if (found) { 
+          openEvent(found);
+          hasOpenedEventRef.current = true;
+          return;
+        }
+        
+        // Only fetch all events if we have some events loaded (pagination started)
+        // and the event is still not found
+        if (events.length > 0) {
+          // Fetch ALL events (with high limit) to find the specific event
+          const allRes = await fetch(`${API}/event/getEvents?page=1&limit=1000`, { credentials: 'include' });
+          if (!allRes.ok) throw new Error('Failed to fetch events');
+          const all = await allRes.json();
+          const list = Array.isArray(all?.data)
+            ? all.data
+            : Array.isArray(all?.events)
+              ? all.events
+              : Array.isArray(all)
+                ? all
+                : [];
+          const byId = list.find(e => (e.eventId || e.id) == routeEventId);
+          if (byId) { 
+            openEvent(byId);
+            hasOpenedEventRef.current = true;
+            return;
+          }
+          throw new Error('Event not found');
+        }
       } catch (e) {
         console.error(e);
         // If failed, navigate back to list
@@ -76,8 +131,8 @@ export default function Event() {
       }
     };
     openByRoute();
-    // we want this to run when routeEventId or events change
-  }, [routeEventId, events]);
+    // Only run when routeEventId changes or when events are first loaded
+  }, [routeEventId, events.length > 0]);
 
   // Fetch role of current user
   const fetchRole = async () => {
@@ -96,10 +151,45 @@ export default function Event() {
     }
   };
 
+  // Load more events for infinite scroll
+  const loadMoreEvents = async () => {
+    if (!hasMore || isLoadingMore) return;
+    
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    await getEvents(nextPage, true);
+  };
+
   useEffect(() => {
-    getEvents();
+    getEvents(1, false);
     fetchRole();
   }, []);
+
+  // Infinite scroll observer (Homepage style)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && events.length > 0) {
+      const sentinel = document.getElementById('events-sentinel');
+      if (!sentinel) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry.isIntersecting && hasMore && !isLoadingMore) {
+            loadMoreEvents();
+          }
+        },
+        { rootMargin: '100px' }
+      );
+
+      observer.observe(sentinel);
+
+      return () => {
+        if (sentinel) {
+          observer.unobserve(sentinel);
+        }
+      };
+    }
+  }, [hasMore, isLoadingMore, events.length]);
 
   // Fetch participant counts per event
   useEffect(() => {
@@ -262,7 +352,7 @@ export default function Event() {
             marginBottom: '32px' 
           }}>
             <button
-              className="museo-btn museo-btn--primary"
+              className="btn btn-primary btn-sm"
               onClick={() => setShowPublish(true)}
             >
               Publish Event
@@ -377,17 +467,46 @@ export default function Event() {
                       alignSelf: 'stretch'
                     }}
                   >
-                    <button className="museo-btn museo-btn--primary" onClick={() => openEvent(e)}>View More</button>
+                    <button className="btn btn-primary btn-sm" onClick={() => openEvent(e)}>View More</button>
                     {(role === 'admin' || role?.role === 'admin') && (
                       <>
-                        <button className="museo-btn museo-btn--secondary" onClick={() => openEdit(e)}>Edit</button>
-                        <button className="museo-btn museo-btn--error" onClick={() => askDelete(e)}>Delete</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => openEdit(e)}>Edit</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => askDelete(e)}>Delete</button>
                       </>
                     )}
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Loading more indicator */}
+        {isLoadingMore && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            marginTop: '20px'
+          }}>
+            <MuseoLoadingBox show={true} />
+          </div>
+        )}
+
+        {/* Infinite scroll sentinel */}
+        <div id="events-sentinel" style={{ height: '20px', margin: '20px 0' }} />
+
+        {/* End of events indicator */}
+        {!hasMore && events.length > 0 && !loading && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            color: 'var(--museo-text-muted)',
+            fontSize: '14px',
+            fontStyle: 'italic'
+          }}>
+            You've reached the end of all events
           </div>
         )}
 

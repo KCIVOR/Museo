@@ -333,46 +333,7 @@
   gap: 12px;
 }
 
-/* Buttons - Matches UploadArtModal */
-.ra-btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: var(--museo-font-body);
-  border: 1px solid transparent;
-  min-width: 120px;
-}
-
-.ra-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.ra-btn--secondary {
-  background: var(--museo-white);
-  color: var(--museo-text-primary);
-  border-color: var(--museo-border);
-}
-
-.ra-btn--secondary:hover:not(:disabled) {
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-primary);
-}
-
-.ra-btn--primary {
-  background: var(--museo-primary);
-  color: var(--museo-white);
-  border-color: var(--museo-primary);
-}
-
-.ra-btn--primary:hover:not(:disabled) {
-  background: var(--museo-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--museo-shadow-light);
-}
+/* Button styles removed for consistent redesign */
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -404,9 +365,7 @@
     flex-direction: column-reverse;
   }
   
-  .ra-btn {
-    width: 100%;
-  }
+  /* Button responsive styles removed */
 }
 
 /* Animation */

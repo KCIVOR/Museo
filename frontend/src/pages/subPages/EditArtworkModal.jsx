@@ -1,29 +1,34 @@
-import React, { useEffect, useState } from "react";
-import './subPages/css/UploadArtModal.css';
-const API = import.meta.env.VITE_API_BASE
-// A lightweight modal-style uploader similar in UX to SetProfile
-// Props:
-// - open: boolean
-// - onClose: () => void
-// - onUploaded?: (art) => void  // optional callback with created art row
-export default function UploadArt({ open, onClose, onUploaded }) {
-  const [images, setImages] = useState([]); // Array of { file, url, id }
+import React, { useState, useEffect } from 'react';
+import './css/UploadArtModal.css';
+
+const API = import.meta.env.VITE_API_BASE;
+
+const EditArtworkModal = ({ isOpen, onClose, artwork, onArtworkUpdated }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [medium, setMedium] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({ images: [] });
+  const [newImages, setNewImages] = useState([]);
+  const [imagesToRemove, setImagesToRemove] = useState([]);
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-    setImages([]);
-    setTitle("");
-    setDescription("");
-    setMedium("");
+    if (!isOpen || !artwork) return;
+    setTitle(artwork.title || "");
+    setDescription(artwork.description || "");
+    setMedium(artwork.medium || "");
     setErrors({});
-    setDragActive(false);
-  }, [open]);
+    
+    // Handle artwork images
+    const artworkImages = artwork.image || [];
+    setFormData({
+      images: Array.isArray(artworkImages) ? artworkImages : (artworkImages ? [artworkImages] : [])
+    });
+    setNewImages([]);
+    setImagesToRemove([]);
+  }, [isOpen, artwork]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -40,59 +45,76 @@ export default function UploadArt({ open, onClose, onUploaded }) {
     e.stopPropagation();
     setDragActive(false);
     
-    const files = Array.from(e.dataTransfer.files || []);
-    if (files.length === 0) return;
-    
-    handleFiles(files);
-  };
-
-  const handleFiles = (files) => {
-    // Validate files (same as UploadArtModal)
-    const validFiles = files.filter(file => {
-      const isImage = file.type.startsWith('image/');
-      const isNotGif = file.type !== 'image/gif';
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-      return isImage && isNotGif && isValidSize;
-    });
-    
-    if (validFiles.length !== files.length) {
-      setErrors(prev => ({
-        ...prev,
-        images: 'Some files were rejected. Only JPG, PNG images under 10MB are allowed (no GIFs).'
-      }));
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFiles(e.dataTransfer.files);
     }
-    
-    // Create image objects with preview URLs
-    const newImages = validFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    
-    // Add to existing images (max 5 total)
-    setImages(prev => [...prev, ...newImages].slice(0, 5));
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files);
-    handleFiles(files);
+    if (e.target.files && e.target.files[0]) {
+      handleFiles(e.target.files);
+    }
   };
 
-  const removeImage = (imageId) => {
-    setImages(prev => {
-      const updated = prev.filter(img => img.id !== imageId);
-      // Clean up URL to prevent memory leaks
+  const handleFiles = (files) => {
+    const fileArray = Array.from(files);
+    const maxFiles = 5;
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (formData.images.length + newImages.length + fileArray.length > maxFiles) {
+      setErrors(prev => ({ ...prev, images: `Maximum ${maxFiles} images allowed` }));
+      return;
+    }
+
+    const validFiles = [];
+    const invalidFiles = [];
+
+    fileArray.forEach(file => {
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} is too large (max 10MB)`);
+      } else if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        invalidFiles.push(`${file.name} is not a supported format`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      setErrors(prev => ({ ...prev, images: invalidFiles.join(', ') }));
+      return;
+    }
+
+    const newImagePreviews = validFiles.map(file => ({
+      id: Date.now() + Math.random(),
+      file,
+      preview: URL.createObjectURL(file),
+      isNew: true
+    }));
+
+    setNewImages(prev => [...prev, ...newImagePreviews]);
+    setErrors(prev => ({ ...prev, images: '' }));
+  };
+
+  const removeExistingImage = (imageUrl) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter(img => img !== imageUrl)
+    }));
+    setImagesToRemove(prev => [...prev, imageUrl]);
+  };
+
+  const removeNewImage = (imageId) => {
+    setNewImages(prev => {
       const imageToRemove = prev.find(img => img.id === imageId);
       if (imageToRemove) {
         URL.revokeObjectURL(imageToRemove.preview);
       }
-      return updated;
+      return prev.filter(img => img.id !== imageId);
     });
   };
 
   const validate = () => {
     const v = {};
-    if (images.length === 0) v.images = "At least one image is required";
     if (!title.trim()) v.title = "Title is required";
     if (!description.trim()) v.description = "Description is required";
     if (!medium.trim()) v.medium = "Medium is required";
@@ -105,54 +127,75 @@ export default function UploadArt({ open, onClose, onUploaded }) {
     if (!validate()) return;
     try {
       setSubmitting(true);
-      const fd = new FormData();
       
-      // Add multiple images
-      images.forEach((image) => {
-        fd.append("images", image.file);
+      const artworkId = artwork?.id || artwork?.artId;
+      const submitData = new FormData();
+      submitData.append('title', title.trim());
+      submitData.append('description', description.trim());
+      submitData.append('medium', medium.trim());
+      
+      // Add existing images that weren't removed
+      formData.images.forEach(imageUrl => {
+        submitData.append('existingImages', imageUrl);
       });
-      
-      fd.append("title", title);
-      fd.append("description", description);
-      fd.append("medium", medium);
-      // Add default categories for profile uploads
-      fd.append("categories", JSON.stringify(["Digital Art"]));
 
-      // Use profile endpoint for multiple image support
-      const res = await fetch(`${API}/profile/uploadArt`, {
-        method: "POST",
-        credentials: "include",
-        body: fd,
+      // Add new image files
+      newImages.forEach(imageObj => {
+        submitData.append('images', imageObj.file);
       });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to upload");
+
+      // Add images to remove
+      imagesToRemove.forEach(imageUrl => {
+        submitData.append('imagesToRemove', imageUrl);
+      });
+
+      const response = await fetch(`${API}/profile/art/${artworkId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: submitData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update artwork");
       }
-      const data = await res.json();
-      onUploaded?.(data.artwork);
+      
+      const data = await response.json();
+      
+      // Clean up object URLs
+      newImages.forEach(imageObj => {
+        URL.revokeObjectURL(imageObj.preview);
+      });
+      
+      onArtworkUpdated?.(data.artwork);
       onClose?.();
     } catch (err) {
-      alert(err.message || "Upload failed");
+      alert(err.message || "Update failed");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!open) return null;
+  if (!isOpen || !artwork) return null;
+
+  const allImages = [
+    ...formData.images.map(url => ({ id: url, url, isExisting: true })),
+    ...newImages
+  ];
 
   return (
     <div className="museo-modal-overlay uam-overlay" onClick={onClose}>
       <section
         className="museo-modal uam-modal"
         role="dialog"
-        aria-label="Upload artwork"
+        aria-label="Edit artwork"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <header className="uam-header">
           <div className="uam-header-content">
-            <h3 className="uam-title">Upload Your Artwork</h3>
-            <p className="uam-subtitle">Add your creation to your profile</p>
+            <h3 className="uam-title">Edit Artwork</h3>
+            <p className="uam-subtitle">Update your artwork details</p>
           </div>
           <button className="uam-close" onClick={onClose}>
             ✕
@@ -167,7 +210,7 @@ export default function UploadArt({ open, onClose, onUploaded }) {
               <h3 className="uam-section-title">Artwork Images</h3>
               
               <div 
-                className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${images.length > 0 ? 'uam-dropzone--has-files' : ''} ${errors.images ? 'uam-dropzone--error' : ''}`}
+                className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${allImages.length > 0 ? 'uam-dropzone--has-files' : ''} ${errors.images ? 'uam-dropzone--error' : ''}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -176,10 +219,10 @@ export default function UploadArt({ open, onClose, onUploaded }) {
                 <div className="uam-dropzone-content">
                   <div className="uam-dropzone-icon">🎨</div>
                   <div className="uam-dropzone-text">
-                    <strong>Drop your artwork here</strong> or click to browse
+                    <strong>Drop your images here</strong> or click to browse
                   </div>
                   <div className="uam-dropzone-hint">
-                    Support: JPG, PNG up to 10MB • Maximum 5 images • No GIFs
+                    Support: JPG, PNG up to 10MB • Maximum 5 images
                   </div>
                   <input
                     type="file"
@@ -194,15 +237,18 @@ export default function UploadArt({ open, onClose, onUploaded }) {
               {errors.images && <div className="uam-error">{errors.images}</div>}
 
               {/* Image Previews */}
-              {images.length > 0 && (
+              {allImages.length > 0 && (
                 <div className="uam-image-previews">
-                  {images.map((image) => (
+                  {allImages.map((image) => (
                     <div key={image.id} className="uam-image-preview">
-                      <img src={image.preview} alt="Preview" />
+                      <img 
+                        src={image.isExisting ? image.url : image.preview} 
+                        alt="Preview" 
+                      />
                       <button
                         type="button"
                         className="uam-image-remove"
-                        onClick={() => removeImage(image.id)}
+                        onClick={() => image.isExisting ? removeExistingImage(image.url) : removeNewImage(image.id)}
                         title="Remove image"
                       >
                         ✕
@@ -275,16 +321,15 @@ export default function UploadArt({ open, onClose, onUploaded }) {
             {submitting ? (
               <>
                 <div className="btn-spinner"></div>
-                Uploading...
+                Updating...
               </>
             ) : (
               <>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7,10 12,15 17,10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                Upload Artwork
+                Update Artwork
               </>
             )}
           </button>
@@ -292,4 +337,6 @@ export default function UploadArt({ open, onClose, onUploaded }) {
       </section>
     </div>
   );
-}
+};
+
+export default EditArtworkModal;

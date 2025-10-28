@@ -218,8 +218,25 @@ export default function Navbar({ role }) {
         }
       }
     };
+    
+    // Listen for profile updates from other components
+    const handleProfileUpdate = (event) => {
+      const { avatar, firstName, lastName, username } = event.detail;
+      setUserData(prev => ({
+        ...prev,
+        avatar: avatar || prev.avatar,
+        username: username || prev.username,
+        fullName: `${firstName || ''} ${lastName || ''}`.trim() || prev.fullName
+      }));
+    };
+    
     fetchUserData();
-    return () => { abort = true; };
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    
+    return () => { 
+      abort = true; 
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const goto = (path) => { setMenuOpen(false); navigate(path); };
@@ -258,42 +275,60 @@ export default function Navbar({ role }) {
           {/* Search button */}
           <button
             type="button"
-            className="nav__searchBtn"
+            className="nav-btn nav-btn-search"
             aria-label="Go to search"
             onClick={() => navigate("/search")}
           >
-            <SearchIcon />
-            <span className="nav__searchLabel">Search</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span>Search</span>
           </button>
 
           {/* Coins */}
           <button 
-            className="nav__coin" 
+            className="nav-btn nav-btn-coin" 
             type="button"
             onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
           >
-            <CoinIcon />
-            <span className="nav__coin-count">5042</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v12"/>
+              <path d="M6 12h12"/>
+            </svg>
+            <span className="count">5042</span>
           </button>
 
           {/* Notifications */}
           <div className="nav__notif-wrap">
             <button
-              className="nav__icon-btn"
+              className="nav-btn nav-btn-icon"
               aria-label="Notifications"
               aria-haspopup="dialog"
               aria-expanded={notifOpen}
               type="button"
               onClick={() => setNotifOpen((v) => !v)}
             >
-              <BellIcon />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+              </svg>
 
               {unreadCount > 0 && (
                 <span 
-                  className="nav__notif-badge" 
+                  className="nav-badge" 
                   aria-label={`${unreadCount} unread`}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    fontSize: '0', // Hide any text
+                    minWidth: '8px',
+                    border: 'none', // Remove border
+                    background: '#dc2626', // Solid red background
+                    boxShadow: 'none' // Remove shadow
+                  }}
                 >
-                  {unreadCount}
                 </span>
               )}
             </button>
@@ -307,20 +342,24 @@ export default function Navbar({ role }) {
           </div>
 
           {/* Messages */}
-          <button 
-            className="nav__icon-btn" 
-            aria-label="Messages" 
-            type="button" 
-            onClick={() => setMsgOpen(true)}
-          >
-            <MessageIcon /> 
-          </button>
+          <div className="nav__msg-wrap">
+            <button 
+              className="nav-btn nav-btn-icon" 
+              aria-label="Messages" 
+              type="button" 
+              onClick={() => setMsgOpen(true)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </button>
+          </div>
 
           {/* Avatar + dropdown */}
           <div className="nav__account">
             <button
               ref={btnRef}
-              className="nav__avatar"
+              className="nav-btn nav-btn-avatar"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-controls="profile-menu"
@@ -328,65 +367,191 @@ export default function Navbar({ role }) {
               onClick={() => setMenuOpen((v) => !v)}
             >
               <img 
-                className="nav__avatar-img" 
-                src={userData.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80"} 
+                className="nav-btn-avatar-img" 
+                src={userData.avatar || import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png"} 
                 alt={userData.fullName || userData.username || "User Avatar"}
                 onError={(e) => {
-                  // First fallback to default avatar
-                  if (e.target.src !== "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80") {
-                    e.target.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80";
+                  const fallbackUrl = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
+                  // First fallback to default avatar from env
+                  if (e.target.src !== fallbackUrl) {
+                    e.target.src = fallbackUrl;
                   } else {
                     // Final fallback to SVG
                     e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23faf8f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
                   }
                 }}
               />
-              <span className="nav__avatar-caret">▾</span>
             </button>
 
             {menuOpen && (
               <div 
                 id="profile-menu" 
                 ref={menuRef} 
-                className="nav__menu nav__menu--museo" 
+                className="dropdown-menu profile-dropdown"
                 role="menu" 
                 aria-label="Profile options"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 12px)',
+                  right: '0',
+                  minWidth: '220px',
+                  background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                  border: '2px solid #d4b48a',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3)',
+                  padding: '16px',
+                  zIndex: 1000,
+                  opacity: 1,
+                  visibility: 'visible',
+                  transform: 'translateY(0) scale(1)',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(16px)',
+                  fontFamily: 'Georgia, Times New Roman, serif'
+                }}
               >
-                <a 
-                  className="nav__menu-item" 
+                {/* Dropdown Arrow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '20px',
+                  width: '14px',
+                  height: '14px',
+                  background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
+                  borderLeft: '2px solid #d4b48a',
+                  borderTop: '2px solid #d4b48a',
+                  transform: 'rotate(45deg)',
+                  zIndex: -1
+                }} />
+                
+                {/* Profile Menu Items */}
+                <button 
+                  className="dropdown-item profile-item"
                   role="menuitem" 
                   onClick={() => goto("/MyProfile")}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#6e4a2e',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    textAlign: 'left',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'Georgia, Times New Roman, serif',
+                    marginBottom: '4px'
+                  }}
                 >
-                  <ProfileIcon />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
                   <span>{userData.fullName || userData.username || "My Profile"}</span>
-                </a>
-                <a 
-                  className="nav__menu-item" 
+                </button>
+                
+                <button 
+                  className="dropdown-item profile-item"
                   role="menuitem" 
                   onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#6e4a2e',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    textAlign: 'left',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'Georgia, Times New Roman, serif',
+                    marginBottom: '4px'
+                  }}
                 >
-                  <TopUpIcon />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
                   <span>Top‑Up</span>
-                </a>
+                </button>
+                
                 {String(role).trim() === "user" ? (
-                  <a
-                    className="nav__menu-item"
+                  <button
+                    className="dropdown-item profile-item"
                     role="menuitem"
                     onClick={() => { setRegisterOpen(true); setMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#6e4a2e',
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      textAlign: 'left',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      fontFamily: 'Georgia, Times New Roman, serif',
+                      marginBottom: '4px'
+                    }}
                   >
-                    <ArtistIcon />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
                     <span>Apply as Artist</span>
-                  </a>
+                  </button>
                 ) : null}
-                <div className="nav__menu-sep" />
-                <a 
-                  className="nav__menu-item nav__menu-danger" 
+                
+                {/* Separator */}
+                <hr style={{
+                  height: '1px',
+                  background: 'linear-gradient(90deg, transparent, #d4b48a, transparent)',
+                  margin: '12px 0',
+                  border: 'none'
+                }} />
+                
+                <button 
+                  className="dropdown-item profile-item danger"
                   role="menuitem" 
                   onClick={logOut}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#c4756e',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    textAlign: 'left',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'Georgia, Times New Roman, serif'
+                  }}
                 >
-                  <LogoutIcon />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16,17 21,12 16,7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
                   <span>Log‑out</span>
-                </a>
+                </button>
               </div>
             )}
           </div>

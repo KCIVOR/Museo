@@ -313,32 +313,7 @@
   background: #faf9f7;
 }
 
-/* Museo Buttons */
-.museo-btn {
-  background: #6e4a2e !important;
-  color: #ffffff !important;
-  border: 1px solid #6e4a2e !important;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px rgba(110, 74, 46, 0.2);
-}
-
-.museo-btn:hover {
-  background: #5a3d26 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(110, 74, 46, 0.3);
-}
-
-.museo-btn--sm {
-  padding: 6px 12px;
-  font-size: 11px;
-}
+/* Museo Buttons - Removed conflicting styles */
 
 /* Legacy Events Support (keeping for backward compatibility) */
 .event {

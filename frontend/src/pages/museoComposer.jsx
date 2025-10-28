@@ -158,18 +158,15 @@ export default function MuseoComposer({
 
       <div className="mc__body">
         <div className="mc__inputWrap">
-          <label className={`mc__label ${text ? "is-floating" : ""}`} htmlFor="museo-ta">
-            Share inspiration, artwork, or a thought…
-          </label>
           <textarea
             id="museo-ta"
             ref={taRef}
-            className="mc__ta"
+            className="museo-textarea"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            rows={1}
+            rows={4}
             aria-label="Write post"
-            placeholder=" "
+            placeholder="Share inspiration, artwork, or a thought…"
           />
         </div>
 
@@ -198,15 +195,24 @@ export default function MuseoComposer({
         <div className="mc__bar">
           <button
             type="button"
-            className="mc__tool"
             onClick={pickFiles}
-            aria-label="Add image or video"
+            aria-label="Attach image or video"
+            className="btn btn-museo-secondary btn-sm"
           >
-            🖼 Add media
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+            </svg>
+            Attach image
           </button>
-          <div className="mc__spacer" />
-          <button type="submit" className={`mc__post ${canPost ? "" : "is-disabled"}`} disabled={!canPost}>
-            Post
+          
+          <button 
+            type="submit" 
+            disabled={!canPost || isSubmitting}
+            className={`btn btn-museo-secondary btn-sm ${(!canPost || isSubmitting) ? 'disabled' : ''}`}
+          >
+            {isSubmitting ? 'Posting...' : 'Post'}
           </button>
         </div>
       </div>

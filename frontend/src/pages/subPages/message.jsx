@@ -454,10 +454,47 @@ export default function Message() {
           </div>
           <div className="msgList">
             {loadingConvs ? (
-              <div className="msgNote" style={{ padding: 12 }}>Loading conversations...</div>
+              <div className="msgNote" style={{ 
+                padding: '20px 12px', 
+                textAlign: 'center',
+                color: 'var(--museo-text-secondary)'
+              }}>
+                Loading conversations...
+              </div>
             ) : leftItems.length === 0 ? (
-              <div className="msgNote" style={{ padding: 12 }}>
-                {query.trim().length < 2 ? "No conversations yet." : (searching ? "Searching..." : "No results")}
+              <div className="msgNote" style={{ 
+                padding: '20px 12px', 
+                textAlign: 'center',
+                color: 'var(--museo-text-muted)'
+              }}>
+                {query.trim().length < 2 ? (
+                  <div>
+                    <div style={{ fontSize: '24px', marginBottom: '8px', opacity: 0.7 }}>📭</div>
+                    <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '4px', color: 'var(--museo-text-secondary)' }}>
+                      No conversations yet
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--museo-text-muted)' }}>
+                      Search for users to start chatting
+                    </div>
+                  </div>
+                ) : (searching ? (
+                  <div>
+                    <div style={{ fontSize: '24px', marginBottom: '8px', opacity: 0.7 }}>🔍</div>
+                    <div style={{ fontSize: '14px', color: 'var(--museo-text-secondary)' }}>
+                      Searching...
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '24px', marginBottom: '8px', opacity: 0.7 }}>❌</div>
+                    <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '4px', color: 'var(--museo-text-secondary)' }}>
+                      No results found
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--museo-text-muted)' }}>
+                      Try a different search term
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               leftItems.map(item => (
@@ -496,72 +533,109 @@ export default function Message() {
 
         {/* Conversation */}
         <main className="msgMain">
-          <header className="msgHead">
-            <div className="msgPeer">
-              <img
-                className="msgAvatar msgAvatar--lg"
-                src={(currentPeer && currentPeer.profilePicture) || AV}
-                alt=""
-              />
-              <div className="msgPeerName">
-                {currentPeer
-                  ? [currentPeer.firstName, currentPeer.middleName, currentPeer.lastName]
-                      .filter(Boolean)
-                      .join(" ") || currentPeer.username || "Conversation"
-                  : "Conversation"}
-              </div>
+          {!activeConvId && !selectedUser ? (
+            // Empty state when no conversation is selected
+            <div className="msgEmptyState" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              padding: '40px 20px',
+              textAlign: 'center',
+              color: 'var(--museo-text-muted)',
+              background: 'var(--museo-bg-secondary)'
+            }}>
+              <h3 style={{
+                margin: '0 0 8px 0',
+                fontSize: '20px',
+                fontWeight: '600',
+                color: 'var(--museo-text-primary)',
+                fontFamily: 'var(--museo-font-body)'
+              }}>
+                Welcome to Messages
+              </h3>
+              <p style={{
+                margin: '0 0 24px 0',
+                fontSize: '16px',
+                color: 'var(--museo-text-secondary)',
+                maxWidth: '300px',
+                lineHeight: '1.5'
+              }}>
+                Start a conversation by searching for users above or select an existing conversation.
+              </p>
             </div>
-            <a className="msgHeadDots" aria-label="Menu" role="button" tabIndex={0}>
-              <IconMenu className="msg-icon" />
-            </a>
-          </header>
-
-          <section className="msgBody">
-            {msgs.map(m => (
-              <article key={m.id} className={`bubbleRow ${m.from === "me" ? "from-me" : "from-them"}`}>
-                {m.from === "them" && (
+          ) : (
+            // Active conversation interface
+            <>
+              <header className="msgHead">
+                <div className="msgPeer">
                   <img
-                    className="bubbleAvatar"
+                    className="msgAvatar msgAvatar--lg"
                     src={(currentPeer && currentPeer.profilePicture) || AV}
                     alt=""
                   />
-                )}
-                <div className={`bubble ${m.from === "me" ? "bubble--me" : "bubble--them"}`}>
-                  <p className="bubbleText">{m.text}</p>
-                  <div className="bubbleTime">{m.at}</div>
+                  <div className="msgPeerName">
+                    {currentPeer
+                      ? [currentPeer.firstName, currentPeer.middleName, currentPeer.lastName]
+                          .filter(Boolean)
+                          .join(" ") || currentPeer.username || "Conversation"
+                      : "Conversation"}
+                  </div>
                 </div>
-                {m.from === "me" && <img className="bubbleAvatar" src={meAvatar || AV} alt="" />}
-              </article>
-            ))}
-            <div ref={endRef} />
-          </section>
+                <a className="msgHeadDots" aria-label="Menu" role="button" tabIndex={0}>
+                  <IconMenu className="msg-icon" />
+                </a>
+              </header>
 
-          {/* Composer */}
-          <footer className="msgCompose">
-            <a className="mcBtn" aria-label="Attach" role="button" tabIndex={0}>
-              <IconAttach className="msg-icon" />
-            </a>
-            <textarea
-              className="mcInput"
-              placeholder="Write a message..."
-              rows={1}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={onKey}
-            />
-            <a
-              className="mcSend"
-              onClick={() => { if (!isSending) send(); }}
-              aria-label={isSending ? "Sending..." : "Send"}
-              aria-disabled={isSending || !draft.trim()}
-              role="button"
-              tabIndex={0}
-              style={isSending || !draft.trim() ? { opacity: 0.6, pointerEvents: 'none', cursor: 'not-allowed' } : undefined}
-              title={isSending ? "Sending..." : (draft.trim() ? "Send" : "Type a message")}
-            >
-              <IconSend className="msg-icon" />
-            </a>
-          </footer>
+              <section className="msgBody">
+                {msgs.map(m => (
+                  <article key={m.id} className={`bubbleRow ${m.from === "me" ? "from-me" : "from-them"}`}>
+                    {m.from === "them" && (
+                      <img
+                        className="bubbleAvatar"
+                        src={(currentPeer && currentPeer.profilePicture) || AV}
+                        alt=""
+                      />
+                    )}
+                    <div className={`bubble ${m.from === "me" ? "bubble--me" : "bubble--them"}`}>
+                      <p className="bubbleText">{m.text}</p>
+                      <div className="bubbleTime">{m.at}</div>
+                    </div>
+                    {m.from === "me" && <img className="bubbleAvatar" src={meAvatar || AV} alt="" />}
+                  </article>
+                ))}
+                <div ref={endRef} />
+              </section>
+
+              {/* Composer */}
+              <footer className="msgCompose">
+                <a className="mcBtn" aria-label="Attach" role="button" tabIndex={0}>
+                  <IconAttach className="msg-icon" />
+                </a>
+                <textarea
+                  className="mcInput"
+                  placeholder="Write a message..."
+                  rows={1}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={onKey}
+                />
+                <a
+                  className="mcSend"
+                  onClick={() => { if (!isSending) send(); }}
+                  aria-label={isSending ? "Sending..." : "Send"}
+                  aria-disabled={isSending || !draft.trim()}
+                  role="button"
+                  tabIndex={0}
+                  style={isSending || !draft.trim() ? { opacity: 0.6, pointerEvents: 'none', cursor: 'not-allowed' } : undefined}
+                  title={isSending ? "Sending..." : (draft.trim() ? "Send" : "Type a message")}
+                >
+                  <IconSend className="msg-icon" />
+                </a>
+              </footer>
+            </>
+          )}
         </main>
       </div>
     </div>

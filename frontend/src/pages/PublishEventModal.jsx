@@ -24,6 +24,7 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
   const fileInputRef = useRef(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [dragActive, setDragActive] = useState(false);
 
   // Format a date string into the exact value that <input type="datetime-local"> expects (local time, no Z)
   const toLocalInput = (value) => {
@@ -93,25 +94,49 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
     setFieldErrors((fe) => ({ ...fe, [name]: "" }));
   };
 
-  const onPickFile = (e) => {
-    const file = e.target.files?.[0];
-    setImageFile(file || null);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
-    } else {
-      setImagePreview("");
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
     }
   };
-  const onDropFile = (e) => {
+
+  const handleDrop = (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    handleFiles(files);
+  };
+
+  const handleFiles = (files) => {
+    const validFiles = files.filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      return isImage && isValidSize;
+    });
+
+    if (validFiles.length !== files.length) {
+      setError('Some files were rejected. Only image files under 10MB are allowed.');
+    }
+
+    // Take only the first valid file for event cover
+    const file = validFiles[0];
     if (file) {
       setImageFile(file);
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
+
   const openPicker = () => fileInputRef.current?.click();
 
   const setActivity = (idx, val) => {
@@ -234,31 +259,12 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
         <button 
           aria-label="Close" 
           onClick={onClose} 
+          className="btn-x"
           style={{
             position: 'absolute',
             top: '12px',
             right: '12px',
-            background: 'var(--museo-ivory)',
-            border: '2px solid var(--museo-border)',
-            borderRadius: '8px',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: 'var(--museo-charcoal)',
-            zIndex: 10,
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'var(--museo-cream)';
-            e.target.style.borderColor = 'var(--museo-gold)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'var(--museo-ivory)';
-            e.target.style.borderColor = 'var(--museo-border)';
+            zIndex: 10
           }}
         >
           ✕
@@ -294,100 +300,51 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
           padding: isMobile ? '16px' : '20px',
           borderBottom: '2px solid var(--museo-border)'
         }}>
-          <div
-            style={{
-              border: '2px dashed var(--museo-border)',
-              borderRadius: '12px',
-              padding: imagePreview ? '0' : '40px 20px',
-              textAlign: 'center',
-              cursor: !imagePreview ? 'pointer' : 'default',
-              transition: 'all 0.3s ease',
-              background: imagePreview ? 'transparent' : 'var(--museo-cream)',
-              position: 'relative',
-              minHeight: isMobile ? '200px' : '250px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={onDropFile}
-            onClick={!imagePreview ? openPicker : undefined}
-          >
-            {imagePreview ? (
-              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                <img 
-                  src={imagePreview} 
-                  alt="preview" 
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: '10px'
-                  }}
+          <div className="uam-section">
+            <h3 className="uam-section-title">Event Cover Image</h3>
+            
+            <div 
+              className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${imagePreview ? 'uam-dropzone--has-files' : ''} ${error ? 'uam-dropzone--error' : ''}`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <div className="uam-dropzone-content">
+                <div className="uam-dropzone-icon">🎨</div>
+                <div className="uam-dropzone-text">
+                  <strong>Drop your event cover here</strong> or click to browse
+                </div>
+                <div className="uam-dropzone-hint">
+                  Support: JPG, PNG up to 10MB • Single image only
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  onChange={handleFileSelect}
+                  className="uam-file-input"
                 />
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  display: 'flex',
-                  gap: '8px'
-                }}>
-                  <button 
-                    type="button" 
-                    onClick={openPicker}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      border: '2px solid var(--museo-border)',
-                      background: 'var(--museo-ivory)',
-                      color: 'var(--museo-charcoal)',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Change
-                  </button>
+              </div>
+            </div>
+
+            {error && <div className="uam-error">{error}</div>}
+
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="uam-image-previews">
+                <div className="uam-image-preview">
+                  <img src={imagePreview} alt="Event cover preview" />
                   <button
                     type="button"
+                    className="uam-image-remove"
                     onClick={() => { setImageFile(null); setImagePreview(""); }}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '6px',
-                      border: '2px solid var(--museo-border)',
-                      background: 'var(--museo-ivory)',
-                      color: 'var(--museo-charcoal)',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
+                    title="Remove image"
                   >
                     ✕
                   </button>
                 </div>
               </div>
-            ) : (
-              <div>
-                <div style={{
-                  fontSize: '48px',
-                  marginBottom: '12px',
-                  opacity: 0.6
-                }}>
-                  📷
-                </div>
-                <div style={{
-                  fontSize: '16px',
-                  color: 'var(--museo-navy)',
-                  fontWeight: '500'
-                }}>
-                  Event Cover — drag & drop or click
-                </div>
-              </div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickFile} hidden />
           </div>
         </div>
 
@@ -398,74 +355,81 @@ export default function PublishEventModal({ open, onClose, onPublished, mode = "
             gap: '16px'
           }}>
             <div className="pvmField">
-              <label className="pvmLabel">Title</label>
-              <input className={`pvmInput ${fieldErrors.title ? 'pvmInputErr' : ''}`} name="title" value={form.title} onChange={update} required aria-invalid={!!fieldErrors.title} />
-              {fieldErrors.title && <div className="pvmFieldError">{fieldErrors.title}</div>}
+              <label className="museo-form-label">Title</label>
+              <input className={`museo-input ${fieldErrors.title ? 'pe__input--error' : ''}`} name="title" value={form.title} onChange={update} required aria-invalid={!!fieldErrors.title} />
+              {fieldErrors.title && <div className="pe__error">{fieldErrors.title}</div>}
             </div>
             
             <div className="pvmField">
-              <label className="pvmLabel">Venue Name</label>
-              <input className={`pvmInput ${fieldErrors.venueName ? 'pvmInputErr' : ''}`} name="venueName" value={form.venueName} onChange={update} required aria-invalid={!!fieldErrors.venueName} />
-              {fieldErrors.venueName && <div className="pvmFieldError">{fieldErrors.venueName}</div>}
+              <label className="museo-form-label">Venue Name</label>
+              <input className={`museo-input ${fieldErrors.venueName ? 'pe__input--error' : ''}`} name="venueName" value={form.venueName} onChange={update} required aria-invalid={!!fieldErrors.venueName} />
+              {fieldErrors.venueName && <div className="pe__error">{fieldErrors.venueName}</div>}
             </div>
             <div className="pvmField">
-              <label className="pvmLabel">Venue Address</label>
-              <input className={`pvmInput ${fieldErrors.venueAddress ? 'pvmInputErr' : ''}`} name="venueAddress" value={form.venueAddress} onChange={update} required aria-invalid={!!fieldErrors.venueAddress} />
-              {fieldErrors.venueAddress && <div className="pvmFieldError">{fieldErrors.venueAddress}</div>}
+              <label className="museo-form-label">Venue Address</label>
+              <input className={`museo-input ${fieldErrors.venueAddress ? 'pe__input--error' : ''}`} name="venueAddress" value={form.venueAddress} onChange={update} required aria-invalid={!!fieldErrors.venueAddress} />
+              {fieldErrors.venueAddress && <div className="pe__error">{fieldErrors.venueAddress}</div>}
             </div>
             <div className="pvmField">
-              <label className="pvmLabel">Starts At</label>
-              <input type="datetime-local" className={`pvmInput ${fieldErrors.startsAt ? 'pvmInputErr' : ''}`} name="startsAt" value={form.startsAt} onChange={update} required aria-invalid={!!fieldErrors.startsAt} />
-              {fieldErrors.startsAt && <div className="pvmFieldError">{fieldErrors.startsAt}</div>}
+              <label className="museo-form-label">Starts At</label>
+              <input type="datetime-local" className={`museo-date-input ${fieldErrors.startsAt ? 'pe__input--error' : ''}`} name="startsAt" value={form.startsAt} onChange={update} required aria-invalid={!!fieldErrors.startsAt} />
+              {fieldErrors.startsAt && <div className="pe__error">{fieldErrors.startsAt}</div>}
             </div>
             <div className="pvmField">
-              <label className="pvmLabel">Ends At</label>
-              <input type="datetime-local" className={`pvmInput ${fieldErrors.endsAt ? 'pvmInputErr' : ''}`} name="endsAt" value={form.endsAt} onChange={update} required aria-invalid={!!fieldErrors.endsAt} />
-              {fieldErrors.endsAt && <div className="pvmFieldError">{fieldErrors.endsAt}</div>}
+              <label className="museo-form-label">Ends At</label>
+              <input type="datetime-local" className={`museo-date-input ${fieldErrors.endsAt ? 'pe__input--error' : ''}`} name="endsAt" value={form.endsAt} onChange={update} required aria-invalid={!!fieldErrors.endsAt} />
+              {fieldErrors.endsAt && <div className="pe__error">{fieldErrors.endsAt}</div>}
             </div>
             <div className="pvmField pvmSpan2">
-              <label className="pvmLabel">Details</label>
-              <textarea className={`pvmInput ${fieldErrors.details ? 'pvmInputErr' : ''}`} name="details" rows={4} value={form.details} onChange={update} required aria-invalid={!!fieldErrors.details} />
-              {fieldErrors.details && <div className="pvmFieldError">{fieldErrors.details}</div>}
+              <label className="museo-form-label">Details</label>
+              <textarea className={`museo-input museo-textarea ${fieldErrors.details ? 'pe__input--error' : ''}`} name="details" rows={4} value={form.details} onChange={update} required aria-invalid={!!fieldErrors.details} />
+              {fieldErrors.details && <div className="pe__error">{fieldErrors.details}</div>}
             </div>
             <div className="pvmField pvmSpan2">
-              <label className="pvmLabel">Admission</label>
-              <input className={`pvmInput ${fieldErrors.admission ? 'pvmInputErr' : ''}`} name="admission" value={form.admission} onChange={update} required aria-invalid={!!fieldErrors.admission} />
-              {fieldErrors.admission && <div className="pvmFieldError">{fieldErrors.admission}</div>}
+              <label className="museo-form-label">Admission</label>
+              <input className={`museo-input ${fieldErrors.admission ? 'pe__input--error' : ''}`} name="admission" value={form.admission} onChange={update} required aria-invalid={!!fieldErrors.admission} />
+              {fieldErrors.admission && <div className="pe__error">{fieldErrors.admission}</div>}
             </div>
             <div className="pvmField pvmSpan2">
-              <label className="pvmLabel">Admission Note</label>
-              <input className={`pvmInput ${fieldErrors.admissionNote ? 'pvmInputErr' : ''}`} name="admissionNote" value={form.admissionNote} onChange={update} required aria-invalid={!!fieldErrors.admissionNote} />
-              {fieldErrors.admissionNote && <div className="pvmFieldError">{fieldErrors.admissionNote}</div>}
+              <label className="museo-form-label">Admission Note</label>
+              <input className={`museo-input ${fieldErrors.admissionNote ? 'pe__input--error' : ''}`} name="admissionNote" value={form.admissionNote} onChange={update} required aria-invalid={!!fieldErrors.admissionNote} />
+              {fieldErrors.admissionNote && <div className="pe__error">{fieldErrors.admissionNote}</div>}
             </div>
             <div className="pvmField pvmSpan2">
-              <label className="pvmLabel">Activities</label>
+              <label className="museo-form-label">Activities</label>
               <div className="pvmActivities">
                 {activities.map((val, idx) => (
                   <div className="pvmActRow" key={idx}>
                     <input
-                      className={`pvmInput ${fieldErrors[`activity_${idx}`] ? 'pvmInputErr' : ''}`}
+                      className={`museo-input ${fieldErrors[`activity_${idx}`] ? 'pe__input--error' : ''}`}
                       value={val}
                       onChange={(e) => setActivity(idx, e.target.value)}
                       placeholder={`Activity ${idx + 1}`}
                       required
                       aria-invalid={!!fieldErrors[`activity_${idx}`]}
                     />
-                    {fieldErrors[`activity_${idx}`] && <div className="pvmFieldError">{fieldErrors[`activity_${idx}`]}</div>}
+                    {fieldErrors[`activity_${idx}`] && <div className="pe__error">{fieldErrors[`activity_${idx}`]}</div>}
                     {activities.length > 1 && (
-                      <button type="button" className="pvmIconBtn" onClick={() => removeActivity(idx)}>✕</button>
+                      <button 
+                        type="button" 
+                        className="btn-x" 
+                        onClick={() => removeActivity(idx)}
+                        title="Remove activity"
+                      >
+                        ✕
+                      </button>
                     )}
                   </div>
                 ))}
-                <button type="button" className="evmGhostBtn" onClick={addActivity}>Add Activity</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={addActivity}>Add Activity</button>
               </div>
-              {fieldErrors.activities && <div className="pvmFieldError">{fieldErrors.activities}</div>}
+              {fieldErrors.activities && <div className="pe__error">{fieldErrors.activities}</div>}
             </div>
           </div>
 
           <div className="pvmActions">
-            <button type="button" className="evmGhostBtn" onClick={onClose} disabled={submitting}>Cancel</button>
-            <button type="submit" className="evmCalBtn" disabled={submitting}>{submitting ? "Publishing..." : "Publish"}</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={submitting}>Cancel</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>{submitting ? "Publishing..." : "Publish"}</button>
           </div>
         </form>
       </article>

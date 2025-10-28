@@ -18,6 +18,7 @@ export default function RequestsModal({
   const [pendingAction, setPendingAction] = useState(null); // { id, action, requestName }
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -47,6 +48,18 @@ export default function RequestsModal({
     if (!abort) load();
     return () => { abort = true; };
   }, [open]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest('[data-dropdown]')) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   // Derive type options from data
   const types = useMemo(() => {
@@ -179,7 +192,8 @@ export default function RequestsModal({
           background: 'var(--museo-white)',
           border: '1px solid var(--museo-border)',
           borderRadius: '16px',
-          boxShadow: '0 20px 60px var(--museo-shadow)'
+          boxShadow: '0 20px 60px var(--museo-shadow)',
+          position: 'relative'
         }}
       >
         <header className="museo-body" style={{ padding: '16px 20px 12px' }}>
@@ -195,14 +209,12 @@ export default function RequestsModal({
             <button 
               aria-label="Close" 
               onClick={onClose} 
-              className="museo-btn museo-btn--ghost"
-              style={{ 
-                width: '36px', 
-                height: '36px', 
-                padding: '0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+              className="btn-x"
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '20px',
+                zIndex: 10
               }}
             >
               ✕
@@ -210,40 +222,40 @@ export default function RequestsModal({
           </div>
           
           <div style={{ display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
-            <div style={{ display:'inline-flex', gap:6, background:'var(--museo-bg-secondary)', padding:'4px', borderRadius:'999px', border:'1px solid var(--museo-border)' }}>
-              {types.map(t => (
-                <button 
-                  key={t} 
-                  onClick={() => setFilter(t)}
-                  className="museo-btn museo-btn--ghost"
-                  style={{
-                    height:'32px', 
-                    padding:'0 12px', 
-                    borderRadius:'999px', 
-                    border:'1px solid ' + (filter===t ? 'var(--museo-primary)' : 'transparent'),
-                    background: filter===t ? 'var(--museo-white)' : 'transparent', 
-                    color: filter===t ? 'var(--museo-primary)' : 'var(--museo-text-secondary)',
-                    fontWeight: filter===t ? '700' : '500',
-                    textTransform:'capitalize',
-                    fontSize: '13px'
-                  }}
-                >
-                  {t.replace(/_/g,' ')}
-                </button>
-              ))}
+            <div className={`dropdown-filter ${dropdownOpen ? 'open' : ''}`} data-dropdown>
+              <button
+                className="dropdown-filter-trigger"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <span className="dropdown-filter-label">
+                  {filter === 'all' ? 'All Types' : filter.replace(/_/g, ' ')}
+                </span>
+                <span className="dropdown-filter-arrow">▼</span>
+              </button>
+              
+              <div className="dropdown-filter-menu">
+                {types.map((t) => (
+                  <button
+                    key={t}
+                    className={`dropdown-filter-item ${filter === t ? 'active' : ''}`}
+                    onClick={() => {
+                      setFilter(t);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    {t === 'all' ? 'All Types' : t.replace(/_/g, ' ')}
+                  </button>
+                ))}
+              </div>
             </div>
             <input
+              className="museo-input"
               value={q}
               onChange={e=>setQ(e.target.value)}
               placeholder="Search name, title, type, request ID, user ID"
               style={{ 
-                height:'36px', 
-                padding:'0 12px', 
-                borderRadius:'10px', 
-                border:'1px solid var(--museo-border)', 
                 flex:'1 1 200px',
-                background: 'var(--museo-white)',
-                color: 'var(--museo-text-primary)'
+                height: '36px'
               }}
             />
           </div>
@@ -334,48 +346,14 @@ export default function RequestsModal({
                     }}>
                       {/* Left: Type badge */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          background: 'var(--museo-accent-light)',
-                          color: 'var(--museo-primary)',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textTransform: 'capitalize',
-                          border: '1px solid var(--museo-accent)',
-                          letterSpacing: '0.025em'
-                        }}>
+                        <span className={`btn-type ${type.replace(/_/g, '-')}`}>
                           {type.replace(/_/g,' ')}
                         </span>
                       </div>
                       
                       {/* Right: Status badge */}
                       <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textTransform: 'capitalize',
-                          letterSpacing: '0.025em',
-                          background: status === 'approved' 
-                            ? 'var(--museo-success)' 
-                            : status === 'rejected' 
-                            ? 'var(--museo-error)' 
-                            : 'var(--museo-gray-200)',
-                          color: status === 'approved' || status === 'rejected' 
-                            ? 'var(--museo-white)' 
-                            : 'var(--museo-text-secondary)',
-                          border: `1px solid ${
-                            status === 'approved' 
-                              ? 'var(--museo-success)' 
-                              : status === 'rejected' 
-                              ? 'var(--museo-error)' 
-                              : 'var(--museo-border)'
-                          }`
-                        }}>
+                        <span className={`btn-status ${status}`}>
                           {status}
                         </span>
                       </div>
@@ -492,27 +470,9 @@ export default function RequestsModal({
                       <button
                         onClick={() => handleActionClick(id, 'approve')}
                         disabled={status === 'approved' || status === 'rejected'}
+                        className="btn btn-success btn-sm"
                         style={{
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: status === 'approved' || status === 'rejected' ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s ease',
-                          background: status === 'approved' ? 'var(--museo-success)' : '#22c55e',
-                          color: 'white',
                           opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                          if (status !== 'approved' && status !== 'rejected') {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(34, 197, 94, 0.3)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
                         }}
                       >
                         {status === 'approved' ? '✓ Approved' : 'Accept'}
@@ -521,27 +481,9 @@ export default function RequestsModal({
                       <button
                         onClick={() => handleActionClick(id, 'reject')}
                         disabled={status === 'approved' || status === 'rejected'}
+                        className="btn btn-danger btn-sm"
                         style={{
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: status === 'approved' || status === 'rejected' ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s ease',
-                          background: status === 'rejected' ? 'var(--museo-error)' : '#ef4444',
-                          color: 'white',
                           opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                          if (status !== 'approved' && status !== 'rejected') {
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(239, 68, 68, 0.3)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = 'none';
                         }}
                       >
                         {status === 'rejected' ? '✗ Rejected' : 'Reject'}
@@ -549,29 +491,7 @@ export default function RequestsModal({
                       
                       <button
                         onClick={() => handleActionClick(id, 'delete')}
-                        style={{
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          border: '1px solid var(--museo-border)',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          background: 'var(--museo-white)',
-                          color: 'var(--museo-text-muted)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = 'var(--museo-error)';
-                          e.target.style.color = 'white';
-                          e.target.style.borderColor = 'var(--museo-error)';
-                          e.target.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = 'var(--museo-white)';
-                          e.target.style.color = 'var(--museo-text-muted)';
-                          e.target.style.borderColor = 'var(--museo-border)';
-                          e.target.style.transform = 'translateY(0)';
-                        }}
+                        className="btn btn-secondary btn-sm"
                       >
                         Delete
                       </button>

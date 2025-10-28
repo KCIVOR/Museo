@@ -233,7 +233,7 @@
 }
 
 .artwork-info {
-  margin-bottom: 40px;
+  margin-bottom: 8px; /* Tighten space above comments */
 }
 
 .artwork-header {
@@ -360,10 +360,9 @@
   line-height: 1.6;
   font-size: 1rem;
   margin: 0;
+  padding: 0;
   word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  white-space: pre-line; /* Preserves line breaks and spaces */
+  white-space: normal; /* Changed from pre-line to normal */
 }
 
 .description-toggle {
@@ -388,41 +387,13 @@
 .artwork-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 16px 0;
+  gap: 12px;
+  margin-bottom: 0; /* Remove extra space below buttons */
+  padding: 12px 0 0 0; /* Keep a bit of space above, none below */
   border-top: 1px solid rgba(107, 66, 38, 0.1);
 }
 
-.museo-btn--pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(107, 66, 38, 0.2);
-  border-radius: 50px;
-  color: #6b4226;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  min-width: 80px;
-  justify-content: center;
-}
-
-.museo-btn--pill:hover {
-  background: rgba(107, 66, 38, 0.1);
-  border-color: #6b4226;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.2);
-}
-
-.museo-btn--pill.liked {
-  background: rgba(220, 38, 127, 0.1);
-  border-color: #dc267f;
-  color: #dc267f;
-}
+/* Button styles removed for consistent redesign */
 
 .like-icon {
   font-size: 1rem;
@@ -463,8 +434,8 @@
    ======================================== */
 
 .artwork-comments {
-  border-top: 2px solid rgba(107, 66, 38, 0.15);
-  padding-top: 24px;
+  border-top: none; /* Avoid double divider under actions */
+  padding-top: 8px; /* Tighter spacing to comments title */
 }
 
 .comments-title {
@@ -517,33 +488,12 @@
   color: rgba(107, 66, 38, 0.6);
 }
 
-.comment-submit {
-  align-self: flex-end;
-  background: linear-gradient(45deg, #2c1810 0%, #4a2c1a 100%);
-  color: #f4f1ec;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 24px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(44, 24, 16, 0.2);
-}
-
-.comment-submit:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(44, 24, 16, 0.3);
-}
-
-.comment-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .comments-list {
   max-height: 300px;
   overflow-y: auto;
 }
+
+/* Comment submit button styles removed for consistent redesign */
 
 .no-comments {
   text-align: center;
@@ -552,7 +502,7 @@
   font-style: italic;
 }
 
-.comment {
+.artwork-comments .comment {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
@@ -563,7 +513,7 @@
   transition: all 0.3s ease;
 }
 
-.comment:hover {
+.artwork-comments .comment:hover {
   background: rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(107, 66, 38, 0.15);
@@ -699,7 +649,7 @@
   }
   
   /* Comment responsive improvements */
-  .comment {
+  .artwork-comments .comment {
     padding: 10px 12px;
     gap: 10px;
   }

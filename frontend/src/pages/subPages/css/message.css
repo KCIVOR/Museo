@@ -72,42 +72,33 @@
 }
 
 .msgSideHead {
-  padding: 16px 20px 12px;
-  border-bottom: 2px solid var(--museo-border);
+  padding: 16px 20px !important;
+  background: var(--museo-bg-primary);
+  border-bottom: 1px solid var(--museo-border);
+  box-sizing: border-box !important;
 }
 
-.msg-title {
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--museo-primary);
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  position: relative;
-}
-
-.msg-title::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 40px;
-  height: 3px;
-  background: var(--museo-accent);
-  border-radius: 2px;
+h2.msg-title {
+  font-family: 'Georgia', 'Times New Roman', serif !important;
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  color: var(--museo-primary) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  line-height: 1.2 !important;
+  display: block !important;
 }
 
 .msgSearch {
-  display: grid;
-  grid-template-columns: 24px 1fr;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 16px 20px;
-  background: var(--museo-bg-secondary);
-  margin: 0 16px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--museo-border);
+  background: var(--museo-white);
+  border-bottom: 1px solid var(--museo-border);
 }
 
 .msgSearchIcon {
@@ -121,17 +112,24 @@
   border: 1px solid var(--museo-border);
   border-radius: 8px;
   padding: 10px 12px;
-  background: var(--museo-white);
-  font-family: 'Georgia', 'Times New Roman', serif;
+  background: var(--museo-bg-secondary);
+  font-family: var(--museo-font-body);
   color: var(--museo-text-primary);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  flex: 1;
+  width: 100%;
 }
 
 .msgSearchInput:focus {
   outline: none;
-  border-color: var(--museo-accent);
-  box-shadow: 0 0 0 3px var(--museo-shadow-light);
+  border-color: var(--museo-primary);
   background: var(--museo-white);
+  box-shadow: 0 0 0 3px rgba(110, 74, 46, 0.1);
+}
+
+.msgSearchInput::placeholder {
+  color: var(--museo-text-muted);
 }
 
 .msgList {
@@ -258,9 +256,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px 20px !important;
   border-bottom: 2px solid var(--museo-border);
   background: var(--museo-bg-secondary);
+  box-sizing: border-box !important;
 }
 
 .msgPeer {
@@ -274,6 +273,9 @@
   color: var(--museo-text-primary);
   font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 16px;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0;
 }
 
 .msgHeadDots {

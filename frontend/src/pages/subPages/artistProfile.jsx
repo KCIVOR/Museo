@@ -1,12 +1,11 @@
 // src/pages/subPages/artistProfile.jsx
 import "../css/MyProfile.css";
 import React, { useEffect, useState, useMemo } from "react";
-import ArtistArtGallery from "./artistArtGallery";
+import ArtGallery from "./artGallery";
 import { useParams } from 'react-router-dom';
 // Using CSS classes from design-system.css instead of components
 import MuseoLoadingBox from "../../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
-
 
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
@@ -140,6 +139,11 @@ export default function ArtistProfile() {
   const handleArtClick = (art, index) => {
     console.log('Art clicked:', art, 'at index:', index);
     // Add your click logic here
+  };
+
+  const handleModalClose = () => {
+    // Modal closed - no need to refresh data since this is a view-only profile
+    console.log('Modal closed');
   };
 
   return (
@@ -377,16 +381,21 @@ export default function ArtistProfile() {
         <div className="museo-card">
           <div className="museo-body">
             <h1 className="museo-heading" style={{ marginBottom: '20px' }}>Artist's Portfolio</h1>
-            <ArtistArtGallery
-              arts={arts}
+            <ArtGallery
+              enablePagination={true}
+              fetchUrl="/api/profile/getUserArts"
+              userId={id}
               title=""
               showStats={true}
               showActions={true}
+              showUpload={false}
               onViewArt={handleViewArt}
               onLikeArt={handleLikeArt}
               onArtClick={handleArtClick}
+              onModalClose={handleModalClose}
+              fallbackImage={FALLBACK_COVER}
               currentUser={{
-                id: profileId,
+                id: id,
                 name: [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Artist',
                 avatar: avatar
               }}

@@ -74,7 +74,7 @@ export const getRole = async (req, res) => {
     }
     const { data: profile, error } = await supabase
       .from('profile')
-      .select('role')
+      .select('role', 'userId')
       .eq('userId', userId)
       .maybeSingle(); 
     if (error) {

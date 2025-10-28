@@ -1,23 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './css/UploadArtModal.css';
 
-const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
+const API = import.meta.env.VITE_API_BASE;
+
+const EditGalleryArtworkModal = ({ isOpen, onClose, artwork, onArtworkUpdated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     medium: '',
     categories: [],
-    images: []
+    existingImages: [],
+    newImages: []
   });
   const [dragActive, setDragActive] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagesToRemove, setImagesToRemove] = useState([]);
 
   const categories = [
     'Classical Art', 'Abstract Art', 'Impressionist', 'Contemporary Art',
     'Digital Art', 'Photography', 'Sculpture', 'Street Art', 'Landscape',
     'Portrait', 'Surrealist', 'Minimalist', 'Expressionist', 'Realism', 'Conceptual'
   ];
+
+  // Initialize form with artwork data
+  useEffect(() => {
+    if (!isOpen || !artwork) return;
+    
+    const artworkImages = artwork.image || [];
+    const imageArray = Array.isArray(artworkImages) ? artworkImages : (artworkImages ? [artworkImages] : []);
+    
+    setFormData({
+      title: artwork.title || '',
+      description: artwork.description || '',
+      medium: artwork.medium || '',
+      categories: artwork.categories || [],
+      existingImages: imageArray,
+      newImages: []
+    });
+    setImagesToRemove([]);
+    setErrors({});
+  }, [isOpen, artwork]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,6 +91,16 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const handleFiles = (files) => {
+    const totalImages = formData.existingImages.length + formData.newImages.length;
+    
+    if (totalImages + files.length > 5) {
+      setErrors(prev => ({
+        ...prev,
+        images: 'Maximum 5 images allowed'
+      }));
+      return;
+    }
+
     const validFiles = files.filter(file => {
       const isImage = file.type.startsWith('image/');
       const isNotGif = file.type !== 'image/gif';
@@ -86,20 +119,35 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
     const newImages = validFiles.map(file => ({
       file,
       preview: URL.createObjectURL(file),
-      id: Date.now() + Math.random()
+      id: Date.now() + Math.random(),
+      isNew: true
     }));
 
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...newImages].slice(0, 5) // Max 5 images
+      newImages: [...prev.newImages, ...newImages]
     }));
   };
 
-  const removeImage = (imageId) => {
+  const removeExistingImage = (imageUrl) => {
     setFormData(prev => ({
       ...prev,
-      images: prev.images.filter(img => img.id !== imageId)
+      existingImages: prev.existingImages.filter(img => img !== imageUrl)
     }));
+    setImagesToRemove(prev => [...prev, imageUrl]);
+  };
+
+  const removeNewImage = (imageId) => {
+    setFormData(prev => {
+      const imageToRemove = prev.newImages.find(img => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return {
+        ...prev,
+        newImages: prev.newImages.filter(img => img.id !== imageId)
+      };
+    });
   };
 
   const validateForm = () => {
@@ -127,8 +175,8 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
       newErrors.categories = 'Please select at least one category';
     }
     
-    if (formData.images.length === 0) {
-      newErrors.images = 'Please upload at least one image';
+    if (formData.existingImages.length === 0 && formData.newImages.length === 0) {
+      newErrors.images = 'Please keep at least one image or upload new ones';
     }
 
     setErrors(newErrors);
@@ -145,6 +193,8 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
     setIsSubmitting(true);
     
     try {
+      const artworkId = artwork?.id || artwork?.galleryArtId;
+      
       // Create FormData for file upload
       const submitData = new FormData();
       submitData.append('title', formData.title);
@@ -152,24 +202,43 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
       submitData.append('medium', formData.medium);
       submitData.append('categories', JSON.stringify(formData.categories));
       
-      formData.images.forEach((image, index) => {
-        submitData.append(`images`, image.file);
+      // Add existing images that weren't removed
+      formData.existingImages.forEach(imageUrl => {
+        submitData.append('existingImages', imageUrl);
       });
 
-      await onSubmit(submitData);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        medium: '',
-        categories: [],
-        images: []
+      // Add new image files
+      formData.newImages.forEach(imageObj => {
+        submitData.append('images', imageObj.file);
       });
-      setErrors({});
+
+      // Add images to remove
+      imagesToRemove.forEach(imageUrl => {
+        submitData.append('imagesToRemove', imageUrl);
+      });
+
+      const response = await fetch(`${API}/gallery/artwork/${artworkId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: submitData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update artwork');
+      }
+
+      const data = await response.json();
+      
+      // Clean up object URLs
+      formData.newImages.forEach(imageObj => {
+        URL.revokeObjectURL(imageObj.preview);
+      });
+      
+      onArtworkUpdated?.(data.artwork);
       onClose();
     } catch (error) {
-      setErrors({ submit: 'Failed to upload artwork. Please try again.' });
+      setErrors({ submit: error.message || 'Failed to update artwork. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -177,14 +246,19 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  const allImages = [
+    ...formData.existingImages.map(url => ({ id: url, url, isExisting: true })),
+    ...formData.newImages
+  ];
+
   return (
     <div className="museo-modal-overlay uam-overlay" onClick={onClose}>
       <div className="museo-modal uam-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="uam-header">
           <div className="uam-header-content">
-            <h2 className="uam-title">Share Your Artwork</h2>
-            <p className="uam-subtitle">Add your creation to the Museo gallery</p>
+            <h2 className="uam-title">Edit Artwork</h2>
+            <p className="uam-subtitle">Update your artwork details</p>
           </div>
           <button className="btn-x uam-close" onClick={onClose} title="Close">
             ✕
@@ -199,7 +273,7 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
             <h3 className="uam-section-title">Artwork Images</h3>
             
             <div 
-              className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${formData.images.length > 0 ? 'uam-dropzone--has-files' : ''} ${errors.images ? 'uam-dropzone--error' : ''}`}
+              className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${allImages.length > 0 ? 'uam-dropzone--has-files' : ''} ${errors.images ? 'uam-dropzone--error' : ''}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -226,15 +300,18 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
             {errors.images && <div className="uam-error">{errors.images}</div>}
 
             {/* Image Previews */}
-            {formData.images.length > 0 && (
+            {allImages.length > 0 && (
               <div className="uam-image-previews">
-                {formData.images.map((image) => (
+                {allImages.map((image) => (
                   <div key={image.id} className="uam-image-preview">
-                    <img src={image.preview} alt="Preview" />
+                    <img 
+                      src={image.isExisting ? image.url : image.preview} 
+                      alt="Preview" 
+                    />
                     <button
                       type="button"
                       className="uam-image-remove"
-                      onClick={() => removeImage(image.id)}
+                      onClick={() => image.isExisting ? removeExistingImage(image.url) : removeNewImage(image.id)}
                       title="Remove image"
                     >
                       ✕
@@ -332,7 +409,7 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
               className="btn btn-primary btn-sm"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Uploading...' : 'Share Artwork'}
+              {isSubmitting ? 'Updating...' : 'Update Artwork'}
             </button>
           </div>
         </form>
@@ -341,4 +418,4 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-export default UploadArtModal;
+export default EditGalleryArtworkModal;
