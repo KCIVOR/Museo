@@ -110,11 +110,17 @@ export const registerAsArtist = async (req, res) =>{
 
 export const getRequest = async (req, res) => {
     try {
+        // ✅ FIXED: Add pagination to prevent fetching all requests
         const { type } = req.query; // optional filter e.g. artist_verification
+        const page = parseInt(req.query.page || '1', 10);
+        const limit = parseInt(req.query.limit || '50', 10);
+        const offset = (page - 1) * limit;
+        
         let query = db
             .from("request")
             .select("*")
-            .order('createdAt', { ascending: false });
+            .order('createdAt', { ascending: false })
+            .range(offset, offset + limit - 1);
         if (type) query = query.eq('requestType', type);
 
         const { data, error } = await query;

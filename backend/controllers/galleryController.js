@@ -543,7 +543,8 @@ export const getGalleryReact = async (req, res) => {
       .from("react")
       .select("*")
       .eq("galleryArtId", galleryArtId)
-      .order("reactTime", { ascending: false });
+      .order("reactTime", { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 
@@ -602,10 +603,15 @@ export const createGalleryComment = async (req, res) => {
 export const getGalleryComments = async (req, res) => {
   try {
     const galleryArtId = (req.body && req.body.galleryArtId) || (req.query && req.query.galleryArtId);
+    const { page = 1, limit = 10 } = req.query;
     
     if (!galleryArtId) {
       return res.status(400).json({ error: "galleryArtId is required" });
     }
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
 
     // Use SERVICE_KEY client for database access
     const supabaseClient = createClient(
@@ -619,11 +625,13 @@ export const getGalleryComments = async (req, res) => {
         commentId,
         content,
         datePosted,
+        updatedAt,
         userId,
         galleryArtId
       `)
       .eq("galleryArtId", galleryArtId)
-      .order("datePosted", { ascending: false });
+      .order("datePosted", { ascending: false })
+      .range(offset, offset + limitNum - 1);
 
     if (error) throw error;
 
@@ -672,16 +680,188 @@ export const getGalleryComments = async (req, res) => {
       
       return {
         id: comment.commentId,
+        userId: comment.userId,
         user: userProfile?.name || 'Anonymous User',
         avatar: userProfile?.profilePicture || null,
         comment: comment.content,
-        timestamp: exactTime
+        timestamp: exactTime,
+        updatedAt: comment.updatedAt
       };
     }) || [];
 
-    return res.status(200).json({ comments: formattedComments });
+    // Check if there are more comments
+    const hasMore = comments.length === limitNum;
+
+    return res.status(200).json({ comments: formattedComments, hasMore });
   } catch (err) {
     console.error("getGalleryComments error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE /api/gallery/deleteComment/:commentId
+export const deleteGalleryComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // First check if comment exists
+    const { data: comment, error: fetchError } = await supabaseClient
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Get user role from profile table
+    const { data: userProfile, error: userError } = await supabaseClient
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = comment.userId === userId;
+    const isAdmin = userRole === 'admin';
+
+    // Check if user is admin or owns the comment
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to delete this comment" });
+    }
+
+    // Delete the comment
+    const { error: deleteError } = await supabaseClient
+      .from("comment")
+      .delete()
+      .eq("commentId", commentId);
+
+    if (deleteError) throw deleteError;
+
+    return res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    console.error("Delete gallery comment error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /api/gallery/updateComment/:commentId
+export const updateGalleryComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { text } = req.body;
+    const userId = req.user.id;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Comment text is required" });
+    }
+
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // First check if comment exists
+    const { data: comment, error: fetchError } = await supabaseClient
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Get user role from profile table
+    const { data: userProfile, error: userError } = await supabaseClient
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = comment.userId === userId;
+    const isAdmin = userRole === 'admin';
+
+    // Check if user is admin or owns the comment
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to edit this comment" });
+    }
+
+    // Update the comment
+    const { data: updated, error: updateError } = await supabaseClient
+      .from("comment")
+      .update({ 
+        content: text.trim(),
+        updatedAt: new Date().toISOString()
+      })
+      .eq("commentId", commentId)
+      .select();
+
+    if (updateError) throw updateError;
+
+    return res.status(200).json({ 
+      message: "Comment updated successfully",
+      comment: updated[0]
+    });
+  } catch (err) {
+    console.error("Update gallery comment error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /api/gallery/reportComment
+export const reportGalleryComment = async (req, res) => {
+  try {
+    const { commentId, reason } = req.body;
+    const userId = req.user.id;
+
+    if (!commentId || !reason) {
+      return res.status(400).json({ error: "Comment ID and reason are required" });
+    }
+
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // Check if comment exists
+    const { data: comment, error: fetchError } = await supabaseClient
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Insert report (you'll need to create a 'comment_reports' table)
+    const { error: insertError } = await supabaseClient
+      .from("comment_reports")
+      .insert([{
+        commentId: commentId,
+        reportedBy: userId,
+        reason: reason,
+        dateReported: new Date().toISOString()
+      }]);
+
+    if (insertError) {
+      console.error("Report insert error:", insertError);
+      // If table doesn't exist, just log it for now
+      console.log("Gallery comment report:", { commentId, userId, reason });
+    }
+
+    return res.status(200).json({ message: "Comment reported successfully" });
+  } catch (err) {
+    console.error("Report gallery comment error:", err);
     return res.status(500).json({ error: err.message });
   }
 };

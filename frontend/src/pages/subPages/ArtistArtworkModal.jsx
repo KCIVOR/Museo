@@ -13,6 +13,11 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  
+  // Comment pagination state
+  const [commentPage, setCommentPage] = useState(1);
+  const [hasMoreComments, setHasMoreComments] = useState(false);
+  const [loadingMoreComments, setLoadingMoreComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -26,6 +31,11 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [artworkToDelete, setArtworkToDelete] = useState(null);
+  
+  // Comment menu state
+  const [openCommentMenus, setOpenCommentMenus] = useState({});
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   const fetchCurrentUser = async () => {
     try {
@@ -64,10 +74,24 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
       fetchCurrentUser();
       fetchMyRole();
       fetchLikes();
+      fetchComments(); // Load comments when modal opens
       fetchArtistInfo();
       trackView();
     }
   }, [artwork]);
+
+  // Click outside handler for comment menus
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const isClickInsideCommentMenu = e.target.closest('.comment-menu-container');
+      if (!isClickInsideCommentMenu && Object.values(openCommentMenus).some(isOpen => isOpen)) {
+        setOpenCommentMenus({});
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
+  }, [openCommentMenus]);
 
   // Handle artwork updated from edit modal
   const handleArtworkUpdated = (updatedArtwork) => {
@@ -212,21 +236,19 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
     }
   };
 
-  const fetchComments = async () => {
+  const fetchComments = async (page = 1) => {
     const artworkId = artwork?.id || artwork?.artId;
     if (!artworkId) return;
     
     try {
-      // Use profile API for artist artwork comments (same as ProfileModal)
-      const response = await fetch(`${API}/profile/getComments`, {
+      // Use profile API for artist artwork comments with pagination
+      const response = await fetch(`${API}/profile/getComments?page=${page}&limit=10`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          artId: artworkId
-        })
+        body: JSON.stringify({ artId: artworkId })
       });
       
       if (!response.ok) {
@@ -234,10 +256,28 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
       }
       
       const data = await response.json();
-      setComments(data.comments || []);
+      
+      if (page === 1) {
+        setComments(data.comments || []);
+      } else {
+        setComments(prev => [...prev, ...(data.comments || [])]);
+      }
+      
+      setHasMoreComments(data.hasMore || false);
+      setCommentPage(page);
     } catch (error) {
-      setComments([]);
+      if (page === 1) {
+        setComments([]);
+      }
     }
+  };
+
+  const loadMoreComments = async () => {
+    if (loadingMoreComments || !hasMoreComments) return;
+    
+    setLoadingMoreComments(true);
+    await fetchComments(commentPage + 1);
+    setLoadingMoreComments(false);
   };
 
   const handleLike = async () => {
@@ -326,6 +366,91 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
       // Error submitting comment
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  // Comment menu handlers
+  const toggleCommentMenu = (commentId, event) => {
+    event.stopPropagation();
+    setOpenCommentMenus(prev => {
+      if (prev[commentId]) return {};
+      return { [commentId]: true };
+    });
+  };
+
+  const handleEditComment = (commentId, currentText) => {
+    setEditingCommentId(commentId);
+    setEditingCommentText(currentText);
+    setOpenCommentMenus({});
+  };
+
+  const handleUpdateComment = async (commentId) => {
+    const text = editingCommentText.trim();
+    if (!text) return;
+    
+    try {
+      const res = await fetch(`${API}/profile/updateComment/${commentId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      
+      if (res.ok) {
+        setComments(prev => prev.map(c => 
+          c.id === commentId 
+            ? { ...c, text, updatedAt: new Date().toISOString() }
+            : c
+        ));
+        setEditingCommentId(null);
+        setEditingCommentText("");
+      }
+    } catch (error) {
+      console.error('Failed to update comment:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingCommentText("");
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Delete this comment?')) return;
+    
+    try {
+      const res = await fetch(`${API}/profile/deleteComment/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (res.ok) {
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        setOpenCommentMenus({});
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+    }
+  };
+
+  const handleReportComment = async (commentId) => {
+    const reason = window.prompt('Why are you reporting this comment?');
+    if (!reason) return;
+    
+    try {
+      const res = await fetch(`${API}/profile/reportComment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId, reason })
+      });
+      
+      if (res.ok) {
+        alert('Comment reported successfully');
+        setOpenCommentMenus({});
+      }
+    } catch (error) {
+      console.error('Failed to report comment:', error);
     }
   };
 
@@ -800,7 +925,7 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
                   </div>
                 ) : (
                   comments.map(comment => (
-                    <div key={comment.id} className="comment">
+                    <div key={comment.id} className="comment" style={{ position: 'relative', zIndex: openCommentMenus[comment.id] ? 100 : 1 }}>
                       <div className="comment-avatar">
                         {comment.user?.avatar ? (
                           <img 
@@ -820,16 +945,124 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
                         <div className="comment-header">
                           <span className="comment-user">{comment.user?.name || 'Anonymous User'}</span>
                         </div>
-                        <div className="comment-time">{comment.timestamp}</div>
-                        <p 
-                          className="comment-text"
-                          style={{ whiteSpace: 'pre-wrap' }}
-                        >
-                          {comment.text || comment.comment}
-                        </p>
+                        <div className="comment-time">
+                          {comment.timestamp}
+                          {comment.updatedAt && (
+                            <span style={{ marginLeft: '6px', fontStyle: 'italic', color: 'var(--museo-text-muted)', fontSize: '12px' }}>
+                              (edited)
+                            </span>
+                          )}
+                        </div>
+                        
+                        {editingCommentId === comment.id ? (
+                          <div style={{ marginTop: '8px' }}>
+                            <textarea
+                              value={editingCommentText}
+                              onChange={(e) => setEditingCommentText(e.target.value)}
+                              style={{ width: '100%', minHeight: '60px', padding: '8px', border: '1px solid var(--museo-border)', borderRadius: '6px', fontFamily: 'Georgia, Times New Roman, serif', fontSize: '14px', resize: 'vertical' }}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                              <button onClick={() => handleUpdateComment(comment.id)} className="btn-primary btn-sm">Save</button>
+                              <button onClick={handleCancelEdit} className="btn-secondary btn-sm">Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="comment-text" style={{ whiteSpace: 'pre-wrap' }}>
+                            {comment.text || comment.comment}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Comment Menu */}
+                      <div className="comment-menu-container" style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                        <button onClick={(e) => toggleCommentMenu(comment.id, e)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '18px', color: 'var(--museo-text-muted)', lineHeight: 1 }}>⋯</button>
+                        
+                        {openCommentMenus[comment.id] && (
+                          <div className="dropdown-menu show" onClick={(e) => e.stopPropagation()} style={{ zIndex: 9999 }}>
+                            {/* Edit option - for admin or comment owner */}
+                            {(role === 'admin' || currentUser === comment.user?.id) && (
+                              <button
+                                className="dropdown-item"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditComment(comment.id, comment.text || comment.comment);
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit
+                              </button>
+                            )}
+                            
+                            {/* Delete option - for admin or comment owner */}
+                            {(role === 'admin' || currentUser === comment.user?.id) && (
+                              <button
+                                className="dropdown-item danger"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteComment(comment.id);
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3,6 5,6 21,6"/>
+                                  <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                                  <line x1="10" y1="11" x2="10" y2="17"/>
+                                  <line x1="14" y1="11" x2="14" y2="17"/>
+                                </svg>
+                                Delete
+                              </button>
+                            )}
+                            
+                            {/* Report option - for all users except artwork owner and comment owner, OR admin */}
+                            {((currentUser !== artwork?.userId && currentUser !== comment.user?.id) || role === 'admin') && (
+                              <button
+                                className="dropdown-item"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReportComment(comment.id);
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                  <line x1="4" y1="22" x2="4" y2="15"/>
+                                </svg>
+                                Report
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
+                )}
+                
+                {/* Load More Button */}
+                {hasMoreComments && (
+                  <div style={{ 
+                    textAlign: 'center',
+                    marginTop: '20px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid rgba(212, 180, 138, 0.15)'
+                  }}>
+                    <button
+                      onClick={loadMoreComments}
+                      disabled={loadingMoreComments}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--museo-primary)',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: loadingMoreComments ? 'not-allowed' : 'pointer',
+                        opacity: loadingMoreComments ? 0.6 : 1,
+                        padding: '8px 16px'
+                      }}
+                    >
+                      {loadingMoreComments ? 'Loading...' : 'Load More'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

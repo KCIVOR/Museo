@@ -8,7 +8,7 @@ import TopUpModal from "./topUpModal";
 import NotificationsPopover from "./notificationPopUp";
 import { useRealtimeNotifications } from "./useRealtimeNotifications";
 import "./Navbar.css";
-
+const API = import.meta.env.VITE_API_BASE;
 // Professional SVG Icons for Museum Theme
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -243,7 +243,7 @@ export default function Navbar({ role }) {
 
   const logOut = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/auth/logout", { method: "POST", credentials: "include" });
+      const res = await fetch(`http://{API}/auth/logout`, { method: "POST", credentials: "include" });
       if (!res.ok && res.status !== 204) console.error("Logout failed", res.status);
     } catch (e) {
       console.error("Logout error", e);

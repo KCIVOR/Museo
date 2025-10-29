@@ -1,7 +1,7 @@
 // routes/profileRoutes.js
 import express from "express";
 import multer from "multer";
-import { artPreferenceStatus, saveArtPreferences, getProfile, getUserProfile, uploadProfileMedia, profileStatus, getArts, getUserArts, createComment, getComments, createReact, getReact, uploadArt, trackView, getViews, updateArt, deleteArt } from "../controllers/profileController.js";
+import { artPreferenceStatus, saveArtPreferences, getProfile, getUserProfile, uploadProfileMedia, profileStatus, getArts, getUserArts, createComment, getComments, createReact, getReact, uploadArt, trackView, getViews, updateArt, deleteArt, deleteComment, updateComment, reportComment } from "../controllers/profileController.js";
 
 const router = express.Router();
 
@@ -46,5 +46,10 @@ router.post(
 // Artwork update and delete routes
 router.put("/art/:artId", upload.array('images', 5), updateArt);
 router.delete("/art/:artId", deleteArt);
+
+// Comment management routes
+router.delete("/deleteComment/:commentId", deleteComment);
+router.put("/updateComment/:commentId", updateComment);
+router.post("/reportComment", reportComment);
 
 export default router;

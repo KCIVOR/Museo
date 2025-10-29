@@ -237,10 +237,13 @@ export const getPost = async (req, res) => {
     // Separate announcements for the old announcements field (for backward compatibility)
     const formattedAnnouncements = formattedPosts.filter(p => p.isAnnouncement === true);
 
+    // ✅ FIXED: Only fetch reactions and comments for the posts on this page
+    const postIds = posts.map(p => p.id || p.postId).filter(Boolean);
+    
     const {data: reacts, reactError} = await supabase
       .from('react')
       .select('*')
-      .not('postId', 'is', null)
+      .in('postId', postIds)  // Only fetch for current page posts
 
     if (reactError) {
       console.error("Error fetching react:", reactError);
@@ -253,7 +256,7 @@ export const getPost = async (req, res) => {
     const {data: comments, commentError} = await supabase
       .from('comment')
       .select('*')
-      .not('postId', 'is', null)
+      .in('postId', postIds)  // Only fetch for current page posts
 
       if (commentError) {
       console.error("Error fetching react:", commentError);
@@ -382,6 +385,158 @@ export const createComment = async (req, res) => {
   }
 };
 
+// DELETE /api/homepage/deleteComment/:commentId
+export const deleteComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user.id;
+
+    // First check if comment exists
+    const { data: comment, error: fetchError } = await supabase
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Get user role from profile table
+    const { data: userProfile, error: userError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = comment.userId === userId;
+    const isAdmin = userRole === 'admin';
+
+    // Check if user is admin or owns the comment
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to delete this comment" });
+    }
+
+    // Delete the comment
+    const { error: deleteError } = await supabase
+      .from("comment")
+      .delete()
+      .eq("commentId", commentId);
+
+    if (deleteError) throw deleteError;
+
+    return res.status(200).json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    console.error("Delete comment error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /api/homepage/updateComment/:commentId
+export const updateComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { text } = req.body;
+    const userId = req.user.id;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: "Comment text is required" });
+    }
+
+    // First check if comment exists
+    const { data: comment, error: fetchError } = await supabase
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Get user role from profile table
+    const { data: userProfile, error: userError } = await supabase
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    
+    const userRole = userProfile?.role || req.user.role || 'user';
+    const isOwner = comment.userId === userId;
+    const isAdmin = userRole === 'admin';
+
+    // Check if user is admin or owns the comment
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to edit this comment" });
+    }
+
+    // Update the comment
+    const { data: updated, error: updateError } = await supabase
+      .from("comment")
+      .update({ 
+        content: text.trim(),
+        updatedAt: new Date().toISOString() // Set updatedAt timestamp
+      })
+      .eq("commentId", commentId)
+      .select();
+
+    if (updateError) throw updateError;
+
+    return res.status(200).json({ 
+      message: "Comment updated successfully",
+      comment: updated[0]
+    });
+  } catch (err) {
+    console.error("Update comment error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /api/homepage/reportComment
+export const reportComment = async (req, res) => {
+  try {
+    const { commentId, reason } = req.body;
+    const userId = req.user.id;
+
+    if (!commentId || !reason) {
+      return res.status(400).json({ error: "Comment ID and reason are required" });
+    }
+
+    // Check if comment exists
+    const { data: comment, error: fetchError } = await supabase
+      .from("comment")
+      .select("*")
+      .eq("commentId", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    // Insert report (you'll need to create a 'comment_reports' table)
+    const { error: insertError } = await supabase
+      .from("comment_reports")
+      .insert([{
+        commentId: commentId,
+        reportedBy: userId,
+        reason: reason,
+        dateReported: new Date().toISOString()
+      }]);
+
+    if (insertError) {
+      console.error("Report insert error:", insertError);
+      // If table doesn't exist, just log it for now
+      console.log("Comment report:", { commentId, userId, reason });
+    }
+
+    return res.status(200).json({ message: "Comment reported successfully" });
+  } catch (err) {
+    console.error("Report comment error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 
 export const getReact = async (req, res) => {
   try {
@@ -396,7 +551,8 @@ export const getReact = async (req, res) => {
       .from("react")
       .select("*")
       .eq("postId", postId)
-      .order("reactTime", { ascending: false });
+      .order("reactTime", { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 
@@ -408,18 +564,23 @@ export const getReact = async (req, res) => {
 };
 
 
-// GET /api/homepage/getComments?postId=123
+// GET /api/homepage/getComments?postId=123&page=1&limit=10
 export const getComments = async (req, res) => {
   try {
-    const { postId } = req.query;
+    const { postId, page = 1, limit = 10 } = req.query;
     if (!postId) return res.status(400).json({ error: "postId is required" });
 
-    // Pull comments for this post
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Pull comments for this post with pagination
     const { data: rows, error } = await supabase
       .from("comment")
       .select("*")
       .eq("postId", postId)
-      .order("datePosted", { ascending: false });
+      .order("datePosted", { ascending: false })
+      .range(offset, offset + limitNum - 1);
 
     if (error) throw error;
 
@@ -458,10 +619,14 @@ export const getComments = async (req, res) => {
       id: r.commentId,
       text: r.content,
       timestamp: new Date(r.datePosted).toLocaleString(),
+      updatedAt: r.updatedAt, // Include updatedAt to show "(edited)" indicator
       user: userMap.get(r.userId),
     }));
 
-    return res.status(200).json({ comments });
+    // Check if there are more comments
+    const hasMore = rows.length === limitNum;
+
+    return res.status(200).json({ comments, hasMore });
   } catch (err) {
     console.error("getComments error:", err);
     return res.status(500).json({ error: err.message });

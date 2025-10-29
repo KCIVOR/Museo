@@ -1,5 +1,5 @@
 // src/pages/home.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css/home.css";
 import MuseoComposer from "./museoComposer";
@@ -278,8 +278,8 @@ export default function Home() {
         if (append) {
           // Append to existing posts for infinite scroll, avoiding duplicates
           setPosts(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const newPosts = normalized.filter(p => !existingIds.has(p.id));
+            const existingIds = new Set(prev.map(p => String(p.id)).filter(Boolean));
+            const newPosts = normalized.filter(p => p && p.id && !existingIds.has(String(p.id)));
             return [...prev, ...newPosts];
           });
         } else {
@@ -308,6 +308,23 @@ export default function Home() {
         });
         setLikes(reactCounts);
 
+        // Count comments per post
+        const commentCounts = {};
+        (data.comments || []).forEach((c) => {
+          commentCounts[c.postId] = (commentCounts[c.postId] || 0) + 1;
+        });
+        
+        if (append) {
+          // For infinite scroll, merge with existing comment counts
+          setComments(prev => ({
+            ...prev,
+            ...commentCounts
+          }));
+        } else {
+          // For initial load, replace all comment counts
+          setComments(commentCounts);
+        }
+
         // Set user's liked posts from backend response
         if (data.userLikedPosts) {
           if (append) {
@@ -324,7 +341,8 @@ export default function Home() {
 
       } else {
         console.error('Failed to fetch posts:', data.error);
-        if (!append) {
+        // Don't clear posts on error - keep existing posts
+        if (!append && posts.length === 0) {
           setPosts([]);
         }
       }
@@ -333,7 +351,8 @@ export default function Home() {
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError(err.message);
-      if (!append) {
+      // Don't clear posts on error - keep existing posts
+      if (!append && posts.length === 0) {
         setPosts([]);
       }
     } finally {
@@ -343,13 +362,18 @@ export default function Home() {
   };
 
   // Load more posts for infinite scroll (Gallery style)
-  const loadMorePosts = async () => {
-    if (!hasMore || isLoadingMore) return;
+  const loadMorePosts = useCallback(async () => {
+    if (!hasMore || isLoadingMore) {
+      return;
+    }
+    
+    // Prevent double-loading
+    setIsLoadingMore(true);
     
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
     await fetchPosts(nextPage, true);
-  }; 
+  }, [hasMore, isLoadingMore, currentPage]); 
 
   const handleLike = async (postId) => {
     if (liking[postId]) return;
@@ -400,12 +424,13 @@ export default function Home() {
         throw new Error(err.error || "Failed to comment");
       }
 
+      // Update comment count without affecting posts array
       setComments((prev) => ({
         ...prev,
         [postId]: (prev[postId] || 0) + 1,
       }));
     } catch (e) {
-      console.error(e);
+      console.error('Comment error:', e);
     } finally {
       setCommenting((s) => ({ ...s, [postId]: false }));
     }
@@ -480,56 +505,84 @@ export default function Home() {
 
   useEffect(() => {
     checkProfile();
+    setCurrentPage(1); // Reset page counter
     fetchPosts(1, false); // Initial load
     fetchRole(); // Fetch user role
     fetchCurrentUser(); // Fetch current user data
   }, []);
+  
+  // Reset currentPage when posts are cleared (e.g., after delete/edit)
+  useEffect(() => {
+    if (posts.length === 0 && !loading) {
+      setCurrentPage(1);
+    }
+  }, [posts.length, loading]);
 
 
   // Intersection Observer for infinite scroll (Gallery style)
   useEffect(() => {
-    const sentinel = document.createElement('div');
-    sentinel.style.height = '1px';
-    sentinel.style.width = '100%';
+    if (!hasMore || loading) return; // Don't setup observer while initial loading
     
-    const feedContainer = document.querySelector('.feed');
-    
-    if (feedContainer) {
-      feedContainer.appendChild(sentinel);
+    // Add a small delay to prevent immediate triggering on page load
+    const setupTimer = setTimeout(() => {
+      const sentinel = document.createElement('div');
+      sentinel.id = 'scroll-sentinel';
+      sentinel.style.height = '1px';
+      sentinel.style.width = '100%';
       
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (entry.isIntersecting && hasMore && !isLoadingMore) {
-            loadMorePosts();
+      const feedContainer = document.querySelector('.feed');
+      
+      if (feedContainer) {
+        // Remove any existing sentinel
+        const existingSentinel = document.getElementById('scroll-sentinel');
+        if (existingSentinel) {
+          existingSentinel.remove();
+        }
+        
+        feedContainer.appendChild(sentinel);
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const entry = entries[0];
+            if (entry.isIntersecting && !isLoadingMore) {
+              loadMorePosts();
+              observer.unobserve(sentinel); // Stop observing after triggering load
+            }
+          },
+          {
+            rootMargin: '100px', // Trigger 100px before sentinel becomes visible
+            threshold: 0.1
           }
-        },
-        {
-          rootMargin: '100px', // Trigger 100px before sentinel becomes visible
-          threshold: 0.1
-        }
-      );
-      
-      observer.observe(sentinel);
-      
-      return () => {
-        observer.disconnect();
-        if (sentinel.parentNode) {
-          sentinel.parentNode.removeChild(sentinel);
-        }
-      };
-    }
-  }, [hasMore, isLoadingMore, posts.length, loadMorePosts]);
+        );
+        
+        observer.observe(sentinel);
+        
+        // Store cleanup function
+        return () => {
+          observer.disconnect();
+          if (sentinel.parentNode) {
+            sentinel.parentNode.removeChild(sentinel);
+          }
+        };
+      }
+    }, 500); // Wait 500ms after initial load
+    
+    return () => {
+      clearTimeout(setupTimer);
+      const existingSentinel = document.getElementById('scroll-sentinel');
+      if (existingSentinel) {
+        existingSentinel.remove();
+      }
+    };
+  }, [hasMore, isLoadingMore, loading, loadMorePosts]);
 
   const handleNewPost = (newPostData) => {
-    // Reload the page to show the new post with fresh data
-    console.log('📝 New post created, reloading page...');
+    // Reset page and reload posts
+    setCurrentPage(1);
     window.location.reload();
   };
 
   const closeModal = () => {
     setActivePost(null);
-    // Removed fetchPosts() - no need to refetch all posts when just closing a view modal
   };
 
   // Menu functions
@@ -687,7 +740,8 @@ export default function Home() {
         )}
 
         {/* Unified feed: announcements + regular posts sorted by datePosted desc */}
-        {!loading && !error && [...(announcements||[]), ...(posts||[])]
+        {!loading && !error && [...(announcements||[]), ...(posts || [])]
+          .filter(item => item && item.id) // Filter out any invalid posts
           .sort((a, b) => {
             const da = new Date(a.datePosted).getTime() || 0;
             const db = new Date(b.datePosted).getTime() || 0;
@@ -964,7 +1018,22 @@ export default function Home() {
 
 
         {/* End of posts indicator */}
-        {!hasMore && posts.length > 0 && !loading && (
+        {/* Loading more indicator */}
+        {isLoadingMore && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '40px 20px',
+            color: '#8b6f47',
+            fontSize: '14px'
+          }}>
+            Loading more posts...
+          </div>
+        )}
+        
+        {/* End of feed message */}
+        {!hasMore && posts.length > 0 && !loading && !isLoadingMore && (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -993,6 +1062,7 @@ export default function Home() {
             onDelete={handleDelete}
             onReport={handleReport}
             role={role}
+            totalComments={comments[activePost.id] || 0}
           />
         )}
       </div>

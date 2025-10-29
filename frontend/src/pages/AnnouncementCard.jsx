@@ -56,9 +56,9 @@ export default function AnnouncementCard({ post, onClose }) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
     const openKey = post?.eventId || post?.newsfeedId; // prefer eventId to avoid title collisions
-    // Router is case-sensitive; your App.jsx route is "/Event"
-    if (openKey) navigate('/Event', { state: { open: openKey } });
-    else navigate('/Event');
+    // Use route-based navigation like notifications (prevents double-opening with pagination)
+    if (openKey) navigate(`/event/${openKey}`);
+    else navigate('/event');
   };
   const handleIcs = () => createICS({ title, start: post?.date, venueName: venue });
 

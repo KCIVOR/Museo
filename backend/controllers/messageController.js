@@ -112,7 +112,8 @@ export const getConversation = async (req, res) => {
       .from("conversation")
       .select("*")
       .or(`participant_1.eq.${me},participant_2.eq.${me}`)
-      .order("lastMessageAt", { ascending: false });
+      .order("lastMessageAt", { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error("getConversation: conversation query failed:", error);

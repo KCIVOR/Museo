@@ -3,9 +3,17 @@ import bcrypt from "bcrypt"
 
 export const getAllUsers = async (req, res) =>{
     try {
+        // ✅ FIXED: Add pagination to prevent fetching all users
+        const page = parseInt(req.query.page || '1', 10);
+        const limit = parseInt(req.query.limit || '50', 10);
+        const offset = (page - 1) * limit;
+        
         const { data, error } = await supabase
         .from('profile')
         .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
+        
         if (error) throw error
         res.json(data)
         console.log(data)

@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt } from "../controllers/galleryController.js";
+import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, deleteGalleryComment, updateGalleryComment, reportGalleryComment, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt } from "../controllers/galleryController.js";
 
 const router = express.Router();
 
@@ -62,6 +62,9 @@ router.post('/getReact', getGalleryReact); // Also accept POST for consistency
 router.post('/comment', createGalleryComment);
 router.get('/comments', getGalleryComments);
 router.post('/getComments', getGalleryComments); // Also accept POST for consistency
+router.put('/updateComment/:commentId', updateGalleryComment);
+router.delete('/deleteComment/:commentId', deleteGalleryComment);
+router.post('/reportComment', reportGalleryComment);
 
 // Gallery artwork views
 router.post('/view', trackArtworkView);

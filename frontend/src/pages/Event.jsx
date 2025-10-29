@@ -105,8 +105,8 @@ export default function Event() {
         // Only fetch all events if we have some events loaded (pagination started)
         // and the event is still not found
         if (events.length > 0) {
-          // Fetch ALL events (with high limit) to find the specific event
-          const allRes = await fetch(`${API}/event/getEvents?page=1&limit=1000`, { credentials: 'include' });
+          // ✅ FIXED: Reduced limit from 1000 to 100 to save egress
+          const allRes = await fetch(`${API}/event/getEvents?page=1&limit=100`, { credentials: 'include' });
           if (!allRes.ok) throw new Error('Failed to fetch events');
           const all = await allRes.json();
           const list = Array.isArray(all?.data)
