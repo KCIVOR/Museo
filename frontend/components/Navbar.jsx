@@ -66,7 +66,7 @@ const LogoutIcon = () => (
   </svg>
 );
 
-export default function Navbar({ role }) {
+export default function Navbar({ role, userData }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [topupOpen, setTopupOpen] = useState(false);
@@ -75,13 +75,6 @@ export default function Navbar({ role }) {
   const [registerOpen, setRegisterOpen] = useState(false);
   const btnRef = useRef(null);
   const menuRef = useRef(null);
-
-  // User data state
-  const [userData, setUserData] = useState({
-    avatar: null,
-    username: null,
-    fullName: null
-  });
 
   // Notifications state lives here so we can receive while popover is closed
   const [notifItems, setNotifItems] = useState([]);
@@ -168,76 +161,8 @@ export default function Navbar({ role }) {
     return () => { document.body.style.overflow = prev; };
   }, [registerOpen]);
 
-  // Fetch user data for avatar and profile info
-  useEffect(() => {
-    let abort = false;
-    const fetchUserData = async () => {
-      try {
-        // Fetch profile picture
-        const pictureRes = await fetch(`${window.location.origin.replace(':5173', ':3000')}/api/users/picture`, {
-          method: "GET",
-          credentials: "include",
-        });
-        
-        // Fetch user info
-        const userRes = await fetch(`${window.location.origin.replace(':5173', ':3000')}/api/users/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        let profilePicture = null;
-        let userInfo = {};
-
-        if (pictureRes.ok) {
-          profilePicture = await pictureRes.json();
-        } else {
-          console.log('Failed to fetch profile picture:', pictureRes.status, pictureRes.statusText);
-        }
-
-        if (userRes.ok) {
-          userInfo = await userRes.json();
-        } else {
-          console.log('Failed to fetch user info:', userRes.status, userRes.statusText);
-        }
-
-        if (!abort) {
-          setUserData({
-            avatar: profilePicture,
-            username: userInfo.username || null,
-            fullName: userInfo.fullName || userInfo.name || null
-          });
-        }
-      } catch (error) {
-        console.log('Failed to fetch user data:', error);
-        if (!abort) {
-          setUserData({
-            avatar: null,
-            username: null,
-            fullName: null
-          });
-        }
-      }
-    };
-    
-    // Listen for profile updates from other components
-    const handleProfileUpdate = (event) => {
-      const { avatar, firstName, lastName, username } = event.detail;
-      setUserData(prev => ({
-        ...prev,
-        avatar: avatar || prev.avatar,
-        username: username || prev.username,
-        fullName: `${firstName || ''} ${lastName || ''}`.trim() || prev.fullName
-      }));
-    };
-    
-    fetchUserData();
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    
-    return () => { 
-      abort = true; 
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, []);
+  // userData now comes from props (fetched in Layout.jsx)
+  // No need to fetch here anymore!
 
   const goto = (path) => { setMenuOpen(false); navigate(path); };
 
