@@ -88,8 +88,6 @@ export default function ArtistProfile() {
       const data = await response.json();
       
       setArts(data);
-
-      console.log("Fetched arts:", data);
     }catch(err){
       console.error(err);
     }
@@ -104,7 +102,6 @@ export default function ArtistProfile() {
       if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
       const data = await response.json();
       setRole(data);
-      console.log("Fetched user:", data);
     } catch (error) {
       console.error("Error fetching user:", error);
     }
@@ -127,23 +124,19 @@ export default function ArtistProfile() {
 
   // Event handlers for ArtGallery
   const handleViewArt = (art, index) => {
-    console.log('Viewing art:', art, 'at index:', index);
     // Add your view logic here
   };
 
   const handleLikeArt = (art, index) => {
-    console.log('Liking art:', art, 'at index:', index);
     // Add your like logic here
   };
 
   const handleArtClick = (art, index) => {
-    console.log('Art clicked:', art, 'at index:', index);
     // Add your click logic here
   };
 
   const handleModalClose = () => {
     // Modal closed - no need to refresh data since this is a view-only profile
-    console.log('Modal closed');
   };
 
   return (

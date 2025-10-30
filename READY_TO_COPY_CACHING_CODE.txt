@@ -1,0 +1,92 @@
+// ============================================
+// STEP 1: ADD THESE IMPORTS AT THE TOP (After line 2)
+// ============================================
+import { cache } from '../utils/cache.js';
+import CACHE_DURATION from '../utils/cacheConfig.js';
+
+
+// ============================================
+// STEP 2: REPLACE THE getFilteredArtworks FUNCTION START
+// Find lines 85-100 and replace with this:
+// ============================================
+export const getFilteredArtworks = async (req, res) => {
+  try {
+    const { categories, page = 1, limit = 20 } = req.query;
+    
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+    
+    // ============================================
+    // 🎯 CACHING STEP 1: Create cache key
+    // ============================================
+    const cacheKey = `gallery:artworks:${categories || 'all'}:${pageNum}:${limitNum}`;
+    console.log(`\n🔍 [CACHE CHECK] Looking for key: ${cacheKey}`);
+    
+    // ============================================
+    // 🎯 CACHING STEP 2: Check cache first
+    // ============================================
+    const startTime = Date.now();
+    const cached = await cache.get(cacheKey);
+    
+    if (cached) {
+      const cacheTime = Date.now() - startTime;
+      console.log(`✅ [CACHE HIT] Found in cache! Response time: ${cacheTime}ms`);
+      console.log(`💾 [CACHE HIT] Returning ${cached.artworks?.length || 0} artworks from Redis`);
+      console.log(`🚀 [CACHE HIT] Saved database queries: 3 queries avoided!\n`);
+      return res.json(cached);
+    }
+    
+    console.log(`❌ [CACHE MISS] Not in cache, fetching from database...`);
+    console.log(`📊 [DATABASE] Executing 3 queries: artworks + profiles + count`);
+    
+    // Use SERVICE_KEY client for database access
+    const supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+    
+    console.log(`📄 Fetching artworks: page ${pageNum}, limit ${limitNum}, offset ${offset}`);
+    
+    // ... rest of the function stays the same until the return statement
+
+
+// ============================================
+// STEP 3: REPLACE THE RETURN STATEMENT (Around line 221-235)
+// Find the res.json() at the end and replace with this:
+// ============================================
+    const hasMore = formattedArtworks.length === limitNum;
+    
+    const result = {
+      success: true,
+      artworks: formattedArtworks,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: formattedArtworks.length,
+        hasMore,
+        ...(totalCount !== null && { total: totalCount })
+      }
+    };
+
+    // ============================================
+    // 🎯 CACHING STEP 3: Save to cache
+    // ============================================
+    const dbTime = Date.now() - startTime;
+    console.log(`\n💾 [CACHE SAVE] Saving ${formattedArtworks.length} artworks to Redis`);
+    console.log(`⏱️  [DATABASE] Query time: ${dbTime}ms`);
+    await cache.set(cacheKey, result, 300); // 5 minutes
+    console.log(`✅ [CACHE SAVE] Cached for 5 minutes (300 seconds)`);
+    console.log(`🔑 [CACHE SAVE] Key: ${cacheKey}\n`);
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error fetching filtered artworks:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+};

@@ -1,10 +1,19 @@
 import db from "../database/db.js";
 import { createClient } from '@supabase/supabase-js';
-
+import { cache } from '../utils/cache.js';
 
 // Get available art categories from the database
 export const getCategories = async (req, res) => {
   try {
+    // Check cache first
+    const cacheKey = 'gallery:categories';
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ CACHE HIT:', cacheKey);
+      return res.json(cached);
+    }
+    console.log('❌ CACHE MISS:', cacheKey);
+    
     const categoryDefinitions = [
       { field: 'classicalArt', name: 'Classical Art' },
       { field: 'abstractArt', name: 'Abstract Art' },
@@ -66,11 +75,17 @@ export const getCategories = async (req, res) => {
     // Get total count for "All" category
     const totalCount = allArtworks.length;
     
-    res.json({
+    const result = {
       success: true,
       categories: categoriesWithCounts,
       totalCount: totalCount
-    });
+    };
+    
+    // Save to cache (5 minutes TTL)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+    
+    res.json(result);
 
   } catch (error) {
     console.error('Error fetching art categories:', error);
@@ -86,16 +101,25 @@ export const getFilteredArtworks = async (req, res) => {
   try {
     const { categories, page = 1, limit = 20 } = req.query;
     
+    // Convert pagination params to numbers
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+    
+    // Check cache
+    const cacheKey = `gallery:artworks:${categories || 'all'}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ CACHE HIT:', cacheKey);
+      return res.json(cached);
+    }
+    console.log('❌ CACHE MISS:', cacheKey);
+    
     // Use SERVICE_KEY client for database access
     const supabaseClient = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_KEY
     );
-    
-    // Convert pagination params to numbers
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-    const offset = (pageNum - 1) * limitNum;
     
     console.log(`📄 Fetching artworks: page ${pageNum}, limit ${limitNum}, offset ${offset}`);
     
@@ -128,27 +152,25 @@ export const getFilteredArtworks = async (req, res) => {
       
       query = query.or(categoryFilters);
     }
-
+    
     const { data: artworks, error } = await query;
-
+    
     if (error) {
       console.error('Database error:', error);
       return res.status(400).json({ error: error.message });
     }
-
+    
     // Get unique user IDs from artworks
     const userIds = [...new Set(artworks?.map(art => art.userId).filter(Boolean))];
     
     // Fetch user profiles separately
     let userProfiles = {};
     if (userIds.length > 0) {
-
       
       const { data: profiles, error: profileError } = await supabaseClient
         .from('profile')
         .select('userId, firstName, middleName, lastName, profilePicture')
         .in('userId', userIds);
-
       
       if (!profileError && profiles) {
         // Create a lookup map with combined name
@@ -170,8 +192,8 @@ export const getFilteredArtworks = async (req, res) => {
 
       }
     }
-
-
+    
+    
     // Format artworks for frontend compatibility
     const formattedArtworks = artworks?.map(artwork => {
       const userProfile = userProfiles[artwork.userId];
@@ -196,8 +218,7 @@ export const getFilteredArtworks = async (req, res) => {
       };
     }) || [];
  
-
-
+    
     // Get total count for pagination info (only on first page to avoid extra queries)
     let totalCount = null;
     if (pageNum === 1) {
@@ -217,12 +238,12 @@ export const getFilteredArtworks = async (req, res) => {
       const { count } = await countQuery;
       totalCount = count;
     }
-
+    
     const hasMore = formattedArtworks.length === limitNum;
     
     // console.log(`✅ Returning ${formattedArtworks.length} artworks for page ${pageNum}${totalCount ? `, total: ${totalCount}` : ''}, hasMore: ${hasMore}`);
-
-    res.json({
+    
+    const result = {
       success: true,
       artworks: formattedArtworks,
       pagination: {
@@ -232,7 +253,13 @@ export const getFilteredArtworks = async (req, res) => {
         hasMore,
         ...(totalCount !== null && { total: totalCount })
       }
-    });
+    };
+
+    // Save to cache
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+
+    res.json(result);
 
   } catch (error) {
     console.error('Error fetching filtered artworks:', error);
@@ -407,6 +434,10 @@ export const uploadArtwork = async (req, res) => {
     console.log('⏭️ Skipping rotation check for new upload to keep it featured');
     // await simpleRotation(); // Commented out to preserve featured status
     
+    // Clear gallery cache so new artwork appears immediately
+    await cache.clearPattern('gallery:*');
+    console.log('🗑️ Cleared gallery cache after upload');
+    
     res.status(201).json({
       success: true,
       message: 'Artwork uploaded successfully',
@@ -495,6 +526,10 @@ export const createGalleryReact = async (req, res) => {
 
       if (deleteErr) throw deleteErr;
 
+      // Clear cache for this artwork's reactions
+      await cache.del(`reactions:gallery:${galleryArtId}`);
+      console.log(`🗑️ Cleared reactions cache for artwork ${galleryArtId} after unlike`);
+
       return res.status(200).json({ message: "Reaction removed", removed: true });
     }
 
@@ -512,6 +547,10 @@ export const createGalleryReact = async (req, res) => {
       .single();
 
     if (insertErr) throw insertErr;
+
+    // Clear cache for this artwork's reactions
+    await cache.del(`reactions:gallery:${galleryArtId}`);
+    console.log(`🗑️ Cleared reactions cache for artwork ${galleryArtId} after like`);
 
     return res.status(201).json({
       message: "Reaction added",
@@ -533,6 +572,15 @@ export const getGalleryReact = async (req, res) => {
       return res.status(400).json({ error: "galleryArtId is required" });
     }
 
+    // Check cache first (30 seconds for reactions - semi-real-time)
+    const cacheKey = `reactions:gallery:${galleryArtId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     // Use SERVICE_KEY client for database access
     const supabaseClient = createClient(
       process.env.SUPABASE_URL,
@@ -548,7 +596,12 @@ export const getGalleryReact = async (req, res) => {
 
     if (error) throw error;
 
-    return res.status(200).json({ reactions });
+    const result = { reactions };
+    
+    // Cache for 30 seconds (short duration for near-real-time feel)
+    await cache.set(cacheKey, result, 30);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getGalleryReact error:", err);
     return res.status(500).json({ error: err.message });
@@ -589,6 +642,10 @@ export const createGalleryComment = async (req, res) => {
 
     if (insertErr) throw insertErr;
 
+    // Clear cache for this artwork's comments
+    await cache.del(`comments:gallery:${galleryArtId}:*`);
+    console.log(`🗑️ Cleared comments cache for artwork ${galleryArtId} after comment`);
+
     return res.status(201).json({
       message: "Comment added successfully",
       comment: inserted,
@@ -612,6 +669,15 @@ export const getGalleryComments = async (req, res) => {
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
+
+    // Check cache first
+    const cacheKey = `comments:gallery:${galleryArtId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
 
     // Use SERVICE_KEY client for database access
     const supabaseClient = createClient(
@@ -692,7 +758,12 @@ export const getGalleryComments = async (req, res) => {
     // Check if there are more comments
     const hasMore = comments.length === limitNum;
 
-    return res.status(200).json({ comments: formattedComments, hasMore });
+    const result = { comments: formattedComments, hasMore };
+    
+    // Cache the result (3 minutes)
+    await cache.set(cacheKey, result, 180);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getGalleryComments error:", err);
     return res.status(500).json({ error: err.message });
@@ -744,6 +815,10 @@ export const deleteGalleryComment = async (req, res) => {
       .eq("commentId", commentId);
 
     if (deleteError) throw deleteError;
+
+    // Clear cache for this artwork's comments
+    await cache.del(`comments:gallery:${comment.galleryArtId}:*`);
+    console.log(`🗑️ Cleared comments cache for artwork ${comment.galleryArtId} after comment delete`);
 
     return res.status(200).json({ message: "Comment deleted successfully" });
   } catch (err) {
@@ -806,6 +881,10 @@ export const updateGalleryComment = async (req, res) => {
       .select();
 
     if (updateError) throw updateError;
+
+    // Clear cache for this artwork's comments
+    await cache.del(`comments:gallery:${comment.galleryArtId}:*`);
+    console.log(`🗑️ Cleared comments cache for artwork ${comment.galleryArtId} after comment update`);
 
     return res.status(200).json({ 
       message: "Comment updated successfully",
@@ -1739,6 +1818,10 @@ export const updateGalleryArt = async (req, res) => {
       return res.status(500).json({ error: 'Failed to update artwork' });
     }
 
+    // Clear gallery cache so updates appear immediately
+    await cache.clearPattern('gallery:*');
+    console.log('🗑️ Cleared gallery cache after update');
+
     console.log(`✅ Successfully updated gallery artwork ${galleryArtId}`);
     res.json({ success: true, artwork: data });
   } catch (err) {
@@ -1871,6 +1954,10 @@ export const deleteGalleryArt = async (req, res) => {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Failed to delete artwork' });
     }
+
+    // Clear gallery cache so deletion reflects immediately
+    await cache.clearPattern('gallery:*');
+    console.log('🗑️ Cleared gallery cache after delete');
 
     console.log(`✅ Successfully deleted gallery artwork ${galleryArtId}`);
     res.json({ success: true, message: 'Artwork deleted successfully' });

@@ -1,6 +1,8 @@
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import supabase from '../database/db.js';
+import { cache } from '../utils/cache.js';
+import CACHE_DURATION from '../utils/cacheConfig.js';
 
 
 // Multer middleware
@@ -86,7 +88,6 @@ export const createPost = async (req, res) => {
         datePosted: new Date().toISOString()
       })
       .select();
-
     if (postError) {
       console.error("Database insert error:", postError);
       throw new Error(`Failed to save post: ${postError.message}`);
@@ -94,6 +95,10 @@ export const createPost = async (req, res) => {
 
     console.log(`💾 Saved to database - Post ID: ${postData[0].postId}`);
     console.log(`✅ Successfully uploaded ${uploadedUrls.length} images and created 1 post for user: ${userId}`);
+
+    // Invalidate posts cache (new post created)
+    await cache.del('posts:*');
+    console.log('🗑️ Posts cache invalidated');
 
     res.status(201).json({
       message: "Post created successfully",
@@ -120,6 +125,16 @@ export const getPost = async (req, res) => {
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
     
+    // Include userId in cache key for user-specific data (liked posts)
+    const userId = req.user?.id || 'anonymous';
+    const cacheKey = `posts:${userId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    
+    console.log('❌ Cache MISS:', cacheKey);
 
     // Fetch posts with pagination (Gallery style)
     const { data: posts, error } = await supabase
@@ -277,7 +292,7 @@ export const getPost = async (req, res) => {
     }
 
 
-    res.status(200).json({
+    const result = {
       message: "Posts fetched successfully",
       posts: formattedPosts, // Now includes both regular posts and announcements
       announcements: [], // Empty since announcements are now in posts array
@@ -290,7 +305,12 @@ export const getPost = async (req, res) => {
         count: formattedPosts.length,
         hasMore
       }
-    });
+    };
+
+    // Cache the result (3 minutes for posts - they change frequently)
+    await cache.set(cacheKey, result, CACHE_DURATION.POSTS);
+
+    res.status(200).json(result);
 
   } catch (err) {
     console.error("getPost error:", err);
@@ -329,6 +349,10 @@ export const createReact = async (req, res) => {
 
       if (deleteErr) throw deleteErr;
 
+      // Clear cache for this post's stats only
+      await cache.del(`reactions:post:${postId}`);
+      console.log(`🗑️ Cleared stats cache for post ${postId} after unlike`);
+
       return res.status(200).json({ message: "Reaction removed", removed: true });
     }
 
@@ -347,6 +371,10 @@ export const createReact = async (req, res) => {
 
     if (insertErr) throw insertErr;
 
+    // Clear cache for this post's stats only
+    await cache.del(`reactions:post:${postId}`);
+    console.log(`🗑️ Cleared stats cache for post ${postId} after like`);
+
     return res.status(201).json({
       message: "Reaction added",
       removed: false,
@@ -363,22 +391,53 @@ export const createReact = async (req, res) => {
 export const createComment = async (req, res) => {
   try{
       const { postId, text } = req.body;
+      const userId = req.user.id;
+      
       const { data: inserted, error: insertErr } = await supabase
         .from("comment")
         .insert([
           {
-            userId: req.user.id,
+            userId: userId,
             datePosted: new Date().toISOString(),
             content: text,
             postId: postId,
-            
           },
         ])
         .select()
 
         if (insertErr) throw insertErr;
 
-        return res.status(201).json({message: "Comment added",});
+        // Get user profile for the comment
+        const { data: profile, error: profileError } = await supabase
+          .from('profile')
+          .select('userId, firstName, lastName, profilePicture')
+          .eq('userId', userId)
+          .single();
+
+        const userName = profile 
+          ? [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim() || 'Anonymous'
+          : 'Anonymous';
+
+        // Format the comment for frontend
+        const formattedComment = {
+          id: inserted[0].commentId,
+          text: inserted[0].content,
+          timestamp: new Date(inserted[0].datePosted).toLocaleString(),
+          user: {
+            id: userId,
+            name: userName,
+            avatar: profile?.profilePicture || 'https://via.placeholder.com/40'
+          }
+        };
+
+        // Invalidate all comment pages for this post
+        await cache.del(`comments:post:${postId}:*`);
+        console.log(`🗑️ Comment cache invalidated for post: ${postId}`);
+
+        return res.status(201).json({
+          message: "Comment added",
+          comment: formattedComment
+        });
   } catch (err) {
     console.error("comment error:", err);
     return res.status(500).json({ error: err.message });
@@ -425,6 +484,10 @@ export const deleteComment = async (req, res) => {
       .eq("commentId", commentId);
 
     if (deleteError) throw deleteError;
+
+    // Invalidate cache for this post's comments
+    await cache.del(`comments:post:${comment.postId}:*`);
+    console.log(`🗑️ Cache invalidated for post: ${comment.postId}`);
 
     return res.status(200).json({ message: "Comment deleted successfully" });
   } catch (err) {
@@ -482,6 +545,10 @@ export const updateComment = async (req, res) => {
       .select();
 
     if (updateError) throw updateError;
+
+    // Invalidate cache for this post's comments
+    await cache.del(`comments:post:${comment.postId}:*`);
+    console.log(`🗑️ Cache invalidated for post: ${comment.postId}`);
 
     return res.status(200).json({ 
       message: "Comment updated successfully",
@@ -547,6 +614,16 @@ export const getReact = async (req, res) => {
       return res.status(400).json({ error: "postId is required" });
     }
 
+    // Check cache first (30 seconds for reactions - semi-real-time)
+    const cacheKey = `reactions:post:${postId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    
+    console.log('❌ Cache MISS:', cacheKey);
+
     const { data: reactions, error } = await supabase
       .from("react")
       .select("*")
@@ -556,7 +633,12 @@ export const getReact = async (req, res) => {
 
     if (error) throw error;
 
-    return res.status(200).json({ reactions });
+    const result = { reactions };
+    
+    // Cache for 30 seconds (short duration for near-real-time feel)
+    await cache.set(cacheKey, result, 30);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getReact error:", err);
     return res.status(500).json({ error: err.message });
@@ -574,8 +656,18 @@ export const getComments = async (req, res) => {
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
+    // Check cache first
+    const cacheKey = `comments:post:${postId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    
+    console.log('❌ Cache MISS:', cacheKey);
+
     // Pull comments for this post with pagination
-    const { data: rows, error } = await supabase
+    const { data: rows, error} = await supabase
       .from("comment")
       .select("*")
       .eq("postId", postId)
@@ -626,7 +718,12 @@ export const getComments = async (req, res) => {
     // Check if there are more comments
     const hasMore = rows.length === limitNum;
 
-    return res.status(200).json({ comments, hasMore });
+    const result = { comments, hasMore };
+    
+    // Cache the result (duration from config)
+    await cache.set(cacheKey, result, CACHE_DURATION.COMMENTS);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getComments error:", err);
     return res.status(500).json({ error: err.message });
@@ -792,6 +889,11 @@ export const deletePost = async (req, res) => {
     }
 
     console.log(`✅ Post ${postId} deleted successfully by user ${req.user.id}`);
+    
+    // Invalidate posts cache (post deleted)
+    await cache.del('posts:*');
+    console.log('🗑️ Posts cache invalidated');
+    
     return res.status(200).json({ 
       message: "Post deleted successfully",
       postId: postId
@@ -974,6 +1076,11 @@ export const updatePost = async (req, res) => {
     }
 
     console.log(`✅ Post ${postId} updated successfully by user ${req.user.id}`);
+    
+    // Invalidate posts cache (post updated)
+    await cache.del('posts:*');
+    console.log('🗑️ Posts cache invalidated');
+    
     return res.status(200).json({
       message: "Post updated successfully",
       postId: updatedPost.postId,

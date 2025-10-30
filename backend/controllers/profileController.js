@@ -1,19 +1,37 @@
 // controllers/profileController.js
 import { createClient } from "@supabase/supabase-js";
 import supabase from "../database/db.js";
+import { cache } from '../utils/cache.js';
 
 
 // GET profile (unchanged behavior)
 export const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
+    
+    // Check cache first (5 minutes - profile data doesn't change frequently)
+    const cacheKey = `profile:${userId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     const { data: profile, error } = await supabase
       .from("profile")
       .select("*")
       .eq("userId", userId)
       .single();
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ profile });
+    
+    const result = { profile };
+    
+    // Cache for 5 minutes (profile data)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.status(200).json(result);
   } catch (error) {
     console.error("getProfile error:", error);
     return res.status(500).json({ error: error.message });
@@ -83,6 +101,12 @@ export const uploadArt = async (req, res) => {
       .single();
 
     if (insertErr) return res.status(500).json({ error: insertErr.message });
+    
+    // Clear user's artworks cache (both private and public)
+    await cache.del(`userArts:${userId}:*`);
+    await cache.del(`artistArts:${userId}:*`);
+    console.log(`🗑️ Cleared artworks cache for user ${userId} after upload`);
+    
     return res.status(201).json({ message: "Art uploaded", artwork: inserted });
   } catch (err) {
     console.error("uploadArt error:", err);
@@ -213,6 +237,20 @@ export const uploadProfileMedia = async (req, res) => {
         throw insertError;
       }
       
+      // Clear profile cache (both private and public)
+      await cache.del(`profile:${userId}`);
+      await cache.del(`publicProfile:${userId}`);
+      // Clear artist page caches (by username and userId)
+      if (newProfile.username) {
+        await cache.del(`artistProfile:${newProfile.username}`);
+        await cache.del(`artistRole:${newProfile.username}`);
+      }
+      await cache.del(`artistProfile:${userId}`);
+      await cache.del(`artistRole:${userId}`);
+      // Clear artists list cache
+      await cache.del('artists:all');
+      console.log(`🗑️ Profile cache cleared for user ${userId} after create`);
+      
       return res.status(200).json({ message: "Profile created", profile: newProfile, uploaded });
     } else if (updateError) {
       console.error("Profile update error:", updateError);
@@ -220,6 +258,20 @@ export const uploadProfileMedia = async (req, res) => {
     }
   
 
+    // Clear profile cache (both private and public)
+    await cache.del(`profile:${userId}`);
+    await cache.del(`publicProfile:${userId}`);
+    // Clear artist page caches (by username and userId)
+    if (existingProfile.username) {
+      await cache.del(`artistProfile:${existingProfile.username}`);
+      await cache.del(`artistRole:${existingProfile.username}`);
+    }
+    await cache.del(`artistProfile:${userId}`);
+    await cache.del(`artistRole:${userId}`);
+    // Clear artists list cache
+    await cache.del('artists:all');
+    console.log(`🗑️ Profile cache cleared for user ${userId} after update`);
+    
     return res.status(200).json({ message: "Profile updated", profile: existingProfile, uploaded });
   } catch (err) {
     console.error("uploadProfileMedia error:", err);
@@ -434,6 +486,15 @@ export const getArts = async (req, res) => {
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
 
+    // Check cache first (3 minutes - user's artworks)
+    const cacheKey = `userArts:${userId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     // Fetch this user's arts from art table with pagination
     const { data: arts, error } = await supabase
       .from("art")
@@ -510,7 +571,7 @@ export const getArts = async (req, res) => {
     // Calculate pagination info
     const hasMore = formattedArts.length === limitNum;
 
-    return res.status(200).json({
+    const result = {
       success: true,
       artworks: formattedArts,
       arts: formattedArts, // Backward compatibility
@@ -521,7 +582,13 @@ export const getArts = async (req, res) => {
         count: formattedArts.length,
         hasMore
       }
-    });
+    };
+
+    // Cache for 3 minutes (user's artworks)
+    await cache.set(cacheKey, result, 180);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
 
   }catch(error){
     console.error("getArts error:", error);
@@ -553,6 +620,10 @@ export const createComment = async (req, res) => {
     
       if (insertErr) throw insertErr;
 
+      // Clear comments cache for this artwork
+      await cache.del(`comments:art:${artId}:*`);
+      console.log(`🗑️ Cleared comments cache for art ${artId}`);
+
       return res.status(201).json({message: "Comment added",});
 
 
@@ -574,6 +645,15 @@ export const getComments = async (req, res) => {
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
+
+    // Check cache first (3 minutes - comments)
+    const cacheKey = `comments:art:${artId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
 
     // Pull comments for this artwork with pagination
     const { data: rows, error } = await supabase
@@ -627,7 +707,13 @@ export const getComments = async (req, res) => {
     // Check if there are more comments
     const hasMore = rows.length === limitNum;
 
-    return res.status(200).json({ comments, hasMore });
+    const result = { comments, hasMore };
+    
+    // Cache for 3 minutes (comments)
+    await cache.set(cacheKey, result, 180);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getComments error:", err);
     return res.status(500).json({ error: err.message });
@@ -674,6 +760,10 @@ export const deleteComment = async (req, res) => {
       .eq("commentId", commentId);
 
     if (deleteError) throw deleteError;
+
+    // Clear comments cache for this artwork
+    await cache.del(`comments:art:${comment.artId}:*`);
+    console.log(`🗑️ Cleared comments cache for art ${comment.artId}`);
 
     return res.status(200).json({ message: "Comment deleted successfully" });
   } catch (err) {
@@ -731,6 +821,10 @@ export const updateComment = async (req, res) => {
       .select();
 
     if (updateError) throw updateError;
+
+    // Clear comments cache for this artwork
+    await cache.del(`comments:art:${comment.artId}:*`);
+    console.log(`🗑️ Cleared comments cache for art ${comment.artId}`);
 
     return res.status(200).json({ 
       message: "Comment updated successfully",
@@ -795,6 +889,15 @@ export const getReact = async (req, res) => {
       return res.status(400).json({ error: "artId is required" });
     }
 
+    // Check cache first (30 seconds - reactions)
+    const cacheKey = `reactions:art:${artId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     const { data: reactions, error } = await supabase
       .from("react")
       .select("*")
@@ -804,7 +907,13 @@ export const getReact = async (req, res) => {
 
     if (error) throw error;
 
-    return res.status(200).json({ reactions });
+    const result = { reactions };
+    
+    // Cache for 30 seconds (reactions - near real-time)
+    await cache.set(cacheKey, result, 30);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("getReact error:", err);
     return res.status(500).json({ error: err.message });
@@ -842,6 +951,10 @@ export const createReact = async (req, res) => {
 
       if (deleteErr) throw deleteErr;
 
+      // Clear reactions cache for this artwork
+      await cache.del(`reactions:art:${artId}`);
+      console.log(`🗑️ Cleared reactions cache for art ${artId}`);
+
       return res.status(200).json({ message: "Reaction removed", removed: true });
     }
 
@@ -859,6 +972,10 @@ export const createReact = async (req, res) => {
       .single();
 
     if (insertErr) throw insertErr;
+
+    // Clear reactions cache for this artwork
+    await cache.del(`reactions:art:${artId}`);
+    console.log(`🗑️ Cleared reactions cache for art ${artId}`);
 
     return res.status(201).json({
       message: "Reaction added",
@@ -881,6 +998,15 @@ export const getUserProfile = async (req, res) => {
       return res.status(400).json({ error: "userId is required" });
     }
 
+    // Check cache first (5 minutes - public profile data)
+    const cacheKey = `publicProfile:${userId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     const { data: profile, error } = await supabase
       .from("profile")
       .select("userId, firstName, middleName, lastName, profilePicture")
@@ -895,7 +1021,13 @@ export const getUserProfile = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json({ profile });
+    const result = { profile };
+    
+    // Cache for 5 minutes (public profile data)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   } catch (error) {
     console.error("getUserProfile error:", error);
     return res.status(500).json({ error: error.message });
@@ -931,6 +1063,15 @@ export const getUserArts = async (req, res) => {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
+
+    // Check cache first (3 minutes - artist's public artworks)
+    const cacheKey = `artistArts:${actualUserId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
 
     // Fetch specific user's arts from art table with pagination
     const { data: arts, error } = await supabase
@@ -1005,7 +1146,7 @@ export const getUserArts = async (req, res) => {
       console.warn("getUserArts - Count error:", countError);
     }
 
-    return res.status(200).json({
+    const result = {
       success: true,
       artworks: formattedArts,
       arts: formattedArts,
@@ -1016,7 +1157,13 @@ export const getUserArts = async (req, res) => {
         count: formattedArts.length,
         hasMore: formattedArts.length === limitNum
       }
-    });
+    };
+
+    // Cache for 3 minutes (artist's public artworks)
+    await cache.set(cacheKey, result, 180);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error("getUserArts error:", error);
@@ -1260,6 +1407,11 @@ export const updateArt = async (req, res) => {
       return res.status(500).json({ error: 'Failed to update artwork' });
     }
 
+    // Clear user's artworks cache (both private and public)
+    await cache.del(`userArts:${userId}:*`);
+    await cache.del(`artistArts:${userId}:*`);
+    console.log(`🗑️ Cleared artworks cache for user ${userId} after update`);
+    
     res.json({ success: true, artwork: data });
   } catch (err) {
     console.error('Update artwork error:', err);
@@ -1386,6 +1538,11 @@ export const deleteArt = async (req, res) => {
       return res.status(500).json({ error: 'Failed to delete artwork' });
     }
 
+    // Clear user's artworks cache (both private and public)
+    await cache.del(`userArts:${userId}:*`);
+    await cache.del(`artistArts:${userId}:*`);
+    console.log(`🗑️ Cleared artworks cache for user ${userId} after delete`);
+    
     res.json({ success: true, message: 'Artwork deleted successfully' });
   } catch (err) {
     console.error('Delete artwork error:', err);

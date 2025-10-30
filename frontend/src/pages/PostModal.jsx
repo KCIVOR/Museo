@@ -135,18 +135,21 @@ export default function PostModal({
       setLoadingComments(true);
       setCommentErr(null);
       try {
+        console.log('🔍 Fetching comments for post:', post.id);
         const res = await fetch(
           `${API}/homepage/getComments?postId=${post.id}&page=1&limit=10`,
           { credentials: "include" }
         );
         if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
         const data = await res.json();
+        console.log('📦 Received comments:', data);
         if (!abort) {
           setComments(data.comments || []);
           setCommentPage(1);
           setHasMoreComments(data.hasMore || false);
         }
       } catch (e) {
+        console.error('❌ Error loading comments:', e);
         if (!abort) setCommentErr(e.message);
       } finally {
         if (!abort) setLoadingComments(false);
@@ -311,8 +314,11 @@ export default function PostModal({
           setComments(data.comments || []);
           setCommentPage(1);
           setHasMoreComments(data.hasMore || false);
+        } else {
+          console.error('Failed to refetch comments:', res.status);
         }
       } catch (reconcileError) {
+        console.error('Reconcile error:', reconcileError);
         // Keep the optimistic update even if reconciliation fails
       }
     } catch (e2) {

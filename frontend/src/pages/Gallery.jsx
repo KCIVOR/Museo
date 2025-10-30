@@ -322,32 +322,35 @@ export default function Gallery() {
       const data = await response.json();
       
       if (data.success && data.topArts) {
-        // Check if we need to fetch more artworks
-        const missingArtworkIds = data.topArts
+        // Find which artworks are missing
+        const missingIds = data.topArts
           .map(topArt => topArt.galleryArtId)
           .filter(id => !artworks.find(art => art.id === id));
         
         let allArtworks = [...artworks];
         
-        // If some artworks are missing, fetch all artworks from API
-        if (missingArtworkIds.length > 0) {
+        // Fetch missing artworks if needed
+        if (missingIds.length > 0) {
           try {
-            const artworkResponse = await fetch(`${API}/gallery/artworks?limit=100`, {
+            // Fetch only what we need: top 6 + buffer = 20 artworks
+            const artworkResponse = await fetch(`${API}/gallery/artworks?limit=20&categories=all`, {
               method: 'GET',
               credentials: 'include'
             });
             const artworkData = await artworkResponse.json();
             if (artworkData.success && artworkData.artworks) {
-              allArtworks = artworkData.artworks;
+              // Merge with existing artworks
+              allArtworks = [...artworks, ...artworkData.artworks];
             }
           } catch (error) {
-            console.error('Failed to fetch artworks from API:', error);
+            console.error('Failed to fetch missing artworks:', error);
           }
         }
-
-        // Map the top arts data to include artwork details
+        
+        // Map the top arts data with full artwork details
         const topArtsWithDetails = data.topArts.map(topArt => {
           const artwork = allArtworks.find(art => art.id === topArt.galleryArtId);
+          
           if (artwork) {
             return {
               ...artwork,

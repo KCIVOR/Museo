@@ -1,9 +1,19 @@
 // controllers/artist.js
 import supabase from "../database/db.js";
+import { cache } from '../utils/cache.js';
 
 // GET /api/artist/getArtist
 export const getArtist = async (req, res) => {
   try {
+    // Check cache first
+    const cacheKey = 'artists:all';
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     // 1) Pull artist profiles
     const { data: profs, error } = await supabase
       .from("profile")
@@ -57,7 +67,13 @@ export const getArtist = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ artists });
+    const result = { artists };
+    
+    // Cache the result (5 minutes - artists don't change frequently)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   } catch (err) {
     console.error("Unexpected error:", err);
     return res.status(500).json({ error: "Server error" });
@@ -67,6 +83,16 @@ export const getArtist = async (req, res) => {
 export const getArtistById = async (req, res) => {
   try{
     const { id } = req.params;
+    
+    // Check cache first (5 minutes - artist profile)
+    const cacheKey = `artistProfile:${id}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
     const orFilter = isUuid
       ? `profileId.eq.${id},userId.eq.${id},username.eq.${id}`
@@ -88,7 +114,13 @@ export const getArtistById = async (req, res) => {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    return res.status(200).json({ profile });
+    const result = { profile };
+    
+    // Cache for 5 minutes (artist profile)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   } catch (error) {
     console.error("getProfile error:", error);
     return res.status(500).json({ error: error.message });
@@ -103,6 +135,16 @@ export const getRole = async (req, res) => {
     if (!id) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
+    
+    // Check cache first (5 minutes - user role)
+    const cacheKey = `artistRole:${id}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
     const orFilter = isUuid
       ? `profileId.eq.${id},userId.eq.${id},username.eq.${id}`
@@ -119,10 +161,18 @@ export const getRole = async (req, res) => {
     }
     if (!profile) {
       // Return default role if no profile exists
-      return res.json('user');
+      const result = 'user';
+      await cache.set(cacheKey, result, 300);
+      return res.json(result);
     }
-    console.log('getRole type:', typeof profile.role);
-    res.json(profile.role || 'user');
+    
+    const result = profile.role || 'user';
+    
+    // Cache for 5 minutes (user role)
+    await cache.set(cacheKey, result, 300);
+    console.log('💾 CACHED:', cacheKey);
+    
+    res.json(result);
     
   } catch (err) {
     console.error(err);
@@ -154,6 +204,15 @@ export const getArts = async (req, res) =>{
       return res.status(404).json({ error: 'Profile not found' });
     }
     const targetUserId = prof.userId;
+
+    // Check cache first (3 minutes - artist artworks)
+    const cacheKey = `artistArtworks:${targetUserId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
 
     // Fetch this user's arts (profile page scope)
     const { data: arts, error } = await supabase
@@ -215,7 +274,11 @@ export const getArts = async (req, res) =>{
       datePosted: art.datePosted,
       timestamp: art.datePosted ? new Date(art.datePosted).toLocaleString() : null,
     }));
-    console.log(formattedArts)
+    
+    // Cache for 3 minutes (artist artworks)
+    await cache.set(cacheKey, formattedArts, 180);
+    console.log('💾 CACHED:', cacheKey);
+    
     return res.status(200).json(formattedArts);
 
   }catch(error){

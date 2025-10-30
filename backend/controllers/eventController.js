@@ -1,4 +1,5 @@
 import db from '../database/db.js';
+import { cache } from '../utils/cache.js';
 
 export const getEvents = async (req, res) => {
   try {
@@ -9,6 +10,15 @@ export const getEvents = async (req, res) => {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
+    
+    // Check cache first
+    const cacheKey = `events:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
     
     // Fetch events with pagination
     const { data, error } = await db
@@ -25,7 +35,7 @@ export const getEvents = async (req, res) => {
     // Check if there are more events
     const hasMore = data.length === limitNum;
     
-    return res.status(200).json({ 
+    const result = { 
       data,
       pagination: {
         page: pageNum,
@@ -33,7 +43,13 @@ export const getEvents = async (req, res) => {
         count: data.length,
         hasMore
       }
-    });
+    };
+    
+    // Cache the result (15 minutes - events don't change frequently)
+    await cache.set(cacheKey, result, 900);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.status(200).json(result);
   } catch (err) {
     console.error('getEvents: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
@@ -46,6 +62,15 @@ export const getEventById = async (req, res) => {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: 'Missing event id' });
 
+    // Check cache first (10 minutes - event details don't change frequently)
+    const cacheKey = `event:${id}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     // First try by eventId (uuid used across app)
     let row = await db.from('event').select('*').eq('eventId', id).single();
 
@@ -57,7 +82,14 @@ export const getEventById = async (req, res) => {
     if (row.error || !row.data) {
       return res.status(404).json({ error: 'Event not found' });
     }
-    return res.status(200).json({ event: row.data });
+    
+    const result = { event: row.data };
+    
+    // Cache for 10 minutes (event details)
+    await cache.set(cacheKey, result, 600);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.status(200).json(result);
   } catch (err) {
     console.error('getEventById: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
@@ -189,6 +221,10 @@ export const createEvent = async (req, res) => {
       console.error('createEvent: supabase error:', error);
       return res.status(500).json({ error: 'Failed to create event' });
     }
+
+    // Clear events cache
+    await cache.del('events:*');
+    console.log('🗑️ Events cache invalidated after create');
 
     const notification = {
       type: "event_created",
@@ -351,6 +387,12 @@ export const updateEvent = async (req, res) => {
       .select('*')
       .single();
     if (error) return res.status(500).json({ error: 'Failed to update event' });
+    
+    // Clear events cache and specific event cache
+    await cache.del('events:*');
+    await cache.del(`event:${id}`);
+    console.log('🗑️ Events cache invalidated after update');
+    
     return res.status(200).json({ data });
   } catch (err) {
     console.error('updateEvent: unexpected error:', err);
@@ -364,6 +406,12 @@ export const deleteEvent = async (req, res) => {
     if (!id) return res.status(400).json({ error: 'Missing event id' });
     const { error } = await db.from('event').delete().eq('eventId', id);
     if (error) return res.status(500).json({ error: 'Failed to delete event' });
+    
+    // Clear events list cache (event removed from list) and specific event cache
+    await cache.del('events:*');
+    await cache.del(`event:${id}`);
+    console.log('🗑️ Events cache invalidated after delete');
+    
     return res.status(204).send();
   } catch (err) {
     console.error('deleteEvent: unexpected error:', err);
@@ -411,6 +459,15 @@ export const joinEvent = async (req, res) => {
         console.error('joinEvent: delete failed:', delErr);
         return res.status(500).json({ error: 'Failed to cancel participation' });
       }
+      
+      // Clear participants cache for this event
+      await cache.del(`participants:event:${eventId}`);
+      // Clear user's myEvents cache
+      await cache.del(`myEvents:${userId}`);
+      // Clear user's isJoined cache for this event
+      await cache.del(`isJoined:${userId}:${eventId}`);
+      console.log(`🗑️ Cleared participants, myEvents, and isJoined cache after leave`);
+      
       return res.status(200).json({ ok: true, removed: true });
     }
 
@@ -425,6 +482,15 @@ export const joinEvent = async (req, res) => {
       console.error('joinEvent: insert failed:', error);
       return res.status(500).json({ error: 'Failed to join event', details: error.message || error });
     }
+    
+    // Clear participants cache for this event
+    await cache.del(`participants:event:${eventId}`);
+    // Clear user's myEvents cache
+    await cache.del(`myEvents:${userId}`);
+    // Clear user's isJoined cache for this event
+    await cache.del(`isJoined:${userId}:${eventId}`);
+    console.log(`🗑️ Cleared participants, myEvents, and isJoined cache after join`);
+    
     return res.status(201).json({ ok: true, joined: true, participation: data });
   } catch (err) {
     console.error('joinEvent: unexpected error:', err);
@@ -438,6 +504,16 @@ export const isJoined = async (req, res) => {
     const eventId = req.query?.eventId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     if (!eventId) return res.status(400).json({ error: 'Missing eventId' });
+    
+    // Check cache first (2 minutes - join status changes when user joins/leaves)
+    const cacheKey = `isJoined:${userId}:${eventId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     const { data, error } = await db
       .from('eventParticipant')
       .select('eventParticipantId')
@@ -446,7 +522,14 @@ export const isJoined = async (req, res) => {
       .limit(1);
     if (error) return res.status(500).json({ error: 'Failed to check participation' });
     const joined = Array.isArray(data) && data.length > 0;
-    return res.status(200).json({ ok: true, joined });
+    
+    const result = { ok: true, joined };
+    
+    // Cache for 2 minutes (join status)
+    await cache.set(cacheKey, result, 120);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.status(200).json(result);
   } catch (err) {
     console.error('isJoined: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
@@ -457,6 +540,16 @@ export const myEvents = async (req, res) => {
   try{
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    
+    // Check cache first (2 minutes - user's events don't change frequently)
+    const cacheKey = `myEvents:${userId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+    
     // Get joined event IDs
     const { data: epRows, error: epErr } = await db
       .from('eventParticipant')
@@ -464,14 +557,27 @@ export const myEvents = async (req, res) => {
       .eq('userId', userId);
     if (epErr) return res.status(500).json({ error: 'Failed to fetch events' });
     const ids = (epRows || []).map(r => r.eventId).filter(Boolean);
-    if (ids.length === 0) return res.status(200).json({ ok: true, events: [] });
+    if (ids.length === 0) {
+      const result = { ok: true, events: [] };
+      // Cache empty result too (2 minutes)
+      await cache.set(cacheKey, result, 120);
+      console.log('💾 CACHED (empty):', cacheKey);
+      return res.status(200).json(result);
+    }
     // Fetch full event details
     const { data: events, error: evErr } = await db
       .from('event')
       .select('eventId, title, details, startsAt, endsAt, venueName, venueAddress, image, admission, admissionNote, activities')
       .in('eventId', ids);
     if (evErr) return res.status(500).json({ error: 'Failed to fetch event details' });
-    return res.status(200).json({ ok: true, events });
+    
+    const result = { ok: true, events };
+    
+    // Cache for 2 minutes (user's joined events)
+    await cache.set(cacheKey, result, 120);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.status(200).json(result);
   }catch(err){
     console.error('myEvents: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
@@ -485,6 +591,15 @@ export const eventParticipants = async (req, res) => {
     const eventId = req.body?.eventId;
     if (!eventId) return res.status(400).json({ error: 'Missing eventId' });
 
+    // Check cache first (30 seconds - participants change frequently)
+    const cacheKey = `participants:event:${eventId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ Cache HIT:', cacheKey);
+      return res.status(200).json(cached);
+    }
+    console.log('❌ Cache MISS:', cacheKey);
+
     // 1) Get participant rows for the event (include timestamps)
     const { data: rows, error: partErr } = await db
       .from('eventParticipant')
@@ -493,7 +608,13 @@ export const eventParticipants = async (req, res) => {
     if (partErr) return res.status(500).json({ error: 'Failed to fetch participants' });
 
     const ids = (rows || []).map(r => r.userId).filter(Boolean);
-    if (ids.length === 0) return res.status(200).json({ ok: true, participants: [] });
+    if (ids.length === 0) {
+      const result = { ok: true, participants: [] };
+      // Cache empty result too (2 minutes)
+      await cache.set(cacheKey, result, 120);
+      console.log('💾 CACHED (empty):', cacheKey);
+      return res.status(200).json(result);
+    }
 
     // 2) Fetch profile details for those userIds
     const { data: users, error: profErr } = await db
@@ -510,7 +631,13 @@ export const eventParticipants = async (req, res) => {
       return { ...u, joinedAt };
     });
 
-    return res.status(200).json({ ok: true, participants: merged });
+    const result = { ok: true, participants: merged };
+    
+    // Cache for 2 minutes (participants don't change that frequently)
+    await cache.set(cacheKey, result, 120);
+    console.log('💾 CACHED:', cacheKey);
+
+    return res.status(200).json(result);
   }catch(err){
     console.error('eventParticipants: unexpected error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
@@ -529,6 +656,11 @@ export const removeParticipant = async (req, res) => {
       .eq('eventId', eventId)
       .eq('userId', userId);
     if (error) return res.status(500).json({ error: 'Failed to remove participant' });
+    
+    // Clear participants cache for this event
+    await cache.del(`participants:event:${eventId}`);
+    console.log(`🗑️ Cleared participants cache for event ${eventId} after remove`);
+    
     return res.status(204).send();
   }catch(err){
     console.error('removeParticipant: unexpected error:', err);
