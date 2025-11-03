@@ -3,12 +3,12 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// Admin client (service role) for server-side database operations without RLS
+// SINGLETON: Admin client (service role) for server-side database operations without RLS
+// This should be the ONLY instance used across all controllers!
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 )
-
 
 export function createAuthClient(initialAccessToken) {
   const client = createClient(
@@ -27,4 +27,6 @@ export function createAuthClient(initialAccessToken) {
   return client
 }
 
+// Export as both default and named for compatibility
 export default supabase
+export { supabase }

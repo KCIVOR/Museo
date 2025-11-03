@@ -1,6 +1,17 @@
-/* Import Museo Design System */
-@import './design-system.css';
-@import './styles/buttons.css';
+/* ========================================
+   🎨 MUSEO MODULAR DESIGN SYSTEM
+   Import the new modular architecture
+   ======================================== */
+@import './styles/main.css';
+
+/* ========================================
+   ✅ MIGRATION COMPLETE!
+   Using 100% modular system
+   ======================================== */
+
+/* LEGACY SYSTEM DISABLED - Can re-enable if needed */
+/* @import './design-system.css'; */
+/* @import './styles/buttons.css'; */
 
 /* ========================================
    🎯 GLOBAL RESET & BASE STYLES

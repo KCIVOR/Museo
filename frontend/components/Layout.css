@@ -96,24 +96,53 @@
     "footer footer" !important;
 }
 
+/* Visit Museo layout: full width, no sidebars */
+.app--visit-museo {
+  grid-template-columns: 1fr !important; /* full width main only */
+  grid-template-areas:
+    "header"
+    "main"
+    "footer" !important;
+}
+
 /* Ensure right sidebar is completely hidden on gallery, artist profile, and myProfile pages */
 .app--gallery .app__side-right,
 .app--artist-profile .app__side-right,
-.app--my-profile .app__side-right {
+.app--my-profile .app__side-right,
+.app--visit-museo .app__side-right {
+  display: none !important;
+}
+/* Ensure left sidebar is hidden on visit museo page */
+.app--visit-museo .app__side-left {
   display: none !important;
 }
 
-/* Responsive */
-@media (max-width: 1200px) {
-  .app {
-    grid-template-columns: var(--side-l, 280px) 1fr 0px;
-    grid-template-areas:
-      "header header header"
-      "sideL  main   main"
-      "footer footer footer";
-  }
+/* Full width main content for Visit Museo */
+.app--visit-museo .app__main {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}
 
-  /* Gallery, artist profile, and myProfile layouts remain the same on tablet */
+/* Requests page specific layout - same as Gallery (left sidebar + main, no right sidebar) */
+.app--requests {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important;
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+.app--requests .app__main {
+  padding: 0;
+}
+
+.app--requests .app__side-right {
+  display: none !important;
+}
+
+/* Media queries */
+@media (max-width: 1024px) {
+  /* Tablet layout adjustments */
   .app--gallery,
   .app--artist-profile,
   .app--my-profile {

@@ -1,0 +1,65 @@
+/* ========================================
+   📦 MUSEO CONTAINERS
+   Token-based container system
+   ======================================== */
+
+/* ===== PAGE CONTAINER ===== */
+
+.museo-page {
+  min-height: 100vh;
+  background: var(--museo-bg-primary);
+  padding: var(--museo-space-8);
+}
+
+/* ===== FEED CONTAINER ===== */
+
+.museo-feed {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--museo-space-6);
+}
+
+/* ===== HEADING ===== */
+
+.museo-heading {
+  font-family: var(--museo-font-display);
+  font-size: var(--museo-text-4xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin-bottom: var(--museo-space-8);
+  text-align: center;
+}
+
+/* ===== CONTAINER SIZES ===== */
+
+.museo-container--sm {
+  max-width: 800px;
+}
+
+.museo-container--md {
+  max-width: 1200px;
+}
+
+.museo-container--lg {
+  max-width: 1600px;
+}
+
+.museo-container--full {
+  max-width: 100%;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .museo-page {
+    padding: var(--museo-space-4);
+  }
+  
+  .museo-feed {
+    padding: var(--museo-space-4);
+  }
+  
+  .museo-heading {
+    font-size: var(--museo-text-2xl);
+  }
+}

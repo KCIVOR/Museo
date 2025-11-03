@@ -1,79 +1,26 @@
 /* ========================================
-   🎨 REGISTER ARTIST MODAL - MUSEO THEMED
-   Matches UploadArtModal design patterns
+   🎨 REGISTER ARTIST MODAL
+   Uses global styles from styles/components/ folder
    ======================================== */
 
-/* Use standard modal system from design-system.css */
+/* Note: Modal uses global classes:
+   - .museo-modal-overlay (from styles/components/modals.css)
+   - .museo-modal (from styles/components/modals.css)
+   - .museo-modal--lg (from styles/components/modals.css)
+   - .museo-modal-header (from styles/components/modals.css)
+   - .museo-modal-title (from styles/components/modals.css)
+   - .museo-modal-subtitle (from styles/components/modals.css)
+   - .museo-modal-close (from styles/components/modals.css)
+   - .museo-input, .museo-select, .museo-textarea (from styles/components/inputs.css)
+   - .museo-label, .museo-label--required (from styles/components/inputs.css)
+   - .museo-form-error (from styles/components/inputs.css)
+   - .museo-checkbox (from styles/components/inputs.css)
+   - .btn, .btn-primary, .btn-secondary (from styles/components/buttons.css)
+*/
 
-/* CSS Variables for compatibility */
-:root {
-  --museo-accent: #d4af37;
-  --museo-accent-bg: rgba(212, 175, 55, 0.1);
-  --museo-error-dark: #c82333;
-  --museo-shadow-light: rgba(0, 0, 0, 0.1);
-}
-
-/* Overlay - inherits from museo-modal-overlay */
-.ra-overlay {
-  display: grid;
-  place-items: center;
-  overflow: auto;
-}
-
-/* Modal Container - inherits from museo-modal */
+/* Modal Container - custom width */
 .ra-modal {
   width: min(900px, 95vw);
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  font-family: var(--museo-font-body);
-}
-
-/* Header */
-.ra-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 32px;
-  background: var(--museo-bg-secondary);
-  border-bottom: 2px solid var(--museo-border);
-}
-
-.ra-header-content {
-  flex: 1;
-}
-
-.ra-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: var(--museo-text-primary);
-}
-
-.ra-subtitle {
-  font-size: 14px;
-  margin: 0;
-  color: var(--museo-text-secondary);
-}
-
-.ra-close {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: var(--museo-text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.ra-close:hover {
-  background: var(--museo-bg-hover);
-  color: var(--museo-text-primary);
 }
 
 /* Form */
@@ -103,62 +50,18 @@
 .ra-section-title {
   font-size: 18px;
   font-weight: 600;
-  margin: 0;
   color: var(--museo-text-primary);
   padding-bottom: 8px;
   border-bottom: 2px solid var(--museo-border);
 }
 
+/* Note: Fields use global .museo-label, .museo-input, .museo-select, .museo-textarea, .museo-form-error */
+
 /* Fields */
 .ra-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.ra-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--museo-text-primary);
-  margin: 0;
-}
-
-.ra-input,
-.ra-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 2px solid var(--museo-border);
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: 14px;
-  font-family: inherit;
-  background: var(--museo-white);
-  color: var(--museo-text-primary);
-  transition: all 0.2s ease;
-}
-
-.ra-input:focus,
-.ra-textarea:focus {
-  outline: none;
-  border-color: var(--museo-primary);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-}
-
-.ra-input--error,
-.ra-textarea--error {
-  border-color: var(--museo-error);
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-}
-
-.ra-input::placeholder,
-.ra-textarea::placeholder {
-  color: var(--museo-text-muted);
-}
-
-.ra-textarea {
-  min-height: 80px;
-  resize: vertical;
-  font-family: inherit;
+  gap: 6px;
 }
 
 /* Rows for side-by-side fields */
@@ -168,120 +71,7 @@
   gap: 16px;
 }
 
-/* Error messages */
-.ra-error {
-  font-size: 12px;
-  color: var(--museo-error);
-  margin-top: 4px;
-}
-
-/* Dropzone - Matches UploadArtModal */
-.ra-dropzone {
-  border: 2px dashed var(--museo-border);
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
-  padding: 40px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.ra-dropzone:hover {
-  border-color: var(--museo-primary);
-  background: var(--museo-bg-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--museo-shadow-light);
-}
-
-.ra-dropzone--active {
-  border-color: var(--museo-accent);
-  background: var(--museo-accent-bg);
-  transform: scale(1.02);
-}
-
-.ra-dropzone--has-files {
-  padding: 20px;
-}
-
-.ra-dropzone--error {
-  border-color: var(--museo-error);
-  background: rgba(220, 53, 69, 0.05);
-}
-
-.ra-dropzone-content {
-  position: relative;
-  z-index: 1;
-}
-
-
-.ra-dropzone-text {
-  font-size: 16px;
-  color: var(--museo-text-primary);
-  margin-bottom: 8px;
-}
-
-.ra-dropzone-hint {
-  font-size: 12px;
-  color: var(--museo-text-muted);
-}
-
-.ra-file-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-/* Image Previews - Matches UploadArtModal */
-.ra-image-previews {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.ra-image-preview {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid var(--museo-border);
-  background: var(--museo-white);
-}
-
-.ra-image-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.ra-image-remove {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: var(--museo-error);
-  color: var(--museo-white);
-  border: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.ra-image-remove:hover {
-  background: var(--museo-error-dark);
-  transform: scale(1.1);
-}
+/* Note: Image upload uses global ImageUploadZone component from components/modal-features/ImageUploadZone.jsx */
 
 /* Consent */
 .ra-consent-container {

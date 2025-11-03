@@ -1,6 +1,6 @@
 // controllers/profileController.js
-import { createClient } from "@supabase/supabase-js";
-import supabase from "../database/db.js";
+// ✅ REMOVED: import { createClient } from "@supabase/supabase-js";
+import supabase from "../database/db.js"; // Using singleton instance!
 import { cache } from '../utils/cache.js';
 
 
@@ -51,7 +51,8 @@ export const uploadArt = async (req, res) => {
     if (files.length === 0) return res.status(400).json({ error: "At least one image is required" });
 
     const userId = req.user.id;
-    const svc = serviceClient();
+    // ✅ Using singleton supabase instead of serviceClient
+    const svc = supabase;
 
     // Parse categories
     let parsedCategories;
@@ -115,12 +116,8 @@ export const uploadArt = async (req, res) => {
 };
 
 // Helper: privileged client for Storage uploads (mirrors homepage.js)
-function serviceClient() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY");
-  return createClient(url, key);
-}
+// ✅ REMOVED: serviceClient function - now using singleton
+// Using supabase from import instead of creating new clients
 
 // POST /api/profile/updateProfile
 // Accepts multipart/form-data with optional files: avatar, cover
@@ -134,7 +131,8 @@ export const uploadProfileMedia = async (req, res) => {
     }
     
     const userId = req.user.id;
-    const svc = serviceClient();
+    // ✅ Using singleton supabase instead of serviceClient
+    const svc = supabase;
     const files = req.files || {};
     const uploaded = { avatarUrl: null, coverUrl: null };
 
@@ -1183,16 +1181,13 @@ export const trackView = async (req, res) => {
       return res.status(400).json({ error: "artId is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
+    // Using supabase from import instead
 
     const userId = req.user.id;
 
     // Get current artwork views from art table
-    const { data: artwork, error: fetchError } = await supabaseClient
+    const { data: artwork, error: fetchError } = await supabase
       .from('art')
       .select('views')
       .eq('artId', artId)
@@ -1220,7 +1215,7 @@ export const trackView = async (req, res) => {
     const updatedViews = [...currentViews, userId];
 
     // Update artwork with new views
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await supabase
       .from('art')
       .update({ views: updatedViews })
       .eq('artId', artId);
@@ -1253,13 +1248,10 @@ export const getViews = async (req, res) => {
       return res.status(400).json({ error: "artId is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
+    // Using supabase from import instead
 
-    const { data: artwork, error } = await supabaseClient
+    const { data: artwork, error } = await supabase
       .from('art')
       .select('views')
       .eq('artId', artId)

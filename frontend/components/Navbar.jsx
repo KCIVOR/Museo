@@ -1,13 +1,14 @@
 // src/components/Navbar.jsx
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createPortal } from "react-dom";
-import Message from "../src/pages/subPages/message.jsx";
-import RegisterArtist from "../src/pages/subPages/registerArtist.jsx";
-import TopUpModal from "./topUpModal";
-import NotificationsPopover from "./notificationPopUp";
-import { useRealtimeNotifications } from "./useRealtimeNotifications";
+import { useUser } from "../src/contexts/UserContext";
 import "./Navbar.css";
+import NotificationsPopover from "./notificationPopUp";
+import TopUpModal from "./topUpModal";
+import RegisterArtist from "../src/pages/subPages/registerArtist";
+import Message from "../src/pages/subPages/message";
+import { createPortal } from "react-dom";
+import { useRealtimeNotifications } from "./useRealtimeNotifications";
 const API = import.meta.env.VITE_API_BASE;
 // Professional SVG Icons for Museum Theme
 const SearchIcon = () => (
@@ -57,7 +58,6 @@ const ArtistIcon = () => (
     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
   </svg>
 );
-
 const LogoutIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -68,17 +68,16 @@ const LogoutIcon = () => (
 
 export default function Navbar({ role, userData }) {
   const navigate = useNavigate();
+  const { clearUserData } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [topupOpen, setTopupOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [msgOpen, setMsgOpen] = useState(false);
-  const [registerOpen, setRegisterOpen] = useState(false);
+  const [notifItems, setNotifItems] = useState([])
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [topupOpen, setTopupOpen] = useState(false)
+  const [msgOpen, setMsgOpen] = useState(false)
+  const [registerOpen, setRegisterOpen] = useState(false)
+  const [notifRefreshKey, setNotifRefreshKey] = useState(0) // Force refresh notifications
   const btnRef = useRef(null);
   const menuRef = useRef(null);
-
-  // Notifications state lives here so we can receive while popover is closed
-  const [notifItems, setNotifItems] = useState([]);
-
 
   // Transform server payload -> UI item (kept in Navbar for reuse)
   const toItem = useCallback((n) => {
@@ -104,13 +103,18 @@ export default function Navbar({ role, userData }) {
     };
   }, []);
 
-  // Subscribe to socket notifications globally
-  useRealtimeNotifications(useCallback((payload) => {
-    const next = toItem(payload);
+  // Listen for realtime notifications
+  useRealtimeNotifications(useCallback((n) => {
+    console.log('[Navbar] Received realtime notification:', n);
+    const item = toItem(n);
     setNotifItems((prev) => {
-      if (next.id && prev.some((p) => p.id === next.id)) return prev;
-      return [next, ...prev];
+      // Don't add if already present (by id)
+      if (prev.some((p) => p.id === item.id)) return prev;
+      // Prepend new item and limit to 50
+      return [item, ...prev].slice(0, 50);
     });
+    // Force refresh to update badge count
+    setNotifRefreshKey(k => k + 1);
   }, [toItem]));
 
   const unreadCount = useMemo(
@@ -168,12 +172,26 @@ export default function Navbar({ role, userData }) {
 
   const logOut = async () => {
     try {
-      const res = await fetch(`http://{API}/auth/logout`, { method: "POST", credentials: "include" });
-      if (!res.ok && res.status !== 204) console.error("Logout failed", res.status);
+      console.log('🚪 Navbar: Logging out...');
+      
+      // 1. Call backend logout endpoint
+      const res = await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+      if (!res.ok && res.status !== 204) {
+        console.error("❌ Navbar: Logout failed", res.status);
+      } else {
+        console.log('✅ Navbar: Backend logout successful');
+      }
+      
+      // 2. Clear UserContext
+      console.log('🧹 Navbar: Clearing UserContext...');
+      clearUserData();
+      console.log('✅ Navbar: UserContext cleared');
+      
     } catch (e) {
-      console.error("Logout error", e);
+      console.error("❌ Navbar: Logout error", e);
     } finally {
       setMenuOpen(false);
+      console.log('🚪 Navbar: Redirecting to login...');
       navigate("/");
     }
   };
@@ -209,6 +227,20 @@ export default function Navbar({ role, userData }) {
               <path d="m21 21-4.35-4.35"/>
             </svg>
             <span>Search</span>
+          </button>
+
+          {/* Visit Museo button */}
+          <button
+            type="button"
+            className="nav-btn nav-btn-visit"
+            aria-label="Visit Museo"
+            onClick={() => navigate("/visit-museo")}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Visit Museo</span>
           </button>
 
           {/* Coins */}
@@ -250,7 +282,7 @@ export default function Navbar({ role, userData }) {
                     fontSize: '0', // Hide any text
                     minWidth: '8px',
                     border: 'none', // Remove border
-                    background: '#dc2626', // Solid red background
+                    background: 'var(--museo-error)', // Solid red background
                     boxShadow: 'none' // Remove shadow
                   }}
                 >
@@ -259,6 +291,7 @@ export default function Navbar({ role, userData }) {
             </button>
             {notifOpen && (
               <NotificationsPopover
+                key={notifRefreshKey} // Force refresh when new notification arrives
                 onClose={() => setNotifOpen(false)}
                 items={notifItems}
                 setItems={setNotifItems}
@@ -288,13 +321,13 @@ export default function Navbar({ role, userData }) {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-controls="profile-menu"
-              type="button"
+              title="Profile menu"
               onClick={() => setMenuOpen((v) => !v)}
             >
               <img 
                 className="nav-btn-avatar-img" 
-                src={userData.avatar || import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png"} 
-                alt={userData.fullName || userData.username || "User Avatar"}
+                src={userData?.avatar || import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png"} 
+                alt={userData?.fullName || userData?.username || "User Avatar"}
                 onError={(e) => {
                   const fallbackUrl = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
                   // First fallback to default avatar from env
@@ -315,92 +348,27 @@ export default function Navbar({ role, userData }) {
                 className="dropdown-menu profile-dropdown"
                 role="menu" 
                 aria-label="Profile options"
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 12px)',
-                  right: '0',
-                  minWidth: '220px',
-                  background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-                  border: '2px solid #d4b48a',
-                  borderRadius: '16px',
-                  boxShadow: '0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3)',
-                  padding: '16px',
-                  zIndex: 1000,
-                  opacity: 1,
-                  visibility: 'visible',
-                  transform: 'translateY(0) scale(1)',
-                  transition: 'all 0.3s ease',
-                  backdropFilter: 'blur(16px)',
-                  fontFamily: 'Georgia, Times New Roman, serif'
-                }}
               >
                 {/* Dropdown Arrow */}
-                <div style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '20px',
-                  width: '14px',
-                  height: '14px',
-                  background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-                  borderLeft: '2px solid #d4b48a',
-                  borderTop: '2px solid #d4b48a',
-                  transform: 'rotate(45deg)',
-                  zIndex: -1
-                }} />
+                <div className="dropdown-arrow" />
                 
                 {/* Profile Menu Items */}
                 <button 
-                  className="dropdown-item profile-item"
+                  className="dropdown-item"
                   role="menuitem" 
                   onClick={() => goto("/MyProfile")}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#6e4a2e',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    textAlign: 'left',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'Georgia, Times New Roman, serif',
-                    marginBottom: '4px'
-                  }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
-                  <span>{userData.fullName || userData.username || "My Profile"}</span>
+                  <span>{userData?.fullName || userData?.username || "My Profile"}</span>
                 </button>
                 
                 <button 
-                  className="dropdown-item profile-item"
+                  className="dropdown-item"
                   role="menuitem" 
                   onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#6e4a2e',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    textAlign: 'left',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'Georgia, Times New Roman, serif',
-                    marginBottom: '4px'
-                  }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
@@ -411,27 +379,9 @@ export default function Navbar({ role, userData }) {
                 
                 {String(role).trim() === "user" ? (
                   <button
-                    className="dropdown-item profile-item"
+                    className="dropdown-item"
                     role="menuitem"
                     onClick={() => { setRegisterOpen(true); setMenuOpen(false); }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#6e4a2e',
-                      fontSize: '15px',
-                      fontWeight: '500',
-                      textAlign: 'left',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      fontFamily: 'Georgia, Times New Roman, serif',
-                      marginBottom: '4px'
-                    }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -441,34 +391,12 @@ export default function Navbar({ role, userData }) {
                 ) : null}
                 
                 {/* Separator */}
-                <hr style={{
-                  height: '1px',
-                  background: 'linear-gradient(90deg, transparent, #d4b48a, transparent)',
-                  margin: '12px 0',
-                  border: 'none'
-                }} />
+                <hr className="dropdown-separator" />
                 
                 <button 
-                  className="dropdown-item profile-item danger"
+                  className="dropdown-item danger"
                   role="menuitem" 
                   onClick={logOut}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#c4756e',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    textAlign: 'left',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'Georgia, Times New Roman, serif'
-                  }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

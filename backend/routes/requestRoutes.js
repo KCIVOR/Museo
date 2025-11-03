@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { registerAsArtist, getRequest, action, deleteRequest } from "../controllers/requestController.js";
+import { requirePermission } from "../middleware/permission.js";
 import multer from "multer";
 
 const router = Router();
@@ -20,7 +21,7 @@ router.post(
   registerAsArtist
 );
 
-router.get("/getRequest", getRequest)
-router.post("/action", action)
-router.delete("/:id", deleteRequest)
+router.get("/getRequest", requirePermission(['admin']), getRequest)
+router.post("/action", requirePermission(['admin']), action)
+router.delete("/:id", requirePermission(['admin']), deleteRequest)
 export default router;

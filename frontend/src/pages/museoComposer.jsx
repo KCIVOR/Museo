@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./css/museoComposer.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function MuseoComposer({
@@ -145,19 +144,38 @@ export default function MuseoComposer({
   };
 
   return (
-    <form className="mc" onSubmit={handleSubmit} aria-label="Museo post composer">
+    <form 
+      onSubmit={handleSubmit} 
+      aria-label="Museo post composer"
+      style={{
+        display: 'flex',
+        gap: '16px',
+        padding: '20px',
+        background: 'var(--museo-white)',
+        borderRadius: '16px',
+        border: '1px solid var(--museo-border)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+      }}
+    >
       <img
-        className="mc__avatar"
         src={resolveAvatar(meData?.avatar)}
         alt={`${meData?.name || "You"} avatar`}
         referrerPolicy="no-referrer"
         onError={(e) => {
           e.currentTarget.src = FALLBACK_AVATAR;
         }}
+        style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          objectFit: 'cover',
+          flexShrink: 0,
+          border: '2px solid var(--museo-border)'
+        }}
       />
 
-      <div className="mc__body">
-        <div className="mc__inputWrap">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div>
           <textarea
             id="museo-ta"
             ref={taRef}
@@ -167,23 +185,83 @@ export default function MuseoComposer({
             rows={4}
             aria-label="Write post"
             placeholder="Share inspiration, artwork, or a thought…"
+            style={{
+              minHeight: '48px',
+              maxHeight: '200px',
+              resize: 'none'
+            }}
           />
         </div>
 
         {files.length > 0 && (
-          <div className="mc__chips" role="list">
+          <div 
+            role="list"
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }}
+          >
             {files.map((f, i) => (
-              <div className="mc__chip" role="listitem" key={`${f.url}-${i}`}>
+              <div 
+                role="listitem" 
+                key={`${f.url}-${i}`}
+                style={{
+                  position: 'relative',
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  border: '2px solid var(--museo-border)'
+                }}
+              >
                 {f.type === "image" ? (
-                  <img className="mc__thumb" src={f.url} alt={`Attachment ${i + 1}`} />
+                  <img 
+                    src={f.url} 
+                    alt={`Attachment ${i + 1}`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
                 ) : (
-                  <span className="mc__thumb mc__thumb--video">▶</span>
+                  <span 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      height: '100%',
+                      background: 'var(--museo-bg-secondary)',
+                      fontSize: '24px',
+                      color: 'var(--museo-text-muted)'
+                    }}
+                  >
+                    ▶
+                  </span>
                 )}
                 <button
                   type="button"
-                  className="mc__x"
                   aria-label="Remove"
                   onClick={() => removeAt(i)}
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    lineHeight: '1'
+                  }}
                 >
                   ×
                 </button>
@@ -192,12 +270,13 @@ export default function MuseoComposer({
           </div>
         )}
 
-        <div className="mc__bar">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
           <button
             type="button"
             onClick={pickFiles}
             aria-label="Attach image or video"
-            className="btn btn-museo-secondary btn-sm"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -210,7 +289,7 @@ export default function MuseoComposer({
           <button 
             type="submit" 
             disabled={!canPost || isSubmitting}
-            className={`btn btn-museo-secondary btn-sm ${(!canPost || isSubmitting) ? 'disabled' : ''}`}
+            className="btn btn-primary btn-sm"
           >
             {isSubmitting ? 'Posting...' : 'Post'}
           </button>

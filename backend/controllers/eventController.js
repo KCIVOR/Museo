@@ -255,7 +255,8 @@ export const createEvent = async (req, res) => {
         userId: req.user?.id || null, // Who created the event
         recipient: null, // null = send to everyone (global notification)
         readByUsers: [], // Initialize empty array - no one has read it yet
-        // createdAt will be defaulted by DB
+        deletedByUsers: [], // Initialize empty array
+        createdAt: new Date().toISOString() // Explicitly set createdAt
       }
       const { data: notifRow, error: notifErr } = await db
         .from('notification')
@@ -276,8 +277,12 @@ export const createEvent = async (req, res) => {
 
     const io = req.app.get("io")
     if (io) {
-      console.log("[event] emitting notification:", notification)
       io.emit("notification", notification)
+      
+      // Clear notification cache for ALL users
+      // This is intentional for global notifications (events) since everyone needs to see them
+      // Trade-off: All users get cache miss on next request, but ensures immediate visibility
+      await cache.clearPattern('notifications:*');
     } else {
       console.warn("[event] io not available to emit notification")
     }

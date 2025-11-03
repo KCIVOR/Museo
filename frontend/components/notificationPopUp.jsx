@@ -2,15 +2,17 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { socket } from "../lib/socketClient"
-import "./Notifications.css"
+// Notification styles now in src/styles/components/dropdowns.css (imported via main.css)
 
 export default function NotificationsPopover({ onClose, items: itemsProp, setItems: setItemsProp }) {
   const navigate = useNavigate()
   const popRef = useRef(null)
   const [localItems, setLocalItems] = useState([])
   const [allNotifications, setAllNotifications] = useState([]) // Store all notifications
-  const [displayedCount, setDisplayedCount] = useState(10) // How many to show
-  const [loading, setLoading] = useState(false) // Loading state for "View more"
+  const [currentPage, setCurrentPage] = useState(1) // Track current page
+  const [hasMore, setHasMore] = useState(true) // Track if more pages exist
+  const [loading, setLoading] = useState(false) // Loading state for pagination
+  const [error, setError] = useState(null) // Error state
   const items = itemsProp ?? localItems
   const setItems = setItemsProp ?? setLocalItems
 
@@ -29,7 +31,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
         title: `${n.title ?? "Untitled"}`,
         subtitle: n.venueName || "",
         image: image,
-        timestamp: n.startsAt || n.createdAt || new Date().toISOString(),
+        timestamp: n.createdAt || new Date().toISOString(), // Use notification creation time
         href: eventId ? `/event/${eventId}` : null,
         eventId: eventId,
         unread: true,
@@ -55,7 +57,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
           title: n.title || `New event: ${d.title ?? "Untitled"}`,
           subtitle: n.body || d.venueName || "",
           image: img,
-          timestamp: d.startsAt || n.createdAt || new Date().toISOString(),
+          timestamp: n.createdAt || new Date().toISOString(), // Use notification creation time, not event start time
           href: d.eventId ? `/event/${d.eventId}` : null,
           eventId: d.eventId,
           unread: !n.isRead,
@@ -87,53 +89,91 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
     }
   }, [])
 
-  useEffect(() => {
-    let alive = true
-
-    const apply = (updater) => {
-      if (typeof setItemsProp === 'function') setItemsProp(updater)
-      else setItems(updater)
-    }
-
-    async function load() {
-      try {
-        const url = `${import.meta.env.VITE_API_BASE}/notification`
-        const res = await fetch(url, { credentials: "include" })
-        if (!res.ok) return
-        const { notifications } = await res.json()
-        
-        // Filter and sort notifications by date
-        const filtered = (notifications || [])
-          .filter(row => {
-            // Only show notifications from the last 30 days
-            const createdAt = new Date(row.createdAt || row.created_at)
-            const thirtyDaysAgo = new Date()
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-            return createdAt >= thirtyDaysAgo
-          })
-          .sort((a, b) => {
-            // Sort by creation date, newest first
-            const dateA = new Date(a.createdAt || a.created_at || 0)
-            const dateB = new Date(b.createdAt || b.created_at || 0)
-            return dateB - dateA
-          })
-        
-        const mapped = filtered.map((row) => {
-          const it = toItem(row)
-          return { ...it, unread: !row.isRead } 
+  // Load notifications from API with pagination
+  const loadNotifications = useCallback(async (page = 1) => {
+    try {
+      setLoading(true)
+      setError(null) // Clear any previous errors
+      
+      // Add timestamp to bypass any browser cache
+      const timestamp = Date.now()
+      const url = `${import.meta.env.VITE_API_BASE}/notification?page=${page}&limit=10&t=${timestamp}`
+      const res = await fetch(url, { 
+        credentials: "include",
+        cache: "no-cache" // Force fresh fetch
+      })
+      
+      if (!res.ok) {
+        throw new Error(`Failed to load notifications: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json()
+      const { notifications, hasMore: morePages } = data
+      
+      // Filter notifications from the last 30 days
+      const filtered = (notifications || []).filter(row => {
+        const createdAt = new Date(row.createdAt || row.created_at || row.created || Date.now())
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        return createdAt >= thirtyDaysAgo
+      })
+      
+      const mapped = filtered.map((row) => {
+        const it = toItem(row)
+        return { ...it, unread: !row.isRead } 
+      })
+      
+      if (page === 1) {
+        // First page - replace all notifications
+        setAllNotifications(mapped)
+        setItems(mapped)
+      } else {
+        // Subsequent pages - append to existing with deduplication
+        setAllNotifications(prev => {
+          const existingIds = new Set(prev.map(n => n.id))
+          // Filter out any notifications that already exist
+          const newNotifications = mapped.filter(n => !existingIds.has(n.id))
+          return [...prev, ...newNotifications]
         })
-        
-        if (!alive) return
-        setAllNotifications(mapped) // Store all notifications
-        apply(() => mapped.slice(0, displayedCount)) // Show only first 10
-      } catch (_) {}
+        setItems(prev => {
+          const existingIds = new Set(prev.map(n => n.id))
+          const newNotifications = mapped.filter(n => !existingIds.has(n.id))
+          return [...prev, ...newNotifications]
+        })
+      }
+      
+      setHasMore(morePages)
+      setCurrentPage(page)
+    } catch (err) {
+      console.error('Failed to load notifications:', err)
+      setError(err.message || 'Failed to load notifications')
+      // If it's the first page, clear notifications on error
+      if (page === 1) {
+        setAllNotifications([])
+        setItems([])
+      }
+    } finally {
+      setLoading(false)
     }
-    load()
-    return () => { alive = false }
-  }, []) // Only run once when component mounts
+  }, [toItem, setItems])
 
-  // Socket notifications are now handled by ToastNotification component
-  // This dropdown only shows persistent database notifications
+  useEffect(() => {
+    loadNotifications(1) // Load first page on mount
+  }, [loadNotifications])
+  
+  // Listen for socket notifications to refresh the list
+  useEffect(() => {
+    const handleNewNotification = (payload) => {
+      // Add a delay to ensure the notification is saved to DB before we fetch
+      // Using 1.5 seconds to be safer under heavy load
+      setTimeout(() => {
+        loadNotifications(1) // Refresh from first page
+      }, 1500) // 1.5 second delay to ensure DB write completes
+    }
+    
+    socket.on('notification', handleNewNotification)
+    return () => socket.off('notification', handleNewNotification)
+  }, [loadNotifications])
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose?.()
@@ -148,35 +188,16 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
 
   const unreadCount = useMemo(() => allNotifications.reduce((acc, it) => acc + (it.unread ? 1 : 0), 0), [allNotifications])
   
-  // Function to load more notifications (for infinite scroll)
-  const loadMore = () => {
-    if (loading || !hasMore) return
-    
-    setLoading(true)
-    setTimeout(() => {
-      const newCount = displayedCount + 10
-      setDisplayedCount(newCount)
-      const apply = (updater) => {
-        if (typeof setItemsProp === 'function') setItemsProp(updater)
-        else setItems(updater)
-      }
-      apply(() => allNotifications.slice(0, newCount))
-      setLoading(false)
-    }, 300) // Small delay for better UX
-  }
-  
-  // Check if there are more notifications to load
-  const hasMore = allNotifications.length > displayedCount
-  
-  // Infinite scroll handler
+  // Infinite scroll handler - loads next page from API
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target
     const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50 // 50px threshold
     
     if (isNearBottom && hasMore && !loading) {
-      loadMore()
+      loadNotifications(currentPage + 1) // Load next page from API
     }
   }
+  
   // Mark all notifications as read (sync with backend)
   const markAllRead = async () => {
     try {
@@ -258,57 +279,13 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
       role="dialog" 
       aria-label="Notifications" 
       tabIndex={-1}
-      style={{
-        position: 'absolute',
-        top: 'calc(100% + 12px)',
-        right: '0',
-        minWidth: '380px',
-        maxWidth: '420px',
-        background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-        border: '2px solid #d4b48a',
-        borderRadius: '16px',
-        boxShadow: '0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 16px rgba(212, 180, 138, 0.3)',
-        padding: '0',
-        zIndex: 1000,
-        opacity: 1,
-        visibility: 'visible',
-        transform: 'translateY(0) scale(1)',
-        transition: 'all 0.3s ease',
-        backdropFilter: 'blur(16px)',
-        fontFamily: 'Georgia, Times New Roman, serif',
-        maxHeight: '480px',
-        overflow: 'hidden'
-      }}
     >
       {/* Dropdown Arrow */}
-      <div style={{
-        position: 'absolute',
-        top: '-8px',
-        right: '20px',
-        width: '14px',
-        height: '14px',
-        background: 'linear-gradient(135deg, #faf8f5 0%, #ffffff 100%)',
-        borderLeft: '2px solid #d4b48a',
-        borderTop: '2px solid #d4b48a',
-        transform: 'rotate(45deg)',
-        zIndex: -1
-      }} />
+      <div className="dropdown-arrow" />
       
       {/* Notification Header */}
-      <div style={{
-        padding: '20px 24px 16px',
-        borderBottom: '1px solid rgba(212, 180, 138, 0.3)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <h3 style={{
-          margin: '0',
-          fontSize: '18px',
-          fontWeight: '600',
-          color: '#6e4a2e',
-          fontFamily: 'Georgia, Times New Roman, serif'
-        }}>Notifications</h3>
+      <div className="notification-header">
+        <h3>Notifications</h3>
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           {unreadCount > 0 && (
             <button 
@@ -316,7 +293,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#8b6f47',
+                color: 'var(--museo-text-muted)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 padding: '4px 8px',
@@ -335,16 +312,45 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
       
       {/* Notification Items */}
       <div 
-        style={{maxHeight: '360px', overflowY: 'auto', padding: '8px 0'}}
+        className="notification-list"
         onScroll={handleScroll}
       >
-        {items.length === 0 ? (
-          <div style={{
-            padding: '40px 24px',
+        {error ? (
+          <div className="notification-error" style={{
+            padding: '20px',
             textAlign: 'center',
-            color: '#9c8668',
-            fontStyle: 'italic'
+            color: 'var(--museo-error)',
+            fontSize: '14px',
+            fontFamily: 'Georgia, Times New Roman, serif'
           }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '8px' }}>
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div>{error}</div>
+            <button 
+              onClick={() => {
+                setError(null);
+                loadNotifications(1);
+              }}
+              style={{
+                marginTop: '12px',
+                padding: '6px 12px',
+                background: 'var(--museo-accent)',
+                color: 'var(--museo-white)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontFamily: 'Georgia, Times New Roman, serif'
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="notification-empty">
             No notifications yet
           </div>
         ) : (
@@ -352,7 +358,7 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
             {items.map((n) => (
               <div
               key={n.id}
-              className="notification-item"
+              className={`notification-item ${n.unread ? 'unread' : ''}`}
               role="button"
               tabIndex={0}
               onClick={() => {
@@ -372,112 +378,49 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
                   }
                 }
               }}
-              style={{
-                padding: '16px 24px',
-                borderLeft: n.unread ? '3px solid #d4b48a' : '3px solid transparent',
-                background: n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)' : 'transparent',
-                cursor: n.eventId ? 'pointer' : 'default',
-                transition: 'all 0.3s ease',
-                position: 'relative'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)' : 'rgba(212, 180, 138, 0.05)'}
-              onMouseOut={(e) => e.currentTarget.style.background = n.unread ? 'linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.02) 100%)' : 'transparent'}
             >
-              <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+              <div className="notification-content">
                 {/* Avatar/Image */}
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7c9885 0%, #5a7c65 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: '0',
-                  overflow: 'hidden'
-                }}>
+                <div className="notification-avatar">
                   {n.image ? (
                     <img
                       src={n.image}
                       alt=""
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
                       loading="lazy"
                       onError={(e) => { 
                         e.currentTarget.style.display = 'none';
                         const parent = e.currentTarget.parentElement;
-                        parent.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+                        parent.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--museo-white)" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
                       }}
                     />
                   ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faf8f5" strokeWidth="2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--museo-white)" strokeWidth="2">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                   )}
                 </div>
                 
                 {/* Content */}
-                <div style={{flex: '1', minWidth: '0'}}>
-                  <h4 style={{
-                    margin: '0 0 4px 0',
-                    fontSize: '15px',
-                    fontWeight: n.unread ? '600' : '500',
-                    color: n.unread ? '#6e4a2e' : '#8b6f47',
-                    lineHeight: '1.3'
-                  }}>{n.title}</h4>
+                <div className="notification-body">
+                  <h4 className="notification-title">{n.title}</h4>
                   {n.subtitle && (
-                    <p style={{
-                      margin: '0 0 6px 0',
-                      fontSize: '14px',
-                      color: n.unread ? '#8b6f47' : '#9c8668',
-                      lineHeight: '1.4'
-                    }}>{n.subtitle}</p>
+                    <p className="notification-subtitle">{n.subtitle}</p>
                   )}
-                  <span style={{
-                    fontSize: '12px',
-                    color: n.unread ? '#9c8668' : '#b8a688',
-                    fontStyle: 'italic'
-                  }}>{timeAgo(n.timestamp)}</span>
+                  <span className="notification-time">{timeAgo(n.timestamp)}</span>
                 </div>
                 
                 {/* Right column with unread dot and X button */}
-                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'}}>
+                <div className="notification-actions">
                   {n.unread && (
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#d4b48a',
-                      flexShrink: '0'
-                    }} />
+                    <div className="notification-dot" />
                   )}
                   <button
+                    className="notification-remove"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       removeItem(n.id, n.notificationId);
                     }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#9c8668',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      padding: '2px',
-                      borderRadius: '4px',
-                      transition: 'all 0.3s ease',
-                      width: '20px',
-                      height: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: '0'
-                    }}
-                    onMouseOver={(e) => {e.target.style.background = 'rgba(196, 117, 110, 0.1)'; e.target.style.color = '#c4756e'}}
-                    onMouseOut={(e) => {e.target.style.background = 'none'; e.target.style.color = '#9c8668'}}
                     aria-label="Remove notification"
                   >
                     ✕
@@ -489,28 +432,9 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
             
             {/* Loading indicator at bottom when scrolling */}
             {loading && hasMore && (
-              <div style={{
-                padding: '16px 24px',
-                textAlign: 'center',
-                borderTop: '1px solid rgba(212, 180, 138, 0.1)'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  color: '#9c8668',
-                  fontSize: '14px',
-                  fontFamily: 'Georgia, Times New Roman, serif'
-                }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    border: '2px solid #d4b48a',
-                    borderTop: '2px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
+              <div className="notification-loading">
+                <div className="notification-loading-content">
+                  <div className="notification-spinner" />
                   Loading more notifications...
                 </div>
               </div>

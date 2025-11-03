@@ -1,0 +1,351 @@
+/* ========================================
+   🎭 EVENT MODAL COMPONENT
+   Clean, modern modal design for events
+   
+   This module provides dedicated styling for EventModal
+   using a fresh, clean approach without legacy code.
+   ======================================== */
+
+/* ===== BASE MODAL CONTAINER ===== */
+.event-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--museo-z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--museo-space-5);
+  background: var(--museo-overlay);
+  backdrop-filter: blur(4px);
+  animation: fadeIn var(--museo-duration-base) var(--museo-ease-out);
+}
+
+/* ===== MODAL DIALOG ===== */
+.event-modal__dialog {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+  max-height: 90vh;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  border: none;
+  border-radius: var(--museo-radius-md);
+  box-shadow: var(--museo-shadow-2xl), var(--museo-overlay-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp var(--museo-duration-slow) var(--museo-ease-out);
+  z-index: var(--museo-z-modal);
+}
+
+/* ===== MODAL HEADER WITH HERO ===== */
+.event-modal__hero {
+  position: relative;
+  height: 300px;
+  background: linear-gradient(135deg, var(--museo-primary-dark) 0%, var(--museo-primary) 100%);
+  overflow: hidden;
+}
+
+.event-modal__hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.event-modal__hero-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 150px;
+  background: linear-gradient(to top, 
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: var(--museo-space-6) var(--museo-space-8);
+}
+
+.event-modal__badges {
+  display: flex;
+  gap: var(--museo-space-3);
+  flex-wrap: wrap;
+}
+
+/* Uses existing museo-badge from badges.css */
+
+/* ===== CLOSE BUTTON ===== */
+.event-modal__close {
+  position: absolute;
+  top: var(--museo-space-3);
+  right: var(--museo-space-3);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--museo-radius-md);
+  border: var(--museo-border-1) solid var(--museo-border);
+  background: var(--museo-white);
+  color: var(--museo-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  font-size: var(--museo-text-lg);
+  line-height: 1;
+  z-index: 100;
+  box-shadow: var(--museo-shadow-sm);
+}
+
+.event-modal__close:hover {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-error);
+  color: var(--museo-error);
+}
+
+/* ===== MODAL CONTENT ===== */
+.event-modal__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--museo-space-8);
+  background: var(--museo-bg-primary);
+}
+
+/* Title Section */
+.event-modal__title-section {
+  margin-bottom: var(--museo-space-8);
+  padding-bottom: var(--museo-space-6);
+  border-bottom: var(--museo-border-4) solid var(--museo-accent);
+}
+
+.event-modal__title {
+  font-size: var(--museo-text-3xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-2) 0;
+  line-height: var(--museo-leading-tight);
+  font-family: var(--museo-font-body);
+}
+
+.event-modal__subtitle {
+  font-size: var(--museo-text-lg);
+  color: var(--museo-text-secondary);
+  margin: 0;
+  font-family: var(--museo-font-body);
+}
+
+/* Content Grid */
+.event-modal__grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--museo-space-8);
+  margin-bottom: var(--museo-space-6);
+}
+
+.event-modal__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-6);
+}
+
+.event-modal__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-5);
+}
+
+/* Content Sections */
+.event-modal__section {
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
+  padding: var(--museo-space-6);
+  border-radius: var(--museo-radius-md);
+  border: var(--museo-border-2) solid var(--museo-accent);
+  box-shadow: var(--museo-shadow-md);
+}
+
+.event-modal__section-title {
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-3) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  font-family: var(--museo-font-body);
+  text-transform: uppercase;
+  letter-spacing: var(--museo-tracking-wide);
+}
+
+.event-modal__section-content {
+  font-size: var(--museo-text-base);
+  line-height: var(--museo-leading-relaxed);
+  color: var(--museo-text-secondary);
+  font-family: var(--museo-font-body);
+}
+
+/* Activities List Container */
+.event-modal__activities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--museo-space-2);
+  margin-top: var(--museo-space-3);
+}
+
+/* Uses museo-badge museo-badge--sm from badges.css */
+
+/* Info Cards */
+.event-modal__info-card {
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  padding: var(--museo-space-5);
+  border-radius: var(--museo-radius-md);
+  border: var(--museo-border-4) solid var(--museo-accent);
+  box-shadow: var(--museo-shadow-lg);
+}
+
+.event-modal__info-label {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-2) 0;
+  text-transform: uppercase;
+  letter-spacing: var(--museo-tracking-wider);
+  font-weight: var(--museo-font-bold);
+  border-bottom: var(--museo-border-2) solid var(--museo-accent);
+  padding-bottom: var(--museo-space-2);
+}
+
+.event-modal__info-value {
+  font-size: var(--museo-text-base);
+  color: var(--museo-text-secondary);
+  margin: 0;
+  font-weight: var(--museo-font-medium);
+  font-family: var(--museo-font-body);
+}
+
+/* Action Buttons Container */
+.event-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-3);
+  margin-top: var(--museo-space-6);
+}
+
+/* Uses existing btn classes from buttons.css */
+
+/* ===== PARTICIPANTS MODAL ===== */
+.event-modal__participants {
+  max-width: 680px;
+  width: 90vw;
+}
+
+.event-modal__participants-header {
+  background: linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-accent) 100%);
+  padding: var(--museo-space-6);
+  color: var(--museo-white);
+  border-bottom: var(--museo-border-4) solid var(--museo-primary-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-modal__participants-title {
+  font-size: var(--museo-text-2xl);
+  font-weight: var(--museo-font-semibold);
+  margin: 0;
+}
+
+.event-modal__participants-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: var(--museo-space-6);
+  background: var(--museo-bg-primary);
+  border-radius: 0 0 var(--museo-radius-base) var(--museo-radius-base);
+}
+
+.event-modal__participant {
+  display: flex;
+  align-items: center;
+  padding: var(--museo-space-4);
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
+  border: var(--museo-border-2) solid var(--museo-accent);
+  border-radius: var(--museo-radius-md);
+  margin-bottom: var(--museo-space-3);
+  box-shadow: var(--museo-shadow-md);
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.event-modal__participant:hover {
+  border-color: var(--museo-primary);
+  box-shadow: var(--museo-shadow-xl);
+  transform: translateY(-2px);
+}
+
+.event-modal__participant-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--museo-radius-full);
+  object-fit: cover;
+  margin-right: var(--museo-space-4);
+  border: var(--museo-border-2) solid var(--museo-accent);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+.event-modal__participant-info {
+  flex: 1;
+}
+
+.event-modal__participant-name {
+  font-size: var(--museo-text-base);
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-1) 0;
+  font-family: var(--museo-font-body);
+}
+
+.event-modal__participant-username {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-muted);
+  margin: 0;
+  font-family: var(--museo-font-body);
+  font-style: italic;
+}
+
+.event-modal__participant-joined {
+  font-size: var(--museo-text-xs);
+  color: var(--museo-text-muted);
+  margin-right: var(--museo-space-3);
+  font-family: var(--museo-font-body);
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  padding: var(--museo-space-2) var(--museo-space-3);
+  border-radius: var(--museo-radius-base);
+  border: var(--museo-border-1) solid var(--museo-accent);
+}
+
+/* Uses existing btn-danger btn-sm from buttons.css */
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .event-modal__dialog {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+  
+  .event-modal__hero {
+    height: 200px;
+  }
+  
+  .event-modal__grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .event-modal__title {
+    font-size: var(--museo-text-2xl);
+  }
+  
+  .event-modal__content {
+    padding: var(--museo-space-5);
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+/* Uses fadeIn and modalSlideUp from animations.css */

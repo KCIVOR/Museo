@@ -141,7 +141,7 @@ export default function ArtistProfile() {
 
   return (
     <div className="museo-page">
-      <div className="museo-feed" style={{ gap: '24px' }}>
+      <div className="museo-feed mp__feed">
         {/* Loading State */}
         <MuseoLoadingBox 
           show={isFetching} 
@@ -151,218 +151,93 @@ export default function ArtistProfile() {
         {/* Artist Profile Card */}
         {!isFetching && (
         <>
-        <div className="museo-card museo-card--artist" style={{ position: 'relative', overflow: 'hidden', padding: '0', marginBottom: '24px' }}>
+        <div className="museo-card mp__profile-card" style={{ marginBottom: '24px' }}>
           {/* Cover Image */}
-          <div style={{
-            position: 'relative',
-            height: '200px',
-            background: `linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%)`,
-            backgroundImage: `url(${cover || FALLBACK_COVER})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            borderRadius: '16px 16px 0 0',
-            margin: '0',
-            width: '100%'
+          <div className="mp__cover" style={{
+            backgroundImage: cover ? `url(${cover})` : `linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%), url(${FALLBACK_COVER})`
           }}>
             {/* Overlay for better text readability */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%)',
-              borderRadius: '16px 16px 0 0'
-            }} />
+            <div className="mp__cover-overlay" />
             
             {/* Artist Badge */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              left: '16px',
-              background: 'var(--museo-accent)',
-              color: 'var(--museo-white)',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}>
+            <div className="mp__role-badge">
               {role === 'admin' ? '👑 Admin' : '🎨 Artist'}
             </div>
           </div>
 
           {/* Avatar */}
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            justifyContent: 'center',
-            marginTop: '-60px',
-            marginBottom: '20px',
-            zIndex: 2
-          }}>
+          <div className="mp__avatar-container">
             <img
-              className="museo-avatar"
+              className="museo-avatar mp__avatar"
               src={avatar || FALLBACK_AVATAR}
               alt={`${fullName || "Artist"} avatar`}
-              style={{
-                border: '4px solid var(--museo-white)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-              }}
             />
           </div>
 
-          <div className="museo-body" style={{ textAlign: 'center', padding: '0 24px 24px' }}>
-            <h3 className="museo-title" style={{ 
-              fontSize: '32px', 
-              marginBottom: '8px',
-              color: 'var(--museo-primary)',
-              fontWeight: '800'
-            }}>
+          <div className="museo-body mp__body">
+            <h3 className="museo-title mp__title">
               {fullName || "Unknown Artist"}
             </h3>
             
             {bio && (
-              <p className="museo-desc" style={{
-                fontSize: '18px',
-                fontStyle: 'italic',
-                color: 'var(--museo-text-secondary)',
-                marginBottom: '24px',
-                lineHeight: '1.5',
-                fontWeight: '500'
-              }}>
+              <p className="museo-desc mp__bio">
                 "{bio}"
               </p>
             )}
 
             {/* Artist Stats */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '32px',
-              marginBottom: '24px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'var(--museo-accent)',
-                  marginBottom: '4px'
-                }}>
+            <div className="mp__stats">
+              <div className="mp__stat-item">
+                <div className="mp__stat-number">
                   {arts.length}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'var(--museo-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="mp__stat-label">
                   Artworks
                 </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'var(--museo-accent)',
-                  marginBottom: '4px'
-                }}>
+              <div className="mp__stat-item">
+                <div className="mp__stat-number">
                   {age || '—'}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'var(--museo-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="mp__stat-label">
                   Years Old
                 </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: '700',
-                  color: 'var(--museo-accent)',
-                  marginBottom: '4px'
-                }}>
+              <div className="mp__stat-item">
+                <div className="mp__stat-number">
                   {role === 'admin' ? '👑' : '🎨'}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'var(--museo-text-muted)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <div className="mp__stat-label">
                   {role === 'admin' ? 'Admin' : 'Artist'}
                 </div>
               </div>
             </div>
 
             {/* Profile Details */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-              marginBottom: '20px',
-              textAlign: 'left'
-            }}>
+            <div className="mp__details-grid">
               {sex && (
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'var(--museo-gray-50)',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: 'var(--museo-text-secondary)'
-                }}>
-                  <strong>Gender:</strong> {sex}
+                <div className="mp__detail-item">
+                  <strong className="mp__detail-label">Gender:</strong> {sex}
                 </div>
               )}
               {address && (
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'var(--museo-gray-50)',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: 'var(--museo-text-secondary)'
-                }}>
-                  <strong>Location:</strong> {address}
+                <div className="mp__detail-item">
+                  <strong className="mp__detail-label">Location:</strong> {address}
                 </div>
               )}
               {birthdate && (
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'var(--museo-gray-50)',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: 'var(--museo-text-secondary)'
-                }}>
-                  <strong>Born:</strong> {new Date(birthdate).toLocaleDateString()}
+                <div className="mp__detail-item">
+                  <strong className="mp__detail-label">Born:</strong> {age || '—'} years old ({new Date(birthdate).toLocaleDateString()})
                 </div>
               )}
             </div>
 
             {about && (
-              <div style={{
-                textAlign: 'left',
-                padding: '16px',
-                background: 'var(--museo-cream)',
-                borderRadius: '12px',
-                border: '1px solid var(--museo-gray-200)'
-              }}>
-                <h4 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: 'var(--museo-primary)',
-                  marginBottom: '8px'
-                }}>
+              <div className="mp__about-section">
+                <h4 className="mp__about-heading">
                   About the Artist
                 </h4>
-                <p style={{
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  color: 'var(--museo-text-secondary)',
-                  margin: 0
-                }}>
+                <p className="mp__about-text">
                   {about}
                 </p>
               </div>
@@ -373,7 +248,7 @@ export default function ArtistProfile() {
         {/* Artist's Artwork Gallery */}
         <div className="museo-card">
           <div className="museo-body">
-            <h1 className="museo-heading" style={{ marginBottom: '20px' }}>Artist's Portfolio</h1>
+            <h1 className="museo-heading">Artist's Portfolio</h1>
             <ArtGallery
               enablePagination={true}
               fetchUrl="/api/profile/getUserArts"

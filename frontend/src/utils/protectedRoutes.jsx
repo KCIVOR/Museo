@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 const API = import.meta.env.VITE_API_BASE;
 
 const ProtectedRoutes = () => {
@@ -8,6 +9,13 @@ const ProtectedRoutes = () => {
   const [preferenceStatus, setPreferenceStatus] = useState(null);     
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
+  
+  // Get refreshUserData from UserContext but don't use its state
+  const { refreshUserData } = useUser();
+  const hasRefreshed = useRef(false); // Track if we've refreshed for this SESSION (not per route)
+
+  // DON'T reset hasRefreshed when location changes
+  // This way, UserContext is only populated ONCE per session, not on every route change
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -24,7 +32,21 @@ const ProtectedRoutes = () => {
         }
 
         setIsAuthenticated(true);
-
+        
+        // After successful auth, refresh UserContext data ONCE
+        if (!hasRefreshed.current) {
+          hasRefreshed.current = true;
+          console.log('🔒 ProtectedRoutes: Refreshing UserContext...');
+          try {
+            await refreshUserData(); // Populate UserContext with user data
+            console.log('✅ ProtectedRoutes: UserContext refreshed successfully');
+          } catch (err) {
+            console.error('❌ ProtectedRoutes: Failed to refresh user data:', err);
+            // Don't fail auth check if UserContext refresh fails
+          }
+        } else {
+          console.log('ℹ️ ProtectedRoutes: UserContext already refreshed, skipping...');
+        }
         const statRes = await fetch(`${API}/profile/profileStatus`, {
           method: "GET",
           credentials: "include",
@@ -76,10 +98,22 @@ const ProtectedRoutes = () => {
     };
 
     checkAuth();
-  }, [location.pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // Only re-run when pathname changes, not when refreshUserData changes
 
   // 1) Block until checks complete to avoid rendering child routes early
-  //if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      minHeight: '100vh',
+      fontSize: '18px',
+      color: 'var(--museo-text-secondary)'
+    }}>
+      Loading...
+    </div>
+  );
 
   // 2) Unauthenticated => login
   if (isAuthenticated === false) {

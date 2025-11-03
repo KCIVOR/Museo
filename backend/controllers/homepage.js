@@ -1,6 +1,6 @@
 import multer from "multer";
-import { createClient } from "@supabase/supabase-js";
-import supabase from '../database/db.js';
+// ✅ REMOVED: import { createClient } from "@supabase/supabase-js";
+import supabase from '../database/db.js'; // Using singleton instance!
 import { cache } from '../utils/cache.js';
 import CACHE_DURATION from '../utils/cacheConfig.js';
 
@@ -20,11 +20,8 @@ export const createPost = async (req, res) => {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // Use SERVICE_KEY client (same as authMiddleware)
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY // Use SERVICE_KEY like authMiddleware
-    );
+    // ✅ USING SINGLETON: No new client creation!
+    // Using imported supabase singleton instead
 
     const { description, createdAt } = req.body;
     const files = req.files || {};
@@ -908,16 +905,6 @@ export const deletePost = async (req, res) => {
 // PUT /api/homepage/posts/:postId
 export const updatePost = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "User not authenticated" });
-    }
-
-    // Use SERVICE_KEY client
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
-
     const { postId } = req.params;
     const { description, existingImages, imagesToRemove } = req.body;
     const files = req.files || [];

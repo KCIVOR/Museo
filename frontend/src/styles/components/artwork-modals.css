@@ -1,0 +1,195 @@
+/* ========================================
+   🎨 ARTWORK-TYPE MODAL COMPONENTS
+   Unified sizing for artwork, post, and artist artwork modals
+   
+   This module provides consistent large-format modal sizing
+   for all content that displays artworks with detailed viewing.
+   Follows the modular CSS architecture pattern.
+   ======================================== */
+
+/* ===== ARTWORK MODAL BASE ===== */
+/* Using double class selector for higher specificity than .museo-modal */
+
+.museo-modal.artwork-type-modal {
+  /* Override default museo-modal max-width without !important */
+  max-width: 1280px;
+  width: 95vw;
+  max-height: 90vh;
+  height: auto;
+}
+
+/* Content grid for artwork modals */
+.museo-modal.artwork-type-modal .artwork-modal-content {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  height: 85vh;
+  max-height: 820px;
+  width: 100%;
+}
+
+/* Gallery section */
+.museo-modal.artwork-type-modal .artwork-modal-gallery {
+  background: var(--museo-bg-gallery, #1a0f08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  min-height: 600px;
+}
+
+/* Details section */
+.museo-modal.artwork-type-modal .artwork-modal-details {
+  padding: var(--museo-space-8);
+  overflow-y: auto;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  min-width: 420px;
+}
+
+/* Main image container */
+.museo-modal.artwork-type-modal .artwork-main-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: var(--museo-space-8);
+  padding-bottom: 130px; /* Space for thumbnails */
+  min-height: 500px;
+}
+
+/* Single image adjustment */
+.museo-modal.artwork-type-modal .artwork-main-image.single-image {
+  padding-bottom: var(--museo-space-8);
+}
+
+/* Hidden thumbnails adjustment */
+.museo-modal.artwork-type-modal .artwork-main-image.thumbnails-hidden {
+  padding-bottom: var(--museo-space-8);
+}
+
+/* Artwork image */
+.museo-modal.artwork-type-modal .artwork-image {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: calc(90vh - 200px);
+  min-height: 400px;
+  object-fit: contain;
+  border-radius: var(--museo-radius-lg);
+  box-shadow: 0 20px 60px var(--museo-shadow);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+/* Thumbnails strip */
+.museo-modal.artwork-type-modal .artwork-thumbnails {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: var(--museo-space-3);
+  padding: var(--museo-space-5);
+  background: var(--museo-overlay);
+  overflow-x: auto;
+  min-height: 100px;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+/* Hide thumbnails conditions */
+.museo-modal.artwork-type-modal .artwork-thumbnails.single-image,
+.museo-modal.artwork-type-modal .artwork-thumbnails.hidden {
+  display: none;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Tablet layout */
+@media (max-width: 1024px) {
+  .museo-modal.artwork-type-modal {
+    max-width: 95vw;
+    width: 95vw;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60vh auto;
+    height: auto;
+    max-height: 95vh;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-gallery {
+    min-height: 60vh;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-details {
+    max-height: 35vh;
+    min-width: auto;
+    padding: var(--museo-space-5);
+  }
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+  .museo-modal.artwork-type-modal {
+    width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-content {
+    grid-template-rows: 50vh auto;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-main-image {
+    padding: var(--museo-space-5);
+    padding-bottom: 120px;
+    min-height: 400px;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-main-image.single-image,
+  .museo-modal.artwork-type-modal .artwork-main-image.thumbnails-hidden {
+    padding-bottom: var(--museo-space-5);
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-image {
+    max-height: calc(50vh - 140px);
+    min-height: 300px;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-details {
+    padding: var(--museo-space-5);
+    max-height: 45vh;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .museo-modal.artwork-type-modal .artwork-modal-content {
+    grid-template-rows: 45vh auto;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-gallery {
+    min-height: 45vh;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-main-image {
+    padding: var(--museo-space-4);
+    padding-bottom: 110px;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-main-image.single-image,
+  .museo-modal.artwork-type-modal .artwork-main-image.thumbnails-hidden {
+    padding-bottom: var(--museo-space-4);
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-image {
+    max-height: calc(45vh - 130px);
+    min-height: 250px;
+  }
+  
+  .museo-modal.artwork-type-modal .artwork-modal-details {
+    padding: var(--museo-space-4);
+    max-height: 50vh;
+  }
+}

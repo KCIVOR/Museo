@@ -149,7 +149,7 @@
   justify-content: center;
   color: inherit;
 }
-.side__dot { width: 10px; height: 10px; border-radius: 999px; background: #1f3b74; display: inline-block; }
+.side__dot { width: 10px; height: 10px; border-radius: 999px; background: var(--museo-primary); display: inline-block; }
 
 /* People list - Enhanced with new classic gallery theme */
 .side__people { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -197,12 +197,17 @@
   padding: 16px;
 }
 
-/* Museo Cards */
+/* ========================================
+   Widget styles moved to src/styles/components/widgets.css
+   This file now only contains sidepanel-specific layout
+   ======================================== */
+
+/* Legacy support - keeping for backward compatibility */
 .museo-card { 
-  background: #ffffff !important; 
-  border: 1px solid #e2e8f0 !important; 
+  background: var(--museo-white) !important; 
+  border: 2px solid var(--museo-border) !important; 
   border-radius: 16px; 
-  padding: 16px; 
+  padding: 20px; 
   margin-bottom: 16px; 
   box-shadow: 0 2px 8px rgba(110, 74, 46, 0.08) !important;
   transition: all 0.2s ease-in-out;
@@ -212,7 +217,7 @@
 .museo-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(110, 74, 46, 0.12) !important;
-  border-color: #d4b48a !important;
+  border-color: var(--museo-accent) !important;
 }
 
 .museo-card--clickable {
@@ -220,7 +225,7 @@
 }
 
 .museo-card--clickable:hover {
-  background: #faf9f7 !important;
+  background: var(--museo-bg-secondary) !important;
 }
 
 .museo-card--artwork {
@@ -232,7 +237,7 @@
   font-weight: 700; 
   font-size: 14px; 
   text-transform: uppercase; 
-  color: #6e4a2e !important; 
+  color: var(--museo-primary) !important; 
   text-align: left; 
   display: flex; 
   align-items: center; 
@@ -252,11 +257,11 @@
 /* Museo Typography Classes */
 .museo-title-text {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.8px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #8b7355 !important;
+  color: var(--museo-primary) !important;
   position: relative;
   display: inline-block;
 }
@@ -269,25 +274,25 @@
   transform: translateX(-50%);
   width: 30px;
   height: 2px;
-  background: #d4b48a;
+  background: var(--museo-accent);
   border-radius: 1px;
 }
 
 .museo-view-all {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-weight: 500;
-  font-size: 9px;
-  letter-spacing: 0.6px;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #a0845c !important;
+  color: var(--museo-accent) !important;
   cursor: pointer;
   transition: color 0.2s ease;
-  padding: 3px 6px;
-  border-radius: 3px;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .museo-view-all:hover {
-  color: #6e4a2e !important;
+  color: var(--museo-primary) !important;
   background: rgba(212, 180, 138, 0.1);
 }
 
@@ -306,11 +311,11 @@
 
 .museo-card__caption { 
   font-size: 12px; 
-  color: #8b7355 !important; 
+  color: var(--museo-text-muted) !important; 
   text-align: center; 
   padding: 12px 16px;
   font-weight: 500;
-  background: #faf9f7;
+  background: var(--museo-bg-secondary);
 }
 
 /* Museo Buttons - Removed conflicting styles */
@@ -321,12 +326,12 @@
   grid-template-columns: minmax(48px, 64px) 1fr; 
   gap: 12px; 
   align-items: center;
-  border: 1px solid #e2e8f0 !important; 
+  border: 1px solid var(--museo-border) !important; 
   border-radius: 12px;
   padding: 12px; 
   margin-bottom: 12px;
-  background: #ffffff !important;
-  color: #6e4a2e !important;
+  background: var(--museo-white) !important;
+  color: var(--museo-primary) !important;
   box-shadow: 0 2px 8px rgba(110, 74, 46, 0.08) !important;
   transition: all 0.2s ease-in-out !important;
   cursor: pointer;
@@ -335,18 +340,18 @@
 .side--right .card .event:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 20px rgba(110, 74, 46, 0.12) !important;
-  border-color: #d4b48a !important;
+  border-color: var(--museo-accent) !important;
 }
 
 .event__date {
   display: grid; 
   place-items: center;
-  border: 2px solid #d4b48a !important;
+  border: 2px solid var(--museo-accent) !important;
   border-radius: 12px;
   padding: 8px 4px; 
   min-width: 56px;
-  background: linear-gradient(135deg, #faf9f7 0%, #f8f5f0 100%) !important;
-  color: #6e4a2e !important;
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-white) 100%) !important;
+  color: var(--museo-primary) !important;
   font-weight: 600;
 }
 
@@ -355,13 +360,13 @@
   font-weight: 800; 
   letter-spacing: 0.5px; 
   text-transform: uppercase;
-  color: #d4b48a;
+  color: var(--museo-accent);
 }
 
 .event__day { 
   font-weight: 900; 
   font-size: 18px;
-  color: #6e4a2e;
+  color: var(--museo-primary);
 }
 
 .event__body { 
@@ -374,11 +379,11 @@
   white-space: nowrap; 
   overflow: hidden; 
   text-overflow: ellipsis; 
-  color: #6e4a2e !important;
+  color: var(--museo-primary) !important;
 }
 
 .event__time { 
-  color: #8b7355 !important; 
+  color: var(--museo-text-muted) !important; 
   font-size: 12px;
 }
 
@@ -410,13 +415,13 @@
 
 .museo-event-item {
   display: grid;
-  grid-template-columns: 56px 1fr 16px;
+  grid-template-columns: 60px 1fr 20px;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid #e2e8f0;
+  gap: 14px;
+  padding: 14px;
+  border: 2px solid var(--museo-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--museo-white);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   position: relative;
@@ -425,8 +430,8 @@
 .museo-event-item:hover { 
   transform: translateY(-2px); 
   box-shadow: 0 8px 20px rgba(110, 74, 46, 0.12); 
-  border-color: #d4b48a; 
-  background: #faf9f7;
+  border-color: var(--museo-accent); 
+  background: var(--museo-bg-secondary);
 }
 
 .museo-event-item--loading, 
@@ -435,39 +440,40 @@
   justify-content: center; 
   grid-template-columns: 1fr; 
   text-align: center; 
-  color: #8b7355; 
+  color: var(--museo-text-muted); 
   font-style: italic;
 }
 
 .museo-event-item--error {
-  color: #dc2626;
+  color: var(--museo-error);
 }
 
 .museo-event-date {
   display: grid; 
   place-items: center; 
   min-width: 56px;
-  border: 2px solid #d4b48a; 
+  border: 2px solid var(--museo-accent); 
   border-radius: 12px; 
   padding: 8px 4px; 
-  background: linear-gradient(135deg, #faf9f7 0%, #f8f5f0 100%);
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-white) 100%);
   box-shadow: 0 2px 4px rgba(212, 180, 138, 0.2);
 }
 
 .museo-event-month { 
-  font-size: 11px; 
-  font-weight: 800; 
-  letter-spacing: 0.5px; 
+  font-size: 10px; 
+  font-weight: 700; 
+  letter-spacing: 0.8px; 
   text-transform: uppercase; 
-  color: #d4b48a;
-  opacity: 0.9;
+  color: var(--museo-accent);
+  line-height: 1;
 }
 
 .museo-event-day { 
-  font-weight: 900; 
-  font-size: 18px; 
-  color: #6e4a2e;
+  font-weight: 800; 
+  font-size: 22px; 
+  color: var(--museo-primary);
   line-height: 1;
+  margin-top: 2px;
 }
 
 .museo-event-body { 
@@ -477,36 +483,26 @@
 }
 
 .museo-event-title { 
-  font-weight: 700; 
-  font-size: 14px;
-  letter-spacing: 0.2px; 
+  font-weight: 600; 
+  font-size: 15px;
+  letter-spacing: 0.3px; 
   white-space: nowrap; 
   overflow: hidden; 
   text-overflow: ellipsis;
-  color: #6e4a2e;
+  color: var(--museo-primary);
+  line-height: 1.4;
 }
 
 .museo-event-meta { 
-  color: #8b7355; 
-  font-size: 12px;
+  color: var(--museo-text-muted);
+  font-size: 13px;
   font-weight: 500;
-}
-
-.museo-event-chevron { 
-  color: #d4b48a;
-  font-size: 16px;
-  font-weight: bold;
-  transition: color 0.2s ease;
-}
-
-.museo-event-item:hover .museo-event-chevron { 
-  color: #6e4a2e; 
+  line-height: 1.3;
 }
 
 /* Hide scrollbars for side panels (keep scrollable) */
 .app__side-left,
 .app__side-right { scrollbar-width: none; }
-.app__side-left::-webkit-scrollbar,
 .app__side-right::-webkit-scrollbar { width: 0; height: 0; }
 
 /* 4) Responsive widths using clamp for nicer scaling */
@@ -519,4 +515,71 @@
 @media (max-width: 1200px) { .side--right { display: none; } }
 @media (max-width: 900px)  { .side--left { display: none; } }
 
+/* ===== TOP ARTS SECTION ===== */
+
+.museo-loading-state,
+.museo-empty-state {
+  text-align: center;
+  padding: var(--museo-space-5);
+  color: var(--museo-text-muted);
+}
+
+.museo-artwork-card {
+  padding: var(--museo-space-3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--museo-space-2);
+  position: relative;
+}
+
+.museo-artwork-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.museo-rank-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: var(--museo-white);
+  border-radius: var(--museo-radius-md);
+  padding: var(--museo-space-1) var(--museo-space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--museo-font-bold);
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.museo-artwork-image {
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: var(--museo-radius-base);
+  overflow: hidden;
+  margin-bottom: var(--museo-space-2);
+}
+
+.museo-artwork-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.museo-artwork-title {
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--museo-font-body);
+}
+
 /* end */
+
+

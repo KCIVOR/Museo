@@ -1,6 +1,7 @@
 // src/pages/home.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 import "./css/home.css";
 import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
@@ -126,12 +127,15 @@ function normalizePosts(payload) {
 
 
 export default function Home() {
+  const { userData, refreshUserData } = useUser();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [role, setRole] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  // Get role and currentUser from UserContext
+  const role = userData?.role || null;
+  const currentUser = userData ? { id: userData.id, userId: userData.id } : null;
   const [announcements, setAnnouncements] = useState([]);
+  
 
   // Pagination states (Gallery style)
   const [currentPage, setCurrentPage] = useState(1);
@@ -201,47 +205,6 @@ export default function Home() {
     }
   }; 
 
-  const fetchRole = async () => {
-    try {
-      // Fetch user role
-      const response = await fetch(`${API}/users/role`, {
-        method: "GET",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
-      setRole(data);
-      
-    } catch (error) {
-      console.error("Error fetching role:", error);
-      setRole(null);
-    }
-  };
-
-  // Separate function to fetch current user data
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch(`${API}/users/me`, {
-        method: "GET",
-        credentials: "include",
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        // Extract user ID from the response
-        if (userData.id) {
-          const currentUserData = { 
-            id: userData.id, 
-            userId: userData.id 
-          };
-          setCurrentUser(currentUserData);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching current user:", error);
-      setCurrentUser(null);
-    }
-  };
 
   const handlePopUp = (postId) => {
     const p = posts.find((p) => p.id === postId);
@@ -438,21 +401,30 @@ export default function Home() {
 
   const checkProfile = async () => {
     try {
+      console.log('🏠 Home: Checking profile status...');
       const res = await fetch(`${API}/profile/profileStatus`, {
         method: "GET",
         credentials: "include",
       });
 
       if (!res.ok) {
-        console.warn("Profile status request failed:", res.status, res.statusText);
-        // Fail-open so the user can set up profile
+        // If server error (500), don't show modal - let user continue
+        if (res.status >= 500) {
+          console.error("⚠️ Home: Server error checking profile:", res.status);
+          // Don't show modal on server errors
+          return;
+        }
+        console.warn("⚠️ Home: Profile status request failed:", res.status, res.statusText);
+        // For client errors, show profile modal
         setShowProfileModal(true);
         return;
       }
 
       const data = await res.json();
+      console.log('🏠 Home: Profile status:', data);
       
       if (data.profileStatus === false){
+        console.log('🏠 Home: Profile incomplete, showing modal');
         setShowProfileModal(true);
         return; // Don't check preferences if profile isn't set up yet
       }
@@ -461,8 +433,9 @@ export default function Home() {
       await checkArtPreferences();
 
     } catch (err) {
-      console.error("Error checking profile:", err);
-      setShowProfileModal(true);
+      console.error("❌ Home: Error checking profile:", err);
+      // Don't show modal on network errors - let user continue
+      // setShowProfileModal(true);
     }
   };  //checking profile kung nakapag setup naba or no
 
@@ -504,11 +477,12 @@ export default function Home() {
 
 
   useEffect(() => {
-    checkProfile();
+    // NOTE: ProtectedRoutes already checks and redirects to /Home if profile incomplete
+    // We still need to check here to show the modals when on /Home
+    checkProfile(); 
+    
     setCurrentPage(1); // Reset page counter
     fetchPosts(1, false); // Initial load
-    fetchRole(); // Fetch user role
-    fetchCurrentUser(); // Fetch current user data
   }, []);
   
   // Reset currentPage when posts are cleared (e.g., after delete/edit)
@@ -893,7 +867,6 @@ export default function Home() {
                                 toggleExpanded(item.id);
                               }}
                               className="expandToggle"
-                              style={{ fontSize: '13px' }}
                             >
                               see less
                             </span>
@@ -909,7 +882,6 @@ export default function Home() {
                                 toggleExpanded(item.id);
                               }}
                               className="expandToggle"
-                              style={{ fontSize: '13px' }}
                             >
                               see more
                             </span>
@@ -940,13 +912,6 @@ export default function Home() {
                       e.currentTarget.style.display = "none";
                     }}
                   />
-                  {/* Show indicator if multiple images */}
-                  {Array.isArray(item.image) && item.image.length > 1 && (
-                    <div className="imageIndicator">
-                      <span className="imageIcon">📷</span>
-                      <span>{item.image.length}</span>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -989,59 +954,19 @@ export default function Home() {
 
         {/* Loading more posts indicator */}
         {isLoadingMore && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '40px 20px',
-            color: '#8b6f47',
-            fontSize: '14px',
-            fontStyle: 'italic'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <div style={{
-                width: '20px',
-                height: '20px',
-                border: '2px solid #d4b48a',
-                borderTop: '2px solid #8b6f47',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }}></div>
+          <div className="home__loading-container">
+            <div className="home__loading-content">
+              <div className="home__loading-spinner"></div>
               Loading more posts...
             </div>
           </div>
         )}
 
 
-        {/* End of posts indicator */}
-        {/* Loading more indicator */}
-        {isLoadingMore && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '40px 20px',
-            color: '#8b6f47',
-            fontSize: '14px'
-          }}>
-            Loading more posts...
-          </div>
-        )}
         
         {/* End of feed message */}
         {!hasMore && posts.length > 0 && !loading && !isLoadingMore && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '40px 20px',
-            color: '#8b6f47',
-            fontSize: '14px',
-            fontStyle: 'italic',
+          <div className="home__end-container" style={{
             borderTop: '1px solid rgba(212, 180, 138, 0.2)',
             marginTop: '20px'
           }}>
@@ -1070,9 +995,12 @@ export default function Home() {
       {/* Show profile editor conditionally */}
       <SetProfileModal
         open={showProfileModal}
-        onClose={() => {
+        onClose={async () => {
           setShowProfileModal(false);
-          // Recheck profile status after closing
+          console.log('🏠 Home: Profile modal closed, refreshing UserContext...');
+          // Refresh UserContext to get updated profile data
+          await refreshUserData();
+          // Recheck profile status to see if we need to show interests modal
           checkProfile();
         }}
         initial={null}

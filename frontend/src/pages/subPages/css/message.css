@@ -1,540 +1,464 @@
 /* ========================================
-   💬 MESSAGE MODULE - MUSEO DESIGN SYSTEM
-   Uses design-system variables for consistency
+   💬 MESSAGES - BRAND NEW DESIGN
+   Modern, clean messaging interface
    ======================================== */
 
-/* Page wrapper - Museo Theme */
+/* Uses global museo design system */
+/* - .museo-input, .museo-textarea (inputs.css)
+   - .btn, .btn-primary, .btn-secondary (buttons.css)
+   - MuseoLoadingBox component
+   - All design tokens from styles/tokens/
+*/
+
+/* Page Container */
 .msgPage {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
+  background: var(--museo-bg-primary);
   display: flex;
   justify-content: center;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  align-items: center;
+  font-family: var(--museo-font-body);
 }
 
-/* When rendered inside a modal dialog, remove full-page sizing and background */
-.museo-modal .msgPage {
-  min-height: auto;
-  background: transparent;
-}
-.museo-modal .msgWrap {
-  max-width: min(1400px, 96vw);
-  max-height: calc(94vh - 40px);
+/* ========================================
+   MODAL CONTAINER
+   ======================================== */
+
+/* Message modal - Large, spacious container */
+.museo-modal-overlay .evmDialog:has(.msgPage),
+.museo-modal-overlay .msgDialog {
+  max-width: 1800px;
+  width: min(1800px, 98vw);
+  max-height: 96vh;
   overflow: hidden;
-  min-height: calc(94vh - 40px);
+  padding: 0;
+  border: none;
+  border-radius: 24px;
+  background: var(--museo-white);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
-.museo-modal .msgSide,
-.museo-modal .msgMain,
-.museo-modal .msgBody,
-.museo-modal .msgList { min-height: 0; }
 
-/* Legacy support for old modal class */
+/* Hide close button for message modal */
+.museo-modal-overlay .evmDialog:has(.msgPage) .museo-modal-close,
+.museo-modal-overlay .msgDialog .museo-modal-close,
+.evmDialog .museo-modal-close,
+.msgDialog .museo-modal-close,
+button.evmClose {
+  display: none;
+}
+
+/* Modal content adjustments */
+.msgDialog .msgPage,
 .evmDialog .msgPage {
   min-height: auto;
   background: transparent;
 }
+
+.msgDialog .msgWrap,
 .evmDialog .msgWrap {
-  max-width: min(1400px, 96vw);
-  max-height: calc(94vh - 40px);
+  max-width: 100%;
+  height: calc(96vh - 48px);
   overflow: hidden;
-  min-height: calc(94vh - 40px);
-}
-.evmDialog .msgSide,
-.evmDialog .msgMain,
-.evmDialog .msgBody,
-.evmDialog .msgList { min-height: 0; }
-
-/* Wider content */
-:root {
-  --feed-max: 1440px;
 }
 
-/* Two columns: compact inbox, wide thread */
+/* ========================================
+   MAIN LAYOUT
+   ======================================== */
+
+/* Two-column layout: Sidebar + Chat */
 .msgWrap {
   width: 100%;
-  max-width: 2200px;
+  height: 100%;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 28px;
-  padding: 20px;
-  min-height: calc(100vh - 40px);
+  grid-template-columns: 400px 1fr;
+  gap: 0;
+  overflow: hidden;
 }
 
-/* Sidebar - Museo Theme */
+/* ========================================
+   SIDEBAR - Conversations List
+   ======================================== */
+
 .msgSide {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
-  border: 2px solid var(--museo-accent);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px var(--museo-shadow), 0 2px 8px var(--museo-shadow-light);
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  backdrop-filter: blur(8px);
+  background: var(--museo-bg-secondary);
+  border-right: 1px solid var(--museo-border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
+/* Sidebar Header */
 .msgSideHead {
-  padding: 16px 20px !important;
-  background: var(--museo-bg-primary);
+  padding: 24px 20px;
+  background: var(--museo-white);
   border-bottom: 1px solid var(--museo-border);
-  box-sizing: border-box !important;
 }
 
 h2.msg-title {
-  font-family: 'Georgia', 'Times New Roman', serif !important;
-  font-size: 30px !important;
-  font-weight: 700 !important;
-  color: var(--museo-primary) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  text-align: center !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-  line-height: 1.2 !important;
-  display: block !important;
+  font-family: var(--museo-font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin: 0;
+  text-align: left;
+  letter-spacing: 0.5px;
 }
 
+/* Search Bar */
 .msgSearch {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 16px 20px;
   background: var(--museo-white);
   border-bottom: 1px solid var(--museo-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .msgSearchIcon {
   width: 20px;
   height: 20px;
-  color: var(--museo-primary);
-  stroke-width: 2;
+  color: var(--museo-text-muted);
+  flex-shrink: 0;
+  order: -1;
 }
 
-.msgSearchInput {
-  border: 1px solid var(--museo-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--museo-bg-secondary);
-  font-family: var(--museo-font-body);
-  color: var(--museo-text-primary);
-  transition: all 0.2s ease;
-  font-size: 14px;
+.msgSearch .museo-input {
   flex: 1;
   width: 100%;
 }
 
-.msgSearchInput:focus {
-  outline: none;
-  border-color: var(--museo-primary);
-  background: var(--museo-white);
-  box-shadow: 0 0 0 3px rgba(110, 74, 46, 0.1);
-}
-
-.msgSearchInput::placeholder {
-  color: var(--museo-text-muted);
-}
-
+/* Conversations List */
 .msgList {
-  overflow: auto;
-  padding: 0 16px 16px;
-  display: grid;
-  gap: 8px;
-  /* Prevent a single item from stretching to fill available height */
-  align-content: start;
-  grid-auto-rows: max-content;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
+/* Conversation Item */
 .msgItem {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 12px;
+  display: flex;
   align-items: center;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  background: var(--museo-bg-secondary);
-  border: 1px solid var(--museo-border);
+  gap: 12px;
+  padding: 12px;
   border-radius: 12px;
-  padding: 12px 14px;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
   position: relative;
-  /* Ensure each item keeps intrinsic height */
-  align-self: start;
-}
-
-.msgBadge {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  background: var(--museo-accent);
-  color: var(--museo-white);
-  border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 1px 3px var(--museo-shadow-light);
-  z-index: 1;
+  background: transparent;
 }
 
 .msgItem:hover {
-  background: var(--museo-bg-hover) !important;
-  border-color: var(--museo-border-hover);
-  transform: translateX(2px);
-  box-shadow: 0 2px 8px var(--museo-shadow);
+  background: var(--museo-bg-hover);
 }
 
 .msgItem.is-active {
-  background: var(--museo-accent-light);
-  border-color: var(--museo-accent);
-  box-shadow: 0 4px 12px var(--museo-shadow);
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
 }
 
-.msgItem.is-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 60%;
-  background: var(--museo-accent);
-  border-radius: 0 2px 2px 0;
+.msgItem.is-active .msgName,
+.msgItem.is-active .msgNote {
+  color: var(--museo-white);
 }
 
+.msgItem.is-active .msgAvatar {
+  border: 2px solid var(--museo-white);
+}
+
+/* Avatar */
 .msgAvatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--museo-border);
-  transition: border-color 0.3s ease;
-}
-
-.msgItem:hover .msgAvatar {
-  border-color: var(--museo-accent);
+  flex-shrink: 0;
 }
 
 .msgAvatar--lg {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
 }
 
+/* Conversation Meta */
 .msgMeta {
-  display: grid;
-  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .msgName {
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 15px;
   color: var(--museo-text-primary);
-  font-size: 14px;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .msgNote {
-  font-size: 12px;
-  color: var(--museo-text-muted);
-  font-style: italic;
-  /* Truncate long previews so the row doesn't grow */
+  font-size: 13px;
+  color: var(--museo-text-secondary);
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Conversation shell - Museo Theme */
+/* Unread Badge */
+.msgBadge {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: var(--museo-accent);
+  color: var(--museo-white);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ========================================
+   CHAT AREA - Main Conversation
+   ======================================== */
+
 .msgMain {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
-  border: 2px solid var(--museo-accent);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px var(--museo-shadow), 0 2px 8px var(--museo-shadow-light);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  backdrop-filter: blur(8px);
+  background: var(--museo-white);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
+/* Chat Header */
 .msgHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px !important;
-  border-bottom: 2px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  box-sizing: border-box !important;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--museo-border);
+  background: var(--museo-white);
 }
 
 .msgPeer {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .msgPeerName {
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 18px;
   color: var(--museo-text-primary);
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 16px;
-  line-height: 1.2;
   margin: 0;
-  padding: 0;
 }
 
 .msgHeadDots {
-  background: var(--museo-bg-secondary);
-  border: 1px solid var(--museo-border);
-  border-radius: 8px;
-  width: 40px;
+  background: transparent;
+  border: none;
+  width: 36px;
   height: 36px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  transition: background 0.2s ease;
 }
 
 .msgHeadDots:hover {
-  background: var(--museo-bg-hover) !important;
-  border-color: var(--museo-border-hover);
-  transform: translateX(2px);
-  box-shadow: 0 2px 8px var(--museo-shadow);
+  background: var(--museo-bg-hover);
 }
 
 .msg-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--museo-primary);
-  stroke-width: 2;
+  width: 20px;
+  height: 20px;
+  color: var(--museo-text-secondary);
 }
 
-/* Body fits wider area; subtle inner padding - Museo Theme */
+/* Messages Body */
 .msgBody {
-  padding: 20px 24px;
-  display: grid;
-  gap: 12px;
-  overflow: auto;
-  background: var(--museo-white);
-  backdrop-filter: blur(4px);
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-anchor: none;
+  background: var(--museo-bg-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* Bubbles expand further while staying readable */
+/* Message Row */
 .bubbleRow {
-  display: grid;
-  grid-template-columns: 32px max-content;
-  align-items: end;
+  display: flex;
+  align-items: flex-end;
   gap: 8px;
+  max-width: 70%;
 }
 
 .bubbleRow.from-me {
-  grid-template-columns: max-content 32px;
-  justify-content: end;
+  align-self: flex-end;
+  flex-direction: row;
 }
 
+.bubbleRow.from-them {
+  align-self: flex-start;
+  flex-direction: row;
+}
+
+/* Avatar */
 .bubbleAvatar {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--museo-border);
+  flex-shrink: 0;
 }
 
+/* Message Bubble */
 .bubble {
-  max-width: min(56ch, 86vw);
-  border: 1px solid var(--museo-border);
-  border-radius: 16px;
   padding: 12px 16px;
-  box-shadow: 0 2px 8px var(--museo-shadow-light);
-  backdrop-filter: blur(8px);
-  position: relative;
+  border-radius: 18px;
   word-wrap: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .bubble--me {
-  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-accent-light) 100%);
-  border-color: var(--museo-accent-hover);
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
   color: var(--museo-white);
+  border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.3);
 }
 
 .bubble--them {
-  background: var(--museo-bg-secondary);
-  border-color: var(--museo-border);
+  background: var(--museo-white);
   color: var(--museo-text-primary);
+  border: 1px solid var(--museo-border);
+  border-radius: 18px 18px 18px 4px;
 }
 
+/* Message Text */
 .bubbleText {
   margin: 0;
+  font-size: 15px;
   line-height: 1.5;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 14px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.bubble--me .bubbleText {
-  color: var(--museo-white);
-}
-
-.bubble--them .bubbleText {
-  color: var(--museo-text-primary);
-}
-
+/* Timestamp */
 .bubbleTime {
   font-size: 11px;
-  text-align: right;
-  margin-top: 6px;
-  font-style: italic;
+  margin-top: 4px;
+  opacity: 0.7;
 }
 
 .bubble--me .bubbleTime {
-  color: var(--museo-text-inverse);
-  opacity: 0.8;
+  text-align: right;
 }
 
 .bubble--them .bubbleTime {
   color: var(--museo-text-muted);
 }
 
-/* Composer - Museo Theme */
+/* ========================================
+   MESSAGE COMPOSER
+   ======================================== */
+
 .msgCompose {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  display: flex;
+  align-items: flex-end;
   gap: 12px;
-  align-items: center;
-  padding: 16px 20px;
-  border-top: 2px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
+  padding: 20px 24px;
+  border-top: 1px solid var(--museo-border);
+  background: var(--museo-white);
 }
 
-.mcBtn,
-.mcSend {
+/* Composer-specific adjustments (minimal overrides) */
+.msgCompose .btn {
+  width: 44px;
   height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
 }
 
-.mcBtn:hover {
-  background: var(--museo-bg-hover) !important;
-  border-color: var(--museo-border-hover);
-  transform: translateX(2px);
-  box-shadow: 0 2px 8px var(--museo-shadow);
-}
-
-.mcSend {
-  background: var(--museo-primary) !important;
-  border-color: var(--museo-primary);
-  color: var(--museo-white) !important;
-}
-
-.mcSend .msg-icon {
-  color: var(--museo-white) !important;
-}
-
-.mcSend:hover {
-  background: var(--museo-accent) !important;
-  border-color: var(--museo-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--museo-shadow);
-}
-
-.mcInput {
-  border: 1px solid var(--museo-border);
-  border-radius: 12px;
-  padding: 12px 16px;
-  resize: vertical;
+.msgCompose .museo-textarea {
+  flex: 1;
   min-height: 44px;
-  max-height: 160px;
-  overflow: auto;
-  line-height: 1.5;
-  background: var(--museo-white);
-  font-family: 'Georgia', 'Times New Roman', serif;
-  color: var(--museo-text-primary);
-  transition: all 0.3s ease;
-  white-space: pre-wrap;
-  word-break: break-word;
+  max-height: 120px;
+  resize: none;
+  border-radius: 20px;
 }
 
-.mcInput:focus {
-  outline: none;
-  border-color: var(--museo-accent);
-  box-shadow: 0 0 0 3px var(--museo-shadow-light);
-  background: var(--museo-white);
-}
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
 
-.mcInput::placeholder {
-  color: var(--museo-text-muted);
-  font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 1800px) {
+/* Tablet */
+@media (max-width: 1024px) {
   .msgWrap {
-    grid-template-columns: 280px 1fr;
-    max-width: 1800px;
-    gap: 24px;
+    grid-template-columns: 320px 1fr;
+  }
+  
+  .bubbleRow {
+    max-width: 80%;
   }
 }
 
-@media (max-width: 1400px) {
-  .msgWrap {
-    grid-template-columns: 270px 1fr;
-    max-width: 1400px;
-    gap: 22px;
+/* Mobile */
+@media (max-width: 768px) {
+  .museo-modal-overlay .evmDialog:has(.msgPage),
+  .museo-modal-overlay .msgDialog {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
   }
-}
-
-@media (max-width: 1200px) {
+  
   .msgWrap {
-    grid-template-columns: 260px 1fr;
-    max-width: 1200px;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 1000px) {
-  .msgWrap {
-    grid-template-columns: 250px 1fr;
-    max-width: 1000px;
-    gap: 18px;
-  }
-}
-
-@media (max-width: 760px) {
-  .msgWrap { 
     grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 16px;
   }
+  
   .msgSide {
-    order: 2;
-    max-height: 300px;
+    display: none;
   }
-  .msgMain {
-    order: 1;
-    min-height: 500px;
+  
+  .msgHead {
+    padding: 16px;
+  }
+  
+  .msgBody {
+    padding: 16px;
+  }
+  
+  .msgCompose {
+    padding: 12px 16px;
+  }
+  
+  .bubbleRow {
+    max-width: 85%;
   }
 }
 
-/* Make modal version go full-screen-ish on small screens */
-@media (max-width: 760px) {
-  .evmDialog { width: 98vw !important; height: 96vh !important; max-height: 96vh !important; }
-  .evmDialog .msgWrap { 
-    max-height: calc(96vh - 40px);
-    min-height: calc(96vh - 40px);
-  }
-}
-
-/* Optional ultra-wide tweak */
-@media (min-width: 1600px) {
-  .msgWrap {
-    max-width: 1800px;
-    grid-template-columns: 360px 1fr;
-  }
-  .bubble {
-    max-width: 1000px;
-  }
+/* Empty State & Loading */
+.msgEmptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--museo-text-muted);
+  font-size: 15px;
+  text-align: center;
+  padding: 40px;
 }

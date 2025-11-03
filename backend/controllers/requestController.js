@@ -1,17 +1,14 @@
-import db from "../database/db.js";
-import { createClient } from "@supabase/supabase-js";
+import db from "../database/db.js"; // Using singleton instance!
 
 export const registerAsArtist = async (req, res) =>{
     try{
         if (!req.user || !req.user.id) {
             return res.status(401).json({ error: "User not authenticated" });
-        };
+        }
 
         const userId = req.user.id;
         const files = req.files || {};
         const body = req.body || {};
-
-        // Text fields from the form
         const firstName = body.firstName || "";
         const midInit = body.midInit || "";
         const lastName = body.lastName || "";
@@ -24,17 +21,11 @@ export const registerAsArtist = async (req, res) =>{
         // Optional: allow client-specified requestType, default to artist_verification
         const requestType = body.requestType || "artist_verification";
 
-        // Upload helper similar to profileController
-        function serviceClient() {
-            const url = process.env.SUPABASE_URL;
-            const key = process.env.SUPABASE_SERVICE_KEY;
-            if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY");
-            return createClient(url, key);
-        }
+        // ✅ USING SINGLETON: No new client creation!
+        // Using db from import instead of creating new serviceClient
+        const svc = db;
 
-        const svc = serviceClient();
         const uploadedUrls = [];
-
         async function uploadOne(fieldName) {
             const f = files[fieldName]?.[0];
             if (!f) return null;
@@ -110,6 +101,28 @@ export const registerAsArtist = async (req, res) =>{
 
 export const getRequest = async (req, res) => {
     try {
+        const requesterId = req.user?.id;
+
+        // Verify requester is authenticated
+        if (!requesterId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Verify requester is an admin
+        const { data: requesterProfile, error: requesterError } = await db
+            .from('profile')
+            .select('role')
+            .eq('userId', requesterId)
+            .single();
+
+        if (requesterError || !requesterProfile) {
+            return res.status(403).json({ error: 'Access denied. Unable to verify permissions.' });
+        }
+
+        if (requesterProfile.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+        }
+
         // ✅ FIXED: Add pagination to prevent fetching all requests
         const { type } = req.query; // optional filter e.g. artist_verification
         const page = parseInt(req.query.page || '1', 10);
@@ -137,9 +150,32 @@ export const getRequest = async (req, res) => {
 export const action = async (req, res) => {
     try {
       const { id, action, type } = req.body || {};
+      const requesterId = req.user?.id;
+
       if (!id || !action) {
         return res.status(400).json({ error: "Missing id or action" });
       }
+
+      // Verify requester is authenticated
+      if (!requesterId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      // Verify requester is an admin
+      const { data: requesterProfile, error: requesterError } = await db
+        .from('profile')
+        .select('role')
+        .eq('userId', requesterId)
+        .single();
+
+      if (requesterError || !requesterProfile) {
+        return res.status(403).json({ error: 'Access denied. Unable to verify permissions.' });
+      }
+
+      if (requesterProfile.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+      }
+
       console.log(id)
       // 1) Load the request to get the userId (and canonical type)
       const { data: requestRow, error: reqErr } = await db
@@ -252,10 +288,33 @@ export const action = async (req, res) => {
 export const deleteRequest = async (req, res) => {
   try {
     const { id } = req.params;
+    const requesterId = req.user?.id;
+
     if (!id) {
       return res.status(400).json({ error: "Missing request ID" });
     }
 
+    // Verify requester is authenticated
+    if (!requesterId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify requester is an admin
+    const { data: requesterProfile, error: requesterError } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', requesterId)
+      .single();
+
+    if (requesterError || !requesterProfile) {
+      return res.status(403).json({ error: 'Access denied. Unable to verify permissions.' });
+    }
+
+    if (requesterProfile.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Delete the request
     const { error } = await db
       .from("request")
       .delete()
@@ -320,6 +379,8 @@ const createArtistRequestNotification = async (req, userId, action, requestRow) 
       userId: req.user?.id || null, // Admin who performed the action
       recipient: userId, // Send notification to the user who made the request
       readByUsers: [], // Initialize empty array
+      deletedByUsers: [], // Initialize empty array
+      createdAt: new Date().toISOString() // Explicitly set createdAt
     };
 
     const { data: notifRow, error: notifErr } = await db
@@ -337,13 +398,18 @@ const createArtistRequestNotification = async (req, userId, action, requestRow) 
       notification.notificationId = notifRow.notificationId || notifRow.id;
       notification.createdAt = notifRow.createdAt || notification.createdAt;
     }
-
+    
     // Emit real-time notification via Socket.IO
     const io = req.app.get("io");
     if (io) {
-      console.log(`[artist-request] emitting ${action} notification to user ${userId}:`, notification);
       // Send to specific user room only (not to all users)
-      io.to(`user:${userId}`).emit("notification", notification);
+      io.to(`user_${userId}`).emit("notification", notification);
+      
+      // Clear notification cache ONLY for this specific user
+      // This is a targeted notification, so only the recipient's cache needs clearing
+      // Other users' caches remain intact for better performance
+      const { cache } = await import('../utils/cache.js');
+      await cache.clearPattern(`notifications:${userId}:*`);
     } else {
       console.warn("[artist-request] io not available to emit notification");
     }

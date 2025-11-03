@@ -1,0 +1,84 @@
+/* ========================================
+   🎨 MUSEO COLOR TOKENS
+   80 lines (extracted from design-system.css)
+   ======================================== */
+
+:root {
+  /* Primary Colors - Deep Browns */
+  --museo-primary: #6e4a2e;
+  --museo-primary-light: #8b5a3c;
+  --museo-primary-dark: #5a3d26;
+  
+  /* Neutral Colors */
+  --museo-white: #f8f5f0;
+  --museo-cream: #f5f2ed;
+  --museo-parchment: #f2efea;
+  
+  /* Gray Scale */
+  --museo-gray-50: #f8f5f0;
+  --museo-gray-100: #f2efea;
+  --museo-gray-200: #e8e2d8;
+  --museo-gray-300: #d4c9b8;
+  --museo-gray-400: #b8a688;
+  --museo-gray-500: #9c8668;
+  --museo-gray-600: #7d6b4f;
+  --museo-gray-700: #6e4a2e;
+  --museo-gray-800: #3d2817;
+  --museo-gray-900: #1a0f08;
+  
+  /* Accent Colors - Muted Gold */
+  --museo-accent: #d4b48a;
+  --museo-accent-hover: #c9a876;
+  --museo-accent-light: #f0e6d2;
+  --museo-gold: #d4b48a;
+  --museo-gold-dark: #b8956f;
+  --museo-gold-light: #e6d7c3;
+  
+  /* Semantic Colors */
+  --museo-success: #7d8471;
+  --museo-warning: #d4b48a;
+  --museo-error: #a0522d;
+  --museo-info: #8b7355;
+  
+  /* Background Colors */
+  --museo-bg-primary: #f8f5f0;
+  --museo-bg-secondary: #f2efea;
+  --museo-bg-tertiary: #e8e2d8;
+  --museo-bg-dark: #6e4a2e;
+  --museo-bg-rich-black: #1a0f08;
+  --museo-bg-hover: rgba(212, 180, 138, 0.1);
+  --museo-bg-gallery: linear-gradient(135deg, #d4c9b8 0%, #c9bba8 100%);
+  
+  /* Overlay Colors */
+  --museo-overlay: rgba(0, 0, 0, 0.8);
+  --museo-overlay-light: rgba(0, 0, 0, 0.1);
+  
+  /* Shadow Colors */
+  --museo-shadow: rgba(0, 0, 0, 0.4);
+  --museo-shadow-light: rgba(0, 0, 0, 0.05);
+  
+  /* Text Colors */
+  --museo-text-primary: #1a0f08;
+  --museo-text-secondary: #3d2817;
+  --museo-text-muted: #7d6b4f;
+  --museo-text-inverse: #f8f5f0;
+  --museo-text-accent: #6e4a2e;
+  
+  /* Border Colors */
+  --museo-border: #e8e2d8;
+  --museo-border-light: #f2efea;
+  --museo-border-dark: #d4c9b8;
+  --museo-border-hover: #d4b48a;
+  
+  /* Slate Colors */
+  --museo-slate-50: #f8fafc;
+  --museo-slate-100: #f1f5f9;
+  --museo-slate-200: #e2e8f0;
+  --museo-slate-300: #cbd5e1;
+  --museo-slate-400: #94a3b8;
+  --museo-slate-500: #64748b;
+  --museo-slate-600: #475569;
+  --museo-slate-700: #334155;
+  --museo-slate-800: #1e293b;
+  --museo-slate-900: #0f172a;
+}

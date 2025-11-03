@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
+import { useUser } from '../contexts/UserContext';
 import MuseoLoadingBox from '../components/MuseoLoadingBox';
 import MuseoEmptyState from '../components/MuseoEmptyState';
 import UploadArtModal from './subPages/UploadArtModal';
@@ -9,6 +10,10 @@ const API = import.meta.env.VITE_API_BASE;
 
 
 export default function Gallery() {
+  const { userData } = useUser();
+  // Get role from UserContext instead of separate state
+  const role = userData?.role || null;
+  
   const navigate = useNavigate();
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [viewMode, setViewMode] = useState('masonry'); // masonry, grid, list
@@ -29,7 +34,6 @@ export default function Gallery() {
   const [isArtworkModalOpen, setIsArtworkModalOpen] = useState(false);
   const [artworkStats, setArtworkStats] = useState({}); // Store stats for each artwork
   const [statsUpdateTrigger, setStatsUpdateTrigger] = useState(0); // Trigger for stats refresh
-  const [role, setRole] = useState(null);
   const [topArtsWeekly, setTopArtsWeekly] = useState([]); // New state for weekly top arts
   const [isLoadingTopArts, setIsLoadingTopArts] = useState(true);
   const hasLoadedTopArts = useRef(false); // Track if we've already loaded top arts
@@ -85,19 +89,6 @@ export default function Gallery() {
   }
 
 
-  const fetchRole = async () => {
-    try {
-      const response = await fetch(`${API}/users/role`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
-      const data = await response.json();
-      setRole(data);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-    }
-  };
  
   const fetchArtPreference = async() => {
     try{
@@ -195,6 +186,7 @@ export default function Gallery() {
   // Fetch stats for multiple artworks using batch endpoint
   const fetchArtworkStats = async (artworkIds) => {
     try {
+      console.log(`📊 Fetching stats for ${artworkIds.length} artwork(s):`, artworkIds);
       const response = await fetch(`${API}/gallery/batch-stats`, {
         method: 'POST',
         headers: {
@@ -218,46 +210,15 @@ export default function Gallery() {
     } catch (error) {
       console.error('Error fetching artwork stats:', error);
       
-      // Fallback to individual calls if batch fails
-      const statsPromises = artworkIds.map(async (artworkId) => {
-        try {
-          const [viewsRes, likesRes, commentsRes] = await Promise.all([
-            fetch(`${API}/gallery/views?galleryArtId=${artworkId}`, { credentials: 'include' }),
-            fetch(`${API}/gallery/react?galleryArtId=${artworkId}`, { credentials: 'include' }),
-            fetch(`${API}/gallery/comments?galleryArtId=${artworkId}`, { credentials: 'include' })
-          ]);
-
-          const [viewsData, likesData, commentsData] = await Promise.all([
-            viewsRes.ok ? viewsRes.json() : { viewCount: 0 },
-            likesRes.ok ? likesRes.json() : { reactions: [] },
-            commentsRes.ok ? commentsRes.json() : { comments: [] }
-          ]);
-
-          return {
-            artworkId,
-            views: viewsData.viewCount || 0,
-            likes: likesData.reactions?.length || 0,
-            comments: commentsData.comments?.length || 0
-          };
-        } catch (error) {
-          console.error(`Error fetching stats for artwork ${artworkId}:`, error);
-          return {
-            artworkId,
-            views: 0,
-            likes: 0,
-            comments: 0
-          };
-        }
-      });
-
-      const statsResults = await Promise.all(statsPromises);
-      
+      // ❌ REMOVED EXPENSIVE FALLBACK - Don't make 60 DB requests!
+      // If batch API fails, show zero stats instead of hammering the database
+      // This prevents database egress explosion (20 artworks × 3 requests = 60 requests!)
       const newStats = {};
-      statsResults.forEach(stat => {
-        newStats[stat.artworkId] = {
-          views: stat.views,
-          likes: stat.likes,
-          comments: stat.comments
+      artworkIds.forEach(artworkId => {
+        newStats[artworkId] = {
+          views: 0,
+          likes: 0,
+          comments: 0
         };
       });
       
@@ -321,6 +282,12 @@ export default function Gallery() {
 
       const data = await response.json();
       
+      console.log('📊 Top Arts API Response:', {
+        success: data.success,
+        topArtsCount: data.topArts?.length || 0,
+        topArts: data.topArts
+      });
+      
       if (data.success && data.topArts) {
         // Find which artworks are missing
         const missingIds = data.topArts
@@ -331,16 +298,25 @@ export default function Gallery() {
         
         // Fetch missing artworks if needed
         if (missingIds.length > 0) {
+          console.log('🔍 Fetching missing artworks:', missingIds);
           try {
-            // Fetch only what we need: top 6 + buffer = 20 artworks
-            const artworkResponse = await fetch(`${API}/gallery/artworks?limit=20&categories=all`, {
+            // Fetch a larger batch of artworks to find the missing ones
+            const artworkResponse = await fetch(`${API}/gallery/artworks?limit=100&categories=all`, {
               method: 'GET',
               credentials: 'include'
             });
             const artworkData = await artworkResponse.json();
+            
             if (artworkData.success && artworkData.artworks) {
+              // Find the missing artworks from the fetched batch
+              const missingArtworks = artworkData.artworks.filter(art => 
+                missingIds.includes(art.id)
+              );
+              
+              console.log('✅ Found missing artworks:', missingArtworks.length, 'out of', missingIds.length);
+              
               // Merge with existing artworks
-              allArtworks = [...artworks, ...artworkData.artworks];
+              allArtworks = [...artworks, ...missingArtworks];
             }
           } catch (error) {
             console.error('Failed to fetch missing artworks:', error);
@@ -358,12 +334,22 @@ export default function Gallery() {
               engagementScore: topArt.engagementScore,
               weekStart: data.weekStart
             };
+          } else {
+            console.warn('⚠️ Artwork not found for top art:', {
+              galleryArtId: topArt.galleryArtId,
+              rank: topArt.rank_position
+            });
           }
           return null;
         }).filter(Boolean);
 
         // Sort by rank position
         const validTopArts = topArtsWithDetails.sort((a, b) => a.rank_position - b.rank_position);
+        
+        console.log('✅ Final Top Arts to display:', {
+          count: validTopArts.length,
+          arts: validTopArts.map(art => ({ title: art.title, rank: art.rank_position }))
+        });
         
         setTopArtsWeekly(validTopArts);
       } else {
@@ -492,7 +478,6 @@ export default function Gallery() {
   };
 
   useEffect(() => {
-    fetchRole()
     fetchCategories();
     fetchArtworks(); // Fetch artworks on component mount
     fetchArtPreference();
@@ -506,23 +491,37 @@ export default function Gallery() {
     setTotalCount(null);
     
     const categoryFilter = newCategories.length === 0 ? 'all' : newCategories.join(',');
+    
+    // Fetch artworks with new filter
     fetchArtworks(categoryFilter, 1, false);
   };
 
-  // Fetch stats when artworks are loaded (with debounce)
+  // Simplified: Only fetch stats for featured artwork and top 3 arts
   useEffect(() => {
-    if (artworks.length > 0) {
-      // Debounce stats fetching to prevent excessive calls - only for visible artworks
-      const timeoutId = setTimeout(() => {
-        // Only fetch stats for first 30 artworks (visible on screen)
-        const visibleArtworks = artworks.slice(0, 30);
-        const artworkIds = visibleArtworks.map(artwork => artwork.id);
-        fetchArtworkStats(artworkIds);
-      }, 500); // Wait 500ms before fetching stats
+    if (artworks.length === 0) return;
 
-      return () => clearTimeout(timeoutId);
+    const statsToFetch = [];
+    
+    // Fetch stats for featured artwork
+    if (featuredArtwork?.id && !artworkStats[featuredArtwork.id]) {
+      statsToFetch.push(featuredArtwork.id);
     }
-  }, [artworks]);
+    
+    // Fetch stats for top 3 arts (use topArtsWeekly state)
+    if (topArtsWeekly.length > 0) {
+      topArtsWeekly.slice(0, 3).forEach(art => {
+        if (art?.id && !artworkStats[art.id]) {
+          statsToFetch.push(art.id);
+        }
+      });
+    }
+    
+    // Simple fetch (no batching, no Intersection Observer)
+    if (statsToFetch.length > 0) {
+      console.log(`📊 Fetching stats for featured + top arts (${statsToFetch.length} artworks)`);
+      fetchArtworkStats(statsToFetch);
+    }
+  }, [artworks, featuredArtwork, topArtsWeekly, artworkStats]);
 
   // Fetch weekly top arts once when artworks are first loaded
   useEffect(() => {
@@ -534,31 +533,52 @@ export default function Gallery() {
     }
   }, [artworks.length > 0]); // Only depend on whether artworks exist (boolean), not the actual length
 
-  // Refresh stats for visible artworks only (not all artworks)
+  // Refresh stats when modal updates them
   useEffect(() => {
-    if (statsUpdateTrigger > 0 && artworks.length > 0) {
-      // Only fetch stats for first 30 artworks (visible on screen)
-      const visibleArtworks = artworks.slice(0, 30);
-      const visibleArtworkIds = visibleArtworks.map(artwork => artwork.id);
-      fetchArtworkStats(visibleArtworkIds);
-    }
-  }, [statsUpdateTrigger]); // Remove artworks dependency
-
-  // Reduced frequency stats refresh to save Supabase usage (every 5 minutes)
-  useEffect(() => {
-    if (artworks.length === 0) return;
-
-    const interval = setInterval(() => {
-      if (artworks.length > 0) {
-        // Only refresh stats for first 30 visible artworks
-        const visibleArtworks = artworks.slice(0, 30);
-        const visibleArtworkIds = visibleArtworks.map(artwork => artwork.id);
-        fetchArtworkStats(visibleArtworkIds);
+    if (statsUpdateTrigger > 0) {
+      // Refresh featured and top arts stats
+      const statsToRefresh = [];
+      
+      if (featuredArtwork?.id) {
+        statsToRefresh.push(featuredArtwork.id);
       }
-    }, 300000); // 5 minutes instead of 30 seconds (90% reduction!)
+      
+      if (topArtsWeekly.length > 0) {
+        topArtsWeekly.slice(0, 3).forEach(art => {
+          if (art?.id) statsToRefresh.push(art.id);
+        });
+      }
+      
+      if (statsToRefresh.length > 0) {
+        console.log('🔄 Refreshing stats after modal update');
+        fetchArtworkStats(statsToRefresh);
+      }
+    }
+  }, [statsUpdateTrigger, featuredArtwork, topArtsWeekly]);
+
+  // Periodic refresh for featured and top arts stats (every 5 minutes)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const statsToRefresh = [];
+      
+      if (featuredArtwork?.id) {
+        statsToRefresh.push(featuredArtwork.id);
+      }
+      
+      if (topArtsWeekly.length > 0) {
+        topArtsWeekly.slice(0, 3).forEach(art => {
+          if (art?.id) statsToRefresh.push(art.id);
+        });
+      }
+      
+      if (statsToRefresh.length > 0) {
+        console.log('⏰ Periodic refresh of featured + top arts stats');
+        fetchArtworkStats(statsToRefresh);
+      }
+    }, 300000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, []); // Remove artworks dependency to prevent interval reset
+  }, [featuredArtwork, topArtsWeekly]);
 
   // Randomize featured artworks when they change
   useEffect(() => {
@@ -741,11 +761,7 @@ export default function Gallery() {
   const renderCategoriesList = (artwork) => {
     const categories = getArtworkCategories(artwork);
     return categories.map((category, index) => (
-      <li key={index} style={{ 
-        fontSize: '14px',
-        color: '#6b4226',
-        marginBottom: '4px'
-      }}>
+      <li key={index} className="museo-artwork-category-item">
         {category}
       </li>
     ));
@@ -825,10 +841,7 @@ export default function Gallery() {
   };
 
   return (
-    <div style={{ 
-      background: 'transparent',
-      minHeight: '100vh'
-    }}>
+    <div className="museo-gallery-container">
       {/* Loading State */}
       <MuseoLoadingBox 
         show={isLoadingArtworks} 
@@ -839,134 +852,28 @@ export default function Gallery() {
       {!isLoadingArtworks && (
         <>
           {/* Artistic Museum Hero Section */}
-      <div style={{
-        background: `
-          linear-gradient(145deg, #2c1810 0%, #4a2c1a 15%, #6e4a2e 35%, #8b6f47 60%, #a67c52 85%, #d4b48a 100%),
-          radial-gradient(ellipse 800px 400px at 20% 30%, rgba(212, 180, 138, 0.3) 0%, transparent 50%),
-          radial-gradient(ellipse 600px 300px at 80% 70%, rgba(139, 115, 85, 0.2) 0%, transparent 50%),
-          linear-gradient(0deg, rgba(26, 15, 10, 0.8) 0%, transparent 40%)
-        `,
-        color: '#f4f1ec',
-        padding: '140px 20px 120px',
-        position: 'relative',
-        overflow: 'hidden',
-        minHeight: '85vh',
-        display: 'flex',
-        alignItems: 'center',
-        boxShadow: '0 20px 60px rgba(44, 24, 16, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-      }}>
+      <div className="museo-gallery-hero">
         {/* Artistic Decorative Elements */}
         {/* Golden Ornamental Corners */}
-        <div style={{
-          position: 'absolute',
-          top: '40px',
-          left: '40px',
-          width: '120px',
-          height: '120px',
-          background: 'conic-gradient(from 45deg, #d4b48a, #a67c52, #8b6f47, #d4b48a)',
-          borderRadius: '50%',
-          opacity: 0.15,
-          filter: 'blur(2px)'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          top: '40px',
-          right: '40px',
-          width: '80px',
-          height: '80px',
-          background: 'radial-gradient(circle, rgba(212, 180, 138, 0.3) 0%, transparent 70%)',
-          borderRadius: '50%',
-          filter: 'blur(1px)'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '40px',
-          left: '40px',
-          width: '100px',
-          height: '100px',
-          background: 'linear-gradient(45deg, rgba(139, 115, 85, 0.2), rgba(212, 180, 138, 0.1))',
-          borderRadius: '50%',
-          filter: 'blur(1.5px)'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '40px',
-          right: '40px',
-          width: '140px',
-          height: '140px',
-          background: 'conic-gradient(from 225deg, rgba(166, 124, 82, 0.2), rgba(139, 115, 85, 0.1), rgba(212, 180, 138, 0.15))',
-          borderRadius: '50%',
-          filter: 'blur(2px)'
-        }}></div>
+        <div className="museo-hero-ornament-1"></div>
+        <div className="museo-hero-ornament-2"></div>
+        <div className="museo-hero-ornament-3"></div>
+        <div className="museo-hero-ornament-4"></div>
         
         {/* Museum Texture Overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: `
-            linear-gradient(45deg, transparent 48%, rgba(212, 180, 138, 0.03) 49%, rgba(212, 180, 138, 0.03) 51%, transparent 52%),
-            linear-gradient(-45deg, transparent 48%, rgba(139, 115, 85, 0.02) 49%, rgba(139, 115, 85, 0.02) 51%, transparent 52%),
-            radial-gradient(circle at 30% 20%, rgba(244, 241, 236, 0.08) 1px, transparent 1px),
-            radial-gradient(circle at 70% 80%, rgba(212, 180, 138, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '120px 120px, 120px 120px, 80px 80px, 60px 60px',
-          opacity: 0.4
-        }}></div>
+        <div className="museo-hero-texture"></div>
         
         {/* Artistic Border Frame */}
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          right: '20px',
-          bottom: '20px',
-          border: '2px solid rgba(212, 180, 138, 0.2)',
-          borderRadius: '30px',
-          pointerEvents: 'none'
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          top: '30px',
-          left: '30px',
-          right: '30px',
-          bottom: '30px',
-          border: '1px solid rgba(244, 241, 236, 0.1)',
-          borderRadius: '25px',
-          pointerEvents: 'none'
-        }}></div>
+        <div className="museo-hero-border-outer"></div>
+        <div className="museo-hero-border-inner"></div>
         
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '60px', alignItems: 'center' }}>
+        <div className="museo-hero-content">
           {featuredArtwork ? (
             <>
               {/* Featured artwork image */}
-              <div style={{
-                flex: '1',
-                position: 'relative'
-              }}>
+              <div className="museo-hero-artwork">
                 <div 
-                  style={{
-                    background: `
-                      linear-gradient(145deg, #f4f1ec 0%, #ffffff 20%, #faf8f5 40%, #f7f4ef 60%, #f4f1ec 80%, #f0ebe4 100%),
-                      radial-gradient(ellipse at top left, rgba(212, 180, 138, 0.1) 0%, transparent 50%)
-                    `,
-                    padding: '32px',
-                    borderRadius: '20px',
-                    transform: 'rotate(-0.5deg)',
-                    boxShadow: `
-                      0 40px 120px rgba(44, 24, 16, 0.3),
-                      0 20px 60px rgba(139, 115, 85, 0.2),
-                      0 8px 32px rgba(212, 180, 138, 0.15),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-                      inset 0 -1px 0 rgba(212, 180, 138, 0.2)
-                    `,
-                    border: '4px solid rgba(212, 180, 138, 0.3)',
-                    cursor: 'pointer',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative'
-                  }}
+                  className="museo-hero-artwork-frame"
                   onClick={() => openArtworkModal(featuredArtwork, 'FEATURED ARTWORK FRAME')}
                   onMouseOver={(e) => {
                     const container = e.currentTarget;
@@ -1016,175 +923,51 @@ export default function Gallery() {
                   }}
                 >
                   {/* Inner Frame */}
-                  <div style={{
-                    background: 'linear-gradient(45deg, #8b6f47 0%, #a67c52 50%, #d4b48a 100%)',
-                    padding: '3px',
-                    borderRadius: '12px',
-                    transform: 'rotate(0.3deg)'
-                  }}>
+                  <div className="museo-hero-artwork-inner-frame">
                     <img 
                       src={Array.isArray(featuredArtwork.image) ? featuredArtwork.image[0] : featuredArtwork.image}
                       alt={featuredArtwork.title}
-                      style={{
-                        width: '100%',
-                        height: '450px',
-                        objectFit: 'cover',
-                        borderRadius: '10px',
-                        transform: 'rotate(-0.2deg)',
-                        boxShadow: `
-                          0 12px 32px rgba(44, 24, 16, 0.2),
-                          inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                        `,
-                        pointerEvents: 'none',
-                        filter: 'contrast(1.05) saturate(1.1)'
-                      }}
+                      className="museo-hero-artwork-image"
                     />
                   </div>
                 </div>
                 {/* Elegant Featured Badge */}
-                <div className="featured-badge" style={{
-                  position: 'absolute',
-                  top: '-20px',
-                  left: '50%',
-                  transform: 'translateX(-50%) rotate(-2deg)',
-                  background: `
-                    linear-gradient(135deg, #2c1810 0%, #4a2c1a 30%, #6e4a2e 70%, #8b6f47 100%),
-                    radial-gradient(ellipse at center, rgba(212, 180, 138, 0.2) 0%, transparent 70%)
-                  `,
-                  color: '#f4f1ec',
-                  padding: '16px 32px',
-                  borderRadius: '25px',
-                  fontSize: '15px',
-                  fontWeight: '700',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  boxShadow: `
-                    0 12px 32px rgba(44, 24, 16, 0.5),
-                    0 4px 16px rgba(139, 115, 85, 0.3),
-                    inset 0 1px 0 rgba(212, 180, 138, 0.3),
-                    inset 0 -1px 0 rgba(44, 24, 16, 0.2)
-                  `,
-                  border: '2px solid rgba(212, 180, 138, 0.4)',
-                  fontFamily: 'Georgia, serif',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}>
+                <div className="featured-badge museo-hero-featured-badge">
                   Featured Masterpiece
                 </div>
                 
               </div>
 
               {/* Featured artwork info */}
-              <div style={{ flex: '1', position: 'relative', zIndex: 10 }}>
+              <div className="museo-hero-info">
                 {/* Decorative Title Background */}
-                <div style={{
-                  position: 'absolute',
-                  top: '-20px',
-                  left: '-40px',
-                  right: '-20px',
-                  height: '120px',
-                  background: 'linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(139, 115, 85, 0.05) 50%, transparent 100%)',
-                  borderRadius: '20px',
-                  filter: 'blur(1px)',
-                  zIndex: -1
-                }}></div>
+                <div className="museo-hero-title-bg"></div>
                 
-                <h1 style={{
-                  fontSize: '4.2rem',
-                  fontWeight: '800',
-                  marginBottom: '24px',
-                  color: '#f4f1ec',
-                  lineHeight: '1.05',
-                  textShadow: `
-                    0 4px 12px rgba(44, 24, 16, 0.8),
-                    0 2px 6px rgba(26, 15, 10, 0.6),
-                    0 1px 3px rgba(0, 0, 0, 0.4)
-                  `,
-                  fontFamily: 'Georgia, serif',
-                  letterSpacing: '-0.02em',
-                  position: 'relative'
-                }}>
-                  <span style={{
-                    background: 'linear-gradient(135deg, #f4f1ec 0%, #d4b48a 50%, #a67c52 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>
+                <h1 className="museo-hero-title">
+                  <span className="museo-hero-title-gradient">
                     {featuredArtwork.title}
                   </span>
                 </h1>
                 {/* Artist Information Card */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '16px',
-                  marginBottom: '32px',
-                  background: 'linear-gradient(135deg, rgba(244, 241, 236, 0.15) 0%, rgba(212, 180, 138, 0.1) 100%)',
-                  padding: '20px 24px',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(212, 180, 138, 0.2)',
-                  backdropFilter: 'blur(10px)'
-                }}>
+                <div className="museo-hero-artist-card">
                   {featuredArtwork.artistProfilePicture ? (
-                    <div style={{
-                      position: 'relative',
-                      padding: '3px',
-                      background: 'linear-gradient(45deg, #d4b48a 0%, #a67c52 50%, #8b6f47 100%)',
-                      borderRadius: '50%'
-                    }}>
+                    <div className="museo-hero-artist-avatar-frame">
                       <img 
                         src={featuredArtwork.artistProfilePicture} 
                         alt={featuredArtwork.artist}
-                        style={{
-                          width: '52px',
-                          height: '52px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid #f4f1ec',
-                          transition: 'all 0.3s ease'
-                        }}
+                        className="museo-hero-artist-avatar"
                       />
                     </div>
                   ) : (
-                    <div style={{
-                      width: '58px',
-                      height: '58px',
-                      borderRadius: '50%',
-                      background: `
-                        linear-gradient(135deg, #2c1810 0%, #4a2c1a 30%, #6e4a2e 70%, #8b6f47 100%),
-                        radial-gradient(ellipse at center, rgba(212, 180, 138, 0.2) 0%, transparent 70%)
-                      `,
-                      color: '#f4f1ec',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '800',
-                      fontSize: '1.4rem',
-                      border: '3px solid rgba(212, 180, 138, 0.3)',
-                      boxShadow: '0 4px 16px rgba(44, 24, 16, 0.3)',
-                      fontFamily: 'Georgia, serif'
-                    }}>
+                    <div className="museo-hero-artist-avatar-fallback">
                       {featuredArtwork.artist?.charAt(0)?.toUpperCase() || 'A'}
                     </div>
                   )}
                   <div>
-                    <p style={{
-                      fontSize: '1.6rem',
-                      color: '#f4f1ec',
-                      margin: '0 0 4px 0',
-                      fontWeight: '600',
-                      textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)',
-                      fontFamily: 'Georgia, serif'
-                    }}>
+                    <p className="museo-hero-artist-name">
                       {featuredArtwork.artist || 'Gallery Artist'}
                     </p>
-                    <p style={{
-                      fontSize: '1.1rem',
-                      color: 'rgba(244, 241, 236, 0.8)',
-                      margin: '0',
-                      fontStyle: 'italic',
-                      fontWeight: '400',
-                      textShadow: '0 1px 2px rgba(44, 24, 16, 0.3)'
-                    }}>
+                    <p className="museo-hero-artist-date">
                       {new Date(featuredArtwork.datePosted).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
@@ -1196,94 +979,31 @@ export default function Gallery() {
                   </div>
                 </div>
                 {/* Enhanced Stats Section */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '20px',
-                  marginBottom: '40px',
-                  marginTop: '8px'
-                }}>
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(244, 241, 236, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(212, 180, 138, 0.15)',
-                    textAlign: 'center',
-                    backdropFilter: 'blur(5px)'
-                  }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>👁️</div>
-                    <div style={{
-                      fontSize: '1.8rem',
-                      fontWeight: '700',
-                      color: '#f4f1ec',
-                      marginBottom: '4px',
-                      textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)'
-                    }}>
+                <div className="museo-hero-stats-grid">
+                  <div className="museo-hero-stat-card">
+                    <div className="museo-hero-stat-icon">👁️</div>
+                    <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().views)}
                     </div>
-                    <div style={{
-                      fontSize: '0.9rem',
-                      color: 'rgba(244, 241, 236, 0.7)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      fontWeight: '500'
-                    }}>
+                    <div className="museo-hero-stat-label">
                       Views
                     </div>
                   </div>
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(244, 241, 236, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(212, 180, 138, 0.15)',
-                    textAlign: 'center',
-                    backdropFilter: 'blur(5px)'
-                  }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>❤️</div>
-                    <div style={{
-                      fontSize: '1.8rem',
-                      fontWeight: '700',
-                      color: '#f4f1ec',
-                      marginBottom: '4px',
-                      textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)'
-                    }}>
+                  <div className="museo-hero-stat-card">
+                    <div className="museo-hero-stat-icon">❤️</div>
+                    <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().likes)}
                     </div>
-                    <div style={{
-                      fontSize: '0.9rem',
-                      color: 'rgba(244, 241, 236, 0.7)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      fontWeight: '500'
-                    }}>
+                    <div className="museo-hero-stat-label">
                       Likes
                     </div>
                   </div>
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(244, 241, 236, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%)',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(212, 180, 138, 0.15)',
-                    textAlign: 'center',
-                    backdropFilter: 'blur(5px)'
-                  }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>💬</div>
-                    <div style={{
-                      fontSize: '1.8rem',
-                      fontWeight: '700',
-                      color: '#f4f1ec',
-                      marginBottom: '4px',
-                      textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)'
-                    }}>
+                  <div className="museo-hero-stat-card">
+                    <div className="museo-hero-stat-icon">💬</div>
+                    <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().comments)}
                     </div>
-                    <div style={{
-                      fontSize: '0.9rem',
-                      color: 'rgba(244, 241, 236, 0.7)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      fontWeight: '500'
-                    }}>
+                    <div className="museo-hero-stat-label">
                       Comments
                     </div>
                   </div>
@@ -1291,102 +1011,21 @@ export default function Gallery() {
               </div>
             </>
           ) : (
-            <div style={{
-              width: '100%',
-              textAlign: 'center',
-              padding: '100px 40px',
-              position: 'relative',
-              zIndex: 10
-            }}>
+            <div className="museo-hero-empty-container">
               {/* Decorative Empty State Background */}
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '400px',
-                height: '400px',
-                background: 'radial-gradient(circle, rgba(212, 180, 138, 0.1) 0%, rgba(139, 115, 85, 0.05) 50%, transparent 100%)',
-                borderRadius: '50%',
-                filter: 'blur(2px)',
-                zIndex: -1
-              }}></div>
+              <div className="museo-hero-empty-bg"></div>
               
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(244, 241, 236, 0.15) 0%, rgba(212, 180, 138, 0.1) 100%)',
-                padding: '60px 40px',
-                borderRadius: '30px',
-                border: '2px solid rgba(212, 180, 138, 0.2)',
-                backdropFilter: 'blur(10px)',
-                maxWidth: '600px',
-                margin: '0 auto'
-              }}>
-                <div style={{
-                  fontSize: '4rem',
-                  marginBottom: '24px',
-                  opacity: 0.6
-                }}>🎨</div>
+              <div className="museo-hero-empty-card">
+                <div className="museo-hero-empty-icon">🎨</div>
                 
-                <h2 style={{ 
-                  fontSize: '3.2rem', 
-                  marginBottom: '24px', 
-                  fontFamily: 'Georgia, serif',
-                  fontWeight: '800',
-                  color: '#f4f1ec',
-                  textShadow: '0 4px 12px rgba(44, 24, 16, 0.8)',
-                  letterSpacing: '-0.02em'
-                }}>Awaiting Your Masterpiece</h2>
+                <h2 className="museo-hero-empty-title">Awaiting Your Masterpiece</h2>
                 
-                <p style={{ 
-                  fontSize: '1.4rem', 
-                  marginBottom: '40px',
-                  color: 'rgba(244, 241, 236, 0.8)',
-                  lineHeight: '1.6',
-                  textShadow: '0 2px 4px rgba(44, 24, 16, 0.5)',
-                  fontStyle: 'italic'
-                }}>The gallery canvas awaits your artistic vision.<br/>Share your first creation to illuminate this space.</p>
+                <p className="museo-hero-empty-desc">The gallery canvas awaits your artistic vision.<br/>Share your first creation to illuminate this space.</p>
                 
                 {(role === 'admin' || role === 'artist') && (
                   <button
                     onClick={() => setIsUploadModalOpen(true)}
-                    style={{
-                      background: `
-                        linear-gradient(135deg, #d4b48a 0%, #a67c52 30%, #8b6f47 70%, #6e4a2e 100%),
-                        radial-gradient(ellipse at center, rgba(244, 241, 236, 0.2) 0%, transparent 70%)
-                      `,
-                      color: '#2c1810',
-                      border: '3px solid rgba(244, 241, 236, 0.3)',
-                      padding: '20px 40px',
-                      borderRadius: '25px',
-                      fontSize: '18px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      boxShadow: `
-                        0 12px 32px rgba(44, 24, 16, 0.4),
-                        0 4px 16px rgba(139, 115, 85, 0.3),
-                        inset 0 1px 0 rgba(244, 241, 236, 0.4)
-                      `,
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      letterSpacing: '0.5px',
-                      textTransform: 'uppercase',
-                      fontFamily: 'Georgia, serif'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.transform = 'translateY(-6px) scale(1.05)';
-                      e.target.style.boxShadow = `
-                        0 20px 50px rgba(44, 24, 16, 0.5),
-                        0 8px 25px rgba(139, 115, 85, 0.4),
-                        inset 0 1px 0 rgba(244, 241, 236, 0.5)
-                      `;
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.transform = 'translateY(0) scale(1)';
-                      e.target.style.boxShadow = `
-                        0 12px 32px rgba(44, 24, 16, 0.4),
-                        0 4px 16px rgba(139, 115, 85, 0.3),
-                        inset 0 1px 0 rgba(244, 241, 236, 0.4)
-                      `;
-                    }}
+                    className="museo-hero-empty-upload-btn"
                   >
                     Begin Your Gallery
                   </button>
@@ -1402,7 +1041,7 @@ export default function Gallery() {
           
           {/* Top Arts of the Week - New API-based system */}
           {!isLoadingTopArts && topArtsWeekly.length > 0 && (
-          <div style={{ marginBottom: '80px' }}>
+          <div className="museo-top-arts-container">
             <div className="museo-gallery-header">
               <h1 className="museo-heading museo-heading--gallery">
                 Top Arts of the Week
@@ -1413,58 +1052,14 @@ export default function Gallery() {
             </div>
             
             {/* Creative Podium Container */}
-            <div style={{
-              position: 'relative',
-              background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%)',
-              borderRadius: '30px',
-              padding: '60px 40px',
-              overflow: 'hidden',
-              boxShadow: '0 25px 80px rgba(26, 26, 46, 0.4), 0 10px 40px rgba(0,0,0,0.3)'
-            }}>
+            <div className="museo-top-arts-bg-container">
               {/* Enhanced decorative background elements */}
-              <div style={{
-                position: 'absolute',
-                top: '-80px',
-                left: '-80px',
-                width: '300px',
-                height: '300px',
-                background: 'radial-gradient(circle, rgba(255,215,0,0.15) 0%, rgba(212,175,55,0.08) 40%, transparent 70%)',
-                borderRadius: '50%'
-              }}></div>
-              <div style={{
-                position: 'absolute',
-                bottom: '-60px',
-                right: '-60px',
-                width: '250px',
-                height: '250px',
-                background: 'radial-gradient(circle, rgba(248,245,240,0.1) 0%, rgba(255,255,255,0.05) 50%, transparent 70%)',
-                borderRadius: '50%'
-              }}></div>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '600px',
-                height: '400px',
-                background: 'radial-gradient(ellipse, rgba(212,175,55,0.08) 0%, transparent 60%)',
-                borderRadius: '50%',
-                zIndex: 1
-              }}></div>
+              <div className="museo-top-arts-deco-1"></div>
+              <div className="museo-top-arts-deco-2"></div>
+              <div className="museo-top-arts-glow"></div>
               
               {/* Podium Layout */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gridTemplateRows: 'auto auto',
-                gap: '20px',
-                alignItems: 'end',
-                maxWidth: '1200px',
-                margin: '0 auto',
-                position: 'relative',
-                zIndex: 2,
-                padding: '0 20px'
-              }}>
+              <div className="museo-top-arts-podium gallery__podium">
                 {(() => {
                   // Use the topArtsWeekly data from the new API
                   const topArts = topArtsWeekly; // Already sorted by rank_position from API
@@ -1483,68 +1078,21 @@ export default function Gallery() {
                       {/* Second Place - Left */}
                       {topArts[1] && (
                         <div 
-                          style={{
-                            gridColumn: '1',
-                            gridRow: '1',
-                            background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))',
-                            borderRadius: '20px',
-                            padding: '20px',
-                            backdropFilter: 'blur(15px)',
-                            border: '2px solid #c0c0c0',
-                            boxShadow: '0 15px 40px rgba(192, 192, 192, 0.2), 0 8px 20px rgba(0,0,0,0.15)',
-                            width: '100%',
-                            maxWidth: '300px',
-                            margin: '0 auto',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }}
+                          className="gallery__podium-card gallery__podium-card--second"
                           onClick={() => openArtworkModal(topArts[1], 'TOP ARTS #2 (SILVER)')}
                         >
-                          <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            left: '8px',
-                            background: '#c0c0c0',
-                            color: 'white',
-                            padding: '6px 12px',
-                            borderRadius: '15px',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
+                          <div className="gallery__rank-badge gallery__rank-badge--silver">
                             🥈 #2
                           </div>
                           <img
                             src={Array.isArray(topArts[1].image) ? topArts[1].image[0] : topArts[1].image}
                             alt={topArts[1].title}
-                            style={{
-                              width: '100%',
-                              height: '200px',
-                              objectFit: 'cover',
-                              borderRadius: '12px',
-                              marginBottom: '15px'
-                            }}
+                            className="gallery__podium-img gallery__podium-img--second"
                           />
-                          <h4 style={{
-                            color: 'white',
-                            fontSize: '16px',
-                            fontWeight: '700',
-                            marginBottom: '8px',
-                            textAlign: 'center'
-                          }}>
+                          <h4 className="gallery__podium-title gallery__podium-title--second">
                             {topArts[1].title}
                           </h4>
-                          <p style={{
-                            color: 'rgba(255,255,255,0.8)',
-                            fontSize: '14px',
-                            textAlign: 'center',
-                            fontStyle: 'italic',
-                            margin: '0'
-                          }}>
+                          <p className="gallery__podium-artist gallery__podium-artist--second">
                             {topArts[1].artist}
                           </p>
                         </div>
@@ -1553,81 +1101,24 @@ export default function Gallery() {
                       {/* First Place - Center (Champion) */}
                       {topArts[0] && (
                         <div 
-                          style={{
-                            gridColumn: '2',
-                            gridRow: '1',
-                            background: 'linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1))',
-                            borderRadius: '25px',
-                            padding: '25px',
-                            boxShadow: '0 20px 60px rgba(255,215,0,0.4), 0 10px 30px rgba(0,0,0,0.3)',
-                            border: '4px solid #d4af37',
-                            width: '100%',
-                            maxWidth: '350px',
-                            margin: '0 auto',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }}
+                          className="gallery__podium-card gallery__podium-card--first"
                           onClick={() => openArtworkModal(topArts[0], 'TOP ARTS #1 (GOLD CHAMPION)')}
                         >
-                          <div style={{
-                            position: 'absolute',
-                            top: '-15px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            background: 'linear-gradient(45deg, #ffd700, #ffed4e)',
-                            padding: '10px 20px',
-                            borderRadius: '25px',
-                            fontSize: '15px',
-                            fontWeight: 'bold',
-                            color: '#2c1810',
-                            boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
-                            marginTop: '25px',
-                            textAlign: 'center',
-                            whiteSpace: 'nowrap'
-                          }}>
+                          <div className="gallery__champion-badge">
                             🏆 TOP ART OF THE WEEK
                           </div>
                           <img
                             src={Array.isArray(topArts[0].image) ? topArts[0].image[0] : topArts[0].image}
                             alt={topArts[0].title}
-                            style={{
-                              width: '100%',
-                              height: '250px',
-                              objectFit: 'cover',
-                              borderRadius: '15px',
-                              marginBottom: '20px',
-                              marginTop: '30px'
-                            }}
+                            className="gallery__podium-img gallery__podium-img--first"
                           />
-                          <h3 style={{
-                            color: 'white',
-                            fontSize: '20px',
-                            fontWeight: '800',
-                            marginBottom: '10px',
-                            textAlign: 'center'
-                          }}>
+                          <h3 className="gallery__podium-title gallery__podium-title--first">
                             {topArts[0].title}
                           </h3>
-                          <p style={{
-                            color: '#ffd700',
-                            fontSize: '16px',
-                            textAlign: 'center',
-                            fontStyle: 'italic',
-                            margin: '0 0 15px 0'
-                          }}>
+                          <p className="gallery__podium-artist gallery__podium-artist--first">
                             {topArts[0].artist}
                           </p>
-                          <div style={{
-                            background: 'rgba(255,215,0,0.2)',
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            textAlign: 'center',
-                            color: '#2c1810',
-                            fontWeight: 'bold',
-                            fontSize: '13px'
-                          }}>
+                          <div className="gallery__views-badge">
                             🔥 {formatNumber(artworkStats[topArts[0].id]?.views || 0)} views
                           </div>
                         </div>
@@ -1636,65 +1127,21 @@ export default function Gallery() {
                       {/* Third Place - Right */}
                       {topArts[2] && (
                         <div 
-                          style={{
-                            gridColumn: '3',
-                            gridRow: '1',
-                            background: 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))',
-                            borderRadius: '18px',
-                            padding: '18px',
-                            backdropFilter: 'blur(12px)',
-                            border: '2px solid #cd7f32',
-                            boxShadow: '0 12px 35px rgba(205, 127, 50, 0.2), 0 6px 18px rgba(0,0,0,0.12)',
-                            width: '100%',
-                            maxWidth: '280px',
-                            margin: '0 auto',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }}
+                          className="gallery__podium-card gallery__podium-card--third"
                           onClick={() => openArtworkModal(topArts[2], 'TOP ARTS #3 (BRONZE)')}
                         >
-                          <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            left: '8px',
-                            background: '#cd7f32',
-                            color: 'white',
-                            padding: '6px 12px',
-                            borderRadius: '15px',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                          }}>
+                          <div className="gallery__rank-badge gallery__rank-badge--bronze">
                             🥉 #3
                           </div>
                           <img
                             src={Array.isArray(topArts[2].image) ? topArts[2].image[0] : topArts[2].image}
                             alt={topArts[2].title}
-                            style={{
-                              width: '100%',
-                              height: '180px',
-                              objectFit: 'cover',
-                              borderRadius: '10px',
-                              marginBottom: '12px'
-                            }}
+                            className="gallery__podium-img gallery__podium-img--third"
                           />
-                          <h5 style={{
-                            color: 'white',
-                            fontSize: '15px',
-                            fontWeight: '700',
-                            marginBottom: '6px',
-                            textAlign: 'center'
-                          }}>
+                          <h5 className="gallery__podium-title gallery__podium-title--third">
                             {topArts[2].title}
                           </h5>
-                          <p style={{
-                            color: 'rgba(255,255,255,0.8)',
-                            fontSize: '13px',
-                            textAlign: 'center',
-                            fontStyle: 'italic',
-                            margin: '0'
-                          }}>
+                          <p className="gallery__podium-artist gallery__podium-artist--third">
                             {topArts[2].artist}
                           </p>
                         </div>
@@ -1702,94 +1149,39 @@ export default function Gallery() {
 
                       {/* Bottom Row - Notable Acquisitions (4-6) */}
                       {topArts.length > 3 && (
-                        <div style={{
-                          gridColumn: '1 / -1',
-                          gridRow: '2',
-                          marginTop: '50px'
-                        }}>
-                          <div style={{
-                            textAlign: 'center',
-                            marginBottom: '35px'
-                          }}>
-                            <h3 style={{
-                              color: '#ffd700',
-                              fontSize: '1.6rem',
-                              fontWeight: '600',
-                              marginBottom: '8px'
-                            }}>
+                        <div className="gallery__notable-section">
+                          <div className="gallery__notable-header">
+                            <h3 className="gallery__notable-title">
                               Notable Acquisitions
                             </h3>
-                            <p style={{
-                              color: 'rgba(255,255,255,0.6)',
-                              fontSize: '14px'
-                            }}>
+                            <p className="gallery__notable-subtitle">
                               Positions 4-6 in our weekly rankings
                             </p>
                           </div>
                           
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                            gap: '25px',
-                            maxWidth: '800px',
-                            margin: '0 auto'
-                          }}>
+                          <div className="gallery__notable-grid">
                             {topArts.slice(3).map((artwork, index) => (
                               <div
                                 key={artwork.id}
-                                style={{
-                                  background: 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.08))',
-                                  borderRadius: '20px',
-                                  padding: '20px',
-                                  backdropFilter: 'blur(15px)',
-                                  border: '1px solid rgba(255,255,255,0.25)',
-                                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                                  transition: 'all 0.3s ease',
-                                  cursor: 'pointer'
-                                }}
+                                className="gallery__notable-card"
                                 onClick={() => openArtworkModal(artwork, `NOTABLE MENTION #${index + 4}`)}
                               >
-                                <div style={{ position: 'relative', marginBottom: '15px' }}>
+                                <div className="gallery__notable-img-wrapper">
                                   <img
                                     src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image}
                                     alt={artwork.title}
-                                    style={{
-                                      width: '100%',
-                                      height: '140px',
-                                      objectFit: 'cover',
-                                      borderRadius: '12px'
-                                    }}
+                                    className="gallery__notable-img"
                                   />
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '10px',
-                                    left: '10px',
-                                    background: 'rgba(255,255,255,0.9)',
-                                    color: '#2c1810',
-                                    padding: '6px 10px',
-                                    borderRadius: '12px',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
-                                  }}>
+                                  <div className="gallery__notable-rank">
                                     #{index + 4}
                                   </div>
                                 </div>
                                 
-                                <div style={{ textAlign: 'center' }}>
-                                  <h5 style={{
-                                    color: 'white',
-                                    fontSize: '15px',
-                                    fontWeight: '700',
-                                    marginBottom: '6px'
-                                  }}>
+                                <div className="gallery__notable-content">
+                                  <h5 className="gallery__notable-card-title">
                                     {artwork.title}
                                   </h5>
-                                  <p style={{
-                                    color: 'rgba(255,255,255,0.8)',
-                                    fontSize: '13px',
-                                    fontStyle: 'italic',
-                                    margin: '0'
-                                  }}>
+                                  <p className="gallery__notable-card-artist">
                                     {artwork.artist}
                                   </p>
                                 </div>
@@ -1895,7 +1287,7 @@ export default function Gallery() {
                       handleCategoryChange(newCategories);
                     }}
                   >
-                    {category.name} ({category.count || 0})
+                    {category.name}
                   </button>
                 ))}
                 </div>
@@ -2229,7 +1621,7 @@ export default function Gallery() {
       {/* Floating Action Button - Bottom Right - Only for admin/artist */}
       {(role === 'admin' || role === 'artist') && (
         <button
-          className="museo-btn museo-btn--primary museo-floating-btn"
+          className="btn btn-primary museo-floating-btn"
           onClick={() => setIsUploadModalOpen(true)}
           title="Add Artwork"
         >

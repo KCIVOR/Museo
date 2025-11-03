@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react"; // Import useState
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState("Finishing login..."); // Add state for message
+  const [message, setMessage] = useState("Finishing login...");
 
   useEffect(() => {
     const finishLogin = async () => {
@@ -33,7 +33,10 @@ export default function AuthCallback() {
         return;
       }
 
-      console.log("Login process complete");
+      // ✅ Session stored successfully
+      // Note: ProtectedRoutes will populate UserContext automatically
+      console.log("✅ OAuth Callback: Session stored, navigating to home...");
+      
       localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
       navigate("/home");
     };

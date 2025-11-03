@@ -2,16 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 import EventModal from "./EventModal.jsx";
 import PublishEventModal from "./PublishEventModal.jsx";
 import ConfirmModal from "./ConfirmModal.jsx";
 import { NavLink } from "react-router-dom";
+import "./css/events.css";
 // Using CSS classes from design-system.css instead of components
 import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 import MuseoEmptyState from "../components/MuseoEmptyState.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Event() {
+  const { userData } = useUser();
+  // Get role from UserContext instead of separate state
+  const role = userData?.role || null;
+  
   const location = useLocation();
   const navigate = useNavigate();
   const { eventId: routeEventId } = useParams();
@@ -19,7 +25,6 @@ export default function Event() {
   const items = events; // use fetched events instead of hardcoded
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
-  const [role, setRole] = useState(null);
   const [showPublish, setShowPublish] = useState(false);
   const [editData, setEditData] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -134,22 +139,6 @@ export default function Event() {
     // Only run when routeEventId changes or when events are first loaded
   }, [routeEventId, events.length > 0]);
 
-  // Fetch role of current user
-  const fetchRole = async () => {
-    try {
-      const response = await fetch(`${API}/users/role`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
-      const data = await response.json();
-      setRole(data);
-      console.log("Fetched user:", data);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      setRole(null);
-    }
-  };
 
   // Load more events for infinite scroll
   const loadMoreEvents = async () => {
@@ -162,7 +151,6 @@ export default function Event() {
 
   useEffect(() => {
     getEvents(1, false);
-    fetchRole();
   }, []);
 
   // Infinite scroll observer (Homepage style)
@@ -340,17 +328,13 @@ export default function Event() {
     <div className="museo-page">
       <div className="museo-feed">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div className="event__header">
           <h1 className="museo-heading">Events</h1>
         </div>
 
         {/* Admin Actions */}
         {(role === 'admin' || role?.role === 'admin') && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            marginBottom: '32px' 
-          }}>
+          <div className="event__admin-actions">
             <button
               className="btn btn-primary btn-sm"
               onClick={() => setShowPublish(true)}
@@ -454,18 +438,6 @@ export default function Event() {
                   <div 
                     className="museo-actions" 
                     onClick={(ev) => ev.stopPropagation()}
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '6px',
-                      marginTop: 'auto',
-                      paddingTop: '12px',
-                      opacity: 0,
-                      transform: 'translateY(8px)',
-                      pointerEvents: 'none',
-                      transition: 'opacity 300ms ease, transform 300ms ease',
-                      alignSelf: 'stretch'
-                    }}
                   >
                     <button className="btn btn-primary btn-sm" onClick={() => openEvent(e)}>View More</button>
                     {(role === 'admin' || role?.role === 'admin') && (
@@ -483,30 +455,18 @@ export default function Event() {
 
         {/* Loading more indicator */}
         {isLoadingMore && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '40px 20px',
-            marginTop: '20px'
-          }}>
-            <MuseoLoadingBox show={true} />
+          <div className="event__loading-container">
+            Loading more events...
           </div>
         )}
 
         {/* Infinite scroll sentinel */}
-        <div id="events-sentinel" style={{ height: '20px', margin: '20px 0' }} />
+        <div id="events-sentinel" className="event__sentinel" />
 
         {/* End of events indicator */}
         {!hasMore && events.length > 0 && !loading && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '40px 20px',
-            color: 'var(--museo-text-muted)',
-            fontSize: '14px',
-            fontStyle: 'italic'
-          }}>
-            You've reached the end of all events
+          <div className="event__end-container">
+            You've reached the end of events
           </div>
         )}
 

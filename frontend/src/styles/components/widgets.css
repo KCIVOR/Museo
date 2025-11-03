@@ -1,0 +1,320 @@
+/* ========================================
+   🎴 MUSEO WIDGET COMPONENTS
+   Token-based widget system for sidebars
+   ======================================== */
+
+/* ===== MUSEO CARDS ===== */
+
+.museo-card { 
+  background: var(--museo-white); 
+  border: 2px solid var(--museo-border); 
+  border-radius: var(--museo-radius-xl); 
+  padding: var(--museo-space-5); 
+  margin-bottom: var(--museo-space-4); 
+  box-shadow: var(--museo-shadow-sm);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  position: relative;
+}
+
+.museo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--museo-shadow-md);
+  border-color: var(--museo-accent);
+}
+
+.museo-card--clickable {
+  cursor: pointer;
+}
+
+.museo-card--clickable:hover {
+  background: var(--museo-bg-secondary);
+}
+
+.museo-card--artwork {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ===== CARD TITLE ===== */
+
+.museo-card__title { 
+  font-weight: var(--museo-font-bold); 
+  font-size: var(--museo-text-sm); 
+  text-transform: uppercase; 
+  color: var(--museo-primary); 
+  text-align: left; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  gap: var(--museo-space-2);
+  margin-bottom: var(--museo-space-3);
+  position: relative;
+}
+
+.museo-card__title--center {
+  text-align: center;
+  justify-content: center;
+}
+
+/* ===== TYPOGRAPHY ===== */
+
+.museo-title-text {
+  font-family: var(--museo-font-body);
+  font-weight: var(--museo-font-bold);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--museo-primary);
+  position: relative;
+  display: inline-block;
+}
+
+.museo-title-text::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: var(--museo-accent);
+  border-radius: 1px;
+}
+
+.museo-view-all {
+  font-family: var(--museo-font-body);
+  font-weight: var(--museo-font-semibold);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--museo-accent);
+  cursor: pointer;
+  transition: color var(--museo-duration-fast) var(--museo-ease-out);
+  padding: var(--museo-space-1) var(--museo-space-2);
+  border-radius: var(--museo-radius-sm);
+}
+
+.museo-view-all:hover {
+  color: var(--museo-primary);
+  background: rgba(212, 180, 138, 0.1);
+}
+
+/* ===== CARD IMAGE ===== */
+
+.museo-card__image { 
+  width: 100%; 
+  height: auto; 
+  aspect-ratio: 5/2;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--museo-radius-base);
+}
+
+.museo-card__caption { 
+  font-size: var(--museo-text-xs); 
+  color: var(--museo-text-muted); 
+  text-align: center; 
+  padding: var(--museo-space-3) var(--museo-space-4);
+  font-weight: var(--museo-font-medium);
+  background: var(--museo-bg-secondary);
+}
+
+/* ===== EVENT LIST ===== */
+
+.museo-event-list { 
+  list-style: none; 
+  margin: 0; 
+  padding: 0; 
+  display: grid; 
+  gap: var(--museo-space-3); 
+}
+
+.museo-event-item {
+  display: grid;
+  grid-template-columns: 60px 1fr 20px;
+  align-items: center;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-4);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  background: var(--museo-white);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  position: relative;
+}
+
+.museo-event-item:hover { 
+  transform: translateY(-2px); 
+  box-shadow: var(--museo-shadow-md); 
+  border-color: var(--museo-accent); 
+  background: var(--museo-bg-secondary);
+}
+
+.museo-event-item--loading, 
+.museo-event-item--error, 
+.museo-event-item--empty { 
+  justify-content: center; 
+  grid-template-columns: 1fr; 
+  text-align: center; 
+  color: var(--museo-text-muted); 
+  font-style: italic;
+}
+
+.museo-event-item--error {
+  color: var(--museo-error);
+}
+
+/* ===== EVENT DATE BADGE ===== */
+
+.museo-event-date {
+  display: grid; 
+  place-items: center; 
+  min-width: 56px;
+  border: 2px solid var(--museo-accent); 
+  border-radius: var(--museo-radius-md); 
+  padding: var(--museo-space-2) var(--museo-space-1); 
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-white) 100%);
+  box-shadow: 0 2px 4px rgba(212, 180, 138, 0.2);
+}
+
+.museo-event-month { 
+  font-size: 10px; 
+  font-weight: var(--museo-font-bold); 
+  letter-spacing: 0.8px; 
+  text-transform: uppercase; 
+  color: var(--museo-accent);
+  line-height: 1;
+}
+
+.museo-event-day { 
+  font-weight: var(--museo-font-extrabold); 
+  font-size: 22px; 
+  color: var(--museo-primary);
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* ===== EVENT CONTENT ===== */
+
+.museo-event-body { 
+  min-width: 0; 
+  display: grid; 
+  gap: var(--museo-space-1); 
+}
+
+.museo-event-title { 
+  font-weight: var(--museo-font-semibold); 
+  font-size: 15px;
+  letter-spacing: 0.3px; 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis;
+  color: var(--museo-primary);
+  line-height: 1.4;
+}
+
+.museo-event-meta { 
+  color: var(--museo-text-muted);
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-medium);
+  line-height: 1.3;
+}
+
+.museo-event-chevron { 
+  font-size: 20px; 
+  color: var(--museo-accent); 
+  font-weight: 300;
+  transition: transform var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.museo-event-item:hover .museo-event-chevron {
+  transform: translateX(4px);
+}
+
+/* ===== ARTWORK WIDGETS ===== */
+
+.museo-loading-state,
+.museo-empty-state {
+  text-align: center;
+  padding: var(--museo-space-5);
+  color: var(--museo-text-muted);
+  font-style: italic;
+}
+
+.museo-artwork-card {
+  padding: var(--museo-space-3);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  margin-bottom: var(--museo-space-2);
+  position: relative;
+}
+
+.museo-artwork-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.museo-rank-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: var(--museo-white);
+  border-radius: var(--museo-radius-md);
+  padding: var(--museo-space-1) var(--museo-space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--museo-font-bold);
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.museo-artwork-image {
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: var(--museo-radius-base);
+  overflow: hidden;
+  margin-bottom: var(--museo-space-2);
+}
+
+.museo-artwork-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.museo-artwork-title {
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--museo-font-body);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .museo-card {
+    padding: var(--museo-space-4);
+  }
+  
+  .museo-event-item {
+    grid-template-columns: 50px 1fr 16px;
+    gap: var(--museo-space-3);
+    padding: var(--museo-space-3);
+  }
+  
+  .museo-event-day {
+    font-size: 18px;
+  }
+  
+  .museo-event-title {
+    font-size: 14px;
+  }
+}

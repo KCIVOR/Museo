@@ -1,4 +1,5 @@
 import db from "../database/db.js";
+import { cache } from '../utils/cache.js';
 
 // Get notifications for the current user (including global ones)
 export async function listNotifications(req, res) {
@@ -9,41 +10,64 @@ export async function listNotifications(req, res) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
+    // Extract pagination parameters
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '20', 10);
+    const offset = (page - 1) * limit;
+
+    // Check cache first (5 seconds - short cache for near real-time)
+    const cacheKey = `notifications:${userId}:${page}:${limit}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     // Get notifications for this user OR global notifications (recipient = null)
+    // Filter out deleted notifications at database level using NOT operator
+    // Fetch one extra item to check if there are more pages
     const { data, error } = await db
       .from("notification")
       .select("*")
       .or(`recipient.is.null,recipient.eq.${userId}`) // Global OR personal notifications
+      .not('deletedByUsers', 'cs', `["${userId}"]`) // Exclude if userId is in deletedByUsers array (JSON array format)
       .order("createdAt", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit); // Fetch limit + 1 items
 
     if (error) {
       console.error("listNotifications error:", error);
       return res.status(500).json({ error: "Failed to fetch notifications" });
     }
 
-    // Filter out deleted notifications and add user-specific read status
-    const notificationsWithReadStatus = (data || [])
-      .filter(notification => {
-        // Hide notifications that this user has deleted
-        const deletedByUsers = notification.deletedByUsers || [];
-        return !deletedByUsers.includes(userId);
-      })
-      .map(notification => {
-        // Check if this user has read this notification
-        const readByUsers = notification.readByUsers || [];
-        const isReadByCurrentUser = readByUsers.includes(userId);
-        
-        return {
-          ...notification,
-          isRead: isReadByCurrentUser // User-specific read status from readByUsers array
-        };
-      });
+    // Check if there are more notifications (before slicing)
+    const hasMore = (data || []).length > limit;
+    
+    // Take only the limit amount of items
+    const limitedData = (data || []).slice(0, limit);
 
-    return res.status(200).json({ 
-      notifications: notificationsWithReadStatus,
-      unreadCount: notificationsWithReadStatus.filter(n => !n.isRead).length
+    // Add user-specific read status (no filtering needed - done in query)
+    const notificationsWithReadStatus = limitedData.map(notification => {
+      // Check if this user has read this notification
+      const readByUsers = notification.readByUsers || [];
+      const isReadByCurrentUser = readByUsers.includes(userId);
+      
+      return {
+        ...notification,
+        isRead: isReadByCurrentUser // User-specific read status from readByUsers array
+      };
     });
+
+    const result = { 
+      notifications: notificationsWithReadStatus,
+      unreadCount: notificationsWithReadStatus.filter(n => !n.isRead).length,
+      hasMore,
+      page,
+      limit
+    };
+
+    // Cache for 5 seconds (short cache for near real-time)
+    await cache.set(cacheKey, result, 5);
+
+    return res.status(200).json(result);
   } catch (e) {
     console.error("listNotifications unexpected error:", e);
     return res.status(500).json({ error: "Unexpected server error" });
@@ -87,6 +111,9 @@ export async function markAsRead(req, res) {
         console.error("markAsRead update error:", updateError);
         return res.status(500).json({ error: "Failed to mark as read" });
       }
+
+      // Clear cache for this user
+      await cache.clearPattern(`notifications:${userId}:*`);
     }
 
     return res.status(200).json({ message: "Notification marked as read" });
@@ -131,6 +158,9 @@ export async function markAllAsRead(req, res) {
     });
 
     await Promise.all(updates);
+
+    // Clear cache for this user
+    await cache.clearPattern(`notifications:${userId}:*`);
 
     return res.status(200).json({ message: "All notifications marked as read" });
   } catch (e) {
@@ -180,6 +210,9 @@ export async function deleteNotification(req, res) {
         console.error("deleteNotification update error:", updateError);
         return res.status(500).json({ error: "Failed to delete notification" });
       }
+
+      // Clear cache for this user
+      await cache.clearPattern(`notifications:${userId}:*`);
     }
 
     return res.status(200).json({ message: "Notification deleted successfully" });

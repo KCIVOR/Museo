@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import ImageUploadZone from "../../components/modal-features/ImageUploadZone";
 import "./css/registerArtist.css";
 const API = import.meta.env.VITE_API_BASE;
 
 
 export default function RegisterArtist({ open, onClose, onSubmitted }) {
-  const fileRef = useRef(null);
-  const [previews, setPreviews] = useState([]); // array of object URLs
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     midInit: "",
@@ -20,46 +18,10 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
     portfolio: "", // optional link
     bio: "",       // optional short statement
     consent: false, // must be true to submit
-    files: [] // up to 2 image files
   });
+  const [images, setImages] = useState([]); // up to 2 image files
   const [fieldErrors, setFieldErrors] = useState({}); // { field: message }
 
-  useEffect(() => {
-    // build previews for selected files
-    if (!form.files || form.files.length === 0) { setPreviews([]); return; }
-    const urls = form.files.map((f) => URL.createObjectURL(f));
-    setPreviews(urls);
-    return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u));
-    };
-  }, [form.files]);
-
-  const onFiles = (fileList) => {
-    if (!fileList || fileList.length === 0) return;
-    const imgs = Array.from(fileList).filter((f) => f.type?.startsWith("image/"));
-    if (imgs.length === 0) { alert("Please select image file(s)."); return; }
-    setForm((s) => {
-      const current = s.files || [];
-      const remaining = Math.max(0, 2 - current.length);
-      const toAdd = imgs.slice(0, remaining);
-      const next = [...current, ...toAdd].slice(0, 2);
-      return { ...s, files: next };
-    });
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    const fl = e.dataTransfer?.files;
-    onFiles(fl);
-  };
-
-  const removeImage = (index) => {
-    setForm((s) => {
-      const next = [...(s.files || [])];
-      next.splice(index, 1);
-      return { ...s, files: next };
-    });
-  };
 
   const validate = () => {
     const errs = {};
@@ -71,7 +33,7 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
     if (!form.birthdate) errs.birthdate = "Birthdate is required";
     if (!form.address.trim()) errs.address = "Address is required";
     if (!form.consent) errs.consent = "You must agree to the consent";
-    if (!form.files || form.files.length === 0) errs.files = "Please upload at least 1 image";
+    if (!images || images.length === 0) errs.files = "Please upload at least 1 image";
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -97,8 +59,8 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
       if (form.portfolio) fd.append("portfolio", form.portfolio);
       if (form.bio) fd.append("bio", form.bio);
       fd.append("consent", String(!!form.consent));
-      if (form.files?.[0]) fd.append("file", form.files[0]);
-      if (form.files?.[1]) fd.append("file2", form.files[1]);
+      if (images?.[0]?.file) fd.append("file", images[0].file);
+      if (images?.[1]?.file) fd.append("file2", images[1].file);
 
       const res = await fetch(`${API}/request/registerAsArtist`, {
         method: "POST",
@@ -126,15 +88,15 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
   if (!open) return null;
 
   return (
-    <div className="museo-modal-overlay ra-overlay" onClick={onClose}>
-      <div className="museo-modal ra-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="museo-modal-overlay" onClick={onClose}>
+      <div className="museo-modal museo-modal--lg ra-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="ra-header">
-          <div className="ra-header-content">
-            <h2 className="ra-title">Apply as Artist</h2>
-            <p className="ra-subtitle">Provide your details and a valid ID with selfie</p>
+        <div className="museo-modal-header">
+          <div>
+            <h2 className="museo-modal-title">Apply as Artist</h2>
+            <p className="museo-modal-subtitle">Provide your details and a valid ID with selfie</p>
           </div>
-          <button className="ra-close" onClick={onClose} title="Close">
+          <button className="museo-modal-close" onClick={onClose} title="Close">
             ✕
           </button>
         </div>
@@ -148,21 +110,21 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
               
               <div className="ra-row">
                 <div className="ra-field">
-                  <label className="ra-label">First Name *</label>
+                  <label className="museo-label museo-label--required">First Name</label>
                   <input
-                    className={`ra-input ${fieldErrors.firstName ? 'ra-input--error' : ''}`}
+                    className={`museo-input ${fieldErrors.firstName ? 'museo-input--error' : ''}`}
                     type="text"
                     value={form.firstName}
                     onChange={(e) => setForm((s) => ({ ...s, firstName: e.target.value }))}
                     required
                   />
-                  {fieldErrors.firstName && <div className="ra-error">{fieldErrors.firstName}</div>}
+                  {fieldErrors.firstName && <div className="museo-form-error">{fieldErrors.firstName}</div>}
                 </div>
                 
                 <div className="ra-field">
-                  <label className="ra-label">Middle Initial</label>
+                  <label className="museo-label">Middle Initial</label>
                   <input
-                    className="ra-input"
+                    className="museo-input"
                     type="text"
                     maxLength={2}
                     value={form.midInit}
@@ -173,22 +135,22 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
 
               
               <div className="ra-field">
-                <label className="ra-label">Last Name *</label>
+                <label className="museo-label museo-label--required">Last Name</label>
                 <input
-                  className={`ra-input ${fieldErrors.lastName ? 'ra-input--error' : ''}`}
+                  className={`museo-input ${fieldErrors.lastName ? 'museo-input--error' : ''}`}
                   type="text"
                   value={form.lastName}
                   onChange={(e) => setForm((s) => ({ ...s, lastName: e.target.value }))}
                   required
                 />
-                {fieldErrors.lastName && <div className="ra-error">{fieldErrors.lastName}</div>}
+                {fieldErrors.lastName && <div className="museo-form-error">{fieldErrors.lastName}</div>}
               </div>
 
               
               <div className="ra-field">
-                <label className="ra-label">Phone Number *</label>
+                <label className="museo-label museo-label--required">Phone Number</label>
                 <input
-                  className={`ra-input ${fieldErrors.phone ? 'ra-input--error' : ''}`}
+                  className={`museo-input ${fieldErrors.phone ? 'museo-input--error' : ''}`}
                   type="tel"
                   inputMode="tel"
                   placeholder="+63 ..."
@@ -196,15 +158,15 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
                   onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
                   required
                 />
-                {fieldErrors.phone && <div className="ra-error">{fieldErrors.phone}</div>}
+                {fieldErrors.phone && <div className="museo-form-error">{fieldErrors.phone}</div>}
               </div>
 
               
               <div className="ra-row">
                 <div className="ra-field">
-                  <label className="ra-label">Age *</label>
+                  <label className="museo-label museo-label--required">Age</label>
                   <input
-                    className={`ra-input ${fieldErrors.age ? 'ra-input--error' : ''}`}
+                    className={`museo-input ${fieldErrors.age ? 'museo-input--error' : ''}`}
                     type="number"
                     min="13"
                     max="120"
@@ -213,13 +175,13 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
                     required
                     placeholder="Age"
                   />
-                  {fieldErrors.age && <div className="ra-error">{fieldErrors.age}</div>}
+                  {fieldErrors.age && <div className="museo-form-error">{fieldErrors.age}</div>}
                 </div>
                 
                 <div className="ra-field">
-                  <label className="ra-label">Sex *</label>
+                  <label className="museo-label museo-label--required">Sex</label>
                   <select
-                    className={`ra-input ${fieldErrors.sex ? 'ra-input--error' : ''}`}
+                    className={`museo-select ${fieldErrors.sex ? 'museo-select--error' : ''}`}
                     value={form.sex}
                     onChange={(e) => setForm((s) => ({ ...s, sex: e.target.value }))}
                     required
@@ -230,35 +192,35 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
                     <option>Prefer not to say</option>
                     <option>Other</option>
                   </select>
-                  {fieldErrors.sex && <div className="ra-error">{fieldErrors.sex}</div>}
+                  {fieldErrors.sex && <div className="museo-form-error">{fieldErrors.sex}</div>}
                 </div>
               </div>
 
               
               <div className="ra-field">
-                <label className="ra-label">Birthdate *</label>
+                <label className="museo-label museo-label--required">Birthdate</label>
                 <input
-                  className={`ra-input ${fieldErrors.birthdate ? 'ra-input--error' : ''}`}
+                  className={`museo-date-input ${fieldErrors.birthdate ? 'museo-input--error' : ''}`}
                   type="date"
                   value={form.birthdate}
                   onChange={(e) => setForm((s) => ({ ...s, birthdate: e.target.value }))}
                   required
                 />
-                {fieldErrors.birthdate && <div className="ra-error">{fieldErrors.birthdate}</div>}
+                {fieldErrors.birthdate && <div className="museo-form-error">{fieldErrors.birthdate}</div>}
               </div>
 
               
               <div className="ra-field">
-                <label className="ra-label">Address *</label>
+                <label className="museo-label museo-label--required">Address</label>
                 <input
-                  className={`ra-input ${fieldErrors.address ? 'ra-input--error' : ''}`}
+                  className={`museo-input ${fieldErrors.address ? 'museo-input--error' : ''}`}
                   type="text"
                   placeholder="House/Street, Barangay, City, Province, ZIP"
                   value={form.address}
                   onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
                   required
                 />
-                {fieldErrors.address && <div className="ra-error">{fieldErrors.address}</div>}
+                {fieldErrors.address && <div className="museo-form-error">{fieldErrors.address}</div>}
               </div>
             </div>
 
@@ -267,55 +229,16 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
             <div className="ra-section">
               <h3 className="ra-section-title">Identity Verification</h3>
               
-              <div className="ra-field">
-                <label className="ra-label">Valid ID & Selfie (up to 2 images) *</label>
-                
-                <div 
-                  className={`ra-dropzone ${isDragging ? 'ra-dropzone--active' : ''} ${previews.length > 0 ? 'ra-dropzone--has-files' : ''} ${fieldErrors.files ? 'ra-dropzone--error' : ''}`}
-                  onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                  onDrop={(e) => { onDrop(e); setIsDragging(false); }}
-                >
-                  <div className="ra-dropzone-content">
-                    <div className="ra-dropzone-text">
-                      <strong>Drop your ID & selfie here</strong> or click to browse
-                    </div>
-                    <div className="ra-dropzone-hint">
-                      Support: JPG, PNG up to 10MB • Maximum 2 images • Valid ID + Selfie required
-                    </div>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png"
-                      multiple
-                      onChange={(e) => onFiles(e.target.files)}
-                      className="ra-file-input"
-                    />
-                  </div>
-                </div>
-
-                {fieldErrors.files && <div className="ra-error">{fieldErrors.files}</div>}
-
-                {/* Image Previews */}
-                {previews.length > 0 && (
-                  <div className="ra-image-previews">
-                    {previews.map((src, idx) => (
-                      <div key={idx} className="ra-image-preview">
-                        <img src={src} alt="Preview" />
-                        <button
-                          type="button"
-                          className="ra-image-remove"
-                          onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
-                          title="Remove image"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <ImageUploadZone
+                type="multiple"
+                maxFiles={2}
+                maxSize={10}
+                title="Valid ID & Selfie"
+                hint="Support: JPG, PNG up to 10MB • Maximum 2 images • Valid ID + Selfie required"
+                value={images}
+                onChange={setImages}
+                error={fieldErrors.files}
+              />
             </div>
 
             
@@ -324,9 +247,9 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
               <h3 className="ra-section-title">Additional Information (Optional)</h3>
               
               <div className="ra-field">
-                <label className="ra-label">Portfolio Link</label>
+                <label className="museo-label">Portfolio Link</label>
                 <input
-                  className="ra-input"
+                  className="museo-input"
                   type="url"
                   placeholder="https://yourportfolio.com or social profile"
                   value={form.portfolio}
@@ -335,9 +258,9 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
               </div>
               
               <div className="ra-field">
-                <label className="ra-label">Artist Statement</label>
+                <label className="museo-label">Artist Statement</label>
                 <textarea
-                  className="ra-input ra-textarea"
+                  className="museo-textarea"
                   rows={3}
                   placeholder="Briefly describe your art or links reviewers should check"
                   value={form.bio}
@@ -347,16 +270,16 @@ export default function RegisterArtist({ open, onClose, onSubmitted }) {
             </div>
 
             
-            <div className="ra-consent-container"><label className="ra-consent-label"><input type="checkbox" className="ra-checkbox" checked={form.consent} onChange={(e) => setForm((s) => ({ ...s, consent: e.target.checked }))} required /> I consent to Museo reviewing and storing the submitted documents for the purpose of artist verification.</label>{fieldErrors.consent && <div className="ra-error">{fieldErrors.consent}</div>}</div>
+            <div className="ra-consent-container"><label className="ra-consent-label"><input type="checkbox" className="museo-checkbox" checked={form.consent} onChange={(e) => setForm((s) => ({ ...s, consent: e.target.checked }))} required /> I consent to Museo reviewing and storing the submitted documents for the purpose of artist verification.</label>{fieldErrors.consent && <div className="museo-form-error">{fieldErrors.consent}</div>}</div>
           </div>
           
           {/* Footer */}
           <div className="ra-footer">
             <div className="ra-actions">
-              <button type="button" className="ra-btn ra-btn--secondary" onClick={onClose} disabled={isSubmitting}>
+              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </button>
-              <button type="submit" className="ra-btn ra-btn--primary" disabled={isSubmitting}>
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit Application"}
               </button>
             </div>

@@ -11,9 +11,11 @@ import artistRoutes from "./routes/artistRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import testNotificationRoutes from "./routes/testNotification.js";
 import requestRoutes from "./routes/requestRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import galleryRoutes from "./routes/galleryRoutes.js"
+import visitBookingRoutes from "./routes/visitBookingRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { authMiddleware } from "./middleware/auth.js";
@@ -23,6 +25,7 @@ import cron from "node-cron";
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import initializeRealtimeSync from './services/realtimeSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,14 +74,20 @@ app.use("/api/event", authMiddleware, eventRoutes);
 app.use("/api/auth", authRoutes);
 
 // notification list (public; add auth if needed)
-app.use("/api/notification",authMiddleware, notificationRoutes);
+app.use("/api/notification", authMiddleware, notificationRoutes);
+
+// Test notification route (for debugging)
+app.use("/api/test-notification", authMiddleware, testNotificationRoutes);
 
 //request routes
-app.use("/api/request", authMiddleware,requestRoutes)
+app.use("/api/request", authMiddleware, requestRoutes)
 
 app.use("/api/message", authMiddleware, messageRoutes)
 
 app.use("/api/gallery", authMiddleware, galleryRoutes)
+
+// Visit booking routes (public POST, protected GET/PUT/DELETE)
+app.use("/api/visit-bookings", visitBookingRoutes)
 
 // Create HTTP + Socket.IO
 const server = http.createServer(app);
@@ -98,8 +107,8 @@ io.on("connection", (socket) => {
     socket.on("join", (userId) => {
       try {
         if (!userId) return;
-        socket.join(`user:${userId}`);
-        console.log(`[socket] ${socket.id} joined user room user:${userId}`);
+        socket.join(`user_${userId}`); // Changed from user:${userId} to user_${userId} for consistency
+        console.log(`[socket] ${socket.id} joined user room user_${userId}`);
       } catch (e) {
         console.error("socket join error:", e);
       }
@@ -107,6 +116,29 @@ io.on("connection", (socket) => {
   } catch (e) {
     console.error("socket connection error:", e);
   }
+});
+
+// 🔄 Initialize Supabase Realtime sync
+// This listens to database changes and emits Socket.IO events
+const cleanupRealtime = initializeRealtimeSync(io);
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, cleaning up...');
+  cleanupRealtime();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, cleaning up...');
+  cleanupRealtime();
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
 
 

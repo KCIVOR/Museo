@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../design-system.css';
 import './css/InterestsSelection.css';
 
 const InterestsSelection = ({ isOpen = true, onClose }) => {

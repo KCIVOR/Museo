@@ -1,0 +1,272 @@
+/* ========================================
+   📝 MUSEO INPUT COMPONENTS
+   Token-based form input system
+   ======================================== */
+
+.museo-input,
+.museo-textarea,
+.museo-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--museo-accent);
+  border-radius: 12px;
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  font-size: 15px;
+  font-family: var(--museo-font-body);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.museo-input:focus,
+.museo-textarea:focus,
+.museo-select:focus {
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.2);
+  background: var(--museo-white);
+}
+
+.museo-input::placeholder,
+.museo-textarea::placeholder {
+  color: var(--museo-text-muted);
+}
+
+/* ===== INPUT VARIANTS ===== */
+
+.museo-input--sm {
+  padding: var(--museo-space-2) var(--museo-space-3);
+  font-size: var(--museo-text-sm);
+}
+
+.museo-input--lg {
+  padding: var(--museo-space-4) var(--museo-space-5);
+  font-size: var(--museo-text-lg);
+}
+
+/* ===== TEXTAREA ===== */
+
+.museo-textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: var(--museo-leading-relaxed);
+}
+
+/* ===== SELECT ===== */
+
+.museo-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236e4a2e' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--museo-space-3) center;
+  padding-right: var(--museo-space-8);
+}
+
+/* ===== INPUT STATES ===== */
+
+.museo-input:disabled,
+.museo-textarea:disabled,
+.museo-select:disabled {
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.museo-input--error,
+.museo-textarea--error,
+.museo-select--error {
+  border-color: var(--museo-error);
+}
+
+.museo-input--error:focus,
+.museo-textarea--error:focus,
+.museo-select--error:focus {
+  box-shadow: var(--museo-focus-error-shadow);
+}
+
+.museo-input--success {
+  border-color: var(--museo-success);
+}
+
+/* ===== FORM GROUP ===== */
+
+.museo-form-group {
+  margin-bottom: var(--museo-space-6);
+}
+
+.museo-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--museo-primary);
+  font-family: var(--museo-font-body);
+}
+
+.museo-label--required::after {
+  content: '*';
+  color: var(--museo-error);
+  margin-left: var(--museo-space-1);
+}
+
+/* ===== FORM HELPERS ===== */
+
+.museo-form-helper {
+  display: block;
+  margin-top: var(--museo-space-2);
+  font-size: var(--museo-text-xs);
+  color: var(--museo-text-muted);
+  line-height: var(--museo-leading-snug);
+}
+
+.museo-form-error {
+  display: block;
+  margin-top: var(--museo-space-2);
+  font-size: var(--museo-text-xs);
+  color: var(--museo-error);
+  font-weight: var(--museo-font-medium);
+}
+
+/* ===== CHECKBOX & RADIO ===== */
+
+.museo-checkbox,
+.museo-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--museo-border);
+  background: var(--museo-white);
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.museo-checkbox {
+  border-radius: var(--museo-radius-sm);
+}
+
+.museo-radio {
+  border-radius: 50%;
+}
+
+.museo-checkbox:checked,
+.museo-radio:checked {
+  background: var(--museo-primary);
+  border-color: var(--museo-primary);
+}
+
+.museo-checkbox:focus,
+.museo-radio:focus {
+  outline: none;
+  box-shadow: var(--museo-focus-shadow);
+}
+
+/* ===== INPUT GROUP ===== */
+
+.museo-input-group {
+  display: flex;
+  gap: var(--museo-space-2);
+}
+
+.museo-input-group .museo-input {
+  flex: 1;
+}
+
+/* ===== SEARCH INPUT ===== */
+
+.museo-search {
+  position: relative;
+}
+
+.museo-search__input {
+  padding-left: var(--museo-space-10);
+}
+
+.museo-search__icon {
+  position: absolute;
+  left: var(--museo-space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--museo-text-muted);
+  pointer-events: none;
+}
+
+/* ===== DATE INPUT ===== */
+
+.museo-date-input,
+input.museo-date-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--museo-accent);
+  border-radius: 12px;
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  font-size: 15px;
+  font-family: var(--museo-font-body);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+}
+
+.museo-date-input:focus {
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.2);
+  background: var(--museo-white);
+}
+
+.museo-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.museo-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ===== DROPDOWN ===== */
+
+.museo-dropdown,
+select.museo-dropdown {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--museo-accent);
+  border-radius: 12px;
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  font-size: 15px;
+  font-family: var(--museo-font-body);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236e4a2e' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.museo-dropdown:focus {
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.2);
+  background: var(--museo-white);
+}
+
+.museo-dropdown option {
+  color: var(--museo-primary);
+  padding: 8px 12px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .museo-input,
+  .museo-textarea,
+  .museo-select {
+    font-size: var(--museo-text-sm);
+  }
+}

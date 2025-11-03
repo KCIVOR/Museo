@@ -1,0 +1,188 @@
+/* ===========================
+   TABS COMPONENT STYLES
+   =========================== */
+
+/* Tab Navigation Container */
+.museo-tabs {
+  display: flex;
+  gap: var(--museo-space-2);
+  border-bottom: 2px solid var(--museo-border);
+  padding-bottom: 0;
+  margin-bottom: var(--museo-space-4);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Individual Tab Button */
+.museo-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--museo-space-3) var(--museo-space-4);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--museo-text-muted);
+  font-size: var(--museo-font-size-base);
+  font-weight: var(--museo-font-weight-medium);
+  font-family: var(--museo-font-family-base);
+  cursor: pointer;
+  transition: all var(--museo-transition-base);
+  white-space: nowrap;
+  position: relative;
+  margin-bottom: -2px;
+}
+
+/* Tab Hover State */
+.museo-tab:hover {
+  color: var(--museo-text-primary);
+  background: var(--museo-bg-secondary);
+}
+
+/* Active Tab */
+.museo-tab--active {
+  color: var(--museo-primary);
+  border-bottom-color: var(--museo-primary);
+  background: transparent;
+}
+
+.museo-tab--active:hover {
+  color: var(--museo-primary);
+  background: var(--museo-bg-secondary);
+}
+
+/* Tab with Icon */
+.museo-tab svg {
+  flex-shrink: 0;
+}
+
+/* Tab Content Container */
+.museo-tab-content {
+  padding-top: var(--museo-space-4);
+  animation: fadeIn var(--museo-transition-base);
+}
+
+/* Tab Panel */
+.museo-tab-panel {
+  display: none;
+}
+
+.museo-tab-panel--active {
+  display: block;
+}
+
+/* Small Tabs Variant */
+.museo-tabs--sm .museo-tab {
+  padding: var(--museo-space-2) var(--museo-space-3);
+  font-size: var(--museo-font-size-sm);
+}
+
+/* Pills Style Tabs */
+.museo-tabs--pills {
+  border-bottom: none;
+  gap: var(--museo-space-3);
+  padding: var(--museo-space-2);
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-border-radius-lg);
+}
+
+.museo-tabs--pills .museo-tab {
+  border: none;
+  border-radius: var(--museo-border-radius-md);
+  padding: var(--museo-space-2) var(--museo-space-3);
+  margin-bottom: 0;
+}
+
+.museo-tabs--pills .museo-tab--active {
+  background: var(--museo-bg-primary);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+/* Vertical Tabs */
+.museo-tabs--vertical {
+  flex-direction: column;
+  border-bottom: none;
+  border-right: 2px solid var(--museo-border);
+  padding-right: var(--museo-space-4);
+  padding-bottom: 0;
+}
+
+.museo-tabs--vertical .museo-tab {
+  justify-content: flex-start;
+  text-align: left;
+  border-bottom: none;
+  border-left: 3px solid transparent;
+  margin-bottom: 0;
+  margin-left: -2px;
+  padding-left: var(--museo-space-4);
+}
+
+.museo-tabs--vertical .museo-tab--active {
+  border-left-color: var(--museo-primary);
+  border-bottom-color: transparent;
+}
+
+/* Scrollable Tabs */
+.museo-tabs--scrollable {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--museo-border) transparent;
+}
+
+.museo-tabs--scrollable::-webkit-scrollbar {
+  height: 4px;
+}
+
+.museo-tabs--scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.museo-tabs--scrollable::-webkit-scrollbar-thumb {
+  background: var(--museo-border);
+  border-radius: 2px;
+}
+
+/* Tab Badge */
+.museo-tab__badge {
+  margin-left: var(--museo-space-2);
+  padding: 0 var(--museo-space-2);
+  background: var(--museo-accent);
+  color: var(--museo-white);
+  border-radius: var(--museo-border-radius-full);
+  font-size: var(--museo-font-size-xs);
+  font-weight: var(--museo-font-weight-bold);
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .museo-tabs {
+    gap: var(--museo-space-1);
+  }
+  
+  .museo-tab {
+    padding: var(--museo-space-2) var(--museo-space-3);
+    font-size: var(--museo-font-size-sm);
+  }
+  
+  .museo-tab svg {
+    display: none;
+  }
+}

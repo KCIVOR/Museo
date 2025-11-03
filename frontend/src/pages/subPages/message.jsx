@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useLayoutEffect } from "react";
 import { io } from "socket.io-client";
+import MuseoLoadingBox from "../../components/MuseoLoadingBox";
 const API = import.meta.env.VITE_API_BASE;
 const SOCKET_URL = (API && API.replace(/\/api\/?$/, "")) || window.location.origin;
 import "./css/message.css";
@@ -37,13 +38,9 @@ export default function Message() {
 
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(null);
-
-  // UI states
-  const [loadingConvs, setLoadingConvs] = useState(false);
-
-  // Optional: the user you picked from search for first-time chat
   const [selectedUser, setSelectedUser] = useState(null);
-
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
   const [query, setQuery] = useState("");
   const [threads, setThreads] = useState({});
   const [draft, setDraft] = useState("");
@@ -54,43 +51,26 @@ export default function Message() {
   const [searchUsers, setSearchUsers] = useState([])
   const [searching, setSearching] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const endRef = useRef(null);
+  
+  // Refs
   const socketRef = useRef(null);
-
-
-  useEffect(() => {
-    fetchMe()
-    fetchConversations()
-  }, [])
-
-  const findConversationWith = (userId) =>
-    conversations.find(c => c.otherUser?.id === userId) || null;
-
-  const openChatWith = (user) => {
-    const conv = findConversationWith(user.id);
-    if (conv) {
-      // Existing conversation
-      setActiveConvId(conv.conversationId);
-      setSelectedUser(null);
-    } else {
-      // First-time conversation (prepares right panel to send first message)
-      setActiveConvId(null);
-      setSelectedUser(user); // { id, username, profilePicture? }
-    }
-  };
-
+  const msgBodyRef = useRef(null);
+  const endRef = useRef(null);
+  const [loadingConvs, setLoadingConvs] = useState(false);
+  const [messagePagination, setMessagePagination] = useState({});
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchMe = async () => {
+    if (isFetchingMe) return;
     setIsFetchingMe(true)
     try{
-      if (isFetchingMe) return;
       const res = await fetch(`${API}/users/me`, {
         method: "GET",
         credentials: "include",
       });
       
       if (!res.ok) {
-        console.error("ayaw boss");
+        console.error("Failed to fetch user");
         return;
       }
       const data = await res.json();
@@ -105,38 +85,74 @@ export default function Message() {
         if (profRes.ok) {
           const prof = await profRes.json();
           const p = prof?.profile ?? {};
-          if (p.profilePicture) setMeAvatar(p.profilePicture);
+          const av = p.profilePicture || AV;
+          setMeAvatar(av);
         }
-      } catch (e) {
-        // keep fallback avatar if profile fetch fails
-      }
-
-    }catch(error){
-      console.error("error:", error);
-
-    }finally{
+      } catch {}
+    } catch (err) {
+      console.error("Error fetching me:", err);
+    } finally {
       setIsFetchingMe(false)
-
     }
-  }
+  };
 
-
-  // Realtime: connect socket once we know user id
+  // Initialize user and data on mount
   useEffect(() => {
-    if (!user) return;
-    if (socketRef.current) return; // already connected
+    fetchMe();
+    fetchConversations();
+  }, []);
+
+  // Setup socket connection when user is loaded
+  useEffect(() => {
+    if (!user) return; // Wait for user to be fetched
+    
+    // Disconnect existing socket if any
+    if (socketRef.current) {
+      try { socketRef.current.disconnect(); } catch {}
+      socketRef.current = null;
+    }
+    
     const s = io(SOCKET_URL, { withCredentials: true });
     socketRef.current = s;
 
     s.on("connect", () => {
+      console.log("[Socket] Connected, joining room for user:", user);
       try { s.emit("join", user); } catch {}
     });
 
     // Someone sent me a new message
     s.on("message:new", (payload) => {
+      console.log("[Socket] Received message:new", payload);
       const { conversationId, message } = payload || {};
       if (!conversationId || !message) return;
+      
       const fromMe = message.senderId === user;
+      
+      // Always add the message to threads for the conversation
+      const m = {
+        id: message.id || message.messageId,
+        at: new Date(message.created_at || message.createdAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
+        from: message.senderId === user ? "me" : "them",
+        text: message.content,
+      };
+      
+      // Add to threads regardless of which conversation is active
+      setThreads(t => {
+        const existing = t[conversationId] || [];
+        // Check if message already exists to prevent duplicates
+        const messageId = m.id;
+        const exists = existing.some(msg => msg.id === messageId);
+        if (exists) {
+          console.log("[Socket] Message already exists, skipping:", messageId);
+          return t;
+        }
+        console.log("[Socket] Adding new message to conversation:", conversationId, "ID:", messageId);
+        // Create new object to ensure React detects the change
+        const newThreads = { ...t };
+        newThreads[conversationId] = [...existing, m];
+        return newThreads;
+      });
+      
       // Update last preview
       setConversations((prev) => {
         const ts = message.created_at || new Date().toISOString();
@@ -161,32 +177,42 @@ export default function Message() {
         return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
       });
 
-      // If this thread is active, append and mark read
-      if (conversationId === activeConvId) {
-        const m = {
-          id: message.id || message.messageId,
-          at: new Date(message.created_at || message.createdAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
-          from: message.senderId === user ? "me" : "them",
-          text: message.content,
-        };
-        setThreads(t => ({ ...t, [conversationId]: [...(t[conversationId] || []), m] }));
-        // ensure unread cleared
+      // If this thread is active, mark as read
+      if (conversationId === activeConvId && !fromMe) {
         fetch(`${API}/message/markRead/${conversationId}`, { method: 'POST', credentials: 'include' }).catch(() => {});
       }
     });
 
-    // Confirmation of my own sent message (useful if we skip refetch)
+    // Confirmation of my own sent message
     s.on("message:sent", (payload) => {
+      console.log("[Socket] Received message:sent", payload);
       const { conversationId, message } = payload || {};
       if (!conversationId || !message) return;
       if (message.senderId !== user) return;
+      
       const m = {
         id: message.id || message.messageId,
         at: new Date(message.created_at || message.createdAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
         from: "me",
         text: message.content,
       };
-      setThreads(t => ({ ...t, [conversationId]: [...(t[conversationId] || []), m] }));
+      
+      // Add to threads with duplicate check
+      setThreads(t => {
+        const existing = t[conversationId] || [];
+        // Check if message already exists to prevent duplicates
+        const messageId = m.id;
+        const exists = existing.some(msg => msg.id === messageId);
+        if (exists) {
+          console.log("[Socket] Sent message already exists, skipping:", messageId);
+          return t;
+        }
+        console.log("[Socket] Adding sent message to conversation:", conversationId, "ID:", messageId);
+        // Create new object to ensure React detects the change
+        const newThreads = { ...t };
+        newThreads[conversationId] = [...existing, m];
+        return newThreads;
+      });
       setConversations(prev => {
         const ts = message.created_at || new Date().toISOString();
         const updated = prev.map(c => (
@@ -202,20 +228,21 @@ export default function Message() {
       try { s.disconnect(); } catch {}
       socketRef.current = null;
     };
-  }, [user, activeConvId]);
-
+  }, [user]); // Only reconnect when user changes, not activeConvId
 
   const fetchConversations = async () => {
+    if (loadingConvs) return;
     try{
-      if (loadingConvs) return;
       setLoadingConvs(true);
 
-      const res = await fetch(`${API}/message/getConversation`, {
+      const timestamp = Date.now();
+      const res = await fetch(`${API}/message/getConversation?t=${timestamp}`, {
         credentials: "include",
+        cache: "no-cache", // Force fresh fetch
       });
 
       if (!res.ok) {
-        console.error("conversations failed", res.status, await res.text());
+        console.error("conversations failed", res.status);
         setConversations([]);
         return;
       }
@@ -236,41 +263,114 @@ export default function Message() {
     }
   }
 
+  // Load messages for active conversation (force fresh fetch)
+  const loadMessages = async (conversationId, page = 1, append = false) => {
+    try {
+      // Add timestamp to bypass any potential browser cache
+      const timestamp = Date.now();
+      const r = await fetch(`${API}/message/getConversation/${conversationId}?page=${page}&limit=20&t=${timestamp}`, {
+        credentials: "include",
+        cache: "no-cache", // Force fresh fetch
+      });
+      if (!r.ok) {
+        console.error("load messages failed", r.status);
+        return;
+      }
+      const d = await r.json();
+      const msgs = (d.messages || []).map(m => ({
+        id: m.id || m.messageId,
+        at: new Date(m.created_at || m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
+        from: m.senderId === user ? "me" : "them",
+        text: m.content,
+      }));
 
+      // Update pagination info
+      setMessagePagination(p => ({ ...p, [conversationId]: d.pagination }));
 
+      if (append) {
+        // When appending (pagination), filter out duplicates
+        setThreads(t => {
+          const existing = t[conversationId] || [];
+          const existingIds = new Set(existing.map(msg => msg.id));
+          
+          // Filter out any messages that already exist
+          const newMessages = msgs.filter(msg => !existingIds.has(msg.id));
+          
+          console.log(`[Pagination] Loading ${msgs.length} messages, ${newMessages.length} are new`);
+          
+          // Prepend new messages (older messages go at the beginning)
+          return { ...t, [conversationId]: [...newMessages, ...existing] };
+        });
+      } else {
+        // Initial load - deduplicate in case some messages were already added via socket
+        setThreads(t => {
+          const existing = t[conversationId] || [];
+          const existingIds = new Set(existing.map(msg => msg.id));
+          
+          // Keep existing messages that aren't in the new batch
+          const existingNotInNew = existing.filter(msg => !msgs.some(m => m.id === msg.id));
+          
+          console.log(`[Initial Load] Got ${msgs.length} messages, keeping ${existingNotInNew.length} existing`);
+          
+          // Combine: new messages from server + any messages added via socket that aren't duplicates
+          return { ...t, [conversationId]: [...msgs, ...existingNotInNew] };
+        });
+      }
+    } catch (e) {
+      console.error("fetch messages error:", e);
+    }
+  };
+
+  // Handle activeConvId changes - load messages when switching conversations
   useEffect(() => {
-  if (!activeConvId) return;
+    if (!activeConvId || !user) return;
+    
+    console.log("[ConversationChange] Loading messages for:", activeConvId);
+    
     // Optimistically clear unread badge for this conversation
     setConversations(prev => prev.map(c => (
       c.conversationId === activeConvId ? { ...c, unreadCount: 0 } : c
     )));
+    
     // Persist unread reset on backend (best-effort)
     fetch(`${API}/message/markRead/${activeConvId}`, {
       method: "POST",
       credentials: "include",
     }).catch(e => console.error("markRead failed:", e));
-    (async () => {
-      try {
-        const r = await fetch(`${API}/message/getConversation/${activeConvId}?page=1&limit=50`, {
-          credentials: "include",
-        });
-        if (!r.ok) {
-          console.error("load messages failed", r.status, await r.text());
-          return;
+    
+    // Always load initial messages when switching conversations
+    // The socket will handle real-time updates
+    loadMessages(activeConvId, 1, false);
+  }, [activeConvId, user]); // Dependencies only include activeConvId and user
+
+  // Handle scroll to load more messages
+  const handleScroll = async (e) => {
+    if (!activeConvId || loadingMore) return;
+    
+    const { scrollTop } = e.target;
+    const pagination = messagePagination[activeConvId];
+    
+    // Load more when scrolled to top and there are more messages
+    if (scrollTop < 100 && pagination?.hasMore) {
+      setLoadingMore(true);
+      const nextPage = pagination.page + 1;
+      
+      // Save current scroll height to restore position after loading
+      const oldScrollHeight = e.target.scrollHeight;
+      
+      await loadMessages(activeConvId, nextPage, true);
+      
+      // Restore scroll position (prevent jump to top)
+      setTimeout(() => {
+        if (msgBodyRef.current) {
+          const newScrollHeight = msgBodyRef.current.scrollHeight;
+          msgBodyRef.current.scrollTop = newScrollHeight - oldScrollHeight;
         }
-        const d = await r.json();
-        const msgs = (d.messages || []).map(m => ({
-          id: m.id || m.messageId,
-          at: new Date(m.created_at || m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase(),
-          from: m.senderId ===  user ? "me" : "them",
-          text: m.content,
-        }));
-        setThreads(t => ({ ...t, [activeConvId]: msgs }));
-      } catch (e) {
-        console.error("fetch messages error:", e);
-      }
-    })();
-  }, [activeConvId]);
+        setLoadingMore(false);
+      }, 100);
+    };
+  };
+
   // Filter left list by conversation data
   const filteredConversations = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -361,14 +461,62 @@ export default function Message() {
     return activeConversation?.otherUser || null;
   }, [selectedUser, activeConversation]);
 
-  const msgs = threads[activeConvId] || [];
+  // Function to start chat with a new user
+  const openChatWith = (userInfo) => {
+    // Check if conversation already exists
+    const existing = conversations.find(c => c.otherUser?.id === userInfo.id);
+    if (existing) {
+      setActiveConvId(existing.conversationId);
+      setSelectedUser(null);
+    } else {
+      // Set up for new conversation
+      setSelectedUser(userInfo);
+      setActiveConvId(null);
+      setThreads(t => ({ ...t, [`new-${userInfo.id}`]: [] }));
+    }
+  };
+
+  // Get messages for the active conversation - force re-render on thread changes
+  const msgs = useMemo(() => {
+    if (activeConvId) {
+      const messages = threads[activeConvId] || [];
+      console.log("[Render] Active conversation messages:", activeConvId, messages.length);
+      return messages;
+    }
+    if (selectedUser) {
+      const messages = threads[`new-${selectedUser.id}`] || [];
+      return messages;
+    }
+    return [];
+  }, [threads, activeConvId, selectedUser]);
 
 
 
-  // Scroll to bottom on conversation or new message
-  useEffect(() => { 
-    endRef.current?.scrollIntoView({ behavior: "smooth" }); 
-  }, [activeConvId, msgs.length]);
+  // Track previous conversation to detect switches
+  const prevConvIdRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
+
+  // Scroll to bottom when messages change (initial load or new messages)
+  useLayoutEffect(() => {
+    if (msgBodyRef.current && msgs.length > 0) {
+      const isSwitchingConversation = prevConvIdRef.current !== activeConvId;
+      prevConvIdRef.current = activeConvId;
+      
+      // On initial load or conversation switch, scroll instantly to bottom
+      if (isSwitchingConversation || isInitialLoadRef.current) {
+        msgBodyRef.current.scrollTop = msgBodyRef.current.scrollHeight;
+        isInitialLoadRef.current = false;
+      } else {
+        // For new messages in same conversation, smooth scroll
+        endRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [msgs.length, activeConvId]);
+  
+  // Reset initial load flag when conversation changes
+  useEffect(() => {
+    isInitialLoadRef.current = true;
+  }, [activeConvId]);
 
   const send = async () => {
     const text = draft.trim();
@@ -419,7 +567,9 @@ export default function Message() {
         return [...updated].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
       });
 
-      // Thread will be appended by socket 'message:sent'; no need to refetch here
+      // Thread will be appended by socket 'message:sent'
+      // Log for debugging
+      console.log("[Message] Sent to:", receiverId, "conversation:", convId);
     } catch (e) {
       console.error("send error:", e);
     }finally{
@@ -446,7 +596,7 @@ export default function Message() {
           <div className="msgSearch">
             <IconSearch className="msgSearchIcon" />
             <input
-              className="msgSearchInput"
+              className="museo-input"
               placeholder="Search Messages"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -454,13 +604,7 @@ export default function Message() {
           </div>
           <div className="msgList">
             {loadingConvs ? (
-              <div className="msgNote" style={{ 
-                padding: '20px 12px', 
-                textAlign: 'center',
-                color: 'var(--museo-text-secondary)'
-              }}>
-                Loading conversations...
-              </div>
+              <MuseoLoadingBox message="Loading conversations..." show={loadingConvs} />
             ) : leftItems.length === 0 ? (
               <div className="msgNote" style={{ 
                 padding: '20px 12px', 
@@ -588,7 +732,12 @@ export default function Message() {
                 </a>
               </header>
 
-              <section className="msgBody">
+              <section className="msgBody" ref={msgBodyRef} onScroll={handleScroll}>
+                {loadingMore && (
+                  <div style={{ textAlign: 'center', padding: '10px', color: 'var(--museo-text-muted)' }}>
+                    Loading more messages...
+                  </div>
+                )}
                 {msgs.map(m => (
                   <article key={m.id} className={`bubbleRow ${m.from === "me" ? "from-me" : "from-them"}`}>
                     {m.from === "them" && (
@@ -610,29 +759,27 @@ export default function Message() {
 
               {/* Composer */}
               <footer className="msgCompose">
-                <a className="mcBtn" aria-label="Attach" role="button" tabIndex={0}>
+                <button className="btn btn-secondary" aria-label="Attach" type="button">
                   <IconAttach className="msg-icon" />
-                </a>
+                </button>
                 <textarea
-                  className="mcInput"
+                  className="museo-textarea"
                   placeholder="Write a message..."
                   rows={1}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={onKey}
                 />
-                <a
-                  className="mcSend"
+                <button
+                  className="btn btn-primary"
                   onClick={() => { if (!isSending) send(); }}
                   aria-label={isSending ? "Sending..." : "Send"}
-                  aria-disabled={isSending || !draft.trim()}
-                  role="button"
-                  tabIndex={0}
-                  style={isSending || !draft.trim() ? { opacity: 0.6, pointerEvents: 'none', cursor: 'not-allowed' } : undefined}
+                  disabled={isSending || !draft.trim()}
+                  type="button"
                   title={isSending ? "Sending..." : (draft.trim() ? "Send" : "Type a message")}
                 >
                   <IconSend className="msg-icon" />
-                </a>
+                </button>
               </footer>
             </>
           )}

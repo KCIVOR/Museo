@@ -9,6 +9,347 @@
   100% { transform: rotate(360deg); }
 }
 
+/* ========================================
+   HERO SECTION
+   ======================================== */
+
+/* Main gallery container */
+.museo-gallery-container {
+  background: transparent;
+  min-height: 100vh;
+}
+
+/* Hero section */
+.museo-gallery-hero {
+  background: 
+    linear-gradient(145deg, #2c1810 0%, #4a2c1a 15%, #6e4a2e 35%, #8b6f47 60%, #a67c52 85%, #d4b48a 100%),
+    radial-gradient(ellipse 800px 400px at 20% 30%, rgba(212, 180, 138, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse 600px 300px at 80% 70%, rgba(139, 115, 85, 0.2) 0%, transparent 50%),
+    linear-gradient(0deg, rgba(26, 15, 10, 0.8) 0%, transparent 40%);
+  color: #f4f1ec;
+  padding: 140px 20px 120px;
+  position: relative;
+  overflow: hidden;
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Decorative ornaments */
+.museo-hero-ornament-1 {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 120px;
+  height: 120px;
+  background: conic-gradient(from 45deg, #d4b48a, #a67c52, #8b6f47, #d4b48a);
+  border-radius: 50%;
+  opacity: 0.15;
+  filter: blur(2px);
+}
+
+.museo-hero-ornament-2 {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(212, 180, 138, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+
+.museo-hero-ornament-3 {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(45deg, rgba(139, 115, 85, 0.2), rgba(212, 180, 138, 0.1));
+  border-radius: 50%;
+  filter: blur(1.5px);
+}
+
+.museo-hero-ornament-4 {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  width: 140px;
+  height: 140px;
+  background: conic-gradient(from 225deg, rgba(166, 124, 82, 0.2), rgba(139, 115, 85, 0.1), rgba(212, 180, 138, 0.15));
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+/* Museum texture overlay */
+.museo-hero-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(45deg, transparent 48%, rgba(212, 180, 138, 0.03) 49%, rgba(212, 180, 138, 0.03) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(212, 180, 138, 0.03) 49%, rgba(212, 180, 138, 0.03) 51%, transparent 52%);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Artistic border frames */
+.museo-hero-border-outer {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border: 2px solid rgba(212, 180, 138, 0.2);
+  border-radius: 30px;
+  pointer-events: none;
+}
+
+.museo-hero-border-inner {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  bottom: 30px;
+  border: 1px solid rgba(212, 180, 138, 0.15);
+  border-radius: 25px;
+  pointer-events: none;
+}
+
+/* Hero content container */
+.museo-hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 60px;
+  align-items: center;
+}
+
+/* Featured artwork image container */
+.museo-hero-artwork {
+  flex: 1;
+  position: relative;
+}
+
+/* Featured artwork frame */
+.museo-hero-artwork-frame {
+  background: 
+    linear-gradient(145deg, #f4f1ec 0%, #ffffff 20%, #faf8f5 40%, #f7f4ef 60%, #f4f1ec 80%, #f0ebe4 100%),
+    radial-gradient(ellipse at top left, rgba(212, 180, 138, 0.1) 0%, transparent 50%);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 
+    0 30px 90px rgba(44, 24, 16, 0.5),
+    0 15px 45px rgba(110, 74, 46, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.8),
+    inset 0 -2px 4px rgba(139, 111, 71, 0.2);
+  position: relative;
+  transform: perspective(1000px) rotateY(-2deg);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.museo-hero-artwork-frame:hover {
+  transform: perspective(1000px) rotateY(0deg) translateY(-8px);
+  box-shadow: 
+    0 40px 120px rgba(44, 24, 16, 0.6),
+    0 20px 60px rgba(110, 74, 46, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(139, 111, 71, 0.3);
+}
+
+/* Inner gold frame */
+.museo-hero-artwork-inner-frame {
+  background: linear-gradient(45deg, #8b6f47 0%, #a67c52 50%, #d4b48a 100%);
+  padding: 3px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.3);
+}
+
+/* Featured artwork image */
+.museo-hero-artwork-image {
+  width: 100%;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  transition: transform 0.4s ease;
+  cursor: pointer;
+}
+
+.museo-hero-artwork-image:hover {
+  transform: scale(1.02);
+}
+
+/* Featured badge */
+.museo-hero-featured-badge {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #d4b48a 0%, #8b6f47 100%);
+  color: white;
+  padding: 12px 32px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 
+    0 8px 24px rgba(110, 74, 46, 0.4),
+    0 4px 12px rgba(139, 111, 71, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 10;
+}
+
+/* Hero info section */
+.museo-hero-info {
+  flex: 1;
+  position: relative;
+  z-index: 10;
+}
+
+/* Decorative title background */
+.museo-hero-title-bg {
+  position: absolute;
+  top: -20px;
+  left: -40px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(212, 180, 138, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: -1;
+}
+
+/* Hero title */
+.museo-hero-title {
+  font-size: 4.2rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.1;
+  text-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(110, 74, 46, 0.4),
+    0 8px 24px rgba(44, 24, 16, 0.2);
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.museo-hero-title-gradient {
+  background: linear-gradient(135deg, #f4f1ec 0%, #d4b48a 50%, #a67c52 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+/* Artist info card */
+.museo-hero-artist-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(244, 241, 236, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(212, 180, 138, 0.2);
+  margin-bottom: 32px;
+  backdrop-filter: blur(10px);
+}
+
+/* Artist avatar container */
+.museo-hero-artist-avatar-container {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(45deg, #d4b48a 0%, #a67c52 50%, #8b6f47 100%);
+  border-radius: 50%;
+}
+
+.museo-hero-artist-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid #f4f1ec;
+}
+
+.museo-hero-artist-avatar-placeholder {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4b48a 0%, #8b6f47 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f4f1ec;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 3px solid rgba(244, 241, 236, 0.3);
+}
+
+/* Artist name */
+.museo-hero-artist-name {
+  font-size: 1.6rem;
+  color: #f4f1ec;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.museo-hero-artist-label {
+  font-size: 1.1rem;
+  color: rgba(244, 241, 236, 0.8);
+  margin: 0;
+  font-style: italic;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Stats grid */
+.museo-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+  margin-top: 8px;
+}
+
+.museo-hero-stat-item {
+  background: linear-gradient(135deg, rgba(244, 241, 236, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 180, 138, 0.2);
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.museo-hero-stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.museo-hero-stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f4f1ec;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.museo-hero-stat-label {
+  font-size: 0.9rem;
+  color: rgba(244, 241, 236, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
 /* Gallery page container */
 .museo-page--gallery {
   padding: 3rem 2rem;
@@ -155,6 +496,12 @@
   line-height: 1.3;
 }
 
+.museo-artwork-category-item {
+  font-size: 14px;
+  color: #6b4226;
+  margin-bottom: 4px;
+}
+
 .museo-artwork-artist-info {
   display: flex;
   align-items: center;
@@ -263,6 +610,429 @@
   color: #8b6f47;
   font-size: 1rem;
   line-height: 1.6;
+}
+
+/* ========================================
+   TOP ARTS OF THE WEEK SECTION
+   ======================================== */
+
+/* Top Arts container */
+.museo-top-arts-container {
+  margin-bottom: 80px;
+}
+
+/* Podium grid layout */
+.museo-top-arts-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Podium card base */
+.museo-podium-card {
+  background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 100%);
+  border-radius: 20px;
+  padding: 30px 25px;
+  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.4);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.museo-podium-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 30px 80px rgba(44, 24, 16, 0.6);
+}
+
+/* Rank badge */
+.museo-podium-rank {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 10;
+}
+
+/* Second place (Silver) */
+.museo-podium-card--second {
+  grid-column: 1;
+  align-self: center;
+  margin-top: 40px;
+}
+
+.museo-podium-rank--second {
+  background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
+  color: #2c1810;
+  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.4);
+}
+
+/* First place (Gold Champion) */
+.museo-podium-card--first {
+  grid-column: 2;
+  align-self: start;
+  border: 3px solid #ffd700;
+  box-shadow: 0 30px 80px rgba(255, 215, 0, 0.3);
+}
+
+.museo-podium-card--first:hover {
+  box-shadow: 0 40px 100px rgba(255, 215, 0, 0.5);
+}
+
+.museo-podium-rank--first {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #2c1810;
+  font-size: 16px;
+  padding: 10px 20px;
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+/* Third place (Bronze) */
+.museo-podium-card--third {
+  grid-column: 3;
+  align-self: center;
+  margin-top: 60px;
+}
+
+.museo-podium-rank--third {
+  background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
+}
+
+/* Podium artwork image */
+.museo-podium-image {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.museo-podium-image--second {
+  height: 200px;
+}
+
+.museo-podium-image--first {
+  height: 250px;
+}
+
+.museo-podium-image--third {
+  height: 180px;
+}
+
+/* Podium title */
+.museo-podium-title {
+  color: white;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.museo-podium-title--second {
+  font-size: 16px;
+}
+
+.museo-podium-title--first {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.museo-podium-title--third {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+/* Podium artist */
+.museo-podium-artist {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  text-align: center;
+  font-style: italic;
+  margin: 0;
+}
+
+.museo-podium-artist--first {
+  color: #ffd700;
+  margin-bottom: 15px;
+}
+
+/* Podium stats badge */
+.museo-podium-stats {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-align: center;
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* ========================================
+   HERO ARTIST INFO & STATS SECTION
+   ======================================== */
+
+/* Artist Information Card */
+.museo-hero-artist-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, rgba(244, 241, 236, 0.15) 0%, rgba(212, 180, 138, 0.1) 100%);
+  padding: 20px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 180, 138, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Artist Avatar Container with Gradient Border */
+.museo-hero-artist-avatar-frame {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(45deg, #d4b48a 0%, #a67c52 50%, #8b6f47 100%);
+  border-radius: 50%;
+}
+
+/* Artist Avatar Image */
+.museo-hero-artist-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f4f1ec;
+  transition: all 0.3s ease;
+}
+
+/* Artist Avatar Fallback (when no image) */
+.museo-hero-artist-avatar-fallback {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 30%, #6e4a2e 70%, #8b6f47 100%),
+              radial-gradient(ellipse at center, rgba(212, 180, 138, 0.2) 0%, transparent 70%);
+  color: #f4f1ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.4rem;
+  border: 3px solid rgba(212, 180, 138, 0.3);
+  box-shadow: 0 4px 16px rgba(44, 24, 16, 0.3);
+  font-family: Georgia, serif;
+}
+
+/* Artist Name */
+.museo-hero-artist-name {
+  font-size: 1.6rem;
+  color: #f4f1ec;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(44, 24, 16, 0.5);
+  font-family: Georgia, serif;
+}
+
+/* Artist Date */
+.museo-hero-artist-date {
+  font-size: 1.1rem;
+  color: rgba(244, 241, 236, 0.8);
+  margin: 0;
+  font-style: italic;
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(44, 24, 16, 0.3);
+}
+
+/* Stats Grid Container */
+.museo-hero-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+  margin-top: 8px;
+}
+
+/* Individual Stat Card */
+.museo-hero-stat-card {
+  background: linear-gradient(135deg, rgba(244, 241, 236, 0.1) 0%, rgba(212, 180, 138, 0.05) 100%);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 180, 138, 0.15);
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+/* Stat Icon */
+.museo-hero-stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+/* Stat Number */
+.museo-hero-stat-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f4f1ec;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(44, 24, 16, 0.5);
+}
+
+/* Stat Label */
+.museo-hero-stat-label {
+  font-size: 0.9rem;
+  color: rgba(244, 241, 236, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* ========================================
+   HERO EMPTY STATE
+   ======================================== */
+
+/* Empty State Container */
+.museo-hero-empty-container {
+  width: 100%;
+  text-align: center;
+  padding: 100px 40px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Empty State Decorative Background */
+.museo-hero-empty-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(212, 180, 138, 0.1) 0%, rgba(139, 115, 85, 0.05) 50%, transparent 100%);
+  border-radius: 50%;
+  filter: blur(2px);
+  z-index: -1;
+}
+
+/* Empty State Card */
+.museo-hero-empty-card {
+  background: linear-gradient(135deg, rgba(244, 241, 236, 0.15) 0%, rgba(212, 180, 138, 0.1) 100%);
+  padding: 60px 40px;
+  border-radius: 30px;
+  border: 1px solid rgba(212, 180, 138, 0.2);
+  backdrop-filter: blur(15px);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Empty State Icon */
+.museo-hero-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  opacity: 0.6;
+}
+
+/* Empty State Title */
+.museo-hero-empty-title {
+  font-size: 3.2rem;
+  margin-bottom: 24px;
+  font-family: Georgia, serif;
+  color: #f4f1ec;
+  font-weight: 700;
+  text-shadow: 0 4px 12px rgba(44, 24, 16, 0.6);
+  letter-spacing: -0.02em;
+}
+
+/* Empty State Description */
+.museo-hero-empty-desc {
+  font-size: 1.4rem;
+  margin-bottom: 40px;
+  color: rgba(244, 241, 236, 0.8);
+  line-height: 1.6;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Empty State Upload Button */
+.museo-hero-empty-upload-btn {
+  background: linear-gradient(135deg, #d4b48a 0%, #a67c52 30%, #8b6f47 70%, #6e4a2e 100%),
+              radial-gradient(ellipse at center, rgba(244, 241, 236, 0.2) 0%, transparent 70%);
+  color: #f4f1ec;
+  padding: 18px 48px;
+  border-radius: 50px;
+  border: 2px solid rgba(212, 180, 138, 0.4);
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(110, 74, 46, 0.3),
+              0 4px 12px rgba(212, 180, 138, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 0 2px 4px rgba(44, 24, 16, 0.5);
+  font-family: Georgia, serif;
+  letter-spacing: 0.5px;
+}
+
+.museo-hero-empty-upload-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(110, 74, 46, 0.4),
+              0 6px 16px rgba(212, 180, 138, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border-color: rgba(212, 180, 138, 0.6);
+}
+
+/* ========================================
+   TOP ARTS DECORATIVE CONTAINER
+   ======================================== */
+
+/* Top Arts Podium Background Container */
+.museo-top-arts-bg-container {
+  position: relative;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%);
+  border-radius: 30px;
+  padding: 60px 40px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(26, 26, 46, 0.4), 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Top Arts Decorative Circle 1 */
+.museo-top-arts-deco-1 {
+  position: absolute;
+  top: -80px;
+  left: -80px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, rgba(212, 175, 55, 0.08) 40%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Top Arts Decorative Circle 2 */
+.museo-top-arts-deco-2 {
+  position: absolute;
+  bottom: -100px;
+  right: -100px;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(83, 52, 131, 0.2) 0%, rgba(15, 52, 96, 0.1) 50%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Top Arts Central Glow */
+.museo-top-arts-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+  border-radius: 50%;
+  z-index: 1;
 }
 
 /* Top Arts of the Week Section */
@@ -420,5 +1190,297 @@
   
   .museo-artwork-title {
     font-size: 1.1rem;
+  }
+}
+
+/* ========================================
+   TOP ARTS PODIUM SECTION
+   ======================================== */
+
+/* Podium container */
+.gallery__podium {
+  position: relative;
+  z-index: 2;
+}
+
+/* Podium card base styles */
+.gallery__podium-card {
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.gallery__podium-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Second place (Silver) */
+.gallery__podium-card--second {
+  grid-column: 1;
+  grid-row: 1;
+  background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  border: 2px solid #c0c0c0;
+  box-shadow: 0 15px 40px rgba(192, 192, 192, 0.2), 0 8px 20px rgba(0,0,0,0.15);
+  max-width: 300px;
+}
+
+/* First place (Gold) */
+.gallery__podium-card--first {
+  grid-column: 2;
+  grid-row: 1;
+  background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+  border-radius: 25px;
+  padding: 25px;
+  box-shadow: 0 20px 60px rgba(255,215,0,0.4), 0 10px 30px rgba(0,0,0,0.3);
+  border: 4px solid #d4af37;
+  max-width: 350px;
+}
+
+/* Third place (Bronze) */
+.gallery__podium-card--third {
+  grid-column: 3;
+  grid-row: 1;
+  background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  border-radius: 18px;
+  padding: 18px;
+  backdrop-filter: blur(12px);
+  border: 2px solid #cd7f32;
+  box-shadow: 0 12px 35px rgba(205, 127, 50, 0.2), 0 6px 18px rgba(0,0,0,0.12);
+  max-width: 280px;
+}
+
+/* Rank badges */
+.gallery__rank-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gallery__rank-badge--silver {
+  background: #c0c0c0;
+}
+
+.gallery__rank-badge--bronze {
+  background: #cd7f32;
+}
+
+/* Champion badge (gold) */
+.gallery__champion-badge {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #2c1810;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  margin-top: 25px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Podium images */
+.gallery__podium-img {
+  width: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+.gallery__podium-img--first {
+  height: 250px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  margin-top: 30px;
+}
+
+.gallery__podium-img--second {
+  height: 200px;
+}
+
+.gallery__podium-img--third {
+  height: 180px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+/* Podium titles */
+.gallery__podium-title {
+  color: white;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.gallery__podium-title--first {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.gallery__podium-title--second {
+  font-size: 16px;
+}
+
+.gallery__podium-title--third {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+/* Podium artist names */
+.gallery__podium-artist {
+  text-align: center;
+  font-style: italic;
+  margin: 0;
+}
+
+.gallery__podium-artist--first {
+  color: #ffd700;
+  font-size: 16px;
+  margin: 0 0 15px 0;
+}
+
+.gallery__podium-artist--second,
+.gallery__podium-artist--third {
+  color: rgba(255,255,255,0.8);
+}
+
+.gallery__podium-artist--second {
+  font-size: 14px;
+}
+
+.gallery__podium-artist--third {
+  font-size: 13px;
+}
+
+/* Views badge */
+.gallery__views-badge {
+  background: rgba(255,215,0,0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-align: center;
+  color: #2c1810;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+/* Notable Acquisitions section */
+.gallery__notable-section {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 50px;
+}
+
+.gallery__notable-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.gallery__notable-title {
+  color: #ffd700;
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.gallery__notable-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 14px;
+}
+
+.gallery__notable-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 25px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Notable acquisition cards */
+.gallery__notable-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.08));
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.gallery__notable-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.gallery__notable-img-wrapper {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.gallery__notable-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.gallery__notable-rank {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255,255,255,0.9);
+  color: #2c1810;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.gallery__notable-content {
+  text-align: center;
+}
+
+.gallery__notable-card-title {
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.gallery__notable-card-artist {
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .gallery__podium-card--first,
+  .gallery__podium-card--second,
+  .gallery__podium-card--third {
+    max-width: 100%;
+  }
+  
+  .gallery__notable-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,0 +1,133 @@
+/* ========================================
+   ✍️ MUSEO COMPOSER COMPONENT
+   Token-based post composer for creating content
+   ======================================== */
+
+/* ===== COMPOSER CONTAINER ===== */
+
+.composer {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
+  border: 1px solid var(--museo-border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin: 14px 0;
+  box-shadow: 0 4px 12px var(--museo-shadow-light), 0 1px 4px var(--museo-shadow-light);
+  backdrop-filter: blur(4px);
+}
+
+/* ===== COMPOSER AVATAR ===== */
+
+.composer__avatar { 
+  width: 44px; 
+  height: 44px; 
+  border-radius: 10px; 
+  object-fit: cover;
+  border: 1px solid var(--museo-border);
+}
+
+/* ===== COMPOSER MAIN CONTENT ===== */
+
+.composer__main { 
+  display: grid; 
+  gap: 8px; 
+}
+
+/* ===== COMPOSER INPUT ===== */
+
+.composer__input {
+  width: 100%; 
+  min-height: 44px; 
+  max-height: 180px;
+  border: 1px solid var(--museo-border); 
+  border-radius: 10px; 
+  padding: 10px 14px;
+  resize: none; 
+  overflow: hidden; 
+  background: var(--museo-white); 
+  color: var(--museo-text-secondary);
+  font-family: var(--museo-font-body);
+  transition: all 0.3s ease;
+}
+
+.composer__input:focus {
+  outline: none;
+  border-color: var(--museo-border-hover);
+  box-shadow: 0 0 0 2px var(--museo-shadow-light);
+  background: var(--museo-white);
+}
+
+.composer__input::placeholder {
+  color: var(--museo-text-muted);
+  font-style: italic;
+}
+
+/* ===== COMPOSER MEDIA ===== */
+
+.composer__media { 
+  display: grid; 
+  gap: 6px; 
+}
+
+.composer__preview { 
+  width: 100%; 
+  border-radius: 10px; 
+  border: 1px solid var(--museo-border); 
+}
+
+.composer__chip {
+  align-self: start; 
+  height: 30px; 
+  padding: 0 10px; 
+  border-radius: 999px;
+  background: var(--museo-white); 
+  border: 1px solid var(--museo-border); 
+  cursor: pointer;
+}
+
+/* ===== COMPOSER TOOLBAR ===== */
+
+.composer__toolbar {
+  display: grid; 
+  grid-template-columns: auto auto auto 1fr auto; 
+  align-items: center; 
+  gap: 8px;
+  border-top: 1px solid var(--museo-border); 
+  padding-top: 8px;
+}
+
+/* Note: Tool and post button styles handled by buttons.css */
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 700px) {
+  .composer { 
+    grid-template-columns: 36px 1fr; 
+  }
+  
+  .composer__avatar { 
+    width: 36px; 
+    height: 36px; 
+  }
+}
+
+@media (max-width: 520px) {
+  .composer {
+    padding: 12px 14px;
+  }
+  
+  .composer__input {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .composer__input {
+    transition: none;
+  }
+}

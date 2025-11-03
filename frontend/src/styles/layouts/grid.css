@@ -1,0 +1,82 @@
+/* ========================================
+   📐 MUSEO GRID LAYOUTS
+   Token-based grid system
+   ======================================== */
+
+/* ===== BASE GRID ===== */
+
+.museo-grid {
+  display: grid;
+  gap: var(--museo-space-6);
+}
+
+/* ===== GRID COLUMNS ===== */
+
+.museo-grid--1 {
+  grid-template-columns: 1fr;
+}
+
+.museo-grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.museo-grid--3 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.museo-grid--4 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.museo-grid--5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.museo-grid--6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+/* ===== RESPONSIVE GRID ===== */
+
+@media (max-width: 1024px) {
+  .museo-grid--4,
+  .museo-grid--5,
+  .museo-grid--6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .museo-grid--3,
+  .museo-grid--4,
+  .museo-grid--5,
+  .museo-grid--6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .museo-grid--2,
+  .museo-grid--3,
+  .museo-grid--4,
+  .museo-grid--5,
+  .museo-grid--6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== GRID GAPS ===== */
+
+.museo-grid--gap-sm {
+  gap: var(--museo-space-4);
+}
+
+.museo-grid--gap-lg {
+  gap: var(--museo-space-12);
+}
+
+/* ===== AUTO-FIT GRID ===== */
+
+.museo-grid--auto {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}

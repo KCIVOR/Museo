@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import MuseoLoadingBox from "../components/MuseoLoadingBox.jsx";
 import MuseoEmptyState from "../components/MuseoEmptyState.jsx";
+import "./css/artist.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Artist() {
@@ -56,7 +57,7 @@ export default function Artist() {
     <div className="museo-page">
       <div className="museo-feed">
         {/* Gallery Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div className="artist__header">
           <h1 className="museo-heading">Artists</h1>
         </div>
         
@@ -69,7 +70,7 @@ export default function Artist() {
           <div className="museo-message">
             Unable to load artist gallery
             <br />
-            <small style={{ opacity: 0.7, fontSize: '14px' }}>{errMsg}</small>
+            <small className="artist__error-detail">{errMsg}</small>
             <br />
             <button className="museo-retry-btn" onClick={fetchArtist}>Retry</button>
           </div>
@@ -86,12 +87,12 @@ export default function Artist() {
             {artists.map((a, i) => (
               <div
                 key={a.id}
-                className="museo-card museo-card--artist"
+                className="museo-card museo-card--artist artist__card"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <NavLink
                   to={`/artist/${a.id}`}
-                  style={{ display: "block", textDecoration: "none", color: "inherit" }}
+                  className="artist__card-link"
                 >
                   <img
                     className="museo-avatar"

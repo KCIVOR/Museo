@@ -1,12 +1,12 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
+import { useUser } from "../src/contexts/UserContext";
 import Navbar from "./Navbar";
 import SidePanel from "./SidePanel";
 import SidePanel2 from "./SidePanel2";
 import ScrollToTop from "./ScrollToTop";
 import "./Layout.css";
 const API = import.meta.env.VITE_API_BASE;
-import RequestsModal from "../src/pages/subPages/RequestsModal";
 import ToastNotification from "./ToastNotification";
 
 export default function Layout() {
@@ -15,15 +15,22 @@ export default function Layout() {
   const isGallery = pathname === "/Gallery" || pathname === "/gallery";
   const isArtistProfile = pathname.startsWith("/artist/");
   const isMyProfile = pathname === "/MyProfile";
-  const [role, setRole] = useState(null);
-  const [requestsOpen, setRequestsOpen] = useState(false);
-
-  // Centralized user data state
-  const [userData, setUserData] = useState({
-    avatar: null,
-    username: null,
-    fullName: null
-  });
+  const isVisitMuseo = pathname === "/visit-museo";
+  const isRequestsPage = pathname === "/requests";
+  
+  // Get user data from UserContext instead of fetching
+  const { userData, isLoading } = useUser();
+  const role = userData?.role || null;
+  
+  // Log UserContext data to verify it's working
+  useEffect(() => {
+    console.log('📐 Layout: UserContext data:', {
+      userData,
+      role,
+      isLoading
+    });
+    console.log('📐 Layout: Will pass to Navbar:', { role, userData: userData ? 'exists' : 'null' });
+  }, [userData, role, isLoading]);
 
   // Centralized sidebar data state
   const [topArts, setTopArts] = useState([]);
@@ -31,100 +38,18 @@ export default function Layout() {
   const [loadingTopArts, setLoadingTopArts] = useState(false);
   const [loadingSidebarEvents, setLoadingSidebarEvents] = useState(false);
 
-  // Fetch user role
-  useEffect(() => {
-    let abort = false;
-    const fetchRole = async () => {
-      try {
-        const res = await fetch(`${API}/users/role`, {
-          method: "GET",
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const cleanRole = typeof data === 'string' ? data.trim() : data;
-        if (!abort) setRole(cleanRole);
-      } catch (_) {
-        if (!abort) setRole(null);
-      }
-    };
-    fetchRole();
-    return () => { abort = true; };
-  }, []);
-
-  // Fetch user data (avatar, username, fullName)
-  useEffect(() => {
-    let abort = false;
-    const fetchUserData = async () => {
-      try {
-        // Fetch profile picture
-        const pictureRes = await fetch(`${API}/users/picture`, {
-          method: "GET",
-          credentials: "include",
-        });
-        
-        // Fetch user info
-        const userRes = await fetch(`${API}/users/me`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        let profilePicture = null;
-        let userInfo = {};
-
-        if (pictureRes.ok) {
-          profilePicture = await pictureRes.json();
-        }
-
-        if (userRes.ok) {
-          userInfo = await userRes.json();
-        }
-
-        if (!abort) {
-          setUserData({
-            avatar: profilePicture,
-            username: userInfo.username || null,
-            fullName: userInfo.fullName || userInfo.name || null
-          });
-        }
-      } catch (error) {
-        console.log('Failed to fetch user data:', error);
-        if (!abort) {
-          setUserData({
-            avatar: null,
-            username: null,
-            fullName: null
-          });
-        }
-      }
-    };
-    
-    // Listen for profile updates from other components
-    const handleProfileUpdate = (event) => {
-      const { avatar, firstName, lastName, username } = event.detail;
-      setUserData(prev => ({
-        ...prev,
-        avatar: avatar || prev.avatar,
-        username: username || prev.username,
-        fullName: `${firstName || ''} ${lastName || ''}`.trim() || prev.fullName
-      }));
-    };
-    
-    fetchUserData();
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    
-    return () => { 
-      abort = true; 
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, []);
+  // UserContext already provides:
+  // - userData.role (user's role)
+  // - userData.avatar (profile picture)
+  // - userData.username
+  // - userData.fullName
+  // - userData.firstName, lastName, etc.
+  // No need to fetch these separately anymore!
 
   // Fetch top arts for sidebar
   const fetchTopArts = useCallback(async () => {
     try {
       setLoadingTopArts(true);
-      
-      // Fetch top arts data
       const topArtsRes = await fetch(`${API}/gallery/top-arts-weekly`, {
         credentials: 'include'
       });
@@ -140,7 +65,6 @@ export default function Layout() {
         return;
       }
 
-      // Fetch artwork details
       const queryParams = new URLSearchParams();
       queryParams.append('page', '1');
       queryParams.append('limit', '100');
@@ -227,24 +151,35 @@ export default function Layout() {
     fetchSidebarEvents();
   }, [fetchTopArts, fetchSidebarEvents]);
 
+  // Create a userData object that matches Navbar's expected format
+  // UserContext provides all these fields directly
+  const navbarUserData = userData ? {
+    avatar: userData.avatar,
+    username: userData.username,
+    fullName: userData.fullName
+  } : null;
+
   return (
-    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""}`}>
       <header className="app__header">
-        <Navbar role={role} userData={userData} />
+        <Navbar role={role} userData={navbarUserData} />
       </header>
 
-      <aside className="app__side-left">
-        <SidePanel role={role} onOpenRequests={() => setRequestsOpen(true)} />
-      </aside>
+      {!isVisitMuseo && (
+        <aside className="app__side-left">
+          <SidePanel role={role} />
+        </aside>
+      )}
 
       <main className="app__main" role="main">
         <ScrollToTop />
         <Outlet />
       </main>
 
-      {!isGallery && !isArtistProfile && !isMyProfile && (
+      {!isGallery && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && (
         <aside className="app__side-right">
           <SidePanel2 
+            userData={userData} 
             role={role} 
             topArts={topArts}
             events={sidebarEvents}
@@ -255,7 +190,6 @@ export default function Layout() {
       )}
 
       <footer className="app__footer" />
-      <RequestsModal open={requestsOpen} onClose={() => setRequestsOpen(false)} />
       <ToastNotification />
     </div>
   );

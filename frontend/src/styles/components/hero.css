@@ -1,0 +1,178 @@
+/* ========================================
+   🎭 MUSEO HERO COMPONENTS
+   Token-based hero section for homepage
+   ======================================== */
+
+/* ===== MUSEO HERO SECTION ===== */
+
+.museoHero {
+  position: relative;
+  width: 100%;
+  max-width: var(--feed-max);
+  margin: 6px 0 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--museo-border-light);
+  box-shadow: 0 1px 2px var(--museo-shadow-light);
+
+  /* Grid layers: media, overlay, content */
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(180px, clamp(200px, 25vw, 280px));
+}
+
+.mHero__media,
+.mHero__overlay,
+.mHero__content {
+  grid-area: 1 / 1;
+}
+
+/* Background media: abstract gradients */
+.mHero__media {
+  background:
+    radial-gradient(1200px 600px at -10% -20%, var(--museo-accent-light) 0%, transparent 60%),
+    radial-gradient(1000px 500px at 110% 120%, var(--museo-primary-light) 0%, transparent 55%),
+    linear-gradient(180deg, var(--museo-primary-dark) 0%, var(--museo-text-primary) 100%);
+  filter: saturate(1.05);
+}
+
+/* Overlay for contrast */
+.mHero__overlay {
+  background: linear-gradient(180deg, var(--museo-overlay-light), var(--museo-overlay));
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+/* Content */
+.mHero__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px);
+  color: var(--museo-white);
+  min-height: 0;
+}
+
+/* Text group for better spacing */
+.mHero__textGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mHero__eyebrow {
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--museo-white);
+  font-size: clamp(10px, 1.8vw, 12px);
+}
+
+.mHero__title {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.15;
+  font-size: clamp(18px, 3.2vw, 28px);
+  color: var(--museo-white);
+  text-shadow: 0 2px 6px var(--museo-shadow), 0 0 24px var(--museo-shadow-light);
+  font-family: 'Playfair Display', serif;
+}
+
+.mHero__subtitle {
+  margin: 0;
+  color: var(--museo-white);
+  font-size: clamp(11px, 2vw, 14px);
+  text-shadow: 0 1px 3px var(--museo-shadow);
+  line-height: 1.4;
+}
+
+/* Balanced and responsive */
+.mHero__ctaRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Hero button styling - only layout, let buttons.css handle sizing */
+.mHero__ctaRow .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .museoHero {
+    grid-template-rows: minmax(140px, clamp(160px, 20vw, 200px));
+  }
+  
+  .mHero__content {
+    gap: 6px;
+    padding: clamp(10px, 2vw, 16px) clamp(12px, 2vw, 16px);
+  }
+  
+  .mHero__title {
+    font-size: clamp(16px, 3.5vw, 24px);
+    line-height: 1.2;
+  }
+  
+  .mHero__subtitle {
+    font-size: clamp(10px, 2.2vw, 13px);
+  }
+  
+  .mHero__ctaRow {
+    margin-top: 8px;
+    gap: 8px;
+  }
+  
+  .mHero__ctaRow .btn-hero,
+  .mHero__ctaRow .btn-hero-ghost {
+    height: 36px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .mHero__ctaRow { 
+    grid-template-columns: 1fr; 
+    gap: 6px;
+    margin-top: 6px;
+  }
+  
+  .museoHero {
+    grid-template-rows: minmax(120px, clamp(140px, 18vw, 180px));
+  }
+  
+  .mHero__title {
+    font-size: clamp(14px, 4vw, 20px);
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 460px) {
+  .mHero__btnPrimary, 
+  .mHero__btnGhost { 
+    flex: 1 1 100%; 
+  }
+  
+  .mHero__content {
+    gap: 5px;
+    padding: clamp(8px, 2vw, 14px) clamp(10px, 1.8vw, 14px);
+  }
+  
+  .mHero__eyebrow {
+    font-size: clamp(9px, 2vw, 11px);
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .museoHero {
+    animation: none;
+  }
+}

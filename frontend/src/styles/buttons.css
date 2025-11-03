@@ -1519,28 +1519,37 @@ button {
    🎨 MUSEO BUTTON SYSTEM - COMPLETE
    ======================================== */
 
-/* Floating Action Button */
+/* Floating Action Button - Bottom Right */
 .museo-floating-btn {
   position: fixed !important;
-  bottom: 24px !important;
-  right: 24px !important;
-  width: 56px !important;
-  height: 56px !important;
+  bottom: 32px !important;
+  right: 32px !important;
+  width: 64px !important;
+  height: 64px !important;
   border-radius: 50% !important;
-  font-size: 24px !important;
-  font-weight: bold !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-  z-index: 1000 !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  box-shadow: 0 8px 24px rgba(110, 74, 46, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  z-index: 9999 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   border: none !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  background: linear-gradient(135deg, var(--museo-primary) 0%, var(--museo-primary-dark) 100%) !important;
+  color: #ffffff !important;
 }
 
 .museo-floating-btn:hover {
-  transform: scale(1.1) !important;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-4px) scale(1.05) !important;
+  box-shadow: 0 12px 32px rgba(110, 74, 46, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.museo-floating-btn:active {
+  transform: translateY(-2px) scale(1.02) !important;
 }
 
 /* X Button - Reusable Close/Remove Button */
@@ -1640,178 +1649,4 @@ button {
   color: #ffffff !important;
 }
 
-/* Date Picker Styling */
-.museo-date-input,
-input.museo-date-input {
-  width: 100% !important;
-  padding: 12px 16px !important;
-  border: 1px solid #e0d4c4 !important;
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  color: #6e4a2e !important;
-  font-size: 15px !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
-  transition: all 0.3s ease !important;
-  box-sizing: border-box !important;
-  outline: none !important;
-  cursor: pointer !important;
-  height: 47px !important;
-  line-height: 1.2 !important;
-}
-
-.museo-date-input:focus {
-  border-color: #d4b48a;
-  box-shadow: 0 0 0 2px rgba(212, 180, 138, 0.15);
-  background: #ffffff;
-}
-
-.museo-date-input:hover:not(:focus) {
-  border-color: #d4b48a;
-}
-
-/* Custom date picker icon */
-.museo-date-input::-webkit-calendar-picker-indicator {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236e4a2e'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'/%3e%3c/svg%3e");
-  background-size: 18px;
-  background-repeat: no-repeat;
-  background-position: center;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
-}
-
-.museo-date-input::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* Dropdown Select Styling */
-.museo-dropdown,
-select.museo-dropdown {
-  width: 100% !important;
-  padding: 12px 16px !important;
-  border: 1px solid #e0d4c4 !important;
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  color: #6e4a2e !important;
-  font-size: 15px !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
-  transition: all 0.3s ease !important;
-  box-sizing: border-box !important;
-  outline: none !important;
-  cursor: pointer !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236e4a2e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 12px center !important;
-  background-size: 16px !important;
-  padding-right: 40px !important;
-  height: 47px !important;
-  line-height: 1.2 !important;
-}
-
-.museo-dropdown:focus {
-  border-color: #d4b48a;
-  box-shadow: 0 0 0 2px rgba(212, 180, 138, 0.15);
-  background: #ffffff;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4b48a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 40px;
-}
-
-.museo-dropdown:hover:not(:focus) {
-  border-color: #d4b48a;
-}
-
-/* Dropdown option styling */
-.museo-dropdown option {
-  color: #6e4a2e;
-  padding: 8px 12px;
-  font-family: 'Georgia', 'Times New Roman', serif;
-}
-
-.museo-dropdown option:hover {
-  background-color: #faf8f5;
-}
-
-.museo-dropdown option:checked {
-  background-color: #d4b48a;
-  color: #ffffff;
-}
-
-/* Base Text Input Styling */
-.museo-input,
-input.museo-input,
-textarea.museo-input {
-  width: 100% !important;
-  padding: 12px 16px !important;
-  border: 1px solid #e0d4c4 !important;
-  border-radius: 8px !important;
-  background: #ffffff !important;
-  color: #6e4a2e !important;
-  font-size: 15px !important;
-  font-family: 'Georgia', 'Times New Roman', serif !important;
-  transition: all 0.3s ease !important;
-  box-sizing: border-box !important;
-  outline: none !important;
-}
-
-.museo-input:focus,
-input.museo-input:focus,
-textarea.museo-input:focus {
-  border-color: #d4b48a !important;
-  box-shadow: 0 0 0 2px rgba(212, 180, 138, 0.15) !important;
-  background: #ffffff !important;
-}
-
-.museo-input:hover:not(:focus),
-input.museo-input:hover:not(:focus),
-textarea.museo-input:hover:not(:focus) {
-  border-color: #d4b48a !important;
-}
-
-.museo-input::placeholder,
-input.museo-input::placeholder,
-textarea.museo-input::placeholder {
-  color: #7d6b4f !important;
-  font-style: italic !important;
-}
-
-/* Textarea Specific */
-.museo-textarea {
-  resize: vertical;
-  min-height: 80px;
-  line-height: 1.5;
-}
-
-/* Form Label for Date/Dropdown */
-.museo-form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #6e4a2e;
-  font-family: 'Georgia', 'Times New Roman', serif;
-}
-
-/* Disabled states */
-.museo-date-input:disabled,
-.museo-dropdown:disabled {
-  background: #f2efea;
-  color: #7d6b4f;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.museo-date-input:disabled::-webkit-calendar-picker-indicator {
-  opacity: 0.4;
-}
-
-.museo-dropdown:disabled {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%237d6b4f' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-}
+/* Date picker and dropdown styles moved to styles/components/inputs.css */

@@ -1,53 +1,29 @@
-/* Navbar - Museum Quality Navigation */
+/* ========================================
+   🧭 NAVBAR LAYOUT
+   Component-specific navbar layout and positioning
+   Button styles are in src/styles/components/buttons.css
+   Dropdown styles are in src/styles/components/dropdowns.css
+   ======================================== */
 
-/* Navbar uses design-system.css variables, no need to redefine */
+/* ===== NAVBAR CONTAINER ===== */
 
-/* Modern Museo navbar styling */
 .nav {
-  position: sticky !important; 
-  top: 0 !important; 
-  z-index: 100 !important;
-  display: grid !important; 
-  grid-template-columns: 240px 1fr 360px !important; 
-  align-items: center !important;
-  height: 72px !important; 
-  padding: 0 2rem !important; 
-  background: linear-gradient(135deg, #faf8f5 0%, #ffffff 100%) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom: 2px solid #d4b48a !important;
-  box-shadow: 0 4px 20px rgba(110, 74, 46, 0.1), 0 2px 8px rgba(139, 111, 71, 0.05) !important;
-}
-.nav__menu button,
-.nav__menu a {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  border: none;
-  background: none;
-  color: #444;
-  text-decoration: none;
-  cursor: pointer;
-  border-radius: 6px;
-  outline: none;
-  appearance: none;
-}
-.nav__menu button + button,
-.nav__menu a + a,
-.nav__menu button + a,
-.nav__menu a + button {
-  margin-top: 6px;
-}
-.nav__menu button:hover,
-.nav__menu a:hover,
-.nav__menu button:focus-visible,
-.nav__menu a:focus-visible {
-  background: #f6f0e9 !important;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: 240px 1fr 360px;
+  align-items: center;
+  height: 72px;
+  padding: 0 2rem;
+  background: var(--museo-white);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--museo-accent);
+  box-shadow: 0 4px 20px rgba(110, 74, 46, 0.1), 0 2px 8px rgba(139, 111, 71, 0.05);
 }
 
-/* Button overrides removed for consistent redesign */
+/* ===== LEFT SECTION (Brand/Logo) ===== */
 
-/* Left (brand) */
 .nav__brand { 
   display: inline-flex; 
   align-items: center; 
@@ -59,16 +35,8 @@
   width: auto; 
 }
 
-.nav__brand-text {
-  font-family: 'Playfair Display', serif !important;
-  font-size: 2rem !important;
-  font-weight: 700 !important;
-  color: var(--museo-primary) !important;
-  letter-spacing: -0.025em !important;
-  text-shadow: none !important;
-}
+/* ===== CENTER SECTION ===== */
 
-/* Center (search button, centered and balanced) */
 .nav__center { 
   display: flex; 
   justify-content: center; 
@@ -84,23 +52,8 @@
   align-items: center;
 }
 
-/* Search button styles removed for consistent redesign */
+/* ===== RIGHT SECTION (Actions) ===== */
 
-.nav__searchIcon { 
-  font-size: 16px; 
-  line-height: 1; 
-  color: var(--museo-text-muted);
-}
-
-.nav__searchLabel { 
-  font-size: var(--museo-text-sm); 
-}
-
-/* (Legacy) If you decide to revert to an input someday */
-.nav__search { display: flex; align-items: center; width: 100%; max-width: 100%; background: none; border: none; box-shadow: none; padding: 0; }
-.nav__search-input { flex: 1; border: 1px solid #e6e6ea; border-radius: 10px; padding: 8px 12px; font-size: 14px; color: #444; background: #fff; outline: none; }
-
-/* Right (actions) */
 .nav__right { 
   display: inline-flex; 
   justify-content: flex-end; 
@@ -108,267 +61,54 @@
   gap: 10px; 
 }
 
-/* Icon button, coin, and avatar styles removed for consistent redesign */
+/* ===== POSITIONING HELPERS ===== */
 
-.nav__avatar-img { 
-  width: 32px; 
-  height: 32px; 
-  border-radius: 50%; 
-  object-fit: cover;
-  aspect-ratio: 1 / 1;
-  display: block;
-  border: 2px solid #d4b48a;
-  background: linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%);
+.nav__account { 
+  position: relative; 
 }
 
-.nav__avatar-caret { 
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  background: linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%);
-  color: #faf8f5;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  border: 2px solid #faf8f5;
-  box-shadow: 0 2px 6px rgba(110, 74, 46, 0.2);
+.nav__notif-wrap { 
+  position: relative; 
 }
 
-.nav__avatar:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%) !important;
-  border-color: #d4b48a !important;
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2) !important;
-  transform: translateY(-1px) !important;
+.nav__msg-wrap {
+  position: relative;
 }
 
-/* Focus & hover */
-.nav__icon-btn:focus-visible, 
-.nav__coin:focus-visible, 
-.nav__avatar:focus-visible, 
-.nav__search-input:focus-visible, 
-.nav__searchBtn:focus-visible {
-  outline: 2px solid var(--museo-accent); 
-  outline-offset: 2px;
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1100px) { 
+  .nav { 
+    grid-template-columns: 180px 1fr 260px; 
+  } 
 }
 
-.nav__icon-btn:hover { 
-  background: linear-gradient(135deg, #ffffff 0%, #faf8f5 100%);
-  border-color: #d4b48a;
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2);
-  transform: translateY(-1px);
+@media (max-width: 900px) { 
+  .nav { 
+    grid-template-columns: 120px 1fr 200px; 
+  } 
+  .nav__logo { 
+    height: 28px; 
+  } 
 }
 
-.nav__coin:hover {
-  background: linear-gradient(135deg, #8b6f47 0%, #d4b48a 100%);
-  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.3);
-  transform: translateY(-1px);
-}
-
-/* Positioning helpers */
-.nav__account { position: relative; }
-.nav__notif-wrap { position: relative; }
-
-/* Notification badge */
-.nav__notif-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  color: #ffffff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  border: 2px solid var(--museo-white);
-  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
-  font-family: 'Inter', sans-serif;
-}
-
-/* Dropdown menu - Full Museo Theme */
-.nav__menu {
-  position: absolute; 
-  right: 0; 
-  top: calc(100% + 10px);
-  min-width: 200px; 
-  background: linear-gradient(135deg, #f8f5f0 0%, #faf7f2 100%); 
-  border: 2px solid #d4b48a; 
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(110, 74, 46, 0.2), 0 4px 12px rgba(212, 180, 138, 0.3); 
-  padding: 12px; 
-  z-index: 300;
-  backdrop-filter: blur(12px);
-  font-family: 'Georgia', 'Times New Roman', serif;
-}
-.nav__menu-item {
-  width: 100%; 
-  text-align: left; 
-  padding: 12px 16px; 
-  border: 1px solid transparent; 
-  border-radius: 10px; 
-  background: transparent; 
-  color: #6e4a2e; 
-  text-decoration: none; 
-  cursor: pointer; 
-  font-size: 14px; 
-  font-weight: 500; 
-  line-height: 1.4;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  transition: all 0.3s ease;
-  letter-spacing: 0.3px;
-}
-.nav__menu-item + .nav__menu-item { margin-top: 6px; }
-.nav__menu-item:hover, .nav__menu-item:focus-visible { 
-  background: rgba(212, 180, 138, 0.08) !important; 
-  border-color: rgba(212, 180, 138, 0.35);
-  color: #6e4a2e !important;
-  transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(110, 74, 46, 0.08);
-}
-.nav__menu-item:focus-visible { 
-  box-shadow: inset 0 0 0 2px #d4b48a, 0 6px 20px rgba(212, 180, 138, 0.4); 
-  outline: none; 
-}
-.nav__menu-sep { 
-  height: 2px; 
-  background: linear-gradient(90deg, transparent, #d4b48a, transparent); 
-  margin: 12px 8px; 
-  border-radius: 1px;
-}
-.nav__menu-danger { 
-  color: #b8722c !important; 
-  border-color: rgba(184, 114, 44, 0.4);
-  background: rgba(184, 114, 44, 0.05) !important;
-}
-
-/* Museo modifier with icons */
-.nav__menu--museo .nav__menu-item {
-  display: flex; 
-  align-items: center; 
-  gap: 10px;
-}
-.nav__menu--museo .nav__menu-danger:hover { 
-  background: rgba(212, 180, 138, 0.08) !important; 
-  color: #b8722c !important;
-  border-color: rgba(212, 180, 138, 0.35);
-  transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(110, 74, 46, 0.08);
-}
-
-/* Inline menu icon size/color */
-.nav__mi { 
-  width: 18px; 
-  height: 18px; 
-  color: #6e4a2e;
-  flex: 0 0 18px;
-  transition: all 0.3s ease;
-  stroke-width: 1.5;
-}
-.nav__menu-item:hover .nav__mi {
-  color: #d4b48a;
-  transform: scale(1.05);
-}
-
-/* Modal overlay (Top-Up) */
-.modal-overlay {
-  position: fixed; 
-  inset: 0; 
-  display: grid; 
-  place-items: center; 
-  z-index: 300;
-}
-.modal-content.topup {
-  width: min(680px, 92vw); 
-  background: #fff; 
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.18); 
-  padding: 20px 24px;
-}
-
-/* Notifications popover - Museo Theme */
-.notif {
-  position: absolute; top: calc(100% + 10px); right: 0;
-  width: 380px; max-height: 60vh; overflow: auto;
-  background: linear-gradient(135deg, #f8f5f0 0%, #faf7f2 100%); 
-  border: 2px solid #d4b48a; 
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(110, 74, 46, 0.2), 0 4px 12px rgba(212, 180, 138, 0.3); 
-  padding: 12px; 
-  z-index: 300;
-  backdrop-filter: blur(12px);
-  font-family: 'Georgia', 'Times New Roman', serif;
-}
-.notif::before {
-  content: ""; position: absolute; top: -6px; right: 18px; width: 12px; height: 12px;
-  background: #fff; border-left: 1px solid #e6e6ea; border-top: 1px solid #e6e6ea; transform: rotate(45deg);
-}
-.notif__header { 
-  font-weight: 700; 
-  margin: 4px 8px 12px; 
-  color: #6e4a2e;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 16px;
-}
-.notif__item {
-  display: block; width: 100%; text-align: left; 
-  background: rgba(250, 247, 242, 0.9); 
-  border: 1px solid rgba(212, 180, 138, 0.3); 
-  border-radius: 12px;
-  padding: 12px 14px; cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  color: #6e4a2e;
-}
-.notif__item + .notif__item { margin-top: 8px; }
-.notif__item:hover, .notif__item:focus-visible { 
-  background: rgba(212, 180, 138, 0.08); 
-  color: #6e4a2e;
-  border-color: rgba(212, 180, 138, 0.35);
-  transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(110, 74, 46, 0.08); 
-  outline: none; 
-}
-.notif__row { display: grid; grid-template-columns: 1fr auto; align-items: center; }
-.notif__title { 
-  font-weight: 700; 
-  color: inherit;
-  transition: color 0.3s ease;
-}
-.notif__time { 
-  color: #8b5a3c; 
-  font-size: 12px; 
-  transition: color 0.3s ease;
-}
-.notif__item:hover .notif__time {
-  color: #8b5a3c;
-}
-.notif__body { 
-  margin-top: 4px; 
-  font-size: 13px; 
-  color: inherit; 
-  line-height: 1.35;
-  transition: color 0.3s ease;
-}
-
-/* Responsive */
-@media (max-width: 1100px) { .nav { grid-template-columns: 180px 1fr 260px; } }
-@media (max-width: 900px)  { .nav { grid-template-columns: 120px 1fr 200px; } .nav__logo { height: 28px; } }
-
-/* Mobile: keep center button aligned and tappable */
 @media (max-width: 700px) {
-  .nav { grid-template-columns: 1fr 44px 44px; gap: 8px; }
-  .nav__left { display: none; }
-  .nav__center { grid-column: 1 / 2; }
-  .nav__right { grid-column: 2 / 4; justify-content: flex-end; }
-  .nav__center-inner { padding: 0 8px; }
-  .nav__searchBtn { width: 100%; justify-content: center; }
-  .nav__search { width: 100%; } /* if ever using the input again */
-  .nav__coin-count { display: none; }
+  .nav { 
+    grid-template-columns: 1fr 44px 44px; 
+    gap: 8px; 
+  }
+  .nav__left { 
+    display: none; 
+  }
+  .nav__center { 
+    grid-column: 1 / 2; 
+  }
+  .nav__right { 
+    grid-column: 2 / 4; 
+    justify-content: flex-end; 
+  }
+  .nav__center-inner { 
+    padding: 0 8px; 
+  }
 }
+

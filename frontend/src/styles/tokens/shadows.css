@@ -1,0 +1,30 @@
+/* ========================================
+   💫 MUSEO SHADOW TOKENS
+   40 lines (box-shadow, text-shadow)
+   ======================================== */
+
+:root {
+  /* Box Shadows - Elevation System */
+  --museo-shadow-xs: 0 1px 2px rgba(110, 74, 46, 0.05);
+  --museo-shadow-sm: 0 2px 4px rgba(110, 74, 46, 0.08);
+  --museo-shadow-base: 0 4px 8px rgba(110, 74, 46, 0.1);
+  --museo-shadow-md: 0 6px 12px rgba(110, 74, 46, 0.12);
+  --museo-shadow-lg: 0 8px 16px rgba(110, 74, 46, 0.15);
+  --museo-shadow-xl: 0 12px 24px rgba(110, 74, 46, 0.18);
+  --museo-shadow-2xl: 0 16px 32px rgba(110, 74, 46, 0.2);
+  --museo-shadow-inner: inset 0 2px 4px rgba(110, 74, 46, 0.06);
+  --museo-shadow-none: none;
+  
+  /* Text Shadows */
+  --museo-text-shadow-sm: 0 1px 2px rgba(26, 15, 8, 0.3);
+  --museo-text-shadow-base: 0 2px 4px rgba(26, 15, 8, 0.4);
+  --museo-text-shadow-lg: 0 4px 8px rgba(26, 15, 8, 0.5);
+  
+  /* Overlay Shadows */
+  --museo-overlay-shadow: 0 20px 40px rgba(110, 74, 46, 0.25);
+  --museo-dropdown-shadow: 0 8px 16px rgba(110, 74, 46, 0.15), 0 2px 4px rgba(110, 74, 46, 0.08);
+  
+  /* Focus Shadows */
+  --museo-focus-shadow: 0 0 0 3px rgba(212, 180, 138, 0.3);
+  --museo-focus-error-shadow: 0 0 0 3px rgba(160, 82, 45, 0.3);
+}

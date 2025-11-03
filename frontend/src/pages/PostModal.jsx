@@ -412,8 +412,8 @@ export default function PostModal({
   if (!post) return null;
 
   const modalContent = (
-    <div className="museo-modal-overlay artwork-modal-overlay" onClick={onClose}>
-      <div className="museo-modal artwork-modal" onClick={stop}>
+    <div className="museo-modal-overlay artwork-type-overlay artwork-modal-overlay" onClick={onClose}>
+      <div className="museo-modal artwork-type-modal artwork-modal" onClick={stop}>
         {/* Header Controls */}
         <div style={{ 
           position: 'absolute', 

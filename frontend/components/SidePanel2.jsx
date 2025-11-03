@@ -19,8 +19,8 @@ export default function SidePanel2({
 
   return (
     <aside className="side side--right" aria-label="Right rail widgets">
-      <div className="museo-card" style={{ padding: 16 }}>
-        <div className="museo-card__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <div className="museo-card">
+        <div className="museo-card__title">
           <span className="museo-title-text">UPCOMING EVENTS</span>
           <span className="museo-view-all" onClick={() => navigate('/upcomingevents')}>VIEW ALL</span>
         </div>
@@ -55,19 +55,19 @@ export default function SidePanel2({
       </div>
 
       {/* Header Card */}
-      <div className="museo-card" style={{ padding: 16 }}>
-        <div className="museo-card__title" style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <span className="museo-title-text" style={{ textAlign: 'center' }}>TOP ARTS OF THE WEEK</span>
+      <div className="museo-card">
+        <div className="museo-card__title">
+          <span className="museo-title-text">TOP ARTS OF THE WEEK</span>
         </div>
 
         {loadingTopArts && (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--museo-text-muted)' }}>
+          <div className="museo-loading-state">
             Loading top arts...
           </div>
         )}
 
         {!loadingTopArts && topArts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--museo-text-muted)' }}>
+          <div className="museo-empty-state">
             No top arts this week
           </div>
         )}
@@ -81,61 +81,19 @@ export default function SidePanel2({
             return (
               <div
                 key={artwork.id}
-                className="museo-card"
-                style={{
-                  padding: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  marginBottom: '8px',
-                  position: 'relative'
-                }}
+                className="museo-card museo-artwork-card"
                 onClick={() => navigate('/gallery')}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '';
-                }}
               >
                 {/* Rank badge */}
-                <div style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
-                  color: 'white',
-                  borderRadius: '12px',
-                  padding: '4px 8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '10px',
-                  fontWeight: '700',
-                  zIndex: 2,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }}>
+                <div className="museo-rank-badge">
                   Top {index + 1}
                 </div>
                 
                 {/* Image */}
-                <div style={{
-                  width: '100%',
-                  aspectRatio: '16/10',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  marginBottom: '8px'
-                }}>
+                <div className="museo-artwork-image">
                   <img
                     src={imageUrl}
                     alt={artwork.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
                     onError={(e) => {
                       e.target.src = 'https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png';
                     }}
@@ -143,16 +101,7 @@ export default function SidePanel2({
                 </div>
                 
                 {/* Title */}
-                <div style={{
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: 'var(--museo-text-primary)',
-                  textAlign: 'center',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  fontFamily: 'var(--museo-font-body)'
-                }}>
+                <div className="museo-artwork-title">
                   {artwork.title}
                 </div>
               </div>

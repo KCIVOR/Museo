@@ -204,7 +204,7 @@
 .ueCard .eBtn:hover {
   background: var(--museo-primary-dark) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 2px 4px var(--museo-shadow-light) !important;
 }
 
 /* Small screens tweaks */

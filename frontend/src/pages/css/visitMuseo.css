@@ -1,0 +1,924 @@
+/**
+ * Visit Museo Page Styles
+ * Creative museum showcase with collage gallery
+ * Design-system compatible
+ */
+
+/* ============================================
+   PAGE CONTAINER
+   ============================================ */
+.visit-museo-page {
+  min-height: 100vh;
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+.vm-hero {
+  position: relative;
+  height: 85vh;
+  min-height: 600px;
+  padding: 100px 20px;
+  background: var(--museo-primary);
+  background-image: 
+    linear-gradient(rgba(110, 74, 46, 0.85), rgba(110, 74, 46, 0.85)),
+    url('https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/museo7.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.vm-hero-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vm-hero-content {
+  text-align: center;
+  color: var(--museo-white);
+  z-index: 1;
+  padding: 0 20px;
+  max-width: 900px;
+  animation: fadeInUp 1s ease;
+}
+
+.vm-hero-badge {
+  display: inline-block;
+  font-family: var(--museo-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  background: rgba(212, 180, 138, 0.2);
+  border: 1px solid rgba(212, 180, 138, 0.4);
+  border-radius: 50px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.vm-hero-title {
+  font-family: var(--museo-font-heading);
+  font-size: 5rem;
+  font-weight: 900;
+  margin: 0 0 1.5rem 0;
+  text-shadow: 0 4px 20px var(--museo-shadow);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.vm-hero-subtitle {
+  font-family: var(--museo-font-body);
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0 0 3rem 0;
+  text-shadow: 0 2px 10px var(--museo-shadow);
+  opacity: 0.95;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.vm-hero-btn {
+  background: var(--museo-accent);
+  color: var(--museo-white);
+  border: none;
+  padding: 18px 48px;
+  font-family: var(--museo-font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(212, 180, 138, 0.4);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.vm-hero-btn:hover {
+  background: var(--museo-accent-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(212, 180, 138, 0.5);
+}
+
+/* ============================================
+   GALLERY SECTION
+   ============================================ */
+.vm-gallery-section {
+  padding: 100px 20px;
+  background: var(--museo-bg-primary);
+}
+
+.vm-section-header {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.vm-section-badge {
+  display: inline-block;
+  font-family: var(--museo-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--museo-accent);
+  margin-bottom: 16px;
+}
+
+.vm-section-title {
+  font-family: var(--museo-font-heading);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--museo-text-primary);
+  margin: 0 0 16px 0;
+  position: relative;
+  display: inline-block;
+}
+
+.vm-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--museo-accent), transparent);
+  border-radius: 2px;
+}
+
+.vm-section-subtitle {
+  font-family: var(--museo-font-body);
+  font-size: 1.25rem;
+  color: var(--museo-text-secondary);
+  margin: 24px 0 0 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================
+   COLLAGE GRID - Creative Layout
+   ============================================ */
+.vm-collage-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: 200px;
+  gap: 20px;
+  padding: 0 20px;
+}
+
+/* Large Featured Image */
+.vm-collage-item--large {
+  grid-column: span 6;
+  grid-row: span 2;
+}
+
+/* Medium Images */
+.vm-collage-item--medium {
+  grid-column: span 3;
+  grid-row: span 2;
+}
+
+/* Small Images */
+.vm-collage-item--small {
+  grid-column: span 4;
+  grid-row: span 2;
+}
+
+/* Wide Images */
+.vm-collage-item--wide {
+  grid-column: span 6;
+  grid-row: span 2;
+}
+
+.vm-collage-item {
+  opacity: 0;
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.vm-collage-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px var(--museo-shadow-light);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vm-collage-image-wrapper:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px var(--museo-shadow);
+}
+
+.vm-collage-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vm-collage-image-wrapper:hover .vm-collage-image {
+  transform: scale(1.1);
+}
+
+.vm-collage-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, var(--museo-overlay) 100%);
+  padding: 32px 24px 24px;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vm-collage-image-wrapper:hover .vm-collage-overlay {
+  transform: translateY(0);
+}
+
+.vm-collage-caption {
+  color: var(--museo-white);
+  font-family: var(--museo-font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 8px var(--museo-shadow-light);
+}
+
+/* ============================================
+   WHY VISIT SECTION
+   ============================================ */
+.vm-why-section {
+  padding: 100px 20px;
+  background: var(--museo-primary);
+  background-image: 
+    linear-gradient(rgba(110, 74, 46, 0.85), rgba(110, 74, 46, 0.85)),
+    url('https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/museo7.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--museo-white);
+}
+
+.vm-why-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.vm-why-title {
+  font-family: var(--museo-font-heading);
+  font-size: 3rem;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 60px 0;
+  text-shadow: 0 2px 8px var(--museo-shadow-light);
+}
+
+.vm-why-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 32px;
+}
+
+.vm-why-card {
+  background: rgba(248, 245, 240, 0.1);
+  border: 1px solid rgba(248, 245, 240, 0.2);
+  border-radius: 16px;
+  padding: 40px 32px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.vm-why-card:hover {
+  background: rgba(248, 245, 240, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px var(--museo-shadow);
+}
+
+.vm-why-icon {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vm-why-icon svg {
+  color: var(--museo-white);
+  opacity: 0.9;
+}
+
+.vm-why-card-title {
+  font-family: var(--museo-font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.vm-why-card-text {
+  font-family: var(--museo-font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* ============================================
+   BOOKING SECTION
+   ============================================ */
+.vm-booking-section {
+  padding: 100px 20px;
+  background: var(--museo-bg-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.vm-booking-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--museo-accent), var(--museo-gold-dark), var(--museo-accent), transparent);
+  z-index: 2;
+}
+
+.vm-booking-section::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(212, 180, 138, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.vm-booking-container {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Alert Messages */
+.vm-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  animation: slideDown 0.3s ease;
+}
+
+.vm-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.vm-alert h4 {
+  font-family: var(--museo-font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.vm-alert p {
+  font-family: var(--museo-font-body);
+  font-size: 0.9375rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vm-alert-success {
+  background: rgba(76, 175, 80, 0.1);
+  border: 2px solid #4caf50;
+  color: #2e7d32;
+}
+
+.vm-alert-success svg {
+  color: #4caf50;
+}
+
+.vm-alert-error {
+  background: rgba(244, 67, 54, 0.1);
+  border: 2px solid #f44336;
+  color: #c62828;
+}
+
+.vm-alert-error svg {
+  color: #f44336;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vm-booking-header {
+  text-align: center;
+  margin-bottom: 60px;
+  position: relative;
+}
+
+.vm-booking-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--museo-accent), transparent);
+  border-radius: 2px;
+}
+
+.vm-booking-badge {
+  display: inline-block;
+  font-family: var(--museo-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--museo-accent);
+  margin-bottom: 16px;
+}
+
+.vm-booking-title {
+  font-family: var(--museo-font-heading);
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--museo-text-primary);
+  margin: 0 0 16px 0;
+}
+
+.vm-booking-subtitle {
+  font-family: var(--museo-font-body);
+  font-size: 1.125rem;
+  color: var(--museo-text-secondary);
+  margin: 0;
+}
+
+/* Form Styles */
+.vm-booking-form {
+  background: rgba(248, 245, 240, 0.95);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--museo-accent);
+  border-radius: 24px;
+  padding: 48px;
+  box-shadow: 0 8px 32px var(--museo-shadow-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.vm-booking-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(90deg, var(--museo-accent), var(--museo-gold-dark), var(--museo-accent));
+}
+
+.vm-booking-form::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(212, 180, 138, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.vm-form-section {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 2px solid var(--museo-border);
+  position: relative;
+  z-index: 1;
+}
+
+.vm-form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.vm-form-section-title {
+  font-family: var(--museo-font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin: 0 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--museo-accent);
+  display: inline-block;
+}
+
+.vm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.vm-optional {
+  font-weight: 400;
+  color: var(--museo-text-muted);
+  font-size: 0.875rem;
+}
+
+.vm-form-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.vm-form-group::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 0;
+  background: var(--museo-accent);
+  transition: height 0.3s ease;
+  border-radius: 2px;
+}
+
+.vm-form-group:focus-within::before {
+  height: 100%;
+}
+
+.vm-form-group--full {
+  grid-column: span 2;
+}
+
+.vm-form-label {
+  font-family: var(--museo-font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+  margin-bottom: 8px;
+  margin-left: 8px;
+  position: relative;
+  display: inline-block;
+}
+
+.vm-form-label::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--museo-accent);
+  border-radius: 50%;
+}
+
+.vm-form-input,
+.vm-form-textarea {
+  font-family: var(--museo-font-body);
+  font-size: 1rem;
+  padding: 14px 18px;
+  border: 2px solid var(--museo-accent);
+  border-radius: 12px;
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.vm-form-input:focus,
+.vm-form-textarea:focus {
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.2);
+  background: var(--museo-white);
+}
+
+.vm-form-input::placeholder,
+.vm-form-textarea::placeholder {
+  color: var(--museo-text-muted);
+}
+
+.vm-form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.vm-radio-group {
+  display: flex;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.vm-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--museo-font-body);
+  font-size: 1rem;
+  color: var(--museo-text-primary);
+  cursor: pointer;
+}
+
+.vm-radio-label input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--museo-accent);
+}
+
+.vm-form-actions {
+  margin-top: 40px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.vm-submit-btn {
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-primary);
+  border: 2px solid var(--museo-accent);
+  padding: 10px 24px;
+  font-family: var(--museo-font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-height: 40px;
+}
+
+.vm-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+  border-color: var(--museo-gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 180, 138, 0.4);
+}
+
+.vm-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.vm-cancel-btn {
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  border: 2px solid var(--museo-accent);
+  padding: 10px 24px;
+  font-family: var(--museo-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-height: 40px;
+}
+
+.vm-cancel-btn:hover:not(:disabled) {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-gold-dark);
+  transform: translateY(-2px);
+}
+
+.vm-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   INFO SECTION
+   ============================================ */
+.vm-info-section {
+  padding: 80px 20px;
+  background: var(--museo-bg-secondary);
+}
+
+.vm-info-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.vm-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.vm-info-card {
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 4px 16px var(--museo-shadow-light);
+  transition: all 0.3s ease;
+}
+
+.vm-info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px var(--museo-shadow-light);
+  border-color: var(--museo-accent);
+}
+
+.vm-info-icon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+}
+
+.vm-info-title {
+  font-family: var(--museo-font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--museo-text-primary);
+  margin: 0 0 16px 0;
+}
+
+.vm-info-text {
+  font-family: var(--museo-font-body);
+  font-size: 1.125rem;
+  color: var(--museo-text-secondary);
+  margin: 6px 0;
+  font-weight: 500;
+}
+
+.vm-info-note {
+  font-family: var(--museo-font-body);
+  font-size: 0.9375rem;
+  color: var(--museo-text-muted);
+  margin: 12px 0 0 0;
+  font-style: italic;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 1024px) {
+  .vm-collage-grid {
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 180px;
+    gap: 0;
+  }
+
+  .vm-collage-item--large {
+    grid-column: span 6;
+    grid-row: span 2;
+  }
+
+  .vm-collage-item--medium {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+
+  .vm-collage-item--small {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .vm-collage-item--wide {
+    grid-column: span 6;
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .vm-hero-title {
+    font-size: 3rem;
+  }
+
+  .vm-hero-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .vm-section-title {
+    font-size: 2.5rem;
+  }
+
+  .vm-booking-title {
+    font-size: 2.25rem;
+  }
+
+  .vm-why-title {
+    font-size: 2.25rem;
+  }
+
+  .vm-booking-form {
+    padding: 32px 24px;
+  }
+
+  .vm-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vm-form-group--full {
+    grid-column: span 1;
+  }
+
+  .vm-collage-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: 250px;
+    gap: 0;
+  }
+
+  .vm-collage-item--large,
+  .vm-collage-item--medium,
+  .vm-collage-item--small,
+  .vm-collage-item--wide {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .vm-form-actions {
+    flex-direction: column;
+  }
+
+  .vm-submit-btn,
+  .vm-cancel-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .vm-hero {
+    height: 70vh;
+    min-height: 500px;
+  }
+
+  .vm-hero-title {
+    font-size: 2.25rem;
+  }
+
+  .vm-hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .vm-hero-btn {
+    padding: 14px 36px;
+    font-size: 1rem;
+  }
+
+  .vm-gallery-section,
+  .vm-why-section,
+  .vm-booking-section,
+  .vm-info-section {
+    padding: 60px 16px;
+  }
+
+  .vm-section-title {
+    font-size: 2rem;
+  }
+
+  .vm-why-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vm-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import ConfirmModal from "../ConfirmModal";
 import RequestDetailModal from "./RequestDetailModal";
+import MuseoLoadingBox from "../../components/MuseoLoadingBox";
+import ConfirmModal from "../ConfirmModal";
+import "./css/RequestsModal.css";
+
 const API = import.meta.env.VITE_API_BASE;
 
 export default function RequestsModal({
   open,
   onClose,
-  // Optional action handlers to customize per type
-  actionsByType = {}, // { [type]: { approve: (id, req)=>Promise, reject: (id, req)=>Promise } }
 }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,17 +21,100 @@ export default function RequestsModal({
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // Built-in action handlers for different request types
+  const actionsByType = {
+    visit_booking: {
+      approve: async (id) => {
+        const res = await fetch(`${API}/visit-bookings/${id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'approved' })
+        });
+        if (!res.ok) throw new Error('Failed to approve visit booking');
+        const data = await res.json();
+        return { success: true, status: 'approved', data };
+      },
+      reject: async (id) => {
+        const res = await fetch(`${API}/visit-bookings/${id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+        if (!res.ok) throw new Error('Failed to reject visit booking');
+        const data = await res.json();
+        return { success: true, status: 'rejected', data };
+      }
+    }
+    // Add more request type handlers here as needed
+  };
+
   const loadRequests = async () => {
     setLoading(true);
     setError("");
     try {
-      // Backend route: GET /request/getRequest (returns { requests: [...] })
+      // Fetch regular requests
       const res = await fetch(`${API}/request/getRequest`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error(`Failed to load requests (${res.status})`);
       const data = await res.json();
-      setItems(Array.isArray(data?.requests) ? data.requests : (Array.isArray(data) ? data : []));
+      const regularRequests = Array.isArray(data?.requests) ? data.requests : (Array.isArray(data) ? data : []);
+      
+      // Fetch visit bookings
+      let visitBookings = [];
+      try {
+        const visitRes = await fetch(`${API}/visit-bookings`, {
+          credentials: "include",
+        });
+        if (visitRes.ok) {
+          const visitData = await visitRes.json();
+          if (visitData.success && Array.isArray(visitData.data)) {
+            // Transform visit bookings to match request format
+            visitBookings = visitData.data.map(booking => ({
+              id: booking.visitId,  // Fixed: use visitId from database
+              visitId: booking.visitId,  // Keep original visitId too
+              requestId: booking.visitId,  // Use visitId as requestId
+              userId: booking.user_id,
+              requestType: 'visit_booking',
+              type: 'visit_booking',
+              status: booking.status,
+              createdAt: booking.created_at,
+              data: {
+                visitorType: booking.visitor_type,
+                organizationName: booking.organization_name,
+                numberOfVisitors: booking.number_of_visitors,
+                classification: booking.classification,
+                yearLevel: booking.year_level,
+                institutionalType: booking.institutional_type,
+                location: booking.location,
+                contactName: booking.contact_name,
+                contactEmail: booking.contact_email,
+                contactPhone: booking.contact_phone,
+                preferredDate: booking.preferred_date,
+                preferredTime: booking.preferred_time,
+                purposeOfVisit: booking.purpose_of_visit,
+                purposeOther: booking.purpose_other,
+                remarks: booking.remarks,
+                organizationDetails: booking.organization_details,
+                adminNotes: booking.admin_notes
+              }
+            }));
+          }
+        }
+      } catch (visitError) {
+        console.error('Failed to load visit bookings:', visitError);
+      }
+      
+      // Combine both types and sort by date (newest first)
+      const combined = [...regularRequests, ...visitBookings];
+      combined.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.created_at || 0);
+        const dateB = new Date(b.createdAt || b.created_at || 0);
+        return dateB - dateA; // Newest first
+      });
+      setItems(combined);
     } catch (e) {
       setError(e.message || "Failed to load requests");
       setItems([]);
@@ -79,7 +163,7 @@ export default function RequestsModal({
       const name = [data.firstName, data.midInit, data.lastName].filter(Boolean).join(' ');
       const title = data.title || '';
       const t = (r.requestType || r.type || '').toString();
-      const requestId = (r.id || r.requestId || '').toString();
+      const requestId = (r.id || r.requestId || r.visitId || '').toString();  // Added visitId support
       const userId = (r.userId || '').toString();
       return (
         name.toLowerCase().includes(term) ||
@@ -93,7 +177,7 @@ export default function RequestsModal({
 
   const handleActionClick = (id, action) => {
     // Find request to get name for confirmation message
-    const req = (items || []).find(r => (r.id || r.requestId) === id);
+    const req = (items || []).find(r => (r.id || r.requestId || r.visitId) === id);  // Added visitId support
     const data = req?.data || {};
     const name = [data.firstName, data.midInit, data.lastName].filter(Boolean).join(' ') || data.title || 'this request';
     
@@ -109,18 +193,26 @@ export default function RequestsModal({
     
     try {
       if (action === 'delete') {
-        // Delete request
-        const res = await fetch(`${API}/request/${id}`, {
+        // Determine the correct delete endpoint based on request type
+        const req = (items || []).find(r => (r.id || r.requestId || r.visitId) === id);
+        const reqType = req?.requestType || req?.type || 'unknown';
+        
+        // Use appropriate endpoint for different request types
+        const deleteUrl = reqType === 'visit_booking' 
+          ? `${API}/visit-bookings/${id}`  // Visit booking endpoint
+          : `${API}/request/${id}`;         // Regular request endpoint
+        
+        const res = await fetch(deleteUrl, {
           method: 'DELETE',
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to delete request');
         
         // Remove from local state
-        setItems(prev => prev.filter(r => (r.id || r.requestId) !== id));
+        setItems(prev => prev.filter(r => (r.id || r.requestId || r.visitId) !== id));  // Added visitId support
       } else {
         // Approve or Reject
-        const req = (items || []).find(r => (r.id || r.requestId) === id);
+        const req = (items || []).find(r => (r.id || r.requestId || r.visitId) === id);  // Added visitId support
         const rType = req?.requestType || req?.type || 'unknown';
         const handler = actionsByType[rType]?.[action];
 
@@ -143,7 +235,7 @@ export default function RequestsModal({
         // Update local state with the new status from backend response
         const newStatus = responseData?.status || (action === 'approve' ? 'approved' : 'rejected');
         setItems(prev => prev.map(r => {
-          const rid = r.id || r.requestId;
+          const rid = r.id || r.requestId || r.visitId;  // Added visitId support
           if (rid !== id) return r;
           const data = r.data || {};
           return { 
@@ -165,63 +257,37 @@ export default function RequestsModal({
 
   return (
     <div 
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '16px'
-      }}
+      className="museo-modal-overlay"
       onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}
     >
       <article
         role="dialog"
         aria-modal="true"
         aria-label="Requests"
-        className="museo-card"
+        className="museo-modal museo-modal--xl requests-modal__container"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
-        style={{ 
-          width: 'clamp(820px, 92vw, 1040px)', 
-          maxHeight: '94vh', 
-          display: 'grid', 
-          gridTemplateRows: 'auto 1fr',
-          background: 'var(--museo-white)',
-          border: '1px solid var(--museo-border)',
-          borderRadius: '16px',
-          boxShadow: '0 20px 60px var(--museo-shadow)',
-          position: 'relative'
-        }}
       >
-        <header className="museo-body" style={{ padding: '16px 20px 12px' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom: '12px' }}>
+        <header className="museo-body requests-modal__header">
+          <div className="requests-modal__header-top">
             <div>
-              <h3 className="museo-title" style={{ margin:0, fontSize:'24px', fontWeight:800, color:'var(--museo-primary)' }}>
+              <h3 className="museo-title requests-modal__title">
                 User Requests
               </h3>
-              <p className="museo-desc" style={{ margin: '4px 0 0 0', color:'var(--museo-text-secondary)', fontSize:'14px' }}>
+              <p className="museo-desc requests-modal__subtitle">
                 Review and act on submissions
               </p>
             </div>
             <button 
               aria-label="Close" 
               onClick={onClose} 
-              className="btn-x"
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '20px',
-                zIndex: 10
-              }}
+              className="btn-x requests-modal__close-btn"
             >
               ✕
             </button>
           </div>
           
-          <div style={{ display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
+          <div className="requests-modal__filter-bar">
             <div className={`dropdown-filter ${dropdownOpen ? 'open' : ''}`} data-dropdown>
               <button
                 className="dropdown-filter-trigger"
@@ -249,61 +315,45 @@ export default function RequestsModal({
               </div>
             </div>
             <input
-              className="museo-input"
+              className="museo-input requests-modal__search"
               value={q}
               onChange={e=>setQ(e.target.value)}
               placeholder="Search name, title, type, request ID, user ID"
-              style={{ 
-                flex:'1 1 200px',
-                height: '36px'
-              }}
             />
           </div>
         </header>
 
-        <div style={{ padding:'0 20px 20px', overflow:'auto' }}>
+        <div className="requests-modal__content">
           {loading && (
-            <div className="museo-message" style={{ textAlign: 'center', padding: '40px' }}>
-              Loading requests...
-            </div>
+            <MuseoLoadingBox message="Loading requests..." show={loading} />
           )}
           
           {!!error && (
-            <div className="museo-message" style={{ 
-              textAlign: 'center', 
-              padding: '40px',
-              color: 'var(--museo-error)',
-              background: '#fee2e2',
-              border: '1px solid #fecaca',
-              borderRadius: '12px',
-              margin: '20px 0'
-            }}>
-              {error}
+            <div className="museo-message requests-modal__error">
+              <strong>Error:</strong> {error}
+              <br />
+              <button className="btn btn-secondary btn-sm" onClick={loadRequests} style={{ marginTop: '12px' }}>
+                Retry
+              </button>
             </div>
           )}
           
           {!loading && !error && list.length === 0 && (
-            <div className="museo-message" style={{ 
-              textAlign: 'center', 
-              padding: '60px 20px',
-              background: 'var(--museo-bg-secondary)',
-              borderRadius: '16px',
-              margin: '20px 0'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.7 }}>📭</div>
-              <h4 className="museo-title" style={{ margin: '0 0 8px 0', color: 'var(--museo-primary)' }}>
+            <div className="requests-modal__empty">
+              <div className="requests-modal__empty-icon">📭</div>
+              <h4 className="museo-title requests-modal__empty-title">
                 No requests
               </h4>
-              <p className="museo-desc" style={{ margin: 0, color: 'var(--museo-text-secondary)' }}>
+              <p className="museo-desc requests-modal__empty-desc">
                 You'll see new requests here as users submit them.
               </p>
             </div>
           )}
 
           {!loading && !error && list.length > 0 && (
-            <div style={{ display:'grid', gap:'16px', margin: '20px 0' }}>
+            <div className="requests-modal__list">
               {list.map((r) => {
-                const id = r.id || r.requestId;
+                const id = r.id || r.requestId || r.visitId;  // Added visitId support
                 const data = r.data || {};
                 const imgs = Array.isArray(data.images) ? data.images : [];
                 const name = [data.firstName, data.midInit, data.lastName].filter(Boolean).join(' ');
@@ -313,113 +363,100 @@ export default function RequestsModal({
                 return (
                   <article 
                     key={id} 
-                    style={{
-                      background: 'var(--museo-white)',
-                      border: '2px solid var(--museo-border)',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      fontFamily: 'var(--museo-font-body)',
-                      position: 'relative'
-                    }}
+                    className={`requests-modal__card ${type === 'visit_booking' ? 'requests-modal__card--visit-booking' : ''}`}
                     onClick={() => { setSelectedRequest(r); setDetailOpen(true); }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                      e.currentTarget.style.borderColor = 'var(--museo-accent)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                      e.currentTarget.style.borderColor = 'var(--museo-border)';
-                    }}
                   >
                     {/* Header with badges */}
-                    <header style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '16px',
-                      gap: '12px'
-                    }}>
+                    <header className="requests-modal__card-header">
                       {/* Left: Type badge */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className={`btn-type ${type.replace(/_/g, '-')}`}>
+                      <div className="requests-modal__card-badges">
+                        <span className="museo-badge museo-badge--primary">
                           {type.replace(/_/g,' ')}
                         </span>
                       </div>
                       
                       {/* Right: Status badge */}
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <span className={`btn-status ${status}`}>
+                      <div className="requests-modal__card-status">
+                        <span className={`museo-badge ${
+                          status === 'approved' ? 'museo-badge--success' : 
+                          status === 'rejected' ? 'museo-badge--error' : 
+                          'museo-badge--warning'
+                        }`}>
                           {status}
                         </span>
                       </div>
                     </header>
 
                     {/* Main content */}
-                    <div style={{ marginBottom: '16px' }}>
+                    <div className="requests-modal__card-content">
                       {/* Title */}
-                      <h3 style={{
-                        margin: '0 0 12px 0',
-                        fontSize: '18px',
-                        fontWeight: '700',
-                        color: 'var(--museo-text-primary)',
-                        fontFamily: 'var(--museo-font-display)',
-                        lineHeight: '1.3'
-                      }}>
-                        {name || data.title || r.title || 'Request'}
+                      <h3 className="requests-modal__card-title">
+                        {type === 'visit_booking' 
+                          ? (data.organizationName || data.contactName || 'Visit Request')
+                          : (name || data.title || r.title || 'Request')
+                        }
                       </h3>
                       
                       {/* Metadata */}
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '8px',
-                        marginBottom: '16px',
-                        fontSize: '13px',
-                        color: 'var(--museo-text-secondary)'
-                      }}>
-                        {'userId' in r && <div><strong>User ID:</strong> {r.userId}</div>}
-                        {'phone' in data && <div><strong>Phone:</strong> {data.phone || '—'}</div>}
-                        {'age' in data && <div><strong>Age:</strong> {data.age || '—'}</div>}
-                        {'sex' in data && <div><strong>Sex:</strong> {data.sex || '—'}</div>}
-                        {'birthdate' in data && <div><strong>Birthdate:</strong> {data.birthdate || '—'}</div>}
-                        {'address' in data && <div><strong>Address:</strong> {data.address || '—'}</div>}
-                        {'artworkTitle' in data && <div><strong>Artwork:</strong> {data.artworkTitle || '—'}</div>}
-                        {'artId' in data && <div><strong>Art ID:</strong> {data.artId || '—'}</div>}
-                        {'startingPrice' in data && <div><strong>Start Price:</strong> {data.startingPrice || '—'}</div>}
-                        {'reservePrice' in data && <div><strong>Reserve:</strong> {data.reservePrice || '—'}</div>}
-                        {'auctionStart' in data && <div><strong>Auction Start:</strong> {data.auctionStart || '—'}</div>}
-                        {'auctionEnd' in data && <div><strong>Auction End:</strong> {data.auctionEnd || '—'}</div>}
+                      <div className="requests-modal__metadata">
+                        {type === 'visit_booking' ? (
+                          // Visit Booking specific metadata
+                          <>
+                            <div className="visit-booking-highlight">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                              </svg>
+                              <strong>Visitor Type:</strong> {data.visitorType?.replace('_', ' ') || '—'}
+                            </div>
+                            {data.organizationName && <div><strong>Organization:</strong> {data.organizationName}</div>}
+                            <div><strong>Visitors:</strong> {data.numberOfVisitors || '—'} people</div>
+                            <div><strong>Contact:</strong> {data.contactName || '—'}</div>
+                            <div><strong>Email:</strong> {data.contactEmail || '—'}</div>
+                            <div><strong>Phone:</strong> {data.contactPhone || '—'}</div>
+                            <div className="visit-booking-date">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                              </svg>
+                              <strong>Visit Date:</strong> {data.preferredDate || '—'} {data.preferredTime ? `(${data.preferredTime})` : ''}
+                            </div>
+                            <div><strong>Purpose:</strong> {data.purposeOfVisit?.replace(/-/g, ' ') || '—'}</div>
+                            <div><strong>Location:</strong> {data.location || '—'}</div>
+                            {data.classification && <div><strong>Classification:</strong> {data.classification}</div>}
+                            {data.yearLevel && <div><strong>Year Level:</strong> {data.yearLevel}</div>}
+                            {data.remarks && <div className="visit-booking-remarks"><strong>Remarks:</strong> {data.remarks}</div>}
+                          </>
+                        ) : (
+                          // Regular request metadata
+                          <>
+                            {'userId' in r && <div><strong>User ID:</strong> {r.userId}</div>}
+                            {'phone' in data && <div><strong>Phone:</strong> {data.phone || '—'}</div>}
+                            {'age' in data && <div><strong>Age:</strong> {data.age || '—'}</div>}
+                            {'sex' in data && <div><strong>Sex:</strong> {data.sex || '—'}</div>}
+                            {'birthdate' in data && <div><strong>Birthdate:</strong> {data.birthdate || '—'}</div>}
+                            {'address' in data && <div><strong>Address:</strong> {data.address || '—'}</div>}
+                            {'artworkTitle' in data && <div><strong>Artwork:</strong> {data.artworkTitle || '—'}</div>}
+                            {'artId' in data && <div><strong>Art ID:</strong> {data.artId || '—'}</div>}
+                            {'startingPrice' in data && <div><strong>Start Price:</strong> {data.startingPrice || '—'}</div>}
+                            {'reservePrice' in data && <div><strong>Reserve:</strong> {data.reservePrice || '—'}</div>}
+                            {'auctionStart' in data && <div><strong>Auction Start:</strong> {data.auctionStart || '—'}</div>}
+                            {'auctionEnd' in data && <div><strong>Auction End:</strong> {data.auctionEnd || '—'}</div>}
+                          </>
+                        )}
                       </div>
                       
                       {/* Images */}
                       {imgs.length > 0 && (
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                          gap: '12px',
-                          marginBottom: '16px'
-                        }}>
+                        <div className="requests-modal__images">
                           {imgs.map((src, i) => (
-                            <div key={i} style={{
-                              borderRadius: '12px',
-                              overflow: 'hidden',
-                              border: '2px solid var(--museo-border)',
-                              aspectRatio: '4/3'
-                            }}>
+                            <div key={i} className="requests-modal__image-wrapper">
                               <img 
                                 src={src} 
                                 alt="attachment" 
                                 loading="lazy" 
-                                style={{ 
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover'
-                                }} 
+                                className="requests-modal__image"
                               />
                             </div>
                           ))}
@@ -428,28 +465,11 @@ export default function RequestsModal({
                       
                       {/* JSON Data Preview */}
                       {imgs.length === 0 && Object.keys(data).length > 0 && (
-                        <details style={{
-                          background: 'var(--museo-bg-secondary)',
-                          border: '1px solid var(--museo-border)',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          marginBottom: '16px'
-                        }}>
-                          <summary style={{
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            color: 'var(--museo-text-primary)',
-                            marginBottom: '8px'
-                          }}>
+                        <details className="requests-modal__data-preview">
+                          <summary className="requests-modal__data-summary">
                             View Request Data
                           </summary>
-                          <pre style={{
-                            margin: 0,
-                            fontSize: '12px',
-                            color: 'var(--museo-text-secondary)',
-                            overflow: 'auto',
-                            fontFamily: 'var(--museo-font-mono)'
-                          }}>
+                          <pre className="requests-modal__data-content">
                             {JSON.stringify(data, null, 2)}
                           </pre>
                         </details>
@@ -458,22 +478,13 @@ export default function RequestsModal({
                     
                     {/* Action buttons */}
                     <footer 
-                      style={{
-                        display: 'flex',
-                        gap: '8px',
-                        justifyContent: 'flex-end',
-                        paddingTop: '16px',
-                        borderTop: '1px solid var(--museo-border)'
-                      }}
+                      className="requests-modal__card-footer"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         onClick={() => handleActionClick(id, 'approve')}
                         disabled={status === 'approved' || status === 'rejected'}
                         className="btn btn-success btn-sm"
-                        style={{
-                          opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
-                        }}
                       >
                         {status === 'approved' ? '✓ Approved' : 'Accept'}
                       </button>
@@ -482,9 +493,6 @@ export default function RequestsModal({
                         onClick={() => handleActionClick(id, 'reject')}
                         disabled={status === 'approved' || status === 'rejected'}
                         className="btn btn-danger btn-sm"
-                        style={{
-                          opacity: status === 'approved' || status === 'rejected' ? 0.6 : 1
-                        }}
                       >
                         {status === 'rejected' ? '✗ Rejected' : 'Reject'}
                       </button>

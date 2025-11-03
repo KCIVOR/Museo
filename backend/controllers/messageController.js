@@ -1,4 +1,5 @@
 import db from "../database/db.js";
+import { cache } from '../utils/cache.js';
 
 
 // POST /api/message/send  { receiverId, content, messageType? }
@@ -78,6 +79,13 @@ export const createMessage = async (req, res) => {
       console.warn("createMessage: summary update failed", updErr);
     }
 
+    // Clear cache for both users' conversation lists
+    await cache.del(`conversations:${senderId}`);
+    await cache.del(`conversations:${receiverId}`);
+    // Clear message cache for this conversation (all pages)
+    await cache.clearPattern(`messages:${conv.conversationId}:*`);
+    console.log('🗑️ Cleared conversation and message cache after send');
+
     // Realtime: notify both participants
     try {
       const io = req.app.get("io");
@@ -86,8 +94,10 @@ export const createMessage = async (req, res) => {
           conversationId: conv.conversationId,
           message,
         };
-        io.to(`user:${receiverId}`).emit("message:new", payload);
-        io.to(`user:${senderId}`).emit("message:sent", payload);
+        console.log(`[Socket] Emitting message:new to user_${receiverId}`);
+        io.to(`user_${receiverId}`).emit("message:new", payload);
+        console.log(`[Socket] Emitting message:sent to user_${senderId}`);
+        io.to(`user_${senderId}`).emit("message:sent", payload);
       }
     } catch (e) {
       console.warn("socket emit failed:", e);
@@ -106,6 +116,15 @@ export const getConversation = async (req, res) => {
   try {
     const me = req.user?.id;
     if (!me) return res.status(401).json({ error: "Not authenticated" });
+
+    // Check cache first (10 seconds - conversations update very frequently)
+    const cacheKey = `conversations:${me}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ CACHE HIT:', cacheKey);
+      return res.json(cached);
+    }
+    console.log('❌ CACHE MISS:', cacheKey);
 
     // 1) Fetch conversations where I'm a participant
     const { data: convs, error } = await db
@@ -170,8 +189,13 @@ export const getConversation = async (req, res) => {
         },
       };
     });
-    console.log(shaped)
-    return res.json({ conversations: shaped });
+    const result = { conversations: shaped };
+    
+    // Cache for 10 seconds (conversations update very frequently)
+    await cache.set(cacheKey, result, 10);
+    console.log('💾 CACHED:', cacheKey);
+    
+    return res.json(result);
   } catch (err) {
     console.error("getConversation error:", err);
     return res.status(500).json({ error: "Server error" });
@@ -183,36 +207,62 @@ export const getConversation = async (req, res) => {
 export const getConversationById = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const limit = parseInt(req.query.limit || "50", 10);
-    const order = (req.query.order || "desc").toLowerCase();
+    const limit = parseInt(req.query.limit || "20", 10);
+    const page = parseInt(req.query.page || "1", 10);
+    
+    // Skip cache for now - messages need to be real-time
+    // Caching was causing issues with new messages not appearing
+    const cacheKey = `messages:${conversationId}:${page}:${limit}`;
+    // const cached = await cache.get(cacheKey);
+    // if (cached) {
+    //   console.log('✅ CACHE HIT:', cacheKey);
+    //   return res.json(cached);
+    // }
+    console.log('🔄 FETCHING FRESH:', cacheKey);
 
-    let rows, error;
-    if (order === "asc") {
-      const page = parseInt(req.query.page || "1", 10);
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      ({ data: rows, error } = await db
-        .from("message")
-        .select("*")
-        .eq("conversationId", conversationId)
-        .order("created_at", { ascending: true })
-        .range(from, to));
-    } else {
-      // Default: return the latest N messages so UI always sees the newest after long threads
-      ({ data: rows, error } = await db
-        .from("message")
-        .select("*")
-        .eq("conversationId", conversationId)
-        .order("created_at", { ascending: false })
-        .limit(limit));
-      // Reverse to keep chronological display (oldest -> newest)
-      rows = rows || [];
-      rows.reverse();
+    // Get total count
+    const { count, error: countError } = await db
+      .from("message")
+      .select("*", { count: "exact", head: true })
+      .eq("conversationId", conversationId);
+
+    if (countError) {
+      console.error("getConversationById: count error:", countError);
+      return res.status(500).json({ error: "Failed to count messages" });
     }
 
-    if (error) return res.status(500).json({ error: "Failed to fetch messages" });
+    // Get messages in descending order (newest first)
+    // Then reverse to show oldest to newest
+    const { data: rows, error } = await db
+      .from("message")
+      .select("*")
+      .eq("conversationId", conversationId)
+      .order("created_at", { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
 
-    res.json({ messages: rows || [], limit, order });
+    if (error) {
+      console.error("getConversationById: fetch error:", error);
+      return res.status(500).json({ error: "Failed to fetch messages" });
+    }
+
+    // Reverse to keep chronological display (oldest -> newest)
+    const messages = (rows || []).reverse();
+
+    const result = { 
+      messages, 
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        hasMore: count > page * limit
+      }
+    };
+    
+    // Don't cache messages for now - need real-time updates
+    // await cache.set(cacheKey, result, 60);
+    console.log('📨 RETURNED FRESH MESSAGES:', cacheKey);
+    
+    res.json(result);
   } catch (err) {
     console.error("getConversationById error:", err);
     res.status(500).json({ error: "Server error" });
@@ -247,6 +297,11 @@ export const markRead = async (req, res) => {
       .eq("conversationId", conversationId);
 
     if (updErr) return res.status(500).json({ error: "Failed to mark read" });
+    
+    // Clear user's conversation list cache (unread count changed)
+    await cache.del(`conversations:${me}`);
+    console.log('🗑️ Cleared conversation cache after mark read');
+    
     return res.json({ ok: true });
   } catch (err) {
     console.error("markRead error:", err);

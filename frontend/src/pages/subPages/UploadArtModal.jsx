@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
+import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
+import CategorySelector from '../../components/modal-features/CategorySelector';
 import './css/UploadArtModal.css';
 
 const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
@@ -6,18 +9,11 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
     title: '',
     description: '',
     medium: '',
-    categories: [],
-    images: []
   });
-  const [dragActive, setDragActive] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const categories = [
-    'Classical Art', 'Abstract Art', 'Impressionist', 'Contemporary Art',
-    'Digital Art', 'Photography', 'Sculpture', 'Street Art', 'Landscape',
-    'Portrait', 'Surrealist', 'Minimalist', 'Expressionist', 'Realism', 'Conceptual'
-  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -32,74 +28,6 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
         [name]: ''
       }));
     }
-  };
-
-  const handleCategoryToggle = (category) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter(cat => cat !== category)
-        : [...prev.categories, category]
-    }));
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
-  };
-
-  const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files);
-    handleFiles(files);
-  };
-
-  const handleFiles = (files) => {
-    const validFiles = files.filter(file => {
-      const isImage = file.type.startsWith('image/');
-      const isNotGif = file.type !== 'image/gif';
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-      return isImage && isNotGif && isValidSize;
-    });
-
-    if (validFiles.length !== files.length) {
-      setErrors(prev => ({
-        ...prev,
-        images: 'Some files were rejected. Only JPG, PNG images under 10MB are allowed (no GIFs).'
-      }));
-    }
-
-    // Create preview URLs
-    const newImages = validFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      id: Date.now() + Math.random()
-    }));
-
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...newImages].slice(0, 5) // Max 5 images
-    }));
-  };
-
-  const removeImage = (imageId) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter(img => img.id !== imageId)
-    }));
   };
 
   const validateForm = () => {
@@ -123,11 +51,11 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
       newErrors.medium = 'Medium must be at least 2 characters long';
     }
     
-    if (formData.categories.length === 0) {
+    if (categories.length === 0) {
       newErrors.categories = 'Please select at least one category';
     }
     
-    if (formData.images.length === 0) {
+    if (images.length === 0) {
       newErrors.images = 'Please upload at least one image';
     }
 
@@ -150,9 +78,9 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
       submitData.append('title', formData.title);
       submitData.append('description', formData.description);
       submitData.append('medium', formData.medium);
-      submitData.append('categories', JSON.stringify(formData.categories));
+      submitData.append('categories', JSON.stringify(categories));
       
-      formData.images.forEach((image, index) => {
+      images.forEach((image) => {
         submitData.append(`images`, image.file);
       });
 
@@ -163,9 +91,9 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
         title: '',
         description: '',
         medium: '',
-        categories: [],
-        images: []
       });
+      setCategories([]);
+      setImages([]);
       setErrors({});
       onClose();
     } catch (error) {
@@ -175,150 +103,87 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="museo-modal-overlay uam-overlay" onClick={onClose}>
-      <div className="museo-modal uam-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="uam-header">
-          <div className="uam-header-content">
-            <h2 className="uam-title">Share Your Artwork</h2>
-            <p className="uam-subtitle">Add your creation to the Museo gallery</p>
-          </div>
-          <button className="btn-x uam-close" onClick={onClose} title="Close">
-            ✕
-          </button>
-        </div>
+    <MuseoModal
+      open={isOpen}
+      onClose={onClose}
+      title="Share Your Artwork"
+      subtitle="Add your creation to the Museo gallery"
+      size="lg"
+    >
+      <MuseoModalBody>
+        <form onSubmit={handleSubmit} style={{ display: 'block' }}>
+          {/* Image Upload - Full Width */}
+          <ImageUploadZone
+            type="multiple"
+            maxFiles={5}
+            title="Artwork Images"
+            hint="Support: JPG, PNG up to 10MB • Maximum 5 images"
+            value={images}
+            onChange={setImages}
+            error={errors.images}
+          />
 
-        {/* Form */}
-        <form className="uam-form" onSubmit={handleSubmit}>
-          <div className="uam-content">
-            {/* Image Upload Section */}
-            <div className="uam-section">
-            <h3 className="uam-section-title">Artwork Images</h3>
-            
-            <div 
-              className={`uam-dropzone ${dragActive ? 'uam-dropzone--active' : ''} ${formData.images.length > 0 ? 'uam-dropzone--has-files' : ''} ${errors.images ? 'uam-dropzone--error' : ''}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <div className="uam-dropzone-content">
-                <div className="uam-dropzone-icon">🎨</div>
-                <div className="uam-dropzone-text">
-                  <strong>Drop your artwork here</strong> or click to browse
-                </div>
-                <div className="uam-dropzone-hint">
-                  Support: JPG, PNG up to 10MB • Maximum 5 images
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={handleFileSelect}
-                  className="uam-file-input"
-                />
-              </div>
+          {/* Form Fields - 2 Column Grid */}
+          <div className="museo-form-grid" style={{ marginTop: '32px' }}>
+            <div className="museo-form-field">
+              <label className="museo-label">Title *</label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                className={`museo-input ${errors.title ? 'museo-input--error' : ''}`}
+                placeholder="Enter artwork title"
+              />
+              {errors.title && <div className="museo-error-message">{errors.title}</div>}
             </div>
 
-            {errors.images && <div className="uam-error">{errors.images}</div>}
-
-            {/* Image Previews */}
-            {formData.images.length > 0 && (
-              <div className="uam-image-previews">
-                {formData.images.map((image) => (
-                  <div key={image.id} className="uam-image-preview">
-                    <img src={image.preview} alt="Preview" />
-                    <button
-                      type="button"
-                      className="uam-image-remove"
-                      onClick={() => removeImage(image.id)}
-                      title="Remove image"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Artwork Details */}
-          <div className="uam-section">
-            <h3 className="uam-section-title">Artwork Details</h3>
-            
-            <div className="uam-form-grid">
-              <div className="uam-field">
-                <label className="museo-form-label">Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className={`museo-input ${errors.title ? 'pe__input--error' : ''}`}
-                  placeholder="Enter artwork title"
-                />
-                {errors.title && <div className="pe__error">{errors.title}</div>}
-              </div>
-
-              <div className="uam-field">
-                <label className="museo-form-label">Medium *</label>
-                <input
-                  type="text"
-                  name="medium"
-                  value={formData.medium}
-                  onChange={handleInputChange}
-                  className={`museo-input ${errors.medium ? 'pe__input--error' : ''}`}
-                  placeholder="e.g., Oil on Canvas, Digital Art, Watercolor, Sculpture..."
-                />
-                {errors.medium && <div className="pe__error">{errors.medium}</div>}
-              </div>
+            <div className="museo-form-field">
+              <label className="museo-label">Medium *</label>
+              <input
+                type="text"
+                name="medium"
+                value={formData.medium}
+                onChange={handleInputChange}
+                className={`museo-input ${errors.medium ? 'museo-input--error' : ''}`}
+                placeholder="e.g., Oil on Canvas, Digital Art, Watercolor..."
+              />
+              {errors.medium && <div className="museo-error-message">{errors.medium}</div>}
             </div>
 
-            <div className="uam-field">
-              <label className="museo-form-label">Description *</label>
+            <div className="museo-form-field museo-form-field--full">
+              <label className="museo-label">Description *</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className={`museo-input museo-textarea ${errors.description ? 'pe__input--error' : ''}`}
+                className={`museo-textarea ${errors.description ? 'museo-input--error' : ''}`}
                 placeholder="Describe your artwork, inspiration, or technique..."
                 rows="4"
               />
-              {errors.description && <div className="pe__error">{errors.description}</div>}
+              {errors.description && <div className="museo-error-message">{errors.description}</div>}
             </div>
           </div>
 
           {/* Categories */}
-          <div className="uam-section">
-            <h3 className="uam-section-title">Categories *</h3>
-            <p className="uam-section-desc">Select categories that best describe your artwork</p>
-            
-            <div className={`uam-categories ${errors.categories ? 'uam-categories--error' : ''}`}>
-              {categories.map(category => (
-                <button
-                  key={category}
-                  type="button"
-                  className={`uam-category-btn ${formData.categories.includes(category) ? 'uam-category-btn--active' : ''}`}
-                  onClick={() => handleCategoryToggle(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-            {errors.categories && <div className="uam-error">{errors.categories}</div>}
-          </div>
+          <CategorySelector
+            selected={categories}
+            onChange={setCategories}
+            error={errors.categories}
+            title="Categories"
+            description="Select categories that best describe your artwork"
+          />
 
           {/* Submit Error */}
           {errors.submit && (
-            <div className="uam-submit-error">{errors.submit}</div>
+            <div className="museo-error-message" style={{ marginTop: 'var(--museo-space-4)' }}>
+              {errors.submit}
+            </div>
           )}
-          </div>
 
           {/* Actions */}
-          <div className="uam-actions">
+          <MuseoModalActions>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -334,10 +199,10 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
             >
               {isSubmitting ? 'Uploading...' : 'Share Artwork'}
             </button>
-          </div>
+          </MuseoModalActions>
         </form>
-      </div>
-    </div>
+      </MuseoModalBody>
+    </MuseoModal>
   );
 };
 

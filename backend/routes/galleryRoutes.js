@@ -5,9 +5,21 @@ import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork,
 const router = express.Router();
 
 // Manual trigger for top arts generation (for testing) - No auth required
+// Support both GET and POST for easier testing
+router.get('/trigger-top-arts', async (req, res) => {
+  try {
+    console.log('🚀 Manual trigger received (GET) - generating top arts...');
+    await generateWeeklyTopArts();
+    res.json({ success: true, message: 'Top arts generation triggered successfully' });
+  } catch (error) {
+    console.error('Manual trigger failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/trigger-top-arts', async (req, res) => {
   try {
-    console.log('🚀 Manual trigger received - generating top arts...');
+    console.log('🚀 Manual trigger received (POST) - generating top arts...');
     await generateWeeklyTopArts();
     res.json({ success: true, message: 'Top arts generation triggered successfully' });
   } catch (error) {
@@ -77,7 +89,6 @@ router.post('/batch-stats', getBatchArtworkStats);
 // Get current top arts of the week
 router.get('/top-arts-weekly', getCurrentTopArts);
 
-// Update gallery artwork
 router.put('/artwork/:galleryArtId', upload.array('images', 5), updateGalleryArt);
 
 // Delete gallery artwork
@@ -86,11 +97,8 @@ router.delete('/artwork/:galleryArtId', deleteGalleryArt);
 // Debug endpoint to check topArtsWeekly table
 router.get('/debug-top-arts', async (req, res) => {
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
+    const { default: supabase } = await import('../database/db.js');
 
     // Get all records from topArtsWeekly table
     const { data: allRecords, error } = await supabase
@@ -118,18 +126,6 @@ router.get('/debug-top-arts', async (req, res) => {
       error: error.message,
       message: 'Debug endpoint failed'
     });
-  }
-});
-
-// Manual trigger for Top Arts generation (for testing)
-router.post('/trigger-top-arts', async (req, res) => {
-  try {
-    const { generateWeeklyTopArts } = await import('../controllers/galleryController.js');
-    await generateWeeklyTopArts();
-    res.json({ success: true, message: 'Weekly Top Arts generation completed successfully' });
-  } catch (error) {
-    console.error('❌ Error in manual trigger:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

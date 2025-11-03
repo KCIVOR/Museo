@@ -352,18 +352,6 @@ export default function UpcomingEvents() {
                       <div 
                         className="museo-actions" 
                         onClick={(e) => e.stopPropagation()}
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '6px',
-                          marginTop: 'auto',
-                          paddingTop: '12px',
-                          opacity: 0,
-                          transform: 'translateY(8px)',
-                          pointerEvents: 'none',
-                          transition: 'opacity 300ms ease, transform 300ms ease',
-                          alignSelf: 'stretch'
-                        }}
                       >
                         <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
                           View Details
@@ -479,18 +467,6 @@ export default function UpcomingEvents() {
                           <div 
                             className="museo-actions" 
                             onClick={(e) => e.stopPropagation()}
-                            style={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: '6px',
-                              marginTop: 'auto',
-                              paddingTop: '12px',
-                              opacity: 0,
-                              transform: 'translateY(8px)',
-                              pointerEvents: 'none',
-                              transition: 'opacity 300ms ease, transform 300ms ease',
-                              alignSelf: 'stretch'
-                            }}
                           >
                             <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
                               View Details

@@ -1,24 +1,21 @@
-/* Page background and centering - Contemporary Arts Museum */
+/* ========================================
+   🏠 HOME PAGE STYLES
+   Page-specific styles for homepage
+   ======================================== */
+
+/* Page container */
 .page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
 }
 
-/* Button styles removed for consistent redesign */
-
-/* Make feed narrower on desktop to read smaller */
+/* Feed width variable */
 :root {
   --feed-max: 880px;
 }
 
-/* Spinner animation for loading more posts */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Wider, centered content column (uses same var as Navbar) */
+/* Feed container */
 .feed {
   width: 100%;
   max-width: var(--feed-max);
@@ -26,371 +23,49 @@
   padding: 12px 12px 48px;
 }
 
-/* ============ Museo Hero (new) ============ */
-.museoHero {
-  position: relative;
-  width: 100%;
-  max-width: var(--feed-max);
-  margin: 6px 0 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--museo-border-light);
-  box-shadow: 0 1px 2px var(--museo-shadow-light);
+/* ============================================
+   🎭 HERO SECTION - MOVED TO COMPONENTS
+   Now in: src/styles/components/hero.css
+   Classes: .museoHero, .mHero__*
+   ============================================ */
 
-  /* Grid layers: media, overlay, content */
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(180px, clamp(200px, 25vw, 280px));
-}
-.mHero__media,
-.mHero__overlay,
-.mHero__content { grid-area: 1 / 1; }
+/* ============================================
+   🎴 POST CARDS - MOVED TO COMPONENTS
+   Now in: src/styles/components/cards.css
+   Classes: .card, .cardHeader, .avatar, .meta, .name, .desc
+   ============================================ */
 
-/* Background media: abstract gradients */
-.mHero__media {
-  background:
-    radial-gradient(1200px 600px at -10% -20%, var(--museo-accent-light) 0%, transparent 60%),
-    radial-gradient(1000px 500px at 110% 120%, var(--museo-primary-light) 0%, transparent 55%),
-    linear-gradient(180deg, var(--museo-primary-dark) 0%, var(--museo-text-primary) 100%);
-  filter: saturate(1.05);
-}
+/* ===== POST IMAGE HELPERS ===== */
 
-/* Overlay for contrast */
-.mHero__overlay {
-  background: linear-gradient(180deg, var(--museo-overlay-light), var(--museo-overlay));
-  mix-blend-mode: multiply;
-  opacity: 0.9;
-}
-
-/* Content */
-.mHero__content {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px);
-  color: var(--museo-white);
-  min-height: 0;
-}
-/* Text group for better spacing */
-.mHero__textGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mHero__eyebrow {
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--museo-white);
-  font-size: clamp(10px, 1.8vw, 12px);
-}
-.mHero__title {
-  margin: 0;
-  font-weight: 700;
-  line-height: 1.15;
-  font-size: clamp(18px, 3.2vw, 28px);
-  color: var(--museo-white);
-  text-shadow: 0 2px 6px var(--museo-shadow), 0 0 24px var(--museo-shadow-light);
-  font-family: 'Playfair Display', serif;
-}
-.mHero__subtitle {
-  margin: 0;
-  color: var(--museo-white);
-  font-size: clamp(11px, 2vw, 14px);
-  text-shadow: 0 1px 3px var(--museo-shadow);
-  line-height: 1.4;
-}
-/* Balanced and responsive */
-.mHero__ctaRow {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-/* Hero button styling - only layout, let buttons.css handle sizing */
-.mHero__ctaRow .btn {
-  flex: 1;
-  min-width: 0;
-}
-
-@media (max-width: 768px) {
-  .museoHero {
-    grid-template-rows: minmax(140px, clamp(160px, 20vw, 200px));
-  }
-  .mHero__content {
-    gap: 6px;
-    padding: clamp(10px, 2vw, 16px) clamp(12px, 2vw, 16px);
-  }
-  .mHero__title {
-    font-size: clamp(16px, 3.5vw, 24px);
-    line-height: 1.2;
-  }
-  .mHero__subtitle {
-    font-size: clamp(10px, 2.2vw, 13px);
-  }
-  .mHero__ctaRow {
-    margin-top: 8px;
-    gap: 8px;
-  }
-  .mHero__ctaRow .btn-hero,
-  .mHero__ctaRow .btn-hero-ghost {
-    height: 36px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 520px) {
-  .mHero__ctaRow { 
-    grid-template-columns: 1fr; 
-    gap: 6px;
-    margin-top: 6px;
-  }
-  .museoHero {
-    grid-template-rows: minmax(120px, clamp(140px, 18vw, 180px));
-  }
-  .mHero__title {
-    font-size: clamp(14px, 4vw, 20px);
-    line-height: 1.25;
-  }
-}
-
-@media (max-width: 460px) {
-  .mHero__btnPrimary, .mHero__btnGhost { flex: 1 1 100%; }
-  .mHero__content {
-    gap: 5px;
-    padding: clamp(8px, 2vw, 14px) clamp(10px, 1.8vw, 14px);
-  }
-  .mHero__eyebrow {
-    font-size: clamp(9px, 2vw, 11px);
-  }
-}
-
-/* ============ Cards & feed - Museo Theme ============ */
-.card {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
-  border-radius: 14px;
-  margin: 14px 0;
-  overflow: hidden;
-  box-shadow: 0 4px 12px var(--museo-shadow-light), 0 1px 4px var(--museo-shadow-light);
-  border: 1px solid var(--museo-border);
-  backdrop-filter: blur(4px);
-}
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  padding: 14px 18px;
-  background: transparent;
-  border-bottom: 1px solid var(--museo-border);
-}
-.avatar {
-  width: 38px; height: 38px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: var(--museo-bg-secondary);
-  margin-right: 10px;
-  border: 1px solid var(--museo-border);
-}
-.meta { min-width: 0; }
-.name { 
-  font-weight: 600; 
-  font-size: 14px; 
-  color: var(--museo-text-secondary);
-  font-family: var(--museo-font-body);
-}
-.desc { 
-  font-size: 12px; 
-  color: var(--museo-text-muted);
-  font-style: italic;
-}
-
-/* Media wrapper: aspect-ratio boxes */
 .imageBox {
   width: 100%;
   position: relative;
   background: var(--museo-bg-secondary);
 }
+
 .imageBox.ratio-191-1 { padding-top: 50%; }
 .imageBox.ratio-1-1   { padding-top: 96%; }
 .imageBox.ratio-4-5   { padding-top: 120%; }
 
 .postImage {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-position: 50% 50%;
 }
+
 .postImage--cover { object-fit: cover; }
 .postImage--contain { object-fit: contain; }
 
-/* Action bar under image - Museo Theme */
-.actions {
-  display: flex;
-  gap: 8px;
-  padding: 12px 18px 14px;
-  border-top: 1px solid var(--museo-border);
-  background: transparent;
-}
-.actionBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--museo-border);
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-secondary);
-  font-size: 13px;
-  font-family: var(--museo-font-body);
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.actionBtn:hover { 
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-border-hover);
-  transform: translateX(1px);
-  box-shadow: 0 1px 4px var(--museo-shadow-light);
-}
-.actionBtn:focus-visible { 
-  outline: 2px solid var(--museo-primary); 
-  outline-offset: 2px; 
-}
-.actionText { 
-  font-weight: 500; 
-  color: var(--museo-text-secondary);
-}
+/* ============================================
+   ✍️ COMPOSER - MOVED TO COMPONENTS
+   Now in: src/styles/components/composer.css
+   Classes: .composer, .composer__*
+   ============================================ */
 
-/* ============ Announcement banner ============ */
-.announce {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: start;
-  background: #eef7ff;
-  border: 1px solid #cfe3ff;
-  border-radius: 12px;
-  padding: 14px 14px 12px;
-  margin: 6px 0 12px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
-}
-.announce__left { display: grid; gap: 2px; }
-.announce__eyebrow {
-  font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-  color: #2563eb; font-weight: 800; margin-bottom: 4px;
-}
-.announce__title { font-size: clamp(16px, 2.3vw, 18px); font-weight: 800; color: #0f172a; line-height: 1.35; }
-.announce__meta { color: #334155; font-size: 13px; margin-top: 4px; }
+/* ===== POST CONTENT ===== */
 
-.announce__ctaRow {
-  grid-column: 1 / 2;
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* perfectly balanced two buttons */
-  gap: 10px;
-  align-items: stretch;
-  min-width: 0;
-}
-
-/* Button styles removed for consistent redesign */
-
-/* Announce close button styles removed for consistent redesign */
-
-.announce:nth-of-type(1) { background: #eef7ff; border-color: #cfe3ff; }
-.announce:nth-of-type(2) { background: #f3f7ef; border-color: #cfe8bf; }
-.announce:nth-of-type(3) { background: #fff6ee; border-color: #ffd8b5; }
-.announce:nth-of-type(2) .announce__eyebrow { color: #15803d; }
-.announce:nth-of-type(3) .announce__eyebrow { color: #c2410c; }
-
-/* ============ Composer - Museo Theme ============ */
-.composer {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 10px;
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
-  border: 1px solid var(--museo-border);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin: 14px 0;
-  box-shadow: 0 4px 12px var(--museo-shadow-light), 0 1px 4px var(--museo-shadow-light);
-  backdrop-filter: blur(4px);
-}
-.composer__avatar { 
-  width: 44px; 
-  height: 44px; 
-  border-radius: 10px; 
-  object-fit: cover;
-  border: 1px solid var(--museo-border);
-}
-.composer__main { display:grid; gap:8px; }
-.composer__input {
-  width: 100%; 
-  min-height: 44px; 
-  max-height: 180px;
-  border: 1px solid var(--museo-border); 
-  border-radius: 10px; 
-  padding: 10px 14px;
-  resize: none; 
-  overflow: hidden; 
-  background: var(--museo-white); 
-  color: var(--museo-text-secondary);
-  font-family: var(--museo-font-body);
-  transition: all 0.3s ease;
-}
-.composer__input:focus {
-  outline: none;
-  border-color: var(--museo-border-hover);
-  box-shadow: 0 0 0 2px var(--museo-shadow-light);
-  background: var(--museo-white);
-}
-.composer__input::placeholder {
-  color: var(--museo-text-muted);
-  font-style: italic;
-}
-.composer__media { display:grid; gap:6px; }
-.composer__preview { width:100%; border-radius:10px; border:1px solid var(--museo-border); }
-.composer__chip {
-  align-self:start; height:30px; padding:0 10px; border-radius:999px;
-  background: var(--museo-white); border:1px solid var(--museo-border); cursor:pointer;
-}
-.composer__toolbar {
-  display:grid; grid-template-columns:auto auto auto 1fr auto; align-items:center; gap:8px;
-  border-top:1px solid var(--museo-border); padding-top:8px;
-}
-/* Tool and post button styles removed for consistent redesign */
-
-/* ============ Responsive ============ */
-@media (max-width:700px) {
-  .composer { grid-template-columns:36px 1fr; }
-  .composer__avatar { width:36px; height:36px; }
-  .announce { padding: 12px; }
-  .announce__title { font-size: 16px; }
-}
-
-@media (max-width: 520px) {
-  .announce__ctaRow { grid-template-columns: 1fr; }
-}
-
-@media (min-width: 1440px) {
-  :root { --feed-max: 960px; }
-  .feed { max-width: var(--feed-max); }
-}
-@media (max-width: 1024px) {
-  :root { --feed-max: 760px; }
-  .feed { max-width: var(--feed-max); }
-}
-@media (max-width: 768px)  {
-  .feed { max-width: 100%; padding: 10px; }
-  .name { font-size: 13px; }
-  .desc { font-size: 11.5px; }
-  .avatar { width: 34px; height: 34px; }
-}
-
-/* ===== Post Content Styles ===== */
 .postContent {
   padding: 10px 12px;
   border-top: 1px solid var(--museo-border-light);
@@ -406,29 +81,10 @@
   color: var(--museo-text-muted);
   cursor: pointer;
   margin-left: 5px;
+  font-size: 13px;
 }
 
-.imageIndicator {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--museo-white);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-}
-
-.imageIcon {
-  font-size: 14px;
-  color: var(--museo-white);
-}
+/* ===== ACTION BAR ===== */
 
 .actionBar {
   display: flex;
@@ -440,213 +96,186 @@
   gap: 12px;
 }
 
-/* Let buttons.css handle all button styling - no overrides */
+/* ===== ANNOUNCEMENT CARDS ===== */
 
-/* Responsive typography */
-@media (max-width: 768px) {
-  h1 { font-size: 2.5rem; }
-  h2 { font-size: 2rem; }
-  h3 { font-size: 1.75rem; }
-}
-
-/* ===== Shared image helpers (used by modal too) ===== */
-.imageBox { width: 100%; position: relative; background: var(--museo-bg-secondary); }
-.imageBox.ratio-191-1 { padding-top: 50%; }
-.imageBox.ratio-1-1   { padding-top: 96%; }
-.imageBox.ratio-4-5   { padding-top: 120%; }
-
-.postImage { position: absolute; inset: 0; width: 100%; height: 100%; object-position: 50% 50%; }
-.postImage--cover { object-fit: cover; }
-.postImage--contain { object-fit: contain; }
-
-/* ===== Modal popup ===== */
-.m-popup__scrim {
-  position: fixed; inset: 0;
-  background: var(--museo-overlay);
-  backdrop-filter: saturate(120%) blur(4px);
-  display: grid; place-items: center;
-  z-index: 1000;
-  animation: mFade .12s ease-out;
-}
-
-.m-popup__dialog {
-  position: relative;
-  width: min(920px, 92vw);
-  max-height: min(92vh, 880px);
-  background: var(--museo-white);
-  border: 1px solid var(--museo-border-light);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px var(--museo-shadow);
-  overflow: auto;
+.announce {
   display: grid;
-  gap: 12px;
-  padding: 14px;
-  padding-bottom: 8px; /* extra bottom space so footer never clips */
-  animation: mPop 260ms cubic-bezier(.2,.8,.2,1);
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
+  background: #eef7ff;
+  border: 1px solid #cfe3ff;
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  margin: 6px 0 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.m-popup__header { display: flex; align-items: center; justify-content: space-between; }
-.m-popup__author { display: flex; align-items: center; gap: 10px; }
-.m-popup__avatar { width: 40px; height: 40px; border-radius: 999px; object-fit: cover; }
-.m-popup__meta { display: grid; line-height: 1.2; }
-.m-popup__name { font-weight: 700; font-size: 14px; color: var(--museo-text-primary); }
-.m-popup__time { font-size: 12px; color: var(--museo-text-muted); }
-.m-popup__close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: var(--museo-white);
+.announce__left {
+  display: grid;
+  gap: 2px;
+}
+
+.announce__eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.announce__title {
+  font-size: clamp(16px, 2.3vw, 18px);
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.announce__meta {
+  color: #334155;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.announce__ctaRow {
+  grid-column: 1 / 2;
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.announce__close {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  font-size: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  color: #64748b;
   cursor: pointer;
-  color: var(--museo-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px var(--museo-shadow-light);
-  transition: all 0.2s ease;
-  z-index: 10;
-}
-.m-popup__close:hover { 
-  background: var(--museo-white);
-  color: var(--museo-error);
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px var(--museo-shadow);
-}
-
-.m-popup__title { margin: 0 0 -6px; font-size: 18px; font-weight: 800; color: var(--museo-text-primary); }
-.m-popup__desc { margin: 0; color: var(--museo-text-primary); line-height: 1.6; }
-
-/* Let ratio box control height; prevent downstream overlap */
-.m-popup__media {
-  width: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--museo-border-light);
-  margin-bottom: 4px;
-}
-.m-popup__img { display: block; width: 100%; height: 100%; }
-
-/* Actions */
-.m-popup__actions {
-  display: flex; gap: 8px;
-  border-top: 1px solid var(--museo-border); padding-top: 10px;
-}
-/* Modal button styles removed for consistent redesign */
-
-/* Comments + non-overlapping composer */
-.m-popup__comments { display: grid; gap: 10px; margin-top: 4px; }
-.m-popup__commentsTitle { margin: 0; font-size: 14px; font-weight: 800; color: var(--museo-text-primary); }
-.m-popup__comment { display: grid; grid-template-columns: 36px 1fr; gap: 8px; }
-.m-popup__cAvatar { width:36px; height:36px; border-radius:999px; object-fit:cover; }
-.m-popup__cHead { display:flex; gap:8px; font-size:12px; color: var(--museo-text-muted); }
-.m-popup__cName { font-weight:700; color: var(--museo-text-primary); font-size:13px; }
-.m-popup__cText { font-size: 13.5px; color: var(--museo-text-primary); }
-
-/* Fix: make the composer two rows so the button never overlaps */
-.m-popup__composer {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto auto;  /* textarea row + button row */
-  gap: 8px;
-  align-items: stretch;
-  border-top: 1px solid var(--museo-border);
-  padding: 12px;
-  background: var(--museo-white);
-}
-.m-popup__input {
-  width: 100%;
-  min-height: 44px;
-  max-height: 160px;
-  resize: vertical;
-  border: 1px solid var(--museo-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-primary);
-  box-sizing: border-box;
-}
-/* Post button styles removed for consistent redesign */
-/* ===== Modal comment (mcm__) ===== */
-.mcm__composer {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-top: 1px solid var(--museo-border);
-  background: var(--museo-white);
-}
-.mcm__input {
-  width: 100%;
-  min-height: 44px;
-  max-height: 120px;
-  resize: vertical;
-  border: 1px solid var(--museo-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: var(--museo-bg-secondary);
-  color: var(--museo-text-primary);
-  font-family: inherit;
-  font-size: 14px;
-}
-.mcm__tools {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px;
-}
-/* Submit button styles removed for consistent redesign */
-.mcm__title {
-  margin: 16px 0 8px;
   font-size: 16px;
-  font-weight: 700;
-  color: var(--museo-text-primary);
-}
-.mcm__item {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--museo-border);
-}
-.mcm__item:last-child {
-  border-bottom: none;
-}
-.mcm__avatar {
-  width: 36px; height: 36px;
-  border-radius: 999px; object-fit: cover;
-}
-.mcm__body { display: grid; gap: 4px; }
-.mcm__head {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--museo-text-muted);
-}
-.mcm__name { font-weight: 700; color: var(--museo-text-primary); font-size: 13px; }
-.mcm__dot { color: var(--museo-text-muted); }
-.mcm__time { white-space: nowrap; }
-.mcm__text { color: var(--museo-text-primary); font-size: 13.5px; line-height: 1.6; }
-.mcm__text, .m-popup__cText, .ge {
-  white-space: pre-wrap;    
-  word-break: break-word;   
+  transition: all 0.2s ease;
 }
 
-@media (max-width: 540px) {
-  .mcm__tools {
-    grid-template-columns: 1fr auto; 
+.announce__close:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+  transform: scale(1.05);
+}
+
+/* Announcement color variants */
+.announce:nth-of-type(1) {
+  background: #eef7ff;
+  border-color: #cfe3ff;
+}
+
+.announce:nth-of-type(2) {
+  background: #f3f7ef;
+  border-color: #cfe8bf;
+}
+
+.announce:nth-of-type(2) .announce__eyebrow {
+  color: #15803d;
+}
+
+.announce:nth-of-type(3) {
+  background: #fff6ee;
+  border-color: #ffd8b5;
+}
+
+.announce:nth-of-type(3) .announce__eyebrow {
+  color: #c2410c;
+}
+
+/* ============================================
+   🪟 POST/ARTWORK MODALS - MOVED TO COMPONENTS
+   Now in: src/styles/components/modals.css
+   Classes: .m-popup__*, .mcm__*
+   ============================================ */
+
+/* ===== RESPONSIVE ===== */
+
+@media (min-width: 1440px) {
+  :root { --feed-max: 960px; }
+  .feed { max-width: var(--feed-max); }
+}
+
+@media (max-width: 1024px) {
+  :root { --feed-max: 760px; }
+  .feed { max-width: var(--feed-max); }
+}
+
+@media (max-width: 768px) {
+  .feed {
+    max-width: 100%;
+    padding: 10px;
   }
 }
 
-@keyframes mFade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes mPop {
-  0% { opacity: 0; transform: translateY(8px) scale(.98); }
-  60% { opacity: 1; transform: translateY(0) scale(1.01); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+@media (max-width: 700px) {
+  .announce {
+    padding: 12px;
+  }
+
+  .announce__title {
+    font-size: 16px;
+  }
 }
 
-@media (max-width: 540px) {
-  .m-popup__dialog { width: 96vw; padding: 12px; border-radius: 12px; }
-  .m-popup__composer { padding: 10px; }
-  .m-popup__input { min-height: 48px; }
+@media (max-width: 520px) {
+  .announce__ctaRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+   LOADING & END OF FEED STATES
+   ======================================== */
+
+/* Loading more indicator */
+.home__loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  color: #8b6f47;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.home__loading-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home__loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d4b48a;
+  border-top: 2px solid #8b6f47;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* End of feed message */
+.home__end-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  color: #8b6f47;
+  font-size: 14px;
+  font-style: italic;
 }

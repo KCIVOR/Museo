@@ -1,6 +1,18 @@
 /* ========================================
-   🎨 ARTWORK MODAL - Museo Theme
-   Beautiful artwork detail modal with comments and likes
+   🎨 ARTWORK MODAL MODULE - Design System Compatible
+   
+   ARCHITECTURE: Feature-specific module
+   USED BY: ArtistArtworkModal, ArtworkModal, PostModal
+   
+   This module demonstrates the "Feature Module Layer" 
+   of our modular CSS architecture:
+   - Uses design tokens from styles/tokens/colors.css
+   - Shared between related modal components
+   - Maintains consistency while allowing feature-specific styling
+   
+   ACADEMIC NOTE: This approach balances reusability 
+   with practical feature-specific needs, following 
+   industry patterns from GitHub Primer and Shopify Polaris.
    ======================================== */
 
 /* Use standard modal system from design-system.css */
@@ -11,7 +23,7 @@
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.8) !important;
+  background: var(--museo-overlay) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -32,8 +44,8 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  background: rgba(44, 24, 16, 0.8);
-  color: #f4f1ec;
+  background: var(--museo-primary);
+  color: var(--museo-white);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -50,9 +62,9 @@
 }
 
 .artwork-modal-close:hover {
-  background: rgba(44, 24, 16, 1);
+  background: var(--museo-primary-dark);
   transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(44, 24, 16, 0.4);
+  box-shadow: 0 4px 15px var(--museo-shadow);
 }
 
 .artwork-modal-content {
@@ -67,7 +79,7 @@
    ======================================== */
 
 .artwork-modal-gallery {
-  background: linear-gradient(135deg, #d4c9b8 0%, #c9bba8 100%);
+  background: var(--museo-bg-gallery);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -95,7 +107,7 @@
   height: auto;
   object-fit: contain;
   border-radius: 12px;
-  box-shadow: 0 15px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 15px 60px var(--museo-shadow);
   transition: all 0.3s ease;
   
   /* Increased max-height for bigger image display */
@@ -107,8 +119,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(244, 241, 236, 0.9);
-  color: #2c1810;
+  background: var(--museo-white);
+  color: var(--museo-primary);
   border: none;
   border-radius: 50%;
   width: 50px;
@@ -132,9 +144,9 @@
 }
 
 .artwork-nav-btn:hover {
-  background: rgba(244, 241, 236, 1);
+  background: var(--museo-bg-primary);
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px var(--museo-shadow);
 }
 
 /* Dot indicators removed - using thumbnails instead */
@@ -147,7 +159,7 @@
   display: flex;
   gap: 12px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--museo-overlay);
   overflow-x: auto;
   min-height: 100px;
   flex-shrink: 0;
@@ -175,9 +187,9 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  background: rgba(244, 241, 236, 0.95);
-  color: #2c1810;
-  border: 1px solid rgba(212, 180, 138, 0.3);
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  border: 1px solid var(--museo-border);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -190,14 +202,14 @@
   z-index: 15;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--museo-shadow-light);
 }
 
 .thumbnail-toggle-btn:hover {
-  background: rgba(244, 241, 236, 1);
-  border-color: rgba(212, 180, 138, 0.5);
+  background: var(--museo-bg-primary);
+  border-color: var(--museo-border-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--museo-shadow);
 }
 
 .artwork-thumbnail {
@@ -218,7 +230,7 @@
 
 .artwork-thumbnail.active {
   opacity: 1;
-  border-color: #f4f1ec;
+  border-color: var(--museo-white);
   transform: scale(1.05);
 }
 
@@ -229,7 +241,7 @@
 .artwork-modal-details {
   padding: 40px;
   overflow-y: auto;
-  background: linear-gradient(135deg, #faf8f5 0%, #f5f1eb 100%);
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
 }
 
 .artwork-info {
@@ -239,15 +251,15 @@
 .artwork-header {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 2px solid rgba(107, 66, 38, 0.15);
+  border-bottom: 2px solid var(--museo-border);
 }
 
 .artwork-title {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #2c1810;
+  color: var(--museo-primary);
   margin: 0 0 12px 0;
-  font-family: 'Georgia', serif;
+  font-family: var(--museo-font-body);
   line-height: 1.2;
 }
 
@@ -255,7 +267,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #6b4226;
+  color: var(--museo-text-secondary);
   font-size: 1.1rem;
 }
 
@@ -270,12 +282,12 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(107, 66, 38, 0.2);
+  border: 2px solid var(--museo-border);
   transition: all 0.3s ease;
 }
 
 .artist-avatar:hover {
-  border-color: #6b4226;
+  border-color: var(--museo-primary);
   transform: scale(1.05);
 }
 
@@ -283,19 +295,19 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #6b4226 0%, #8b7355 100%);
-  color: #f4f1ec;
+  background: linear-gradient(45deg, var(--museo-primary) 0%, var(--museo-text-secondary) 100%);
+  color: var(--museo-white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 1.1rem;
-  border: 2px solid rgba(107, 66, 38, 0.2);
+  border: 2px solid var(--museo-border);
   transition: all 0.3s ease;
 }
 
 .artist-avatar-placeholder:hover {
-  border-color: #6b4226;
+  border-color: var(--museo-primary);
   transform: scale(1.05);
 }
 
@@ -306,7 +318,7 @@
 
 .artwork-year {
   padding: 4px 12px;
-  background: rgba(107, 66, 38, 0.1);
+  background: var(--museo-bg-secondary);
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -328,14 +340,14 @@
 .artwork-detail label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #6b4226;
+  color: var(--museo-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .artwork-detail span {
   font-size: 1rem;
-  color: #2c1810;
+  color: var(--museo-primary);
   font-weight: 500;
 }
 
@@ -346,9 +358,9 @@
 .artwork-description h3 {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #2c1810;
+  color: var(--museo-primary);
   margin: 0 0 12px 0;
-  font-family: 'Georgia', serif;
+  font-family: var(--museo-font-body);
 }
 
 .description-content {
@@ -356,7 +368,7 @@
 }
 
 .description-text {
-  color: #4a2c1a;
+  color: var(--museo-text-primary);
   line-height: 1.6;
   font-size: 1rem;
   margin: 0;
@@ -368,7 +380,7 @@
 .description-toggle {
   background: none;
   border: none;
-  color: #6b4226;
+  color: var(--museo-text-secondary);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -380,7 +392,7 @@
 }
 
 .description-toggle:hover {
-  color: #2c1810;
+  color: var(--museo-primary);
   text-decoration: none;
 }
 
@@ -390,7 +402,7 @@
   gap: 12px;
   margin-bottom: 0; /* Remove extra space below buttons */
   padding: 12px 0 0 0; /* Keep a bit of space above, none below */
-  border-top: 1px solid rgba(107, 66, 38, 0.1);
+  border-top: 1px solid var(--museo-border);
 }
 
 /* Button styles removed for consistent redesign */
@@ -407,7 +419,7 @@
 .artwork-stats {
   display: flex;
   gap: 16px;
-  color: #6b4226;
+  color: var(--museo-text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
   flex: 1;
@@ -418,14 +430,14 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: rgba(107, 66, 38, 0.05);
+  background: var(--museo-bg-secondary);
   border-radius: 20px;
-  border: 1px solid rgba(107, 66, 38, 0.1);
+  border: 1px solid var(--museo-border);
   transition: all 0.3s ease;
 }
 
 .artwork-stats span:hover {
-  background: rgba(107, 66, 38, 0.1);
+  background: var(--museo-bg-hover);
   transform: translateY(-1px);
 }
 
@@ -441,17 +453,17 @@
 .comments-title {
   font-size: 1.4rem;
   font-weight: 600;
-  color: #2c1810;
+  color: var(--museo-primary);
   margin: 0 0 20px 0;
-  font-family: 'Georgia', serif;
+  font-family: var(--museo-font-body);
 }
 
 .comment-form {
   margin-bottom: 20px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--museo-bg-secondary);
   border-radius: 12px;
-  border: 1px solid rgba(107, 66, 38, 0.1);
+  border: 1px solid var(--museo-border);
 }
 
 .comment-input-wrapper {
@@ -463,10 +475,10 @@
 .comment-input {
   width: 100%;
   padding: 16px;
-  border: 2px solid rgba(107, 66, 38, 0.15);
+  border: 2px solid var(--museo-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #2c1810;
+  background: var(--museo-white);
+  color: var(--museo-primary);
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
@@ -479,13 +491,13 @@
 
 .comment-input:focus {
   outline: none;
-  border-color: #6b4226;
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 3px rgba(107, 66, 38, 0.1);
+  border-color: var(--museo-primary);
+  background: var(--museo-white);
+  box-shadow: 0 0 0 3px var(--museo-shadow-light);
 }
 
 .comment-input::placeholder {
-  color: rgba(107, 66, 38, 0.6);
+  color: var(--museo-text-muted);
 }
 
 .comments-list {
@@ -498,7 +510,7 @@
 .no-comments {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(107, 66, 38, 0.6);
+  color: var(--museo-text-muted);
   font-style: italic;
 }
 
@@ -507,16 +519,16 @@
   gap: 12px;
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--museo-white);
   border-radius: 12px;
-  border: 1px solid rgba(107, 66, 38, 0.1);
-  transition: all 0.3s ease;
+  border: 1px solid var(--museo-border);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
 }
 
 .artwork-comments .comment:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 66, 38, 0.15);
+  background: var(--museo-bg-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--museo-shadow-md);
 }
 
 .comment-avatar {
@@ -528,21 +540,21 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(107, 66, 38, 0.1);
+  border: 2px solid var(--museo-border);
 }
 
 .comment-avatar-placeholder {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #6b4226 0%, #8b7355 100%);
-  color: #f4f1ec;
+  background: linear-gradient(45deg, var(--museo-primary) 0%, var(--museo-text-secondary) 100%);
+  color: var(--museo-white);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 1rem;
-  border: 2px solid rgba(107, 66, 38, 0.1);
+  border: 2px solid var(--museo-border);
 }
 
 .comment-content {
@@ -555,13 +567,13 @@
 
 .comment-user {
   font-weight: 600;
-  color: #2c1810;
+  color: var(--museo-primary);
   font-size: 0.9rem;
   display: block;
 }
 
 .comment-time {
-  color: rgba(107, 66, 38, 0.6);
+  color: var(--museo-text-muted);
   font-size: 0.75rem;
   font-weight: 400;
   display: block;
@@ -569,7 +581,7 @@
 }
 
 .comment-text {
-  color: #4a2c1a;
+  color: var(--museo-text-primary);
   line-height: 1.4;
   margin: 0;
   font-size: 0.9rem;

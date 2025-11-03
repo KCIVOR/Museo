@@ -62,12 +62,12 @@ export default function RequestDetailModal({ open, request, onClose }) {
   };
 
   return (
-    <div className="rdm-overlay" onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
+    <div className="museo-modal-overlay" onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}>
       <article
         role="dialog"
         aria-modal="true"
         aria-label="Request Details"
-        className="rdm-dialog"
+        className="museo-modal museo-modal--lg rdm-dialog"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="rdm-header no-print">
@@ -105,8 +105,12 @@ export default function RequestDetailModal({ open, request, onClose }) {
           <div className="rdm-section">
             <div className="rdm-header-info">
               <div>
-                <span className={`btn-type ${type.replace(/_/g, '-')}`}>{type.replace(/_/g, ' ')}</span>
-                <span className={`btn-status ${status}`}>{status}</span>
+                <span className="museo-badge museo-badge--primary">{type.replace(/_/g, ' ')}</span>
+                <span className={`museo-badge ${
+                  status === 'approved' ? 'museo-badge--success' : 
+                  status === 'rejected' ? 'museo-badge--error' : 
+                  'museo-badge--warning'
+                }`}>{status}</span>
               </div>
               <div className="rdm-meta-small">
                 <span>Request ID: <strong>{id}</strong></span>
@@ -115,19 +119,129 @@ export default function RequestDetailModal({ open, request, onClose }) {
             </div>
           </div>
 
-          {/* Personal Information */}
-          <div className="rdm-section">
-            <h3 className="rdm-section-title">Personal Information</h3>
-            <div className="rdm-grid">
-              {name && <div className="rdm-field"><label>Full Name:</label><span>{name}</span></div>}
-              {data.phone && <div className="rdm-field"><label>Phone:</label><span>{data.phone}</span></div>}
-              {data.email && <div className="rdm-field"><label>Email:</label><span>{data.email}</span></div>}
-              {data.age && <div className="rdm-field"><label>Age:</label><span>{data.age}</span></div>}
-              {data.sex && <div className="rdm-field"><label>Sex:</label><span>{data.sex}</span></div>}
-              {data.birthdate && <div className="rdm-field"><label>Birthdate:</label><span>{data.birthdate}</span></div>}
-              {data.address && <div className="rdm-field full-width"><label>Address:</label><span>{data.address}</span></div>}
+          {/* Visit Booking Information */}
+          {type === 'visit_booking' ? (
+            <>
+              {/* Visitor Information */}
+              <div className="rdm-section rdm-visit-booking-section">
+                <h3 className="rdm-section-title">🏛️ Visitor Information</h3>
+                <div className="rdm-grid">
+                  <div className="rdm-field full-width rdm-highlight">
+                    <label>Visitor Type:</label>
+                    <span className="rdm-badge">{data.visitorType?.replace('_', ' ').toUpperCase() || '—'}</span>
+                  </div>
+                  {data.organizationName && (
+                    <div className="rdm-field full-width">
+                      <label>{data.visitorType === 'school' ? 'School Name:' : 'Organization Name:'}</label>
+                      <span>{data.organizationName}</span>
+                    </div>
+                  )}
+                  <div className="rdm-field">
+                    <label>Number of Visitors:</label>
+                    <span><strong>{data.numberOfVisitors || '—'}</strong> people</span>
+                  </div>
+                  <div className="rdm-field">
+                    <label>Location:</label>
+                    <span>{data.location || '—'}</span>
+                  </div>
+                  {data.classification && (
+                    <div className="rdm-field">
+                      <label>Classification:</label>
+                      <span>{data.classification}</span>
+                    </div>
+                  )}
+                  {data.yearLevel && (
+                    <div className="rdm-field">
+                      <label>Year Level:</label>
+                      <span>{data.yearLevel}</span>
+                    </div>
+                  )}
+                  {data.institutionalType && (
+                    <div className="rdm-field">
+                      <label>Institutional Type:</label>
+                      <span>{data.institutionalType?.replace(/-/g, ' ')}</span>
+                    </div>
+                  )}
+                  {data.organizationDetails && (
+                    <div className="rdm-field full-width">
+                      <label>Organization Details:</label>
+                      <span>{data.organizationDetails}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Person */}
+              <div className="rdm-section">
+                <h3 className="rdm-section-title">👤 Contact Person</h3>
+                <div className="rdm-grid">
+                  <div className="rdm-field full-width">
+                    <label>Full Name:</label>
+                    <span>{data.contactName || '—'}</span>
+                  </div>
+                  <div className="rdm-field">
+                    <label>Email:</label>
+                    <span>{data.contactEmail || '—'}</span>
+                  </div>
+                  <div className="rdm-field">
+                    <label>Phone:</label>
+                    <span>{data.contactPhone || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Visit Details */}
+              <div className="rdm-section rdm-visit-details-section">
+                <h3 className="rdm-section-title">📅 Visit Details</h3>
+                <div className="rdm-grid">
+                  <div className="rdm-field rdm-highlight-green">
+                    <label>Preferred Date:</label>
+                    <span><strong>{data.preferredDate || '—'}</strong></span>
+                  </div>
+                  <div className="rdm-field">
+                    <label>Preferred Time:</label>
+                    <span>{data.preferredTime ? data.preferredTime.charAt(0).toUpperCase() + data.preferredTime.slice(1) : 'Any time'}</span>
+                  </div>
+                  <div className="rdm-field full-width">
+                    <label>Purpose of Visit:</label>
+                    <span>{data.purposeOfVisit?.replace(/-/g, ' ') || '—'}</span>
+                  </div>
+                  {data.purposeOther && (
+                    <div className="rdm-field full-width">
+                      <label>Purpose Details:</label>
+                      <span>{data.purposeOther}</span>
+                    </div>
+                  )}
+                  {data.remarks && (
+                    <div className="rdm-field full-width rdm-remarks">
+                      <label>Special Requests / Remarks:</label>
+                      <span>{data.remarks}</span>
+                    </div>
+                  )}
+                  {data.adminNotes && (
+                    <div className="rdm-field full-width rdm-admin-notes">
+                      <label>Admin Notes:</label>
+                      <span>{data.adminNotes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Personal Information for regular requests */
+            <div className="rdm-section">
+              <h3 className="rdm-section-title">Personal Information</h3>
+              <div className="rdm-grid">
+                {name && <div className="rdm-field"><label>Full Name:</label><span>{name}</span></div>}
+                {data.phone && <div className="rdm-field"><label>Phone:</label><span>{data.phone}</span></div>}
+                {data.email && <div className="rdm-field"><label>Email:</label><span>{data.email}</span></div>}
+                {data.age && <div className="rdm-field"><label>Age:</label><span>{data.age}</span></div>}
+                {data.sex && <div className="rdm-field"><label>Sex:</label><span>{data.sex}</span></div>}
+                {data.birthdate && <div className="rdm-field"><label>Birthdate:</label><span>{data.birthdate}</span></div>}
+                {data.address && <div className="rdm-field full-width"><label>Address:</label><span>{data.address}</span></div>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Artwork Information (if applicable) */}
           {(data.artworkTitle || data.artId || data.startingPrice || data.reservePrice) && (

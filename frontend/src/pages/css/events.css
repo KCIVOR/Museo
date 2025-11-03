@@ -4,6 +4,102 @@
    Uses design-system.css variables and follows modular approach
    ======================================== */
 
+/* Modal styles now use styles/components/modals.css */
+
+/* ===== FORM STRUCTURE ===== */
+
+.museo-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--museo-space-4);
+}
+
+.museo-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+}
+
+.museo-form-field--full {
+  grid-column: span 2;
+}
+
+.museo-label {
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  font-size: var(--museo-text-sm);
+  font-family: var(--museo-font-body);
+}
+
+.museo-error-message {
+  font-size: var(--museo-text-xs);
+  color: var(--museo-error);
+  margin-top: var(--museo-space-1);
+}
+
+/* ===== ACTIVITIES LIST ===== */
+
+.museo-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-3);
+}
+
+.museo-activity-row {
+  display: flex;
+  gap: var(--museo-space-2);
+  align-items: flex-start;
+}
+
+.museo-activity-row .museo-input {
+  flex: 1;
+}
+
+.btn-icon {
+  padding: var(--museo-space-2);
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  color: var(--museo-text-secondary);
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  font-size: var(--museo-text-sm);
+  line-height: 1;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: var(--museo-error-bg);
+  border-color: var(--museo-error);
+  color: var(--museo-error);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .museo-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .museo-form-field--full {
+    grid-column: span 1;
+  }
+  
+  .museo-modal-header,
+  .museo-modal-section,
+  .museo-modal-body {
+    padding: var(--museo-space-4);
+  }
+  
+  .museo-modal-title {
+    font-size: var(--museo-text-xl);
+  }
+}
+
 /* Publish header layout */
 .pvmHeader {
   display: grid;
@@ -66,7 +162,7 @@
   height: 72px;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid rgba(17,24,39,0.12);
+  border: 1px solid var(--museo-border);
 }
 .pvmDropHint {
   color: var(--museo-text-muted);
@@ -75,7 +171,7 @@
 
 /* Modern dropzone */
 .pvmDropzone {
-  border: 2px dashed rgba(17,24,39,0.18);
+  border: 2px dashed var(--museo-border);
   border-radius: 14px;
   min-height: 140px;
   background: var(--museo-white);
@@ -104,7 +200,7 @@
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid var(--museo-border);
-  background: rgba(255,255,255,.9);
+  background: var(--museo-white);
   color: var(--museo-text-primary);
   font-weight: 700;
   font-size: 12px;
@@ -145,8 +241,8 @@
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }
-.evmGhostBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.10); }
-.evmGhostBtn:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.evmGhostBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px var(--museo-shadow-light); }
+.evmGhostBtn:active { transform: translateY(0); box-shadow: 0 4px 12px var(--museo-shadow-light); }
 .evmGhostBtn:focus { 
   outline: 2px solid var(--museo-accent);
   outline-offset: 2px; 
@@ -162,7 +258,7 @@
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--museo-border-light);
-  background: rgba(255,255,255,.9);
+  background: var(--museo-white);
   font-size: 12px;
   color: var(--museo-text-primary);
 }
@@ -190,8 +286,8 @@
 /* Card variant */
 .evmCard {
   border: 1px solid var(--museo-border-light);
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  background: var(--museo-white);
+  box-shadow: 0 1px 3px var(--museo-shadow-light);
 }
 
 /* Chips */
@@ -207,7 +303,7 @@
   border-radius: 999px;
   border: 1px solid var(--museo-border-light);
   background: linear-gradient(180deg, var(--museo-white), var(--museo-bg-secondary));
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  box-shadow: 0 1px 3px var(--museo-shadow-light);
   font-size: 13px;
 }
 
@@ -258,14 +354,14 @@
   flex: 0 0 auto;
   min-width: fit-content;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(47, 47, 47, 0.1);
+  box-shadow: 0 2px 4px var(--museo-shadow-light);
 }
 
 .eBtn:hover { 
   background: var(--museo-navy);
   border-color: var(--museo-gold);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(47, 47, 47, 0.2);
+  box-shadow: 0 4px 12px var(--museo-shadow);
 }
 
 .eBtnGhost { 
@@ -313,201 +409,10 @@
   line-height: 1.5;
 }
 
-/* Use standard modal system from design-system.css */
+/* EventModal styles removed - will be redesigned from scratch */
 
-/* Modal: overlay - inherits from museo-modal-overlay */
-.evmOverlay {
-  display: grid;
-  place-items: center;
-}
 
-/* Modal: dialog container - inherits from museo-modal */
-.evmDialog {
-  width: min(900px, 96vw);
-  max-height: 92vh;
-  overflow: auto;
-  padding: 0;
-  border: none;
-}
 
-@media (max-width: 900px) {
-  .evmDialog {
-    width: 95vw;
-    max-height: 95vh;
-    border-radius: 16px;
-  }
-}
-
-@media (max-width: 600px) {
-  .evmDialog {
-    width: 98vw;
-    max-height: 98vh;
-    border-radius: 12px;
-  }
-}
-
-/* Modal: close button */
-.evmClose {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255,255,255,.9);
-  border: 1px solid rgba(17,24,39,0.08);
-  border-radius: 12px;
-  width: 38px;
-  height: 38px;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 6px 18px rgba(0,0,0,.12);
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-  backdrop-filter: blur(6px);
-  z-index: 5; /* ensure above hero image/overlay */
-}
-.evmClose:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,.16); }
-.evmClose:active { transform: translateY(0); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-.evmClose:focus { 
-  outline: 2px solid var(--museo-accent); /* museo-accent */
-  outline-offset: 2px; 
-}
-
-/* Modal: hero wrapper and image */
-.evmHeroWrap {
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--museo-bg-secondary);
-  position: relative;
-}
-.evmHero {
-  width: 100%;
-  display: block;
-  object-fit: cover;
-  aspect-ratio: 16 / 10;
-}
-
-.evmHeroOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 18px;
-  background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%);
-  z-index: 1;
-}
-.evmHeroTitle {
-  color: var(--museo-white);
-  font-weight: 900;
-  font-size: clamp(22px, 4vw, 38px);
-  text-shadow: 0 4px 24px var(--museo-shadow);
-}
-.evmHeroBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Modal: header row */
-.evmHeader {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  position: sticky;
-  top: 0;
-  padding: 10px 6px;
-  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(17,24,39,0.06);
-  z-index: 2;
-}
-.evmTitle {
-  font-size: clamp(22px, 3.2vw, 32px);
-  font-weight: 900;
-  color: var(--museo-text-primary);
-  margin: 0;
-  padding: 12px 8px;
-}
-
-/* Elegant publish button */
-.evmCalBtn {
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: 2px solid var(--museo-gold-dark);
-  background: linear-gradient(135deg, var(--museo-charcoal), var(--museo-navy));
-  color: var(--museo-ivory);
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 
-    0 4px 12px rgba(47, 47, 47, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: 
-    transform 0.3s ease, 
-    box-shadow 0.3s ease, 
-    border-color 0.3s ease;
-}
-
-.evmCalBtn:hover { 
-  transform: translateY(-2px); 
-  box-shadow: 
-    0 8px 20px rgba(47, 47, 47, 0.25),
-    0 4px 8px rgba(0, 0, 0, 0.15);
-  border-color: var(--museo-gold);
-}
-
-.evmCalBtn:active { 
-  transform: translateY(0); 
-  box-shadow: 
-    0 4px 12px rgba(47, 47, 47, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.evmCalBtn:focus { 
-  outline: 2px solid var(--museo-gold);
-  outline-offset: 2px; 
-}
-
-/* Modal: content sections */
-.evmSection {
-  margin-top: 12px;
-  background: rgba(255,255,255,.9);
-  border: 1px solid rgba(0,0,0,.06);
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.06);
-  padding: 16px;
-}
-.evmP {
-  color: var(--museo-text-primary);
-  font-size: 16px;
-  line-height: 1.6;
-  margin: 6px 0;
-}
-.evmSectionTitle {
-  font-weight: 800;
-  color: var(--museo-text-primary);
-  margin: 8px 0;
-}
-.evmList {
-  margin: 4px 0 0 18px;
-  color: var(--museo-text-primary);
-  display: grid;
-  gap: 6px;
-}
-
-/* Animations */
-@keyframes evmFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes evmPop {
-  0% { opacity: 0; transform: translateY(8px) scale(.98); }
-  60% { opacity: 1; transform: translateY(0) scale(1.01); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
 
 /* Responsive gallery design */
 @media (min-width: 1440px) { 
@@ -565,3 +470,65 @@
   }
   .eventsHeading { font-size: 1.75rem; }
 }
+
+/* ========================================
+   EVENT PAGE LAYOUT
+   ======================================== */
+
+/* Page header */
+.event__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* Admin actions container */
+.event__admin-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+/* Loading more indicator */
+.event__loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--museo-text-muted);
+  font-size: 14px;
+}
+
+/* Infinite scroll sentinel */
+.event__sentinel {
+  height: 20px;
+  margin: 20px 0;
+}
+
+/* End of events message */
+.event__end-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--museo-text-muted);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .event__header {
+    margin-bottom: 20px;
+  }
+  
+  .event__admin-actions {
+    margin-bottom: 24px;
+  }
+}
+
+/* ========================================
+   EVENT MODAL - To be redesigned
+   ======================================== */
+
+/* EventModal will be redesigned from scratch - all styles removed */

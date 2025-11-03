@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUser } from '../../contexts/UserContext';
 import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import ConfirmModal from '../ConfirmModal';
 import EditGalleryArtworkModal from './EditGalleryArtworkModal';
@@ -7,6 +8,11 @@ import './css/ArtworkModal.css';
 const API = import.meta.env.VITE_API_BASE;
 
 const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
+  const { userData } = useUser();
+  // Get role and currentUser from UserContext instead of fetching
+  const role = userData?.role || null;
+  const currentUser = userData?.id || null;
+  
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [isLiked, setIsLiked] = useState(false);
@@ -20,8 +26,6 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [openMenus, setOpenMenus] = useState({}); // Track which artwork menus are open
-  const [role, setRole] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [artworkToDelete, setArtworkToDelete] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -36,45 +40,18 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [hasMoreComments, setHasMoreComments] = useState(false);
   const [loadingMoreComments, setLoadingMoreComments] = useState(false);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch(`${API}/users/me`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setCurrentUser(userData.id);
-      }
-    } catch (error) {
-      setCurrentUser(null);
-    }
-  };
 
-  const fetchMyRole = async () => {
-    try {
-      // Fetch user role
-      const response = await fetch(`${API}/users/role`, {
-        method: "GET",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(`Failed to fetch user: ${response.statusText}`);
-      setRole(data);
-    } catch (error) {
-      setRole(null);
-    }
-  };
-
-  // Initialize like status and count
+  // Fetch fresh stats when modal opens
   useEffect(() => {
     if (artwork) {
       setCurrentImageIndex(0);
-      fetchCurrentUser();
-      fetchMyRole();
+      
+      // Always fetch fresh stats for accuracy
+      console.log('🔄 Fetching fresh stats for artwork:', artwork.id);
       fetchLikes();
       fetchComments();
       trackView();
+      
       // No need to fetch artist profile separately - it's now included in artwork data
       console.log('Artwork artistProfilePicture:', artwork.artistProfilePicture);
     }
@@ -536,8 +513,8 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   if (!isOpen || !artwork) return null;
 
   return (
-    <div className="museo-modal-overlay artwork-modal-overlay" onClick={onClose}>
-      <div className="museo-modal artwork-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="museo-modal-overlay artwork-type-overlay artwork-modal-overlay" onClick={onClose}>
+      <div className="museo-modal artwork-type-modal artwork-modal" onClick={(e) => e.stopPropagation()}>
         {/* Top Right Controls */}
         <div style={{
           position: 'absolute',

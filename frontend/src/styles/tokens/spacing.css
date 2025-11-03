@@ -1,0 +1,45 @@
+/* ========================================
+   📏 MUSEO SPACING TOKENS
+   45 lines (margins, paddings, radius)
+   ======================================== */
+
+:root {
+  /* Layout Dimensions */
+  --museo-nav-height: 72px;
+  --museo-sidebar-width: 280px;
+  --museo-content-max-width: 1200px;
+  --museo-feed-max-width: 800px;
+  
+  /* Spacing Scale */
+  --museo-space-0: 0;
+  --museo-space-1: 4px;
+  --museo-space-2: 8px;
+  --museo-space-3: 12px;
+  --museo-space-4: 16px;
+  --museo-space-5: 20px;
+  --museo-space-6: 24px;
+  --museo-space-7: 28px;
+  --museo-space-8: 32px;
+  --museo-space-10: 40px;
+  --museo-space-12: 48px;
+  --museo-space-16: 64px;
+  --museo-space-20: 80px;
+  --museo-space-24: 96px;
+  
+  /* Border Radius */
+  --museo-radius-none: 0;
+  --museo-radius-sm: 0.25rem;    /* 4px */
+  --museo-radius-base: 0.5rem;   /* 8px */
+  --museo-radius-md: 0.75rem;    /* 12px */
+  --museo-radius-lg: 1rem;       /* 16px */
+  --museo-radius-xl: 1.5rem;     /* 24px */
+  --museo-radius-2xl: 2rem;      /* 32px */
+  --museo-radius-full: 9999px;   /* Fully rounded */
+  
+  /* Border Widths */
+  --museo-border-0: 0;
+  --museo-border-1: 1px;
+  --museo-border-2: 2px;
+  --museo-border-4: 4px;
+  --museo-border-8: 8px;
+}

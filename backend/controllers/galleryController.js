@@ -1,19 +1,31 @@
 import db from "../database/db.js";
-import { createClient } from '@supabase/supabase-js';
+// ✅ REMOVED: import { createClient } from '@supabase/supabase-js';
+// Now using singleton from db.js instead of creating new clients!
 import { cache } from '../utils/cache.js';
 
 // Get available art categories from the database
 export const getCategories = async (req, res) => {
   try {
-    // Check cache first
-    const cacheKey = 'gallery:categories';
+    console.log('🔷🔷🔷 GET CATEGORIES CALLED 🔷🔷🔷');
+    
+    // Extract pagination parameters
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '15', 10); // Default all 15 categories
+    
+    console.log(`📄 Request params: page=${page}, limit=${limit}`);
+    
+    // Check cache first (include pagination in cache key)
+    const cacheKey = `gallery:categories:${page}:${limit}`;
     const cached = await cache.get(cacheKey);
     if (cached) {
-      console.log('✅ CACHE HIT:', cacheKey);
+      console.log('✅✅✅ CACHE HIT (SHARED):', cacheKey);
+      console.log('🚀 Returning cached categories (no DB query needed)');
       return res.json(cached);
     }
-    console.log('❌ CACHE MISS:', cacheKey);
+    console.log('❌❌❌ CACHE MISS (SHARED):', cacheKey);
+    console.log('💾 Fetching from database...');
     
+    // Static category definitions (no counts needed)
     const categoryDefinitions = [
       { field: 'classicalArt', name: 'Classical Art' },
       { field: 'abstractArt', name: 'Abstract Art' },
@@ -32,58 +44,28 @@ export const getCategories = async (req, res) => {
       { field: 'conceptual', name: 'Conceptual' }
     ];
     
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
-    
-    // Get all artworks to count categories
-    const { data: allArtworks, error } = await supabaseClient
-      .from('galleryart')
-      .select('categories');
-    
-    if (error) {
-      console.error('Error fetching artworks for category count:', error);
-      // Return categories with 0 counts if database error
-      const categoriesWithZeroCounts = categoryDefinitions.map(cat => ({
-        ...cat,
-        count: 0
-      }));
-      
-      return res.json({
-        success: true,
-        categories: categoriesWithZeroCounts
-      });
-    }
-    
-    // Calculate counts for each category
-    const categoriesWithCounts = categoryDefinitions.map(categoryDef => {
-      const count = allArtworks.filter(artwork => {
-        if (!artwork.categories || !Array.isArray(artwork.categories)) {
-          return false;
-        }
-        return artwork.categories.includes(categoryDef.name);
-      }).length;
-      
-      return {
-        ...categoryDef,
-        count: count
-      };
-    });
-    
-    // Get total count for "All" category
-    const totalCount = allArtworks.length;
+    // Apply pagination to categories
+    const offset = (page - 1) * limit;
+    const paginatedCategories = categoryDefinitions.slice(offset, offset + limit);
+    const hasMore = offset + limit < categoryDefinitions.length;
     
     const result = {
       success: true,
-      categories: categoriesWithCounts,
-      totalCount: totalCount
+      categories: paginatedCategories,
+      totalCount: 0, // No longer calculating total count
+      pagination: {
+        page,
+        limit,
+        total: categoryDefinitions.length,
+        hasMore
+      }
     };
     
-    // Save to cache (5 minutes TTL)
-    await cache.set(cacheKey, result, 300);
-    console.log('💾 CACHED:', cacheKey);
+    // Save to cache (30 minutes TTL - categories rarely change)
+    await cache.set(cacheKey, result, 1800);
+    console.log('💾💾💾 CACHED (SHARED):', cacheKey);
+    console.log('⏱️  Cache TTL: 30 minutes (1800 seconds)');
+    console.log('🔷🔷🔷 GET CATEGORIES COMPLETE 🔷🔷🔷\n');
     
     res.json(result);
 
@@ -101,30 +83,41 @@ export const getFilteredArtworks = async (req, res) => {
   try {
     const { categories, page = 1, limit = 20 } = req.query;
     
+    // Get userId for personalized caching
+    const userId = req.user?.id || 'guest';
+    
     // Convert pagination params to numbers
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
     
-    // Check cache
-    const cacheKey = `gallery:artworks:${categories || 'all'}:${pageNum}:${limitNum}`;
+    // SMART CACHING STRATEGY:
+    // - No filter (all) → User-specific cache (personalized/curated)
+    // - With filter → Shared cache (same artworks for everyone)
+    const isFiltered = categories && categories !== 'all';
+    
+    // Normalize category order for consistent cache keys
+    const normalizedCategories = isFiltered 
+      ? categories.split(',').map(c => c.trim()).sort().join(',')
+      : categories;
+    
+    const cacheKey = isFiltered
+      ? `gallery:artworks:shared:${normalizedCategories}:${pageNum}:${limitNum}`  // Shared cache
+      : `gallery:artworks:${userId}:all:${pageNum}:${limitNum}`;         // User-specific cache
+    
     const cached = await cache.get(cacheKey);
     if (cached) {
-      console.log('✅ CACHE HIT:', cacheKey);
+      console.log(`✅ CACHE HIT (${isFiltered ? 'shared' : 'user-specific'}):`, cacheKey);
       return res.json(cached);
     }
-    console.log('❌ CACHE MISS:', cacheKey);
+    console.log(`❌ CACHE MISS (${isFiltered ? 'shared' : 'user-specific'}):`, cacheKey);
     
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
     
     console.log(`📄 Fetching artworks: page ${pageNum}, limit ${limitNum}, offset ${offset}`);
     
     // Query galleryart table first
-    let query = supabaseClient
+    let query = db
       .from('galleryart')
       .select(`
         galleryArtId,
@@ -167,7 +160,7 @@ export const getFilteredArtworks = async (req, res) => {
     let userProfiles = {};
     if (userIds.length > 0) {
       
-      const { data: profiles, error: profileError } = await supabaseClient
+      const { data: profiles, error: profileError } = await db
         .from('profile')
         .select('userId, firstName, middleName, lastName, profilePicture')
         .in('userId', userIds);
@@ -222,7 +215,7 @@ export const getFilteredArtworks = async (req, res) => {
     // Get total count for pagination info (only on first page to avoid extra queries)
     let totalCount = null;
     if (pageNum === 1) {
-      let countQuery = supabaseClient
+      let countQuery = db
         .from('galleryart')
         .select('galleryArtId', { count: 'exact', head: true });
       
@@ -255,9 +248,9 @@ export const getFilteredArtworks = async (req, res) => {
       }
     };
 
-    // Save to cache
-    await cache.set(cacheKey, result, 300);
-    console.log('💾 CACHED:', cacheKey);
+    // Save to cache (15 minutes TTL - artworks change more frequently than categories)
+    await cache.set(cacheKey, result, 900);
+    console.log('💾 CACHED (TTL: 15min):', cacheKey);
 
     res.json(result);
 
@@ -278,11 +271,7 @@ export const uploadArtwork = async (req, res) => {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    // Use SERVICE_KEY client (same as homepage)
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     const { title, description, medium, categories } = req.body;
     const userId = req.user.id;
@@ -323,7 +312,7 @@ export const uploadArtwork = async (req, res) => {
       // Create user-specific folder path for gallery
       const filePath = `gallery/${userId}/${fileName}`;
 
-      const { data, error } = await supabaseClient.storage
+      const { data, error } = await db.storage
         .from("uploads")
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
@@ -339,10 +328,17 @@ export const uploadArtwork = async (req, res) => {
       }
 
       // Get the public URL for the uploaded file
-      const { data: publicUrlData } = supabaseClient.storage
+      const { data: publicUrlData, error: publicUrlError } = await db.storage
         .from("uploads")
         .getPublicUrl(data.path);
 
+      if (publicUrlError) {
+        console.error('Error getting public URL for uploaded file:', publicUrlError);
+        return res.status(500).json({
+          error: 'Failed to get public URL for uploaded file',
+          message: publicUrlError.message
+        });
+      }
 
       uploadedUrls.push(publicUrlData.publicUrl);
     }
@@ -366,7 +362,7 @@ export const uploadArtwork = async (req, res) => {
       featured_date: artworkData.featured_date
     });
 
-    const { data: artwork, error: insertError } = await supabaseClient
+    const { data: artwork, error: insertError } = await db
       .from('galleryart')
       .insert({
         ...artworkData,
@@ -393,7 +389,7 @@ export const uploadArtwork = async (req, res) => {
     });
 
     // Double-check by fetching the artwork again
-    const { data: verifyArtwork, error: verifyError } = await supabaseClient
+    const { data: verifyArtwork, error: verifyError } = await db
       .from('galleryart')
       .select('galleryArtId, title, featured, featured_date')
       .eq('galleryArtId', artwork.galleryArtId)
@@ -410,7 +406,7 @@ export const uploadArtwork = async (req, res) => {
       // If for any reason the artwork is not featured, force update it
       if (!verifyArtwork.featured) {
         console.log('⚠️ Artwork not featured after insert, forcing update...');
-        const { data: updateData, error: updateError } = await supabaseClient
+        const { data: updateData, error: updateError } = await db
           .from('galleryart')
           .update({
             featured: true,
@@ -434,9 +430,10 @@ export const uploadArtwork = async (req, res) => {
     console.log('⏭️ Skipping rotation check for new upload to keep it featured');
     // await simpleRotation(); // Commented out to preserve featured status
     
-    // Clear gallery cache so new artwork appears immediately
-    await cache.clearPattern('gallery:*');
-    console.log('🗑️ Cleared gallery cache after upload');
+    // Clear ALL user-specific gallery caches (new artwork affects everyone's curated feed)
+    await cache.clearPattern('gallery:artworks:*');
+    await cache.clearPattern('gallery:categories'); // Also clear categories cache
+    console.log('🗑️ Cleared all user-specific gallery caches after upload');
     
     res.status(201).json({
       success: true,
@@ -501,14 +498,10 @@ export const createGalleryReact = async (req, res) => {
       return res.status(400).json({ error: "galleryArtId is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // Check if the user already reacted to this artwork
-    const { data: existing, error: checkErr } = await supabaseClient
+    const { data: existing, error: checkErr } = await db
       .from("react")
       .select("reactId")
       .eq("userId", req.user.id)
@@ -519,7 +512,7 @@ export const createGalleryReact = async (req, res) => {
 
     if (existing) {
       // If reaction exists, delete it (unlike)
-      const { error: deleteErr } = await supabaseClient
+      const { error: deleteErr } = await db
         .from("react")
         .delete()
         .eq("reactId", existing.reactId);
@@ -534,7 +527,7 @@ export const createGalleryReact = async (req, res) => {
     }
 
     // If no reaction, insert new one (like)
-    const { data: inserted, error: insertErr } = await supabaseClient
+    const { data: inserted, error: insertErr } = await db
       .from("react")
       .insert([
         {
@@ -581,13 +574,9 @@ export const getGalleryReact = async (req, res) => {
     }
     console.log('❌ Cache MISS:', cacheKey);
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
-    const { data: reactions, error } = await supabaseClient
+    const { data: reactions, error } = await db
       .from("react")
       .select("*")
       .eq("galleryArtId", galleryArtId)
@@ -621,13 +610,9 @@ export const createGalleryComment = async (req, res) => {
       return res.status(400).json({ error: "galleryArtId and content are required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
-    const { data: inserted, error: insertErr } = await supabaseClient
+    const { data: inserted, error: insertErr } = await db
       .from("comment")
       .insert([
         {
@@ -679,13 +664,9 @@ export const getGalleryComments = async (req, res) => {
     }
     console.log('❌ Cache MISS:', cacheKey);
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
-    const { data: comments, error } = await supabaseClient
+    const { data: comments, error } = await db
       .from("comment")
       .select(`
         commentId,
@@ -706,7 +687,7 @@ export const getGalleryComments = async (req, res) => {
     let userProfiles = {};
     
     if (userIds.length > 0) {
-      const { data: profiles, error: profileError } = await supabaseClient
+      const { data: profiles, error: profileError } = await db
         .from('profile')
         .select('userId, firstName, middleName, lastName, profilePicture')
         .in('userId', userIds);
@@ -776,13 +757,10 @@ export const deleteGalleryComment = async (req, res) => {
     const { commentId } = req.params;
     const userId = req.user.id;
 
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // First check if comment exists
-    const { data: comment, error: fetchError } = await supabaseClient
+    const { data: comment, error: fetchError } = await db
       .from("comment")
       .select("*")
       .eq("commentId", commentId)
@@ -793,7 +771,7 @@ export const deleteGalleryComment = async (req, res) => {
     }
 
     // Get user role from profile table
-    const { data: userProfile, error: userError } = await supabaseClient
+    const { data: userProfile, error: userError } = await db
       .from('profile')
       .select('role')
       .eq('userId', userId)
@@ -809,7 +787,7 @@ export const deleteGalleryComment = async (req, res) => {
     }
 
     // Delete the comment
-    const { error: deleteError } = await supabaseClient
+    const { error: deleteError } = await db
       .from("comment")
       .delete()
       .eq("commentId", commentId);
@@ -838,13 +816,10 @@ export const updateGalleryComment = async (req, res) => {
       return res.status(400).json({ error: "Comment text is required" });
     }
 
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // First check if comment exists
-    const { data: comment, error: fetchError } = await supabaseClient
+    const { data: comment, error: fetchError } = await db
       .from("comment")
       .select("*")
       .eq("commentId", commentId)
@@ -855,7 +830,7 @@ export const updateGalleryComment = async (req, res) => {
     }
 
     // Get user role from profile table
-    const { data: userProfile, error: userError } = await supabaseClient
+    const { data: userProfile, error: userError } = await db
       .from('profile')
       .select('role')
       .eq('userId', userId)
@@ -871,7 +846,7 @@ export const updateGalleryComment = async (req, res) => {
     }
 
     // Update the comment
-    const { data: updated, error: updateError } = await supabaseClient
+    const { data: updated, error: updateError } = await db
       .from("comment")
       .update({ 
         content: text.trim(),
@@ -906,13 +881,10 @@ export const reportGalleryComment = async (req, res) => {
       return res.status(400).json({ error: "Comment ID and reason are required" });
     }
 
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // Check if comment exists
-    const { data: comment, error: fetchError } = await supabaseClient
+    const { data: comment, error: fetchError } = await db
       .from("comment")
       .select("*")
       .eq("commentId", commentId)
@@ -923,7 +895,7 @@ export const reportGalleryComment = async (req, res) => {
     }
 
     // Insert report (you'll need to create a 'comment_reports' table)
-    const { error: insertError } = await supabaseClient
+    const { error: insertError } = await db
       .from("comment_reports")
       .insert([{
         commentId: commentId,
@@ -957,16 +929,12 @@ export const trackArtworkView = async (req, res) => {
       return res.status(400).json({ error: "galleryArtId is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     const userId = req.user.id;
 
     // Get current artwork views
-    const { data: artwork, error: fetchError } = await supabaseClient
+    const { data: artwork, error: fetchError } = await db
       .from('galleryart')
       .select('views')
       .eq('galleryArtId', galleryArtId)
@@ -991,7 +959,7 @@ export const trackArtworkView = async (req, res) => {
     const updatedViews = [...currentViews, userId];
 
     // Update artwork with new views
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await db
       .from('galleryart')
       .update({ views: updatedViews })
       .eq('galleryArtId', galleryArtId);
@@ -1019,13 +987,9 @@ export const getArtworkViews = async (req, res) => {
       return res.status(400).json({ error: "galleryArtId is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
-    const { data: artwork, error } = await supabaseClient
+    const { data: artwork, error } = await db
       .from('galleryart')
       .select('views')
       .eq('galleryArtId', galleryArtId)
@@ -1054,30 +1018,47 @@ export const getBatchArtworkStats = async (req, res) => {
       return res.status(400).json({ error: "artworkIds array is required" });
     }
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // Check cache for each artwork
+    const stats = {};
+    const uncachedIds = [];
+    
+    for (const artworkId of artworkIds) {
+      const cacheKey = `stats:${artworkId}`;
+      const cached = await cache.get(cacheKey);
+      
+      if (cached) {
+        stats[artworkId] = cached;
+      } else {
+        uncachedIds.push(artworkId);
+      }
+    }
+    
+    // If all stats are cached, return immediately
+    if (uncachedIds.length === 0) {
+      console.log(`✅ All stats cached for ${artworkIds.length} artworks`);
+      return res.status(200).json({ success: true, stats });
+    }
 
-    console.log(`📊 Batch fetching stats for ${artworkIds.length} artworks`);
+    console.log(`📊 Batch fetching stats for ${uncachedIds.length}/${artworkIds.length} artworks (${artworkIds.length - uncachedIds.length} cached)`);
+
+    // ✅ USING SINGLETON: No new client creation!
 
     // Get all stats in parallel with optimized queries
     const [artworksData, likesData, commentsData] = await Promise.all([
       // Get views for all artworks
-      supabaseClient
+      db
         .from('galleryart')
         .select('"galleryArtId", views')
         .in('"galleryArtId"', artworkIds),
       
       // Get likes count for all artworks
-      supabaseClient
+      db
         .from('react')
         .select('"galleryArtId"')
         .in('"galleryArtId"', artworkIds),
       
       // Get comments count for all artworks
-      supabaseClient
+      db
         .from('comment')
         .select('"galleryArtId"')
         .in('"galleryArtId"', artworkIds)
@@ -1087,11 +1068,8 @@ export const getBatchArtworkStats = async (req, res) => {
     if (likesData.error) throw likesData.error;
     if (commentsData.error) throw commentsData.error;
 
-    // Process the data
-    const stats = {};
-    
-    // Initialize stats for all artworks
-    artworkIds.forEach(id => {
+    // Initialize stats for uncached artworks only
+    uncachedIds.forEach(id => {
       stats[id] = { views: 0, likes: 0, comments: 0 };
     });
 
@@ -1115,7 +1093,15 @@ export const getBatchArtworkStats = async (req, res) => {
       }
     });
 
-    console.log(`✅ Batch stats completed for ${artworkIds.length} artworks`);
+    // Cache the newly fetched stats (5 minutes TTL - balanced freshness and performance)
+    for (const artworkId of uncachedIds) {
+      if (stats[artworkId]) {
+        const cacheKey = `stats:${artworkId}`;
+        await cache.set(cacheKey, stats[artworkId], 300); // 5 minutes (increased from 2)
+      }
+    }
+
+    console.log(`✅ Batch stats completed for ${uncachedIds.length} artworks (${artworkIds.length - uncachedIds.length} from cache)`);
     return res.status(200).json({ success: true, stats });
 
   } catch (err) {
@@ -1125,13 +1111,13 @@ export const getBatchArtworkStats = async (req, res) => {
 };
 
 // Calculate engagement score for an artwork using separate tables
-const calculateEngagementScore = async (artwork, supabaseClient) => {
+const calculateEngagementScore = async (artwork) => {
   try {
     // Get views from artwork.views JSONB field
     const views = artwork.views ? (Array.isArray(artwork.views) ? artwork.views.length : 0) : 0;
     
     // Get likes from react table
-    const { data: likes, error: likesError } = await supabaseClient
+    const { data: likes, error: likesError } = await db
       .from('react')
       .select('reactId')
       .eq('galleryArtId', artwork.galleryArtId);
@@ -1139,7 +1125,7 @@ const calculateEngagementScore = async (artwork, supabaseClient) => {
     const likesCount = likesError ? 0 : (likes ? likes.length : 0);
     
     // Get comments from comment table
-    const { data: comments, error: commentsError } = await supabaseClient
+    const { data: comments, error: commentsError } = await db
       .from('comment')
       .select('commentId')
       .eq('galleryArtId', artwork.galleryArtId);
@@ -1162,14 +1148,10 @@ export const simpleRotation = async () => {
   try {
     console.log('🔄 Running smart rotation...');
     
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
     
     // Get all featured artworks with basic data
-    const { data: featuredArtworks, error } = await supabaseClient
+    const { data: featuredArtworks, error } = await db
       .from('galleryart')
       .select('"galleryArtId", title, "datePosted", featured_date, views')
       .eq('featured', true)
@@ -1197,7 +1179,7 @@ export const simpleRotation = async () => {
       // Calculate engagement scores and determine removal eligibility
       const artworksWithScores = await Promise.all(
         featuredArtworks.map(async (artwork) => {
-          const engagementScore = await calculateEngagementScore(artwork, supabaseClient);
+          const engagementScore = await calculateEngagementScore(artwork);
           const featuredTime = artwork.featured_date ? new Date(artwork.featured_date) : new Date(artwork.datePosted);
           const timeElapsed = now - featuredTime;
           
@@ -1233,7 +1215,7 @@ export const simpleRotation = async () => {
         });
         
         for (const artwork of toRemove) {
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await db
             .from('galleryart')
             .update({ featured: false, featured_date: null })
             .eq('"galleryArtId"', artwork.galleryArtId);
@@ -1266,7 +1248,7 @@ export const simpleRotation = async () => {
         console.log(`⚠️ Only ${featuredArtworks.length} featured artworks, trying to feature recent uploads...`);
         
         const needed = 6 - featuredArtworks.length;
-        const { data: recentUnfeatured, error: recentError } = await supabaseClient
+        const { data: recentUnfeatured, error: recentError } = await db
           .from('galleryart')
           .select('"galleryArtId", title')
           .eq('featured', false)
@@ -1275,7 +1257,7 @@ export const simpleRotation = async () => {
         
         if (!recentError && recentUnfeatured?.length > 0) {
           for (const artwork of recentUnfeatured) {
-            const { error: featureError } = await supabaseClient
+            const { error: featureError } = await db
               .from('galleryart')
               .update({ 
                 featured: true, 
@@ -1301,17 +1283,13 @@ export const promotePopularOldPosts = async () => {
   try {
     console.log('🔍 Checking for popular old posts to re-feature...');
     
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
     
     // Get unfeatured posts from last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const { data: oldArtworks, error } = await supabaseClient
+    const { data: oldArtworks, error } = await db
       .from('galleryart')
       .select('"galleryArtId", title, "datePosted", views')
       .eq('featured', false)  // Only unfeatured posts
@@ -1332,11 +1310,11 @@ export const promotePopularOldPosts = async () => {
     
     // Check each old artwork for high engagement
     for (const artwork of oldArtworks) {
-      const engagementScore = await calculateEngagementScore(artwork, supabaseClient);
+      const engagementScore = await calculateEngagementScore(artwork);
       
       // High threshold for re-featuring (prevents spam)
       if (engagementScore >= 75) {
-        const { error: updateError } = await supabaseClient
+        const { error: updateError } = await db
           .from('galleryart')
           .update({ 
             featured: true, 
@@ -1386,11 +1364,7 @@ export const calculateTopArtsWeekly = async () => {
   try {
     console.log('🏆 Starting weekly Top Arts calculation...');
     
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // Get Philippine timezone date
     const now = new Date();
@@ -1408,7 +1382,7 @@ export const calculateTopArtsWeekly = async () => {
     console.log(`📅 Calculating top arts for week: ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
 
     // Get ALL artworks and calculate their engagement scores (same as featured art logic)
-    const { data: artworks, error: artworksError } = await supabaseClient
+    const { data: artworks, error: artworksError } = await db
       .from('galleryart')
       .select(`
         galleryArtId,
@@ -1435,7 +1409,7 @@ export const calculateTopArtsWeekly = async () => {
     // Calculate engagement scores for all artworks (same logic as featured art system)
     const scoredArtworks = await Promise.all(
       artworks.map(async (artwork) => {
-        const engagementScore = await calculateEngagementScore(artwork, supabaseClient);
+        const engagementScore = await calculateEngagementScore(artwork);
         return {
           ...artwork,
           engagementScore
@@ -1454,7 +1428,7 @@ export const calculateTopArtsWeekly = async () => {
     })));
 
     // First, clear all previous top_art_week flags
-    const { error: clearError } = await supabaseClient
+    const { error: clearError } = await db
       .from('galleryart')
       .update({ top_art_week: null })
       .not('top_art_week', 'is', null);
@@ -1467,7 +1441,7 @@ export const calculateTopArtsWeekly = async () => {
     const weekId = `${weekStart.getFullYear()}-W${Math.ceil((weekStart.getDate() + weekStart.getDay()) / 7)}`;
     
     for (const [index, artwork] of topArtworks.entries()) {
-      const { error: updateError } = await supabaseClient
+      const { error: updateError } = await db
         .from('galleryart')
         .update({ top_art_week: weekId })
         .eq('galleryArtId', artwork.galleryArtId);
@@ -1489,26 +1463,30 @@ export const calculateTopArtsWeekly = async () => {
 
 const getCurrentTopArts = async (req, res) => {
   try {
-    // Use SERVICE_KEY client for database access
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
-    
-    // Get start of current week (Sunday to Saturday - same as generateWeeklyTopArts)
+    // Get start of current week for cache key
     const now = new Date();
     const phTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
-    
-    // Calculate current week (Sunday to Saturday)
     const weekStart = new Date(phTime);
     weekStart.setDate(phTime.getDate() - phTime.getDay()); // Go to Sunday
     weekStart.setHours(0, 0, 0, 0);
+    const weekKey = weekStart.toISOString().split('T')[0]; // e.g., "2025-11-02"
+    
+    // Check cache first (1 hour TTL - top arts change weekly)
+    const cacheKey = `gallery:topArts:weekly:${weekKey}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      console.log('✅ CACHE HIT:', cacheKey);
+      return res.json(cached);
+    }
+    console.log('❌ CACHE MISS:', cacheKey);
+    
+    // ✅ USING SINGLETON: No new client creation!
+    // Using db from import instead
 
     // Query topArtsWeekly data for current week
-    
-    const { data: topArts, error } = await supabase
+    const { data: topArts, error } = await db
       .from('topArtsWeekly')
-      .select('*')  // ← Just get topArtsWeekly data
+      .select('*')
       .eq('weekStartDate', weekStart.toISOString())
       .order('rank_position', { ascending: true });
 
@@ -1517,11 +1495,17 @@ const getCurrentTopArts = async (req, res) => {
       throw error;
     }
 
-    res.json({
+    const result = {
       success: true,
       topArts: topArts || [],
       weekStart: weekStart.toISOString()
-    });
+    };
+    
+    // Cache for 1 hour (top arts are weekly, don't change often)
+    await cache.set(cacheKey, result, 3600);
+    console.log('💾 CACHED:', cacheKey);
+
+    res.json(result);
   } catch (error) {
     console.error('❌ Error in getCurrentTopArts:', error);
     console.error('❌ Error details:', {
@@ -1543,11 +1527,8 @@ const generateWeeklyTopArts = async () => {
   try {
     console.log('🎯 Starting weekly top arts generation...');
     
-    // Use SERVICE_KEY client for database access
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
+    // Using db from import instead
     
     // Get Philippine timezone date (same as your logic)
     const now = new Date();
@@ -1666,6 +1647,10 @@ const generateWeeklyTopArts = async () => {
 
     console.log(`✅ Generated ${topArtworks.length} top arts for week starting ${weekStart.toISOString()}`);
     
+    // Clear top arts cache so new weekly top arts appear immediately
+    await cache.clearPattern('gallery:topArts:weekly:*');
+    console.log('🗑️ Cleared top arts cache after weekly generation');
+    
   } catch (error) {
     console.error('❌ Error generating weekly top arts:', error);
   }
@@ -1683,14 +1668,10 @@ export const updateGalleryArt = async (req, res) => {
     const { title, description, medium, categories, existingImages, imagesToRemove } = req.body;
     const newImageFiles = req.files || [];
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // Get user role to check admin permissions
-    const { data: userProfile, error: profileError } = await supabaseClient
+    const { data: userProfile, error: profileError } = await db
       .from('profile')
       .select('role')
       .eq('userId', userId)
@@ -1699,7 +1680,7 @@ export const updateGalleryArt = async (req, res) => {
     const userRole = userProfile?.role || 'user';
 
     // Verify artwork exists and get current data
-    const { data: artwork, error: fetchError } = await supabaseClient
+    const { data: artwork, error: fetchError } = await db
       .from('galleryart')
       .select('userId, image')
       .eq('galleryArtId', galleryArtId)
@@ -1741,7 +1722,7 @@ export const updateGalleryArt = async (req, res) => {
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.originalname}`;
           const filePath = `gallery/${userId}/${fileName}`;
 
-          const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          const { data: uploadData, error: uploadError } = await db.storage
             .from('uploads')
             .upload(filePath, file.buffer, {
               contentType: file.mimetype,
@@ -1753,7 +1734,7 @@ export const updateGalleryArt = async (req, res) => {
             return res.status(500).json({ error: 'Failed to upload new image' });
           }
 
-          const { data: publicUrlData } = supabaseClient.storage
+          const { data: publicUrlData } = db.storage
             .from('uploads')
             .getPublicUrl(uploadData.path);
 
@@ -1783,7 +1764,7 @@ export const updateGalleryArt = async (req, res) => {
             filePath = `gallery/${artwork.userId}/${fileName}`;
           }
 
-          const { error: storageError } = await supabaseClient.storage
+          const { error: storageError } = await db.storage
             .from('uploads')
             .remove([filePath]);
 
@@ -1799,7 +1780,7 @@ export const updateGalleryArt = async (req, res) => {
     }
 
     // Update artwork
-    const { data, error } = await supabaseClient
+    const { data, error } = await db
       .from('galleryart')
       .update({
         title: title || null,
@@ -1818,9 +1799,10 @@ export const updateGalleryArt = async (req, res) => {
       return res.status(500).json({ error: 'Failed to update artwork' });
     }
 
-    // Clear gallery cache so updates appear immediately
-    await cache.clearPattern('gallery:*');
-    console.log('🗑️ Cleared gallery cache after update');
+    // Clear ALL user-specific gallery caches (update affects everyone's curated feed)
+    await cache.clearPattern('gallery:artworks:*');
+    await cache.clearPattern('gallery:categories');
+    console.log('🗑️ Cleared all user-specific gallery caches after update');
 
     console.log(`✅ Successfully updated gallery artwork ${galleryArtId}`);
     res.json({ success: true, artwork: data });
@@ -1840,14 +1822,10 @@ export const deleteGalleryArt = async (req, res) => {
 
     const { galleryArtId } = req.params;
 
-    // Use SERVICE_KEY client for database access
-    const supabaseClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+    // ✅ USING SINGLETON: No new client creation!
 
     // Get user role to check admin permissions
-    const { data: userProfile, error: profileError } = await supabaseClient
+    const { data: userProfile, error: profileError } = await db
       .from('profile')
       .select('role')
       .eq('userId', userId)
@@ -1856,7 +1834,7 @@ export const deleteGalleryArt = async (req, res) => {
     const userRole = userProfile?.role || 'user';
 
     // Verify artwork exists and get artwork data including images
-    const { data: artwork, error: fetchError } = await supabaseClient
+    const { data: artwork, error: fetchError } = await db
       .from('galleryart')
       .select('userId, image')
       .eq('galleryArtId', galleryArtId)
@@ -1898,7 +1876,7 @@ export const deleteGalleryArt = async (req, res) => {
           
           console.log(`🗑️ Attempting to delete file path: ${filePath}`);
 
-          const { error: storageError } = await supabaseClient.storage
+          const { error: storageError } = await db.storage
             .from('uploads')
             .remove([filePath]);
 
@@ -1930,7 +1908,7 @@ export const deleteGalleryArt = async (req, res) => {
         
         console.log(`🗑️ Attempting to delete single image path: ${filePath}`);
 
-        const { error: storageError } = await supabaseClient.storage
+        const { error: storageError } = await db.storage
           .from('uploads')
           .remove([filePath]);
 
@@ -1945,7 +1923,7 @@ export const deleteGalleryArt = async (req, res) => {
     }
 
     // Delete artwork from database
-    const { error } = await supabaseClient
+    const { error } = await db
       .from('galleryart')
       .delete()
       .eq('galleryArtId', galleryArtId);
@@ -1955,9 +1933,10 @@ export const deleteGalleryArt = async (req, res) => {
       return res.status(500).json({ error: 'Failed to delete artwork' });
     }
 
-    // Clear gallery cache so deletion reflects immediately
-    await cache.clearPattern('gallery:*');
-    console.log('🗑️ Cleared gallery cache after delete');
+    // Clear ALL user-specific gallery caches (deletion affects everyone's curated feed)
+    await cache.clearPattern('gallery:artworks:*');
+    await cache.clearPattern('gallery:categories');
+    console.log('🗑️ Cleared all user-specific gallery caches after delete');
 
     console.log(`✅ Successfully deleted gallery artwork ${galleryArtId}`);
     res.json({ success: true, message: 'Artwork deleted successfully' });
@@ -1967,5 +1946,23 @@ export const deleteGalleryArt = async (req, res) => {
   }
 };
 
+// Manual trigger for testing (can be called via API)
+const triggerTopArtsGeneration = async (req, res) => {
+  try {
+    console.log('🎯 Manually triggering top arts generation...');
+    await generateWeeklyTopArts();
+    res.json({ 
+      success: true, 
+      message: 'Top arts generation triggered successfully' 
+    });
+  } catch (error) {
+    console.error('Error triggering top arts generation:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
 // Export the new functions
-export { getCurrentTopArts, generateWeeklyTopArts };
+export { getCurrentTopArts, generateWeeklyTopArts, triggerTopArtsGeneration };

@@ -1,0 +1,45 @@
+/* ========================================
+   🎨 MUSEO DESIGN SYSTEM - MAIN ENTRY POINT
+   Import orchestrator with instructions
+   ======================================== */
+
+/* 1️⃣ DESIGN TOKENS (CSS Variables) */
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/shadows.css';
+@import './tokens/animations.css';
+
+/* 2️⃣ BASE STYLES (ready for Step 2) */
+/* @import './base/reset.css'; */
+/* @import './base/global.css'; */
+/* @import './base/utilities.css'; */
+
+/* 3️⃣ COMPONENTS */
+@import './components/buttons.css';
+@import './components/cards.css';
+@import './components/inputs.css';
+@import './components/badges.css';
+@import './components/tabs.css';
+@import './components/modals.css';
+@import './components/artwork-modals.css';
+@import './components/event-modal.css';
+@import './components/modal-features.css';
+@import './components/dropdowns.css';
+@import './components/widgets.css';
+@import './components/hero.css';
+@import './components/composer.css';
+
+/* 4️⃣ LAYOUTS */
+@import './layouts/grid.css';
+@import './layouts/containers.css';
+
+/* ========================================
+   📝 NOTE: Page-specific styles
+   Page CSS files are located in: src/pages/css/
+   - home.css (Homepage specific)
+   - gallery.css (Gallery specific)
+   - events.css (Events specific)
+   - MyProfile.css (Profile specific)
+   Each page imports its own CSS directly.
+   ======================================== */

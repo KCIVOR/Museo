@@ -1,0 +1,780 @@
+/* ========================================
+   🔘 MUSEO BUTTON COMPONENTS
+   Token-based button system
+   ======================================== */
+
+/* Base button reset */
+button {
+  font-family: var(--museo-font-body);
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+  overflow: visible;
+  text-transform: none;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  outline: none;
+}
+
+/* ===== BASE BUTTON ===== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-3) var(--museo-space-5);
+  border-radius: var(--museo-radius-md);
+  font-weight: var(--museo-font-semibold);
+  font-size: var(--museo-text-sm);
+  line-height: var(--museo-leading-snug);
+  text-decoration: none;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  cursor: pointer;
+  border: 2px solid transparent;
+  min-height: 44px;
+  box-sizing: border-box;
+  font-family: var(--museo-font-body);
+  letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== BUTTON VARIANTS ===== */
+
+/* Primary Button - Museo Gold */
+.btn-primary,
+.btnPrimary,
+.btn-museo {
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  border-color: var(--museo-gold-dark);
+  box-shadow: var(--museo-shadow-base);
+  text-shadow: var(--museo-text-shadow-sm);
+}
+
+.btn-primary:hover,
+.btn-museo:hover {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-text-muted) 100%);
+  border-color: var(--museo-text-muted);
+  box-shadow: var(--museo-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active,
+.btn-museo:active {
+  transform: translateY(-1px);
+  box-shadow: var(--museo-shadow-base);
+}
+
+/* Secondary Button - Elegant Cream */
+.btn-secondary,
+.btn-museo-secondary {
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
+  color: var(--museo-primary);
+  border-color: var(--museo-accent);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+}
+
+.btn-secondary:hover,
+.btn-museo-secondary:hover {
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, #e8dcc6 100%);
+  border-color: var(--museo-gold-dark);
+  box-shadow: var(--museo-shadow-md);
+  transform: translateY(-1px);
+  color: var(--museo-white);
+}
+
+.btn-secondary:active,
+.btn-museo-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+}
+
+/*Success Button - Elegant Green */
+.btn-success {
+  background: linear-gradient(135deg, #7c9885 0%, #5a7c65 100%);
+  color: var(--museo-white);
+  border-color: #5a7c65;
+  box-shadow: var(--museo-shadow-base);
+  text-shadow: var(--museo-text-shadow-sm);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #5a7c65 0%, #4a6b55 100%);
+  border-color: #4a6b55;
+  box-shadow: var(--museo-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Danger Button - Elegant Red */
+.btn-danger {
+  background: linear-gradient(135deg, #c4756e 0%, #a85d56 100%);
+  color: var(--museo-white);
+  border-color: #a85d56;
+  box-shadow: var(--museo-shadow-base);
+  text-shadow: var(--museo-text-shadow-sm);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #a85d56 0%, #8f4e47 100%);
+}
+
+/* Ghost/Outline Button */
+.btn-ghost,
+.btn-museo-ghost {
+  background: transparent;
+  color: var(--museo-text-muted);
+  border-color: var(--museo-accent);
+}
+
+.btn-ghost:hover,
+.btn-museo-ghost:hover {
+  background: var(--museo-bg-hover);
+  color: var(--museo-primary);
+  border-color: var(--museo-gold-dark);
+}
+
+/* ===== BUTTON SIZES ===== */
+
+.btn-sm {
+  padding: var(--museo-space-2) var(--museo-space-4);
+  font-size: var(--museo-text-xs);
+  min-height: 36px;
+  border-radius: var(--museo-radius-sm);
+}
+
+.btn-lg {
+  padding: var(--museo-space-4) var(--museo-space-8);
+  font-size: var(--museo-text-base);
+  min-height: 52px;
+  border-radius: var(--museo-radius-lg);
+}
+
+.btn-xl {
+  padding: var(--museo-space-5) var(--museo-space-10);
+  font-size: var(--museo-text-lg);
+  min-height: 60px;
+  border-radius: var(--museo-radius-md);
+}
+
+/* ===== BUTTON STATES ===== */
+
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn:disabled:hover,
+.btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading State */
+.btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin var(--museo-duration-slower) linear infinite;
+  color: inherit;
+}
+
+/* ===== SPECIAL VARIANTS ===== */
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--museo-radius-base);
+}
+
+.btn-icon.btn-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.btn-icon.btn-lg {
+  width: 52px;
+  height: 52px;
+}
+
+.btn-pill {
+  border-radius: var(--museo-radius-full);
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ===== BUTTON GROUPS ===== */
+
+.btn-group {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.btn-group .btn {
+  border-radius: 0;
+  border-right-width: 1px;
+}
+
+.btn-group .btn:first-child {
+  border-top-left-radius: var(--museo-radius-base);
+  border-bottom-left-radius: var(--museo-radius-base);
+}
+
+.btn-group .btn:last-child {
+  border-top-right-radius: var(--museo-radius-base);
+  border-bottom-right-radius: var(--museo-radius-base);
+  border-right-width: 2px;
+}
+
+.btn-group .btn:not(:first-child) {
+  margin-left: -1px;
+}
+
+.btn-group .btn:hover {
+  z-index: 1;
+}
+
+/* ===== FOCUS STATES ===== */
+
+.btn:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
+}
+
+.btn-primary:focus-visible {
+  outline-color: var(--museo-gold-dark);
+}
+
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible {
+  outline-color: var(--museo-accent);
+}
+
+/* ===== FLOATING ACTION BUTTON ===== */
+
+.museo-floating-btn {
+  position: fixed !important;
+  bottom: 32px !important;
+  right: 32px !important;
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  box-shadow: 0 8px 24px rgba(110, 74, 46, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 2px solid var(--museo-accent) !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%) !important;
+  color: var(--museo-primary) !important;
+}
+
+.museo-floating-btn:hover {
+  transform: translateY(-4px) scale(1.05) !important;
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, #e8dcc6 100%) !important;
+  border-color: var(--museo-gold-dark) !important;
+  box-shadow: 0 12px 32px rgba(110, 74, 46, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  color: var(--museo-primary) !important;
+}
+
+.museo-floating-btn:active {
+  transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .btn {
+    padding: var(--museo-space-2) var(--museo-space-5);
+    font-size: var(--museo-text-sm);
+    min-height: 40px;
+  }
+  
+  .btn-sm {
+    padding: var(--museo-space-1) var(--museo-space-3);
+    font-size: var(--museo-text-xs);
+    min-height: 32px;
+  }
+  
+  .btn-lg {
+    padding: var(--museo-space-3) var(--museo-space-6);
+    font-size: var(--museo-text-sm);
+    min-height: 48px;
+  }
+  
+  .museo-floating-btn {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 24px !important;
+  }
+}
+
+/* ===== NAVBAR BUTTONS ===== */
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-2) var(--museo-space-4);
+  border-radius: var(--museo-radius-md);
+  font-weight: var(--museo-font-medium);
+  font-size: var(--museo-text-sm);
+  line-height: var(--museo-leading-snug);
+  text-decoration: none;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  cursor: pointer;
+  border: 2px solid var(--museo-accent);
+  min-height: 44px;
+  box-sizing: border-box;
+  font-family: var(--museo-font-body);
+  letter-spacing: 0.3px;
+  position: relative;
+}
+
+/* Visit Museo Button */
+.nav-btn.nav-btn-visit {
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-primary);
+  border-color: var(--museo-accent);
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+  padding: 0 var(--museo-space-4);
+  min-width: 160px;
+  justify-content: flex-start;
+  font-weight: 700;
+}
+
+.nav-btn.nav-btn-visit:hover {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 4px 12px rgba(212, 180, 138, 0.4);
+  transform: translateY(-1px);
+  color: var(--museo-primary-dark);
+}
+
+/* Search Button */
+.nav-btn.nav-btn-search {
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-white) 100%);
+  color: var(--museo-text-muted);
+  border-color: var(--museo-accent);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+  padding: 0 var(--museo-space-4);
+  min-width: 200px;
+  justify-content: flex-start;
+}
+
+.nav-btn.nav-btn-search:hover {
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-accent-light) 100%);
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2);
+  transform: translateY(-1px);
+  color: var(--museo-primary);
+}
+
+/* Icon Buttons (Notifications, Messages, etc.) */
+.nav-btn.nav-btn-icon,
+.nav__icon-btn {
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-white) 100%);
+  color: var(--museo-text-muted);
+  border-color: var(--museo-accent);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+  min-width: 44px;
+  max-width: 44px;
+  min-height: 44px;
+  max-height: 44px;
+}
+
+.nav-btn.nav-btn-icon:hover,
+.nav__icon-btn:hover {
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-accent-light) 100%);
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2);
+  transform: translateY(-1px);
+  color: var(--museo-primary);
+}
+
+/* SVG icons within navigation buttons */
+.nav-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.nav-btn:focus-visible,
+.nav__icon-btn:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
+}
+
+/* Coin/Currency button */
+.nav-btn.nav-btn-coin,
+.nav__coin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-2) var(--museo-space-4);
+  border: 2px solid var(--museo-gold-dark);
+  border-radius: var(--museo-radius-md);
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  font-family: var(--museo-font-body);
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-semibold);
+  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.2);
+  text-shadow: 0 1px 2px rgba(110, 74, 46, 0.3);
+}
+
+.nav-btn.nav-btn-coin:hover,
+.nav__coin:hover {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-text-muted) 100%);
+  border-color: var(--museo-text-muted);
+  box-shadow: 0 4px 12px rgba(184, 114, 44, 0.3);
+  transform: translateY(-1px);
+}
+
+.nav-btn.nav-btn-coin:focus-visible,
+.nav__coin:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
+}
+
+.nav__coin-count {
+  font-weight: var(--museo-font-bold);
+  letter-spacing: 0.3px;
+}
+
+/* Avatar button */
+.nav-btn.nav-btn-avatar,
+.nav__avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 2px solid var(--museo-accent);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-white) 100%);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+  overflow: hidden;
+}
+
+.nav-btn.nav-btn-avatar:hover,
+.nav__avatar:hover {
+  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-accent-light) 100%);
+  border-color: var(--museo-gold-dark);
+  box-shadow: 0 4px 12px rgba(110, 74, 46, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav-btn.nav-btn-avatar:focus-visible,
+.nav__avatar:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
+}
+
+.nav-btn-avatar img,
+.nav-btn-avatar-img,
+.nav__avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: none;
+  background: linear-gradient(135deg, var(--museo-text-muted) 0%, var(--museo-accent) 100%);
+}
+
+/* Notification badge */
+.nav-badge,
+.nav__notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #c4756e 0%, #a85d56 100%);
+  color: var(--museo-white);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--museo-font-bold);
+  border: 2px solid var(--museo-white);
+  box-shadow: 0 2px 6px rgba(168, 93, 86, 0.3);
+  font-family: var(--museo-font-body);
+  z-index: 10;
+}
+
+/* ===== SOCIAL ACTION BUTTONS (Like, Comment) ===== */
+
+.btn-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-2) var(--museo-space-3);
+  border-radius: var(--museo-radius-md);
+  border: 1px solid rgba(212, 180, 138, 0.3);
+  background: var(--museo-white);
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-medium);
+  font-family: var(--museo-font-body);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  position: relative;
+}
+
+.btn-social:hover {
+  background: rgba(212, 180, 138, 0.1);
+  color: var(--museo-primary);
+  transform: translateY(-1px);
+}
+
+/* Like Button - OLD DESIGN */
+.btn-social.like {
+  border-color: rgba(212, 180, 138, 0.3);
+}
+
+.btn-social.like:hover {
+  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #dc2626;
+}
+
+.btn-social.like.active {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  border-color: #dc2626;
+  color: #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.btn-social.like.active:hover {
+  background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%);
+  border-color: #b91c1c;
+  color: #b91c1c;
+  transform: translateY(-1px) scale(1.05);
+}
+
+/* Comment Button - OLD DESIGN */
+.btn-social.comment {
+  border-color: rgba(212, 180, 138, 0.3);
+}
+
+.btn-social.comment:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.btn-social.comment.active {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #3b82f6;
+  color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Social button animations */
+.btn-social.like.active svg {
+  animation: heartBeat 0.6s ease-in-out;
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(1.1); }
+  75% { transform: scale(1.25); }
+}
+
+/* More button (3 dots menu) */
+.btn-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--museo-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: var(--museo-radius-sm);
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.btn-more:hover {
+  background: var(--museo-bg-secondary);
+  color: var(--museo-primary);
+}
+
+/* ===== FILTER & CHIP BUTTONS ===== */
+
+/* Filter/Tab Buttons - For category filtering */
+.btn-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid #d4b48a;
+  min-height: 36px;
+  box-sizing: border-box;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  letter-spacing: 0.3px;
+  background: transparent;
+  color: #8b6f47;
+}
+
+.btn-filter:hover {
+  background: rgba(212, 180, 138, 0.1);
+  border-color: #b8722c;
+  color: #6e4a2e;
+  transform: translateY(-1px);
+}
+
+.btn-filter.active {
+  background: linear-gradient(135deg, #d4b48a 0%, #b8722c 100%);
+  border-color: #b8722c;
+  color: #faf8f5;
+  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.2);
+  text-shadow: 0 1px 2px rgba(110, 74, 46, 0.3);
+}
+
+.btn-filter.active:hover {
+  background: linear-gradient(135deg, #b8722c 0%, #8b6f47 100%);
+  border-color: #8b6f47;
+  box-shadow: 0 4px 12px rgba(184, 114, 44, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Chip/Tag Buttons - For removable filters */
+.btn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid var(--museo-border);
+  min-height: 28px;
+  box-sizing: border-box;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #f0e6d2 0%, #e8dcc6 100%);
+  color: #6e4a2e;
+  border-color: #d4b48a;
+  transition: all 0.2s ease;
+}
+
+.btn-chip:hover {
+  background: linear-gradient(135deg, #e8dcc6 0%, #d4b48a 100%);
+  border-color: #b8722c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(110, 74, 46, 0.2);
+}
+
+/* ===== CATEGORY BUTTONS (for artwork categories) ===== */
+
+.museo-category-btn {
+  background: var(--museo-white);
+  color: #2c1810;
+  border: 1px solid #d4af37;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  outline: none;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.museo-category-btn:hover {
+  background: #ece2d6;
+  transform: translateY(-1px);
+}
+
+.museo-category-btn--active {
+  background: #ece2d6;
+  color: #2c1810;
+  border-color: #d4af37;
+  font-weight: 600;
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .nav-btn,
+  .nav__icon-btn,
+  .nav__coin,
+  .nav__avatar,
+  .btn-social,
+  .museo-category-btn {
+    transition: none;
+  }
+  
+  .btn:hover,
+  .nav-btn:hover,
+  .nav__icon-btn:hover,
+  .nav__coin:hover,
+  .nav__avatar:hover,
+  .btn-social:hover,
+  .museo-category-btn:hover {
+    transform: none;
+  }
+}
