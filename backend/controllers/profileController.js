@@ -2,6 +2,7 @@
 // ✅ REMOVED: import { createClient } from "@supabase/supabase-js";
 import supabase from "../database/db.js"; // Using singleton instance!
 import { cache } from '../utils/cache.js';
+import { addUserWatermark, addTextWatermark } from '../utils/watermark.js';
 
 
 // GET profile (unchanged behavior)
@@ -39,7 +40,7 @@ export const getProfile = async (req, res) => {
 };
 
 // POST /api/profile/uploadArt
-// Accepts multipart/form-data with files field: images; text: title, description, medium, categories
+// Accepts multipart/form-data with files field: images; text: title, description, medium, categories, applyWatermark
 export const uploadArt = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -47,7 +48,15 @@ export const uploadArt = async (req, res) => {
     }
 
     const files = req.files || [];
-    const { title = "", description = "", medium = "", categories = "[]" } = req.body || {};
+    const { 
+      title = "", 
+      description = "", 
+      medium = "", 
+      categories = "[]",
+      applyWatermark = "true", // Default to true for protection
+      watermarkText = "" // Custom watermark text (optional)
+    } = req.body || {};
+    
     if (files.length === 0) return res.status(400).json({ error: "At least one image is required" });
 
     const userId = req.user.id;
@@ -62,24 +71,75 @@ export const uploadArt = async (req, res) => {
       parsedCategories = ["Digital Art"]; // Default fallback
     }
 
+    // Get user info for watermark
+    const { data: userProfile } = await supabase
+      .from('profile')
+      .select('username, firstName, lastName')
+      .eq('userId', userId)
+      .single();
+    
+    const displayName = userProfile?.username || 
+                        `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 
+                        'Museo Artist';
+
     // Upload all images to Supabase storage
     const uploadedUrls = [];
+    const shouldWatermark = applyWatermark === 'true' || applyWatermark === true;
+    
+    console.log(`🎨 Processing ${files.length} images (watermark: ${shouldWatermark})`);
     
     for (const file of files) {
-      const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
-      const fileName = `${Date.now()}-${Math.random()}-${safeName}`;
-      const filePath = `pics/${userId}/${fileName}`;
+      try {
+        let imageBuffer = file.buffer;
+        
+        // Apply watermark if requested
+        if (shouldWatermark) {
+          console.log(`💧 Adding watermark to ${file.originalname}...`);
+          
+          // Use custom text if provided, otherwise use default user watermark
+          if (watermarkText && watermarkText.trim()) {
+            console.log(`📝 Using custom watermark: "${watermarkText}"`);
+            imageBuffer = await addTextWatermark(imageBuffer, {
+              text: watermarkText.trim(),
+              position: 'bottom-right',
+              opacity: 0.7  // Increased for better clarity
+            });
+          } else {
+            console.log(`👤 Using default user watermark for: ${displayName}`);
+            imageBuffer = await addUserWatermark(imageBuffer, {
+              username: displayName,
+              userId: userId,
+              date: new Date().getFullYear()
+            });
+          }
+          
+          console.log(`✅ Watermark applied to ${file.originalname}`);
+        }
+        
+        const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+        const prefix = shouldWatermark ? 'watermarked-' : '';
+        const fileName = `${prefix}${Date.now()}-${Math.random()}-${safeName}`;
+        const filePath = `pics/${userId}/${fileName}`;
 
-      const { data: up, error: upErr } = await svc.storage
-        .from("uploads")
-        .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: false });
-      if (upErr) return res.status(500).json({ error: upErr.message });
+        const { data: up, error: upErr } = await svc.storage
+          .from("uploads")
+          .upload(filePath, imageBuffer, { contentType: file.mimetype, upsert: false });
+        
+        if (upErr) {
+          console.error(`❌ Upload error for ${file.originalname}:`, upErr);
+          return res.status(500).json({ error: upErr.message });
+        }
 
-      const pub = svc.storage.from("uploads").getPublicUrl(up.path);
-      const imageUrl = pub?.data?.publicUrl;
-      
-      if (imageUrl) {
-        uploadedUrls.push(imageUrl);
+        const pub = svc.storage.from("uploads").getPublicUrl(up.path);
+        const imageUrl = pub?.data?.publicUrl;
+        
+        if (imageUrl) {
+          uploadedUrls.push(imageUrl);
+          console.log(`✅ Uploaded: ${imageUrl}`);
+        }
+      } catch (fileError) {
+        console.error(`❌ Error processing ${file.originalname}:`, fileError);
+        return res.status(500).json({ error: `Failed to process ${file.originalname}` });
       }
     }
 
@@ -1280,7 +1340,15 @@ export const updateArt = async (req, res) => {
     }
 
     const { artId } = req.params;
-    const { title, description, medium, existingImages, imagesToRemove } = req.body;
+    const { 
+      title, 
+      description, 
+      medium, 
+      existingImages, 
+      imagesToRemove,
+      applyWatermark = "false", // Default to false for edits (don't re-watermark)
+      watermarkText = ""
+    } = req.body;
     const newImageFiles = req.files || [];
 
     // Get user role to check admin permissions
@@ -1319,14 +1387,60 @@ export const updateArt = async (req, res) => {
 
     // Upload new images if any
     if (newImageFiles && newImageFiles.length > 0) {
+      const shouldWatermark = applyWatermark === 'true' || applyWatermark === true;
+      
+      // Get user info for watermark if needed
+      let displayName = 'Museo Artist';
+      if (shouldWatermark) {
+        const { data: profile } = await supabase
+          .from('profile')
+          .select('username, firstName, lastName')
+          .eq('userId', userId)
+          .single();
+        
+        displayName = profile?.username || 
+                      `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 
+                      'Museo Artist';
+      }
+      
+      console.log(`🎨 Processing ${newImageFiles.length} new images for edit (watermark: ${shouldWatermark})`);
+      
       for (const file of newImageFiles) {
         try {
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${file.originalname}`;
+          let imageBuffer = file.buffer;
+          
+          // Apply watermark if requested
+          if (shouldWatermark) {
+            console.log(`💧 Adding watermark to ${file.originalname}...`);
+            
+            // Use custom text if provided, otherwise use default user watermark
+            if (watermarkText && watermarkText.trim()) {
+              console.log(`📝 Using custom watermark: "${watermarkText}"`);
+              imageBuffer = await addTextWatermark(imageBuffer, {
+                text: watermarkText.trim(),
+                position: 'bottom-right',
+                opacity: 0.7
+              });
+            } else {
+              console.log(`👤 Using default user watermark for: ${displayName}`);
+              imageBuffer = await addUserWatermark(imageBuffer, {
+                username: displayName,
+                userId: userId,
+                date: new Date().getFullYear()
+              });
+            }
+            
+            console.log(`✅ Watermark applied to ${file.originalname}`);
+          }
+          
+          const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+          const prefix = shouldWatermark ? 'watermarked-' : '';
+          const fileName = `${prefix}${Date.now()}-${Math.random().toString(36).substring(2)}-${safeName}`;
           const filePath = `pics/${userId}/${fileName}`;
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('uploads')
-            .upload(filePath, file.buffer, {
+            .upload(filePath, imageBuffer, {
               contentType: file.mimetype,
               upsert: false
             });
@@ -1341,6 +1455,7 @@ export const updateArt = async (req, res) => {
             .getPublicUrl(filePath);
 
           finalImages.push(urlData.publicUrl);
+          console.log(`✅ Uploaded: ${urlData.publicUrl}`);
         } catch (uploadErr) {
           console.error('Error uploading image:', uploadErr);
         }

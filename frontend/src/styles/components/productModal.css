@@ -1,0 +1,721 @@
+/* ========================================
+   🛍️ PRODUCT DETAIL MODAL - Museo Theme
+   Clean E-commerce & Blind Auction Interface
+   ======================================== */
+
+/* ===== OVERLAY ===== */
+.pdm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--museo-overlay);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== MODAL CONTAINER ===== */
+.pdm-modal {
+  background: var(--museo-white);
+  max-width: 1100px;
+  width: 100%;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px var(--museo-shadow);
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== HEADER ===== */
+.pdm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--museo-bg-secondary);
+  border-bottom: 1px solid var(--museo-border);
+}
+
+.pdm-breadcrumb {
+  font-size: 13px;
+  color: var(--museo-text-muted);
+  font-weight: 500;
+}
+
+.pdm-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--museo-white);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--museo-text-secondary);
+}
+
+.pdm-close:hover {
+  background: var(--museo-primary);
+  color: var(--museo-text-inverse);
+  transform: scale(1.05);
+}
+
+/* ===== BODY LAYOUT ===== */
+.pdm-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== LEFT: GALLERY ===== */
+.pdm-gallery {
+  width: 50%;
+  background: var(--museo-bg-secondary);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.pdm-main-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--museo-white);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--museo-shadow-light);
+}
+
+.pdm-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Navigation Arrows */
+.pdm-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--museo-text-primary);
+  opacity: 0.9;
+}
+
+.pdm-nav:hover {
+  background: var(--museo-primary);
+  color: var(--museo-text-inverse);
+  border-color: var(--museo-primary);
+  opacity: 1;
+}
+
+.pdm-nav-prev { left: 16px; }
+.pdm-nav-next { right: 16px; }
+
+/* Thumbnails */
+.pdm-thumbs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.pdm-thumb {
+  width: 80px;
+  height: 80px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--museo-white);
+  padding: 2px;
+}
+
+.pdm-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.pdm-thumb:hover {
+  transform: scale(1.05);
+  border-color: var(--museo-accent);
+}
+
+.pdm-thumb.active {
+  border-color: var(--museo-primary);
+  box-shadow: 0 2px 8px var(--museo-shadow-light);
+}
+
+/* Quick Info */
+.pdm-quick-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 20px;
+  background: var(--museo-white);
+  border-radius: 8px;
+  border: 1px solid var(--museo-border);
+}
+
+.pdm-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdm-info-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--museo-text-muted);
+  font-weight: 600;
+}
+
+.pdm-info-value {
+  font-size: 14px;
+  color: var(--museo-text-primary);
+  font-weight: 500;
+}
+
+/* ===== RIGHT: DETAILS ===== */
+.pdm-details {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Title Section */
+.pdm-title-section {
+  border-bottom: 1px solid var(--museo-border);
+  padding-bottom: 20px;
+}
+
+.pdm-auction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--museo-warning);
+  color: var(--museo-text-inverse);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.pdm-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--museo-text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.pdm-artist {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdm-artist-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--museo-border);
+}
+
+.pdm-artist div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pdm-artist-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.pdm-artist-verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--museo-success);
+  font-weight: 500;
+}
+
+.pdm-artist-verified svg {
+  fill: var(--museo-success);
+}
+
+/* ===== TABS ===== */
+.pdm-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--museo-border);
+}
+
+.pdm-tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--museo-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdm-tab:hover {
+  color: var(--museo-text-primary);
+  background: var(--museo-bg-hover);
+}
+
+.pdm-tab.active {
+  color: var(--museo-primary);
+  border-bottom-color: var(--museo-primary);
+  font-weight: 600;
+}
+
+/* Tab Content */
+.pdm-tab-content {
+  min-height: 120px;
+}
+
+.pdm-description {
+  color: var(--museo-text-secondary);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.pdm-description p {
+  margin: 0 0 12px 0;
+}
+
+.pdm-shipping-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pdm-ship-option {
+  padding: 16px;
+  background: var(--museo-bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--museo-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.pdm-ship-option:hover {
+  border-color: var(--museo-accent);
+  background: var(--museo-bg-hover);
+}
+
+.pdm-ship-option strong {
+  font-size: 14px;
+  color: var(--museo-text-primary);
+}
+
+.pdm-ship-option span {
+  font-size: 13px;
+  color: var(--museo-text-muted);
+}
+
+.pdm-rules h4 {
+  font-size: 16px;
+  color: var(--museo-text-primary);
+  margin: 0 0 12px 0;
+}
+
+.pdm-rules ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+  color: var(--museo-text-secondary);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* ===== PURCHASE SECTION ===== */
+.pdm-purchase {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--museo-border);
+}
+
+/* Normal Purchase */
+.pdm-buy {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pdm-price-section {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.pdm-price-original {
+  font-size: 20px;
+  color: var(--museo-text-muted);
+  text-decoration: line-through;
+}
+
+.pdm-price-current {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--museo-primary);
+}
+
+.pdm-price-discount {
+  padding: 4px 8px;
+  background: var(--museo-error);
+  color: var(--museo-text-inverse);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pdm-quantity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pdm-quantity label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.pdm-qty-selector {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--museo-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pdm-qty-selector button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--museo-bg-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--museo-text-primary);
+  transition: all 0.2s;
+}
+
+.pdm-qty-selector button:hover:not(:disabled) {
+  background: var(--museo-primary);
+  color: var(--museo-text-inverse);
+}
+
+.pdm-qty-selector button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pdm-qty-selector span {
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+  background: var(--museo-white);
+}
+
+.pdm-stock {
+  font-size: 13px;
+  color: var(--museo-success);
+}
+
+.pdm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.pdm-btn-cart {
+  flex: 1;
+  padding: 14px;
+  border: 2px solid var(--museo-primary);
+  background: var(--museo-white);
+  color: var(--museo-primary);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.pdm-btn-cart:hover {
+  background: var(--museo-primary);
+  color: var(--museo-text-inverse);
+}
+
+.pdm-btn-buy {
+  flex: 1;
+  padding: 14px;
+  background: var(--museo-accent);
+  border: none;
+  color: var(--museo-white);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdm-btn-buy:hover {
+  background: var(--museo-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--museo-shadow-light);
+}
+
+/* Trust Badges */
+.pdm-trust {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+  background: var(--museo-bg-secondary);
+  border-radius: 8px;
+}
+
+.pdm-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--museo-text-muted);
+}
+
+.pdm-trust-item svg {
+  fill: var(--museo-accent);
+}
+
+/* ===== BLIND AUCTION ===== */
+.pdm-auction {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pdm-auction-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+  background: var(--museo-bg-secondary);
+  border-radius: 8px;
+}
+
+.pdm-auction-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.pdm-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--museo-text-muted);
+  font-weight: 600;
+}
+
+.pdm-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--museo-primary);
+}
+
+.pdm-bid-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdm-bid-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.pdm-bid-input-group {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid var(--museo-border);
+  border-radius: 8px;
+  background: var(--museo-white);
+  transition: all 0.2s;
+}
+
+.pdm-bid-input-group:focus-within {
+  border-color: var(--museo-accent);
+}
+
+.pdm-currency {
+  font-size: 18px;
+  color: var(--museo-text-muted);
+  margin-right: 8px;
+}
+
+.pdm-bid-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.pdm-bid-btn {
+  padding: 14px;
+  background: var(--museo-warning);
+  border: none;
+  color: var(--museo-white);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdm-bid-btn:hover:not(:disabled) {
+  background: var(--museo-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--museo-shadow-light);
+}
+
+.pdm-bid-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pdm-bid-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  background: var(--museo-success);
+  color: var(--museo-text-inverse);
+  border-radius: 8px;
+  font-weight: 600;
+  animation: successPulse 0.3s ease;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.pdm-bid-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--museo-text-muted);
+  padding: 12px;
+  background: var(--museo-bg-secondary);
+  border-radius: 6px;
+}
+
+.pdm-bid-note svg {
+  fill: var(--museo-warning);
+  flex-shrink: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .pdm-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .pdm-body {
+    flex-direction: column;
+  }
+
+  .pdm-gallery {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .pdm-quick-info {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pdm-details {
+    padding: 16px;
+  }
+
+  .pdm-actions {
+    flex-direction: column;
+  }
+
+  .pdm-auction-info {
+    grid-template-columns: 1fr;
+  }
+}

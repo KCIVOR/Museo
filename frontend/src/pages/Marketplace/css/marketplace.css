@@ -1,0 +1,1125 @@
+/* ========================================
+   🛍️ MUSEO MARKETPLACE STYLES
+   Using design system tokens
+   ======================================== */
+
+/* ===== PAGE LAYOUT ===== */
+.mp-page {
+  height: 100vh;
+  background: var(--museo-bg-primary);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== FLOATING CART BUTTON ===== */
+.mp-cart-float-btn {
+  position: fixed;
+  bottom: var(--museo-space-8);
+  right: var(--museo-space-8);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  border: 3px solid var(--museo-white);
+  color: var(--museo-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--museo-shadow-xl);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  z-index: 150;
+}
+
+.mp-cart-float-btn:hover {
+  transform: scale(1.1) translateY(-4px);
+  box-shadow: var(--museo-shadow-2xl);
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+}
+
+.mp-cart-float-btn:active {
+  transform: scale(1.05);
+}
+
+.mp-cart-float-btn svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.5;
+}
+
+.mp-cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--museo-error);
+  color: var(--museo-white);
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--museo-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--museo-text-xs);
+  font-weight: var(--museo-font-bold);
+  border: 2px solid var(--museo-white);
+  box-shadow: var(--museo-shadow-md);
+}
+
+
+/* ===== MAIN CONTENT ===== */
+.mp-content {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  position: relative;
+  height: calc(100vh - 80px); /* Adjust for navbar height */
+  overflow: hidden;
+}
+
+/* ===== SIDEBAR FILTERS ===== */
+.mp-sidebar {
+  width: 280px;
+  background: var(--museo-white);
+  height: 100%;
+  border-right: 1px solid var(--museo-border);
+  flex-shrink: 0;
+  transition: width var(--museo-duration-base) var(--museo-ease-out);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-sidebar--collapsed {
+  width: 40px;
+}
+
+.mp-sidebar-content {
+  width: 280px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--museo-space-6);
+  transition: opacity var(--museo-duration-fast) var(--museo-ease-out);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Custom Scrollbar for Sidebar */
+.mp-sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mp-sidebar-content::-webkit-scrollbar-track {
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-radius-full);
+}
+
+.mp-sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--museo-border);
+  border-radius: var(--museo-radius-full);
+}
+
+.mp-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--museo-text-muted);
+}
+
+.mp-sidebar-content.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Vertical Tab for Collapsed State */
+.mp-sidebar-tab {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 120px;
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  border: none;
+  border-radius: 0 var(--museo-radius-lg) var(--museo-radius-lg) 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--museo-space-2);
+  box-shadow: var(--museo-shadow-lg);
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  z-index: 10;
+}
+
+.mp-sidebar-tab:hover {
+  transform: translateY(-50%) translateX(2px);
+  box-shadow: var(--museo-shadow-xl);
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+}
+
+.mp-sidebar-tab span {
+  writing-mode: vertical-lr;
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-semibold);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mp-sidebar-tab svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mp-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--museo-space-6);
+}
+
+.mp-sidebar-header h3 {
+  font-size: var(--museo-text-xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+}
+
+.mp-sidebar-actions {
+  display: flex;
+  gap: var(--museo-space-2);
+  align-items: center;
+}
+
+/* Collapse/Expand Button */
+.mp-collapse-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--museo-radius-md);
+  background: var(--museo-bg-secondary);
+  border: 1px solid var(--museo-border);
+  color: var(--museo-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.mp-collapse-btn:hover {
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  border-color: var(--museo-accent);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+}
+
+.mp-collapse-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.mp-sidebar--collapsed .mp-collapse-btn svg {
+  transform: rotate(180deg);
+}
+
+.mp-filter-close {
+  display: none;
+  background: transparent;
+  border: none;
+  font-size: var(--museo-text-2xl);
+  color: var(--museo-text-muted);
+  cursor: pointer;
+}
+
+.mp-filter-group {
+  margin-bottom: var(--museo-space-8);
+}
+
+.mp-filter-title {
+  font-size: var(--museo-text-base);
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-3);
+}
+
+/* Listing Type Filter */
+.mp-listing-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--museo-space-2);
+  margin-bottom: var(--museo-space-2);
+}
+
+.mp-listing-type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--museo-space-3) var(--museo-space-2);
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  font-size: var(--museo-text-xs);
+  color: var(--museo-text-secondary);
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  position: relative;
+  text-align: center;
+  min-height: 64px;
+}
+
+.mp-listing-type:hover {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+.mp-listing-type--active {
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  border-color: var(--museo-accent);
+  color: var(--museo-white);
+  font-weight: var(--museo-font-semibold);
+  box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
+}
+
+.mp-listing-type--active:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.mp-listing-icon {
+  display: block;
+  margin-bottom: var(--museo-space-1);
+  height: 24px;
+  width: 24px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mp-listing-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2;
+}
+
+/* Auction badge - removed count display */
+/* .mp-auction-badge class removed as count is no longer shown */
+
+/* Categories */
+.mp-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+}
+
+.mp-category-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-3) var(--museo-space-4);
+  background: var(--museo-white);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-secondary);
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.mp-category-btn:hover {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-accent);
+  transform: translateX(4px);
+}
+
+.mp-category-btn--active {
+  background: linear-gradient(135deg, var(--museo-accent-light) 0%, var(--museo-accent) 100%);
+  border-color: var(--museo-accent);
+  color: var(--museo-primary);
+  font-weight: var(--museo-font-semibold);
+}
+
+.mp-category-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.mp-category-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2;
+}
+
+/* Price Range */
+.mp-price-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+  margin-bottom: var(--museo-space-3);
+}
+
+.mp-price-input {
+  flex: 1;
+  max-width: 100px;
+  padding: var(--museo-space-2) var(--museo-space-3);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  font-size: var(--museo-text-sm);
+  font-family: var(--museo-font-body);
+  background: var(--museo-white);
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.mp-price-input:focus {
+  outline: none;
+  border-color: var(--museo-accent);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.1);
+}
+
+.mp-price-input:hover {
+  border-color: var(--museo-gold);
+}
+
+/* Hide number input spinners */
+.mp-price-input::-webkit-inner-spin-button,
+.mp-price-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mp-price-input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.mp-price-separator {
+  color: var(--museo-text-muted);
+  font-weight: var(--museo-font-semibold);
+  padding: 0 var(--museo-space-2);
+}
+
+/* Apply Filters Button */
+.btn.btn-primary.btn-block {
+  width: 100%;
+  padding: var(--museo-space-3) var(--museo-space-4);
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  border: none;
+  border-radius: var(--museo-radius-lg);
+  font-size: var(--museo-text-base);
+  font-weight: var(--museo-font-semibold);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  margin-top: var(--museo-space-6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--museo-shadow-md);
+}
+
+.btn.btn-primary.btn-block:hover {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.3);
+}
+
+/* Accent button for auctions */
+.btn-accent {
+  background: linear-gradient(135deg, var(--museo-warning) 0%, var(--museo-warning-dark) 100%);
+  color: var(--museo-white);
+  border: none;
+  padding: var(--museo-space-2) var(--museo-space-4);
+  border-radius: var(--museo-radius-md);
+  font-weight: var(--museo-font-semibold);
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.btn-accent:hover {
+  background: linear-gradient(135deg, var(--museo-warning-dark) 0%, var(--museo-warning) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--museo-shadow-md);
+}
+
+.btn.btn-primary.btn-block:active {
+  transform: translateY(0);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+/* Checkboxes */
+.mp-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  margin-bottom: var(--museo-space-2);
+  cursor: pointer;
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-secondary);
+}
+
+.mp-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--museo-accent);
+}
+
+/* ===== MAIN AREA ===== */
+.mp-main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--museo-space-6);
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  position: relative;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+/* Custom Scrollbar for Main Area */
+.mp-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mp-main::-webkit-scrollbar-track {
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-radius-full);
+}
+
+.mp-main::-webkit-scrollbar-thumb {
+  background: var(--museo-accent);
+  border-radius: var(--museo-radius-full);
+}
+
+.mp-main::-webkit-scrollbar-thumb:hover {
+  background: var(--museo-gold-dark);
+}
+
+/* ===== CART SIDEBAR ===== */
+.mp-cart {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  background: var(--museo-white);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  transform: translateX(100%);
+  transition: transform var(--museo-duration-base) var(--museo-ease-out);
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-cart--open {
+  transform: translateX(0);
+}
+
+.mp-cart-header {
+  padding: var(--museo-space-6);
+  border-bottom: 1px solid var(--museo-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--museo-bg-primary);
+}
+
+.mp-cart-title {
+  font-size: var(--museo-text-xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin: 0;
+}
+
+.mp-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--museo-space-4);
+}
+
+.mp-cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--museo-space-12);
+  text-align: center;
+  color: var(--museo-text-muted);
+}
+
+.mp-cart-empty svg {
+  margin-bottom: var(--museo-space-6);
+  opacity: 0.3;
+}
+
+.mp-cart-empty p {
+  font-size: var(--museo-text-lg);
+  margin-bottom: var(--museo-space-6);
+}
+
+/* Cart Item */
+.mp-cart-item {
+  display: flex;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-4);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-lg);
+  margin-bottom: var(--museo-space-3);
+  background: var(--museo-bg-secondary);
+}
+
+.mp-cart-item-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--museo-radius-md);
+}
+
+.mp-cart-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-1);
+}
+
+.mp-cart-item-title {
+  font-size: var(--museo-text-base);
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  margin: 0;
+}
+
+.mp-cart-item-artist {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-muted);
+  margin: 0;
+}
+
+.mp-cart-item-price {
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin-top: auto;
+}
+
+.mp-cart-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+  align-items: flex-end;
+}
+
+.mp-quantity {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  padding: 2px;
+}
+
+.mp-quantity span {
+  min-width: 32px;
+  text-align: center;
+  font-weight: var(--museo-font-semibold);
+}
+
+.mp-quantity .btn-ghost {
+  padding: 4px 8px;
+  min-height: 24px;
+}
+
+/* Cart Footer */
+.mp-cart-footer {
+  padding: var(--museo-space-6);
+  border-top: 2px solid var(--museo-border);
+  background: var(--museo-bg-primary);
+}
+
+.mp-cart-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--museo-space-4);
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-semibold);
+}
+
+.mp-cart-total-price {
+  font-size: var(--museo-text-2xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+}
+
+.mp-cart-footer .btn-block {
+  width: 100%;
+  margin-bottom: var(--museo-space-2);
+}
+
+.mp-cart-footer .btn-block:last-child {
+  margin-bottom: 0;
+}
+
+
+/* Toolbar */
+.mp-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--museo-space-6);
+  padding: var(--museo-space-4);
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-lg);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+.mp-filter-toggle {
+  display: none;
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  padding: var(--museo-space-2) var(--museo-space-4);
+  border-radius: var(--museo-radius-md);
+  border: none;
+  cursor: pointer;
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-semibold);
+  align-items: center;
+  gap: var(--museo-space-2);
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  box-shadow: var(--museo-shadow-sm);
+}
+
+.mp-filter-toggle:hover {
+  background: linear-gradient(135deg, var(--museo-gold-dark) 0%, var(--museo-accent) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--museo-shadow-md);
+}
+
+.mp-sort-select {
+  padding: var(--museo-space-2) var(--museo-space-4);
+  border: 1px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  background: var(--museo-white);
+  font-size: var(--museo-text-sm);
+  font-family: var(--museo-font-body);
+  cursor: pointer;
+}
+
+/* ===== GRID LAYOUT ===== */
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--museo-space-6);
+}
+
+.mp-grid--auction {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+/* ===== PRODUCT CARDS ===== */
+.mp-card {
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--museo-shadow-md);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--museo-shadow-xl);
+}
+
+/* Image Container */
+.mp-card-image-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 75%; /* 4:3 aspect ratio */
+  overflow: hidden;
+  background: var(--museo-bg-secondary);
+}
+
+.mp-card-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--museo-duration-slow) var(--museo-ease-out);
+}
+
+.mp-card:hover .mp-card-image {
+  transform: scale(1.05);
+}
+
+/* Card Overlay */
+.mp-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--museo-space-4);
+  opacity: 0;
+  transition: opacity var(--museo-duration-base) var(--museo-ease-out);
+}
+
+.mp-card-overlay--visible {
+  opacity: 1;
+}
+
+.mp-quick-view,
+.mp-favorite {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--museo-white);
+  border: 2px solid var(--museo-accent);
+  color: var(--museo-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.mp-quick-view:hover,
+.mp-favorite:hover {
+  background: var(--museo-accent);
+  color: var(--museo-white);
+  transform: scale(1.1);
+}
+
+.mp-favorite--active {
+  background: var(--museo-error);
+  color: var(--museo-white);
+  border-color: var(--museo-error);
+}
+
+/* Badges */
+.mp-badge {
+  position: absolute;
+  padding: var(--museo-space-1) var(--museo-space-3);
+  border-radius: var(--museo-radius-full);
+  font-size: var(--museo-text-xs);
+  font-weight: var(--museo-font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mp-badge--featured {
+  top: var(--museo-space-3);
+  left: var(--museo-space-3);
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+}
+
+.mp-badge--sale {
+  top: var(--museo-space-3);
+  right: var(--museo-space-3);
+  background: var(--museo-error);
+  color: var(--museo-white);
+}
+
+.mp-badge--auction {
+  top: var(--museo-space-3);
+  right: var(--museo-space-3);
+  background: linear-gradient(135deg, var(--museo-warning) 0%, var(--museo-warning-dark) 100%);
+  color: var(--museo-white);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mp-badge--auction svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+/* Card Content */
+.mp-card-content {
+  padding: var(--museo-space-5);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--museo-space-2);
+  font-size: var(--museo-text-xs);
+  color: var(--museo-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mp-card-title {
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
+  line-height: var(--museo-leading-tight);
+}
+
+.mp-card-artist {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-secondary);
+  margin-bottom: var(--museo-space-3);
+}
+
+.mp-card-details {
+  display: flex;
+  gap: var(--museo-space-3);
+  margin-bottom: var(--museo-space-4);
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-muted);
+}
+
+.mp-card-original {
+  color: var(--museo-success);
+  font-weight: var(--museo-font-semibold);
+}
+
+.mp-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: var(--museo-space-4);
+  border-top: 1px solid var(--museo-border-light);
+}
+
+.mp-card-price {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-1);
+}
+
+.mp-card-price-old {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-muted);
+  text-decoration: line-through;
+}
+
+.mp-card-price-current {
+  font-size: var(--museo-text-xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+}
+
+.mp-card-bid-label {
+  font-size: var(--museo-text-xs);
+  color: var(--museo-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mp-card-time-left {
+  font-size: var(--museo-text-sm);
+  color: var(--museo-warning);
+  font-weight: var(--museo-font-semibold);
+}
+
+
+/* ===== LOADING STATE ===== */
+.mp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--museo-space-16);
+}
+
+.mp-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--museo-border);
+  border-top-color: var(--museo-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.mp-loading p {
+  margin-top: var(--museo-space-4);
+  font-size: var(--museo-text-base);
+  color: var(--museo-text-muted);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .mp-page {
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .mp-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px !important;
+    z-index: 999;
+    border-radius: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .mp-sidebar--open {
+    display: flex;
+  }
+
+  .mp-sidebar--collapsed {
+    display: none;
+  }
+
+  .mp-sidebar-tab {
+    display: none;
+  }
+
+  .mp-collapse-btn {
+    display: none;
+  }
+  
+  /* Listing type filter on mobile */
+  .mp-listing-types {
+    grid-template-columns: 1fr;
+    gap: var(--museo-space-2);
+  }
+  
+  .mp-listing-type {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: var(--museo-space-3) var(--museo-space-4);
+    min-height: auto;
+  }
+  
+  .mp-listing-icon {
+    margin-bottom: 0;
+    margin-right: var(--museo-space-2);
+    margin-left: 0;
+    height: 20px;
+    width: 20px;
+  }
+
+  .mp-filter-close {
+    display: block;
+  }
+
+  .mp-filter-toggle {
+    display: flex;
+  }
+
+  .mp-content {
+    flex-direction: column;
+    height: calc(100vh - 60px);
+  }
+
+  .mp-sidebar-content {
+    width: 100%;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: relative;
+  }
+  
+  .mp-main {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .mp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .mp-cart-float-btn {
+    bottom: var(--museo-space-6);
+    right: var(--museo-space-6);
+    width: 56px;
+    height: 56px;
+  }
+
+  .mp-cart-float-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--museo-space-4);
+  }
+
+  .mp-card-content {
+    padding: var(--museo-space-4);
+  }
+
+  .mp-card-title {
+    font-size: var(--museo-text-base);
+  }
+
+  .mp-card-price-current {
+    font-size: var(--museo-text-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .mp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-cart-float-btn {
+    bottom: var(--museo-space-4);
+    right: var(--museo-space-4);
+    width: 48px;
+    height: 48px;
+  }
+
+  .mp-cart-float-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mp-cart {
+    width: 100%;
+  }
+}

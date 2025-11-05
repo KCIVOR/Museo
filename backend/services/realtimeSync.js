@@ -120,20 +120,49 @@ function handleProfileUpdate(io, payload) {
 
   const userId = newProfile.userId; // Field is 'userId' with capital I
 
-  // Check if role changed (ROLE IS STORED IN PROFILE TABLE!)
-  if (oldProfile.role !== newProfile.role) {
+  // ✅ IMPROVED: Only detect actual role changes with better validation
+  const oldRole = oldProfile.role;
+  const newRole = newProfile.role;
+  
+  // Normalize roles for comparison (handle null, undefined, empty strings)
+  const normalizeRole = (role) => {
+    if (role === null || role === undefined || role === '') return null;
+    return String(role).trim().toLowerCase();
+  };
+  
+  const normalizedOldRole = normalizeRole(oldRole);
+  const normalizedNewRole = normalizeRole(newRole);
+  
+  // Get all changed fields first
+  const changedFields = getChangedFields(oldProfile, newProfile);
+  const roleWasModified = 'role' in changedFields;
+  
+  // Only emit if role actually changed AND was explicitly modified
+  if (normalizedOldRole !== normalizedNewRole && roleWasModified) {
+    console.log(`🔄 Role change detected for user ${userId}:`, {
+      oldRole: oldRole,
+      newRole: newRole,
+      normalizedOld: normalizedOldRole,
+      normalizedNew: normalizedNewRole
+    });
+    
     // Emit to specific user via Socket.IO
     io.to(`user_${userId}`).emit('user:role_changed', {
       userId: userId,
-      oldRole: oldProfile.role,
-      newRole: newProfile.role,
+      oldRole: oldRole,
+      newRole: newRole,
       source: 'database',
       timestamp: new Date().toISOString()
     });
+  } else {
+    // Log when profile updates but role doesn't change
+    console.log(`📝 Profile updated for user ${userId} (no role change):`, {
+      role: newRole,
+      changedFields: Object.keys(changedFields)
+    });
   }
 
-  // Emit general profile update event
-  const changedFields = getChangedFields(oldProfile, newProfile);
+  // Emit general profile update event (reuse changedFields from above)
   if (Object.keys(changedFields).length > 0) {
     io.to(`user_${userId}`).emit('user:profile_updated', {
       userId: userId,

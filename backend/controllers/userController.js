@@ -1,5 +1,6 @@
 import supabase from '../database/db.js';
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
+import { cache } from '../utils/cache.js';
 
 export const getAllUsers = async (req, res) =>{
     try {
@@ -318,6 +319,11 @@ export const updateUserRole = async (req, res) => {
       console.error('Update role error:', error);
       throw error;
     }
+
+    // ✅ CACHE INVALIDATION: Clear profile cache for the updated user
+    const cacheKey = `profile:${userId}`;
+    await cache.del(cacheKey);
+    console.log('🗑️ CACHE CLEARED:', cacheKey, '(role updated)');
 
     res.json({
       success: true,

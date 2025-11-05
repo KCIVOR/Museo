@@ -1,30 +1,30 @@
 import { useEffect } from "react";
 import { useUser } from "./contexts/UserContext";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Marketplace from "./pages/Marketplace";
-import Gallery from "./pages/Gallery";
-import Event from "./pages/Event";
-import Artist from "./pages/Artist";
-import ArtistDetail from "./pages/subPages/artistProfile";
-import Artwork from "./pages/subPages/artwork";
-import MarketplaceItem from "./pages/subPages/marketPlaceItem";
-import GalleryAll from "./pages/subPages/galleryAll";
+import Login from "./pages/Auth/Login";
+import Home from "./pages/Home/Home";
+import Marketplace from "./pages/Marketplace/Marketplace";
+import Gallery from "./pages/Gallery/Gallery";
+import Event from "./pages/Events/Event";
+import Artist from "./pages/Artist/Artist";
+import ArtistDetail from "./pages/Artist/artistProfile";
+import Artwork from "./pages/Gallery/artwork";
+import MarketplaceItem from "./pages/Marketplace/marketPlaceItem";
+import GalleryAll from "./pages/Gallery/galleryAll";
 import Layout from "../components/Layout";
-import MyProfile from "./pages/MyProfile";
-import MarketplaceAll from "./pages/subPages/marketplaceAll"
+import MyProfile from "./pages/Profile/MyProfile";
+import MarketplaceAll from "./pages/Marketplace/marketplaceAll"
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoutes from "./utils/protectedRoutes";
 import AdminRoute from "./utils/AdminRoute";
-import AuthCallback from "./pages/authCallback";
-import BlindAuction from "./pages/subPages/blindAuction";
-import UpcomingEvents from "./pages/subPages/upcomingEvents"
-import TopArts from "./pages/subPages/topArts"
-import Search from "./pages/subPages/Search";
-import VisitMuseo from "./pages/VisitMuseo";
-import ManagePage from "./pages/ManagePage";
-import Register from "./pages/Register";
-
+import AuthCallback from "./pages/Auth/authCallback";
+import BlindAuction from "./pages/Marketplace/blindAuction";
+import UpcomingEvents from "./pages/Events/upcomingEvents"
+import TopArts from "./pages/Gallery/topArts"
+import Search from "./pages/Shared/Search";
+import VisitMuseo from "./pages/Shared/VisitMuseo";
+import ManagePage from "./pages/Shared/ManagePage";
+import Register from "./pages/Auth/Register";
+import Checkout from "./pages/Marketplace/checkout"
 export default function App() {
   const { userData, isLoading, isAuthenticated } = useUser();
   
@@ -68,7 +68,7 @@ export default function App() {
           <Route path="/topArts" element={<TopArts />} /> 
           <Route path="/Search" element={<Search/>}/>
           <Route path="/visit-museo" element={<VisitMuseo />} />
-          
+          <Route path="/marketplace/checkout" element={<Checkout />} />
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="/requests" element={<ManagePage />} />
