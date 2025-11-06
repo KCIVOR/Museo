@@ -69,31 +69,24 @@ const handlePaymentPaid = async (webhookData) => {
     console.log('💰 Payment successful:', {
       paymentId: paymentData.paymentId,
       amount: paymentData.amount,
-      paymentMethod: paymentData.paymentMethod
+      paymentMethod: paymentData.paymentMethod,
+      referenceNumber: paymentData.referenceNumber
     });
-    
-    console.log('🔍 Payment metadata:', paymentData.metadata);
 
-    // Get orderId from metadata
-    const orderId = paymentData.metadata?.orderId;
-    
-    if (!orderId) {
-      console.error('❌ No orderId in payment metadata');
-      console.error('❌ Full paymentData:', JSON.stringify(paymentData, null, 2));
-      return;
-    }
-
-    // Find the order
+    // Find the order by payment reference number (since metadata doesn't work with payment links)
     const { data: order, error: orderError } = await db
       .from('orders')
       .select('*')
-      .eq('orderId', orderId)
+      .eq('paymentReference', paymentData.referenceNumber)
       .single();
 
     if (orderError || !order) {
-      console.error('❌ Order not found:', orderId);
+      console.error('❌ Order not found with reference:', paymentData.referenceNumber);
+      console.error('❌ Error:', orderError);
       return;
     }
+    
+    console.log('✅ Found order:', order.orderId);
 
     // Update order with payment details
     const { error: updateError } = await db
@@ -107,14 +100,14 @@ const handlePaymentPaid = async (webhookData) => {
         paidAt: paymentData.paidAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
-      .eq('orderId', orderId);
+      .eq('orderId', order.orderId);
 
     if (updateError) {
       console.error('❌ Error updating order:', updateError);
       return;
     }
 
-    console.log('✅ Order updated successfully:', orderId);
+    console.log('✅ Order updated successfully:', order.orderId);
 
     // Clear user's cart after successful payment
     const { error: clearError } = await db

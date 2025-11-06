@@ -145,9 +145,25 @@ export const processPaymentSuccess = (webhookData) => {
 
     // Convert Unix timestamp to ISO date string
     let paidAt = null;
-    if (payment.attributes.paid_at) {
-      // PayMongo sends Unix timestamp in seconds
+    
+    // For link.payment.paid events, get paid_at from the payment inside the link
+    if (payment.attributes.payments && payment.attributes.payments.length > 0) {
+      const actualPayment = payment.attributes.payments[0].data.attributes;
+      if (actualPayment.paid_at) {
+        paidAt = new Date(actualPayment.paid_at * 1000).toISOString();
+      }
+    } else if (payment.attributes.paid_at) {
+      // For direct payment.paid events
       paidAt = new Date(payment.attributes.paid_at * 1000).toISOString();
+    }
+
+    // Get payment method from the actual payment, not the link
+    let paymentMethod = 'unknown';
+    if (payment.attributes.payments && payment.attributes.payments.length > 0) {
+      const actualPayment = payment.attributes.payments[0].data.attributes;
+      paymentMethod = actualPayment.source?.type || 'unknown';
+    } else if (payment.attributes.source?.type) {
+      paymentMethod = payment.attributes.source.type;
     }
 
     return {
@@ -156,12 +172,13 @@ export const processPaymentSuccess = (webhookData) => {
       amount: payment.attributes.amount,
       currency: payment.attributes.currency,
       status: payment.attributes.status,
-      paymentMethod: payment.attributes.source?.type || 'unknown',
+      paymentMethod: paymentMethod,
       paidAt: paidAt,
       fee: payment.attributes.fee,
       netAmount: payment.attributes.net_amount,
       metadata: payment.attributes.metadata || {},
-      referenceNumber: attributes.reference_number
+      referenceNumber: payment.attributes.reference_number || attributes.reference_number,
+      remarks: payment.attributes.remarks
     };
 
   } catch (error) {
