@@ -25,6 +25,8 @@ import VisitMuseo from "./pages/Shared/VisitMuseo";
 import ManagePage from "./pages/Shared/ManagePage";
 import Register from "./pages/Auth/Register";
 import Checkout from "./pages/Marketplace/checkout"
+import SellerDashboard from "./pages/Marketplace/SellerDashboard"
+
 export default function App() {
   const { userData, isLoading, isAuthenticated } = useUser();
   
@@ -69,6 +71,7 @@ export default function App() {
           <Route path="/Search" element={<Search/>}/>
           <Route path="/visit-museo" element={<VisitMuseo />} />
           <Route path="/marketplace/checkout" element={<Checkout />} />
+          <Route path="/marketplace/seller-dashboard" element={<SellerDashboard />} />
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="/requests" element={<ManagePage />} />

@@ -1,0 +1,562 @@
+/* ========================================
+   🛒 CHECKOUT PAGE STYLES
+   Professional checkout design with Museo tokens
+   ======================================== */
+
+.checkout-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #faf9f7 0%, #f5f1ec 100%);
+  padding: var(--museo-space-6) var(--museo-space-4);
+}
+
+.checkout-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Main Content Layout */
+.checkout-content {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: var(--museo-space-6);
+  align-items: start;
+}
+
+/* Forms Column */
+.checkout-forms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-5);
+}
+
+/* Section Styles */
+.checkout-section {
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-lg);
+  box-shadow: 0 10px 40px rgba(110, 74, 46, 0.08), 0 4px 12px rgba(212, 180, 138, 0.1);
+  border: 1.5px solid rgba(212, 180, 138, 0.15);
+  padding: var(--museo-space-7);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.checkout-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  border-radius: var(--museo-radius-lg) var(--museo-radius-lg) 0 0;
+  transition: background 0.3s ease;
+}
+
+.checkout-section:hover::before {
+  background: linear-gradient(90deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+  margin-bottom: var(--museo-space-5);
+  padding-bottom: var(--museo-space-4);
+  border-bottom: 1px solid rgba(212, 180, 138, 0.15);
+}
+
+.section-header svg {
+  color: var(--museo-accent);
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin: 0;
+  font-family: var(--museo-font-display);
+  letter-spacing: -0.5px;
+}
+
+/* Address Options */
+.address-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-4);
+}
+
+.address-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-5);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--museo-bg-primary);
+}
+
+.address-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+}
+
+.address-card.selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+  border-left: 4px solid var(--museo-accent);
+  padding-left: calc(var(--museo-space-5) - 2px);
+}
+
+.address-radio {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--museo-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--museo-white);
+  transition: all 0.3s ease;
+}
+
+.address-card.selected .address-radio {
+  border-color: var(--museo-accent);
+  background: var(--museo-accent);
+}
+
+.address-radio svg {
+  color: var(--museo-white);
+}
+
+.address-details {
+  flex: 1;
+}
+
+.address-name {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+}
+
+.default-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+  color: var(--museo-white);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--museo-radius-sm);
+}
+
+.address-phone {
+  color: var(--museo-text-secondary);
+  font-size: 14px;
+  margin-bottom: var(--museo-space-2);
+}
+
+.address-text {
+  color: var(--museo-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: var(--museo-space-1);
+}
+
+.address-location {
+  color: var(--museo-text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: var(--museo-space-1);
+}
+
+.address-landmark {
+  color: var(--museo-text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.address-type {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: var(--museo-radius-sm);
+  margin-left: var(--museo-space-2);
+}
+
+.address-edit {
+  background: none;
+  border: none;
+  color: var(--museo-text-muted);
+  cursor: pointer;
+  padding: var(--museo-space-2);
+  transition: all 0.2s ease;
+}
+
+.address-edit:hover {
+  color: var(--museo-accent);
+  transform: translateY(-1px);
+}
+
+/* Add address button now uses btn btn-secondary classes */
+
+/* Shipping Options */
+.shipping-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-3);
+}
+
+.shipping-card {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-5);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--museo-bg-primary);
+}
+
+.shipping-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+}
+
+.shipping-card.selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+  border-left: 4px solid var(--museo-accent);
+  padding-left: calc(var(--museo-space-5) - 2px);
+}
+
+.shipping-radio,
+.payment-radio {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--museo-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--museo-white);
+  transition: all 0.3s ease;
+}
+
+.shipping-card.selected .shipping-radio,
+.payment-card.selected .payment-radio {
+  border-color: var(--museo-accent);
+  background: var(--museo-accent);
+}
+
+.shipping-icon,
+.payment-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-radius-md);
+  color: var(--museo-text-secondary);
+  flex-shrink: 0;
+}
+
+.shipping-card.selected .shipping-icon,
+.payment-card.selected .payment-icon {
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.1) 0%, rgba(212, 180, 138, 0.2) 100%);
+  color: var(--museo-accent);
+}
+
+.shipping-details,
+.payment-details {
+  flex: 1;
+}
+
+.shipping-name,
+.payment-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
+}
+
+.shipping-card.selected .shipping-name,
+.payment-card.selected .payment-name {
+  font-size: 18px;
+}
+
+.shipping-desc,
+.payment-desc {
+  color: var(--museo-text-secondary);
+  font-size: 14px;
+}
+
+.shipping-price {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--museo-primary);
+}
+
+/* Payment Options */
+.payment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--museo-space-3);
+}
+
+.payment-card {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+  padding: var(--museo-space-4);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--museo-bg-primary);
+}
+
+.payment-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+}
+
+.payment-card.selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+  border-left: 4px solid var(--museo-accent);
+  padding-left: calc(var(--museo-space-4) - 2px);
+}
+
+/* Card Details Form */
+.card-details-form {
+  margin-top: var(--museo-space-5);
+  padding-top: var(--museo-space-5);
+  border-top: 1px solid rgba(212, 180, 138, 0.15);
+}
+
+.form-group {
+  margin-bottom: var(--museo-space-4);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--museo-space-2);
+  font-weight: 500;
+  color: var(--museo-text-primary);
+  font-size: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--museo-space-4);
+}
+
+/* Order Notes - now uses museo-textarea class */
+
+/* Order Summary Sidebar */
+.checkout-sidebar {
+  position: sticky;
+  top: var(--museo-space-4);
+}
+
+.order-summary {
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-xl);
+  box-shadow: 0 10px 40px rgba(110, 74, 46, 0.1), 0 4px 12px rgba(212, 180, 138, 0.15);
+  border: 1.5px solid rgba(212, 180, 138, 0.2);
+  padding: var(--museo-space-6);
+}
+
+.summary-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-5);
+  font-family: var(--museo-font-display);
+  padding-bottom: var(--museo-space-4);
+  border-bottom: 2px solid rgba(212, 180, 138, 0.15);
+}
+
+/* Summary Items */
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-3);
+  margin-bottom: var(--museo-space-5);
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: var(--museo-space-2);
+}
+
+.summary-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.summary-items::-webkit-scrollbar-track {
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-radius-sm);
+}
+
+.summary-items::-webkit-scrollbar-thumb {
+  background: var(--museo-accent);
+  border-radius: var(--museo-radius-sm);
+}
+
+.summary-item {
+  display: flex;
+  gap: var(--museo-space-3);
+  padding: var(--museo-space-3);
+  background: var(--museo-bg-primary);
+  border-radius: var(--museo-radius-md);
+}
+
+.item-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--museo-radius-sm);
+  border: 1px solid var(--museo-border);
+}
+
+.item-details {
+  flex: 1;
+}
+
+.item-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
+}
+
+.item-artist {
+  font-size: 12px;
+  color: var(--museo-text-secondary);
+  margin-bottom: var(--museo-space-1);
+}
+
+.item-quantity {
+  font-size: 12px;
+  color: var(--museo-text-muted);
+}
+
+.item-price {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--museo-primary);
+}
+
+/* Promo code section removed */
+
+/* Summary Totals */
+.summary-totals {
+  padding: var(--museo-space-4) 0;
+  border-top: 1px solid rgba(212, 180, 138, 0.15);
+  border-bottom: 1px solid rgba(212, 180, 138, 0.15);
+  margin-bottom: var(--museo-space-5);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--museo-space-2) 0;
+  font-size: 14px;
+  color: var(--museo-text-secondary);
+}
+
+.total-row.final {
+  margin-top: var(--museo-space-3);
+  padding-top: var(--museo-space-3);
+  border-top: 1px solid rgba(212, 180, 138, 0.15);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.total-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--museo-accent);
+}
+
+/* Checkout button now uses btn btn-primary btn-block classes */
+.btn.processing {
+  background: var(--museo-gray-400);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn.processing .spinner {
+  display: inline-block;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--museo-white);
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Security badges removed */
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .checkout-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .checkout-sidebar {
+    order: -1;
+    position: static;
+    margin-bottom: var(--museo-space-5);
+  }
+  
+  .payment-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .checkout-section {
+    padding: var(--museo-space-5);
+  }
+  
+  .section-title {
+    font-size: 18px;
+  }
+  
+  .summary-title {
+    font-size: 22px;
+  }
+}

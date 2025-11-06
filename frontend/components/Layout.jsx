@@ -15,6 +15,7 @@ export default function Layout() {
   const isGallery = pathname === "/Gallery" || pathname === "/gallery";
   const isMarketplace = pathname === "/Marketplace" || pathname === "/marketplace";
   const isCheckout = pathname === "/marketplace/checkout" || pathname === "/Marketplace/checkout";
+  const isSellerDashboard = pathname === "/marketplace/seller-dashboard" || pathname === "/Marketplace/seller-dashboard";
   const isArtistProfile = pathname.startsWith("/artist/");
   const isMyProfile = pathname === "/MyProfile";
   const isVisitMuseo = pathname === "/visit-museo";
@@ -162,7 +163,7 @@ export default function Layout() {
   } : null;
 
   return (
-    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isSellerDashboard ? "app--seller-dashboard" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""}`}>
       <header className="app__header">
         <Navbar role={role} userData={navbarUserData} />
       </header>
@@ -178,7 +179,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {!isGallery && !isMarketplace && !isCheckout && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && (
+      {!isGallery && !isMarketplace && !isCheckout && !isSellerDashboard && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && (
         <aside className="app__side-right">
           <SidePanel2 
             userData={userData} 

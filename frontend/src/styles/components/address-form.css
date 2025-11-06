@@ -1,0 +1,330 @@
+/* ========================================
+   📍 ADDRESS FORM STYLES
+   Form sections for AddressModal using MuseoModal wrapper
+   ======================================== */
+
+.address-form-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #faf9f7 0%, #f5f1ec 100%);
+  padding: var(--museo-space-6) var(--museo-space-4);
+}
+
+.address-form-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Form Header */
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-4);
+  margin-bottom: var(--museo-space-6);
+  padding-bottom: var(--museo-space-4);
+  border-bottom: 2px solid rgba(212, 180, 138, 0.15);
+}
+
+.back-button {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--museo-white);
+  border: 2px solid var(--museo-border);
+  border-radius: 50%;
+  color: var(--museo-text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-accent);
+  color: var(--museo-accent);
+  transform: translateX(-2px);
+}
+
+.form-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--museo-primary);
+  margin: 0;
+  font-family: var(--museo-font-display);
+  letter-spacing: -0.5px;
+}
+
+/* Address Form */
+.address-form {
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-xl);
+  box-shadow: 0 10px 40px rgba(110, 74, 46, 0.08), 0 4px 12px rgba(212, 180, 138, 0.1);
+  border: 1.5px solid rgba(212, 180, 138, 0.15);
+  padding: var(--museo-space-8);
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: var(--museo-space-8);
+  padding-bottom: var(--museo-space-6);
+  border-bottom: 1px solid rgba(212, 180, 138, 0.1);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: var(--museo-space-6);
+  padding-bottom: 0;
+}
+
+.form-section .section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-5);
+  font-family: var(--museo-font-display);
+}
+
+.form-section .section-title svg {
+  color: var(--museo-accent);
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--museo-space-5) var(--museo-space-6);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+  letter-spacing: 0.3px;
+}
+
+/* Error Messages */
+.error-message {
+  color: var(--museo-error);
+  font-size: 12px;
+  margin-top: var(--museo-space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-1);
+}
+
+.error-message::before {
+  content: '⚠';
+  font-size: 14px;
+}
+
+/* Radio and Checkbox Groups */
+.radio-group {
+  display: flex;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-2) 0;
+}
+
+.radio-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--museo-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.radio-label:hover,
+.checkbox-label:hover {
+  color: var(--museo-text-primary);
+}
+
+.radio-label input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--museo-accent);
+  cursor: pointer;
+}
+
+.radio-label span,
+.checkbox-label span {
+  user-select: none;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--museo-space-4);
+  margin-top: var(--museo-space-6);
+  padding-top: var(--museo-space-6);
+  border-top: 1px solid rgba(212, 180, 138, 0.1);
+}
+
+.form-actions .btn {
+  min-width: 150px;
+}
+
+/* API Error */
+.api-error {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-3) var(--museo-space-4);
+  background: rgba(160, 82, 45, 0.1);
+  border: 1px solid var(--museo-error);
+  border-radius: var(--museo-radius-md);
+  color: var(--museo-error);
+  margin-top: var(--museo-space-4);
+  font-size: 14px;
+}
+
+.api-error svg {
+  flex-shrink: 0;
+}
+
+/* Loading State */
+.museo-select:disabled,
+.museo-input:disabled {
+  background: var(--museo-bg-secondary);
+  color: var(--museo-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Custom Select Styles Enhancement */
+.museo-select {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.museo-select:hover:not(:disabled) {
+  border-color: var(--museo-accent-hover);
+}
+
+/* Spinner for submit button */
+.btn.processing .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--museo-white);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .address-form-container {
+    padding: var(--museo-space-4) var(--museo-space-3);
+  }
+  
+  .address-form {
+    padding: var(--museo-space-5);
+  }
+  
+  .form-title {
+    font-size: 24px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--museo-space-4);
+  }
+  
+  .radio-group {
+    flex-direction: column;
+    gap: var(--museo-space-3);
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+  }
+  
+  .form-section {
+    margin-bottom: var(--museo-space-5);
+    padding-bottom: var(--museo-space-4);
+  }
+}
+
+/* Tablet Adjustments */
+@media (max-width: 1024px) {
+  .address-form-container {
+    max-width: 720px;
+  }
+}
+
+/* Accessibility Focus Styles */
+.museo-input:focus-visible,
+.museo-select:focus-visible,
+.museo-textarea:focus-visible,
+.radio-label input:focus-visible,
+.checkbox-label input:focus-visible {
+  outline: 2px solid var(--museo-accent);
+  outline-offset: 2px;
+}
+
+/* Address Type Labels with Icons */
+.radio-label[data-type="home"]::before {
+  content: '🏠';
+  font-size: 18px;
+}
+
+.radio-label[data-type="office"]::before {
+  content: '🏢';
+  font-size: 18px;
+}
+
+.radio-label[data-type="other"]::before {
+  content: '📍';
+  font-size: 18px;
+}
+
+/* Success State */
+.form-group.success .museo-input,
+.form-group.success .museo-select {
+  border-color: var(--museo-success);
+}
+
+/* Loading Overlay */
+.form-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.form-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

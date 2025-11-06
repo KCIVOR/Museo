@@ -1,806 +1,603 @@
 /* ========================================
-   🛍️ MUSEO CHECKOUT PAGE
-   Professional checkout flow with design system
+   🛒 CHECKOUT PAGE STYLES
+   Museo design system integrated checkout
+   Using design tokens and museo components
    ======================================== */
 
-/* ===== PAGE CONTAINER ===== */
-.checkout-page {
+/* Page Layout */
+.museo-checkout-page {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
-  padding: var(--museo-space-8) 0;
-}
-
-.checkout-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--museo-space-6);
-}
-
-.checkout-main {
-  background: var(--museo-white);
-  border-radius: var(--museo-radius-lg);
-  box-shadow: 0 4px 20px rgba(110, 74, 46, 0.08);
+  padding: var(--museo-space-6) var(--museo-space-4);
+  position: relative;
   overflow: hidden;
 }
 
-/* ===== CHECKOUT HEADER ===== */
-.checkout-header {
-  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
-  padding: var(--museo-space-6) var(--museo-space-8);
-  border-bottom: 2px solid var(--museo-accent);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Add subtle texture overlay */
+.museo-checkout-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4b48a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
 }
 
-.checkout-header h1 {
-  font-family: var(--museo-font-display);
-  font-size: var(--museo-text-2xl);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-bold);
-  letter-spacing: -0.5px;
-  margin: 0;
-}
-
-.checkout-back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--museo-space-2);
-  padding: var(--museo-space-2) var(--museo-space-4);
-  background: var(--museo-white);
-  border: 2px solid var(--museo-accent);
-  border-radius: var(--museo-radius-md);
-  color: var(--museo-text-secondary);
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  font-weight: var(--museo-font-medium);
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-}
-
-.checkout-back:hover {
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-gold-dark);
-  transform: translateX(-4px);
-  color: var(--museo-primary);
-}
-
-/* ===== CHECKOUT FORM ===== */
-.checkout-form {
-  padding: var(--museo-space-8);
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: var(--museo-space-8);
-}
-
-.checkout-form-single {
-  padding: var(--museo-space-8);
-  max-width: 900px;
+.museo-checkout-container {
+  max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
-/* ===== FORM SECTIONS ===== */
-.checkout-section {
-  background: var(--museo-white);
-  border-radius: var(--museo-radius-md);
-  padding: var(--museo-space-6);
-  border: 1px solid var(--museo-border);
-}
-
-.section-title {
-  font-family: var(--museo-font-display);
-  font-size: var(--museo-text-lg);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-semibold);
-  margin: 0 0 var(--museo-space-6) 0;
-  padding-bottom: var(--museo-space-3);
-  border-bottom: 1px solid var(--museo-border);
-  display: flex;
-  align-items: center;
-  gap: var(--museo-space-3);
-}
-
-.section-title svg {
-  width: 20px;
-  height: 20px;
-  stroke: var(--museo-accent);
-  flex-shrink: 0;
-}
-
-/* ===== FORM GRID ===== */
-.form-grid {
+/* Content Grid */
+.museo-checkout-content {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 420px;
+  gap: var(--museo-space-6);
+  align-items: start; /* Critical for sticky sidebar */
+  position: relative;
+  min-height: 100vh; /* Ensures enough height for scrolling */
+}
+
+/* Forms Column */
+.museo-checkout-forms {
+  display: flex;
+  flex-direction: column;
   gap: var(--museo-space-5);
 }
 
-.form-group {
+/* Enhanced Museo Card for Checkout */
+.museo-card--checkout {
+  background: var(--museo-white);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-xl);
+  box-shadow: 0 10px 40px rgba(110, 74, 46, 0.08), 0 4px 12px rgba(212, 180, 138, 0.1);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  position: relative;
+  overflow: visible;
+}
+
+.museo-card--checkout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  border-radius: var(--museo-radius-xl) var(--museo-radius-xl) 0 0;
+  transition: background var(--museo-duration-base) ease;
+}
+
+.museo-card--checkout:hover {
+  transform: translateY(-2px);
+  border-color: var(--museo-accent);
+  box-shadow: 0 12px 48px rgba(110, 74, 46, 0.12), 0 6px 16px rgba(212, 180, 138, 0.15);
+}
+
+.museo-card--checkout:hover::before {
+  background: linear-gradient(90deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
+}
+
+/* Card Header */
+.museo-checkout-header {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+  margin-bottom: var(--museo-space-5);
+  padding-bottom: var(--museo-space-4);
+  border-bottom: 1px solid var(--museo-border-light);
+}
+
+.museo-checkout-header svg {
+  color: var(--museo-accent);
+  flex-shrink: 0;
+}
+
+.museo-checkout-title {
+  font-size: 22px;
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin: 0;
+  font-family: var(--museo-font-display);
+  letter-spacing: -0.5px;
+}
+
+/* Address Cards */
+.museo-address-options {
   display: flex;
   flex-direction: column;
+  gap: var(--museo-space-4);
+}
+
+.museo-address-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-5);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  background: var(--museo-bg-primary);
+  position: relative;
+}
+
+.museo-address-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+  background: linear-gradient(135deg, var(--museo-white) 0%, rgba(212, 180, 138, 0.05) 100%);
+}
+
+.museo-address-card--selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+  border-left: 4px solid var(--museo-accent);
+  padding-left: calc(var(--museo-space-5) - 2px);
+}
+
+.museo-address-card--selected::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: var(--museo-radius-md);
+  background: linear-gradient(90deg, var(--museo-accent) 0%, transparent 50%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.museo-address-radio,
+.museo-shipping-radio,
+.museo-payment-radio {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--museo-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--museo-white);
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+.museo-address-card--selected .museo-address-radio,
+.museo-shipping-card--selected .museo-shipping-radio,
+.museo-payment-card--selected .museo-payment-radio {
+  border-color: var(--museo-accent);
+  background: var(--museo-accent);
+}
+
+.museo-address-radio svg,
+.museo-shipping-radio svg,
+.museo-payment-radio svg {
+  color: var(--museo-white);
+}
+
+/* Address Details */
+.museo-address-details {
+  flex: 1;
+}
+
+.museo-address-name {
+  font-weight: var(--museo-font-semibold);
+  font-size: 18px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-2);
+  display: flex;
+  align-items: center;
   gap: var(--museo-space-2);
 }
 
-.form-group.full-width {
-  grid-column: 1 / -1;
+.museo-address-phone {
+  font-size: 14px;
+  color: var(--museo-text-secondary);
+  margin-bottom: var(--museo-space-2);
 }
 
-.form-group label {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-semibold);
-}
-
-.form-group .required {
-  color: var(--museo-error);
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  padding: var(--museo-space-3) var(--museo-space-4);
-  border: 2px solid var(--museo-accent);
-  border-radius: var(--museo-radius-md);
-  background: var(--museo-white);
-  color: var(--museo-primary);
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-  outline: none;
-  width: 100%;
-}
-
-.form-group select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236e4a2e' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--museo-space-3) center;
-  padding-right: var(--museo-space-8);
-  cursor: pointer;
-}
-
-.form-group select:disabled {
-  background-color: var(--museo-bg-secondary);
-  color: var(--museo-text-muted);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-  border-color: var(--museo-gold-dark);
-  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.15);
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: var(--museo-text-muted);
-}
-
-.form-group input.error,
-.form-group textarea.error {
-  border-color: var(--museo-error);
-}
-
-.form-group input.error:focus,
-.form-group textarea.error:focus {
-  box-shadow: 0 0 0 3px rgba(196, 117, 110, 0.15);
-}
-
-.error-message {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-xs);
-  color: var(--museo-error);
-  font-weight: var(--museo-font-medium);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 100px;
+.museo-address-text,
+.museo-address-location {
+  font-size: 14px;
+  color: var(--museo-text-primary);
   line-height: var(--museo-leading-relaxed);
+  margin-bottom: var(--museo-space-1);
 }
 
-/* ===== ORDER SUMMARY SECTION ===== */
-.checkout-summary-section {
+.museo-address-landmark {
+  font-size: 13px;
+  color: var(--museo-text-muted);
+  font-style: italic;
+  margin-top: var(--museo-space-2);
+}
+
+.museo-address-edit {
+  opacity: 0;
+  transition: opacity var(--museo-duration-base) ease;
+}
+
+.museo-address-card:hover .museo-address-edit {
+  opacity: 1;
+}
+
+/* Shipping Options */
+.museo-shipping-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-4);
+}
+
+.museo-shipping-card {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-5);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  background: var(--museo-bg-primary);
+}
+
+.museo-shipping-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+}
+
+.museo-shipping-card--selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+}
+
+.museo-shipping-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--museo-accent);
+  flex-shrink: 0;
+}
+
+.museo-shipping-details {
+  flex: 1;
+}
+
+.museo-shipping-name {
+  font-weight: var(--museo-font-semibold);
+  font-size: 16px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
+}
+
+.museo-shipping-desc {
+  font-size: 13px;
+  color: var(--museo-text-secondary);
+}
+
+.museo-shipping-price {
+  font-size: 18px;
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-accent);
+  font-family: var(--museo-font-display);
+}
+
+/* Payment Options */
+.museo-payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-4);
+}
+
+.museo-payment-card {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-4);
+  padding: var(--museo-space-5);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-md);
+  cursor: pointer;
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+  background: var(--museo-bg-primary);
+}
+
+.museo-payment-card:hover {
+  border-color: var(--museo-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 180, 138, 0.15);
+}
+
+.museo-payment-card--selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(135deg, rgba(212, 180, 138, 0.05) 0%, rgba(212, 180, 138, 0.1) 100%);
+}
+
+.museo-payment-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--museo-accent);
+  flex-shrink: 0;
+}
+
+.museo-payment-details {
+  flex: 1;
+}
+
+.museo-payment-name {
+  font-weight: var(--museo-font-semibold);
+  font-size: 16px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
+}
+
+.museo-payment-desc {
+  font-size: 13px;
+  color: var(--museo-text-secondary);
+}
+
+/* Card Details Form */
+.museo-card-details-form {
+  margin-top: var(--museo-space-5);
+  padding-top: var(--museo-space-5);
+  border-top: 1px solid var(--museo-border-light);
+}
+
+.museo-form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--museo-space-4);
+}
+
+/* Order Summary Sidebar */
+.museo-checkout-sidebar {
   position: sticky;
-  top: var(--museo-space-6);
+  top: 100px; /* Fixed distance from top when scrolling */
   height: fit-content;
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
-  border: 2px solid var(--museo-accent);
-  box-shadow: 0 4px 16px rgba(110, 74, 46, 0.1);
+  align-self: flex-start; /* Important for sticky to work properly */
+  z-index: 10;
 }
 
-.summary-items {
+.museo-card--summary {
+  background: var(--museo-white);
+  border: 2px solid var(--museo-border);
+  border-radius: var(--museo-radius-xl);
+  padding: var(--museo-space-6);
+  box-shadow: 0 10px 40px rgba(110, 74, 46, 0.08), 0 4px 12px rgba(212, 180, 138, 0.1);
+}
+
+.museo-summary-title {
+  font-size: 24px;
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  margin: 0 0 var(--museo-space-5) 0;
+  font-family: var(--museo-font-display);
+  letter-spacing: -0.5px;
+  padding-bottom: var(--museo-space-4);
+  border-bottom: 2px solid var(--museo-border);
+}
+
+/* Summary Items */
+.museo-summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-4);
+  margin-bottom: var(--museo-space-5);
   max-height: 300px;
   overflow-y: auto;
-  margin-bottom: var(--museo-space-4);
   padding-right: var(--museo-space-2);
 }
 
-.summary-items::-webkit-scrollbar {
-  width: 6px;
-}
-
-.summary-items::-webkit-scrollbar-track {
-  background: var(--museo-bg-secondary);
-  border-radius: var(--museo-radius-full);
-}
-
-.summary-items::-webkit-scrollbar-thumb {
-  background: var(--museo-accent);
-  border-radius: var(--museo-radius-full);
-}
-
-.summary-item {
+.museo-summary-item {
   display: flex;
   gap: var(--museo-space-3);
   padding: var(--museo-space-3);
-  border-bottom: 1px solid var(--museo-border);
-  transition: background var(--museo-duration-fast) var(--museo-ease-out);
+  background: var(--museo-bg-secondary);
+  border-radius: var(--museo-radius-md);
+  transition: all var(--museo-duration-base) ease;
 }
 
-.summary-item:hover {
-  background: rgba(212, 180, 138, 0.05);
+.museo-summary-item:hover {
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, rgba(212, 180, 138, 0.1) 100%);
+  transform: translateX(2px);
 }
 
-.summary-item img {
+.museo-item-image {
   width: 60px;
   height: 60px;
   object-fit: cover;
   border-radius: var(--museo-radius-sm);
-  border: 1px solid var(--museo-border);
+  border: 2px solid var(--museo-white);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
 }
 
-.summary-item-details {
+.museo-item-details {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--museo-space-1);
 }
 
-.summary-item-details h4 {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-primary);
+.museo-item-title {
   font-weight: var(--museo-font-semibold);
-  margin: 0;
-  line-height: 1.2;
+  font-size: 14px;
+  color: var(--museo-text-primary);
+  margin-bottom: var(--museo-space-1);
 }
 
-.summary-item-details p {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-xs);
-  color: var(--museo-text-muted);
-  margin: 0;
-}
-
-.summary-item-details .quantity {
+.museo-item-artist {
+  font-size: 12px;
   color: var(--museo-text-secondary);
-  font-weight: var(--museo-font-medium);
+  margin-bottom: var(--museo-space-1);
 }
 
-.summary-item-price {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-primary);
+.museo-item-quantity {
+  font-size: 12px;
+  color: var(--museo-text-muted);
+}
+
+.museo-item-price {
   font-weight: var(--museo-font-bold);
+  font-size: 16px;
+  color: var(--museo-accent);
   align-self: center;
 }
 
-/* ===== SUMMARY TOTALS ===== */
-.summary-totals {
-  padding: var(--museo-space-4) 0;
-  border-top: 2px solid var(--museo-accent);
-  border-bottom: 2px solid var(--museo-accent);
-  margin-bottom: var(--museo-space-4);
+/* Summary Totals */
+.museo-summary-totals {
+  padding-top: var(--museo-space-4);
+  border-top: 1px solid var(--museo-border);
+  margin-bottom: var(--museo-space-5);
 }
 
-.summary-row {
+.museo-total-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--museo-space-2) 0;
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
+  padding: var(--museo-space-3) 0;
+  font-size: 15px;
   color: var(--museo-text-secondary);
 }
 
-.summary-row.total {
-  border-top: 1px solid var(--museo-border);
-  margin-top: var(--museo-space-2);
+.museo-total-row--final {
   padding-top: var(--museo-space-4);
-  font-size: var(--museo-text-base);
+  border-top: 2px solid var(--museo-border);
+  font-size: 18px;
   font-weight: var(--museo-font-bold);
-  color: var(--museo-primary);
+  color: var(--museo-text-primary);
 }
 
-/* ===== EMPTY CART STATE ===== */
-.checkout-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--museo-space-16) var(--museo-space-8);
-  text-align: center;
-}
-
-.checkout-empty svg {
-  stroke: var(--museo-accent);
-  margin-bottom: var(--museo-space-6);
-}
-
-.checkout-empty h2 {
+.museo-total-amount {
+  font-size: 24px;
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-accent);
   font-family: var(--museo-font-display);
-  font-size: var(--museo-text-2xl);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-bold);
-  margin: 0 0 var(--museo-space-3) 0;
 }
 
-.checkout-empty p {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-base);
-  color: var(--museo-text-muted);
-  margin: 0 0 var(--museo-space-6) 0;
+/* Button Styles */
+.btn-block {
+  width: 100%;
 }
 
-/* ===== LOADING SPINNER ===== */
-.spinner {
-  display: inline-block;
+.museo-btn--processing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.museo-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid var(--museo-white);
-  border-top-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--museo-white);
   border-radius: 50%;
-  animation: spin var(--museo-duration-slower) linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.checkout-left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--museo-space-6);
-}
-
-/* ===== ADDRESS SECTION ===== */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--museo-space-4);
-}
-
-.selected-address-card {
-  padding: var(--museo-space-4);
-  background: rgba(212, 180, 138, 0.05);
-  border: 2px solid var(--museo-accent);
-  border-radius: var(--museo-radius-md);
-}
-
-.address-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--museo-space-3);
-}
-
-.address-info {
-  display: flex;
-  align-items: center;
-  gap: var(--museo-space-3);
-}
-
-.address-info strong {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-base);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-semibold);
-}
-
-.address-phone {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-text-secondary);
-}
-
-.address-badge {
-  padding: var(--museo-space-1) var(--museo-space-3);
+/* Museo Badges */
+.museo-badge--gold {
   background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
   color: var(--museo-white);
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-xs);
-  font-weight: var(--museo-font-semibold);
+  padding: var(--museo-space-1) var(--museo-space-2);
   border-radius: var(--museo-radius-sm);
+  font-size: 11px;
+  font-weight: var(--museo-font-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.address-details {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-text-secondary);
-  line-height: var(--museo-leading-relaxed);
-  margin: 0;
-}
-
-.address-email {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-text-muted);
-  margin: var(--museo-space-2) 0 0 0;
-}
-
-.no-address-selected {
-  padding: var(--museo-space-6) var(--museo-space-4);
-  text-align: center;
-  border: 2px dashed var(--museo-border);
-  border-radius: var(--museo-radius-md);
-  background: var(--museo-bg-secondary);
-}
-
-.no-address-selected p {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-text-muted);
-  margin: 0;
-}
-
-/* ===== SHIPPING OPTIONS ===== */
-.shipping-options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--museo-space-4);
-}
-
-.shipping-option {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--museo-space-3);
-  padding: var(--museo-space-4);
-  background: var(--museo-white);
-  border: 2px solid var(--museo-border);
-  border-radius: var(--museo-radius-md);
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-}
-
-.shipping-option:hover {
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-accent);
-}
-
-.shipping-option.selected {
-  background: rgba(212, 180, 138, 0.1);
-  border-color: var(--museo-gold-dark);
-  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.2);
-}
-
-.shipping-option input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-}
-
-.shipping-logo {
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.shipping-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--museo-space-1);
-}
-
-.shipping-info strong {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-semibold);
-}
-
-.shipping-time {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-xs);
-  color: var(--museo-text-muted);
-}
-
-.shipping-price {
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-base);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-bold);
-}
-
-/* ===== PAYMENT OPTIONS ===== */
-.payment-options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--museo-space-4);
-}
-
-.payment-option {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--museo-space-3);
-  padding: var(--museo-space-4);
-  background: var(--museo-white);
-  border: 2px solid var(--museo-border);
-  border-radius: var(--museo-radius-md);
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-}
-
-.payment-option:hover {
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-accent);
-}
-
-.payment-option.selected {
-  background: rgba(212, 180, 138, 0.1);
-  border-color: var(--museo-gold-dark);
-  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.2);
-}
-
-.payment-option input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-}
-
-.payment-icon {
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.payment-name {
-  flex: 1;
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-medium);
-}
-
-/* ===== ORDER SUMMARY IN SINGLE COLUMN ===== */
-.checkout-form-single .order-summary-section {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-white) 100%);
-  border: 2px solid var(--museo-accent);
-  box-shadow: 0 4px 16px rgba(110, 74, 46, 0.1);
-  margin-top: var(--museo-space-6);
-}
-
-/* ===== ADDRESS MODAL ===== */
-.address-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(110, 74, 46, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: var(--museo-space-4);
-}
-
-.address-modal {
-  background: var(--museo-white);
-  border-radius: var(--museo-radius-lg);
-  box-shadow: 0 20px 60px rgba(110, 74, 46, 0.3);
-  max-width: 700px;
-  width: 100%;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.address-modal-header {
-  padding: var(--museo-space-6);
-  border-bottom: 2px solid var(--museo-accent);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(135deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
-}
-
-.address-modal-header h3 {
-  font-family: var(--museo-font-display);
-  font-size: var(--museo-text-xl);
-  color: var(--museo-primary);
-  font-weight: var(--museo-font-bold);
-  margin: 0;
-}
-
-.modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--museo-white);
-  border: 2px solid var(--museo-accent);
-  color: var(--museo-text-secondary);
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-close:hover {
-  background: var(--museo-bg-hover);
-  border-color: var(--museo-gold-dark);
-  color: var(--museo-primary);
-  transform: rotate(90deg);
-}
-
-.address-modal-content {
-  padding: var(--museo-space-6);
-  overflow-y: auto;
-  flex: 1;
-}
-
-.address-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--museo-space-4);
-  margin-bottom: var(--museo-space-4);
-}
-
-.address-card {
-  padding: var(--museo-space-4);
-  border: 2px solid var(--museo-border);
-  border-radius: var(--museo-radius-md);
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-}
-
-.address-card:hover {
-  background: rgba(212, 180, 138, 0.05);
-  border-color: var(--museo-accent);
-}
-
-.address-card.selected {
-  background: rgba(212, 180, 138, 0.1);
-  border-color: var(--museo-gold-dark);
-  box-shadow: 0 2px 8px rgba(184, 114, 44, 0.2);
-}
-
-.address-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--museo-space-2);
-}
-
-.modal-actions {
-  display: flex;
-  gap: var(--museo-space-3);
-  justify-content: flex-end;
-  margin-top: var(--museo-space-6);
-  padding-top: var(--museo-space-4);
-  border-top: 1px solid var(--museo-border);
-}
-
-.btn-museo {
-  padding: var(--museo-space-3) var(--museo-space-5);
-  border-radius: var(--museo-radius-md);
-  font-family: var(--museo-font-body);
-  font-size: var(--museo-text-sm);
-  font-weight: var(--museo-font-semibold);
-  cursor: pointer;
-  transition: all var(--museo-duration-base) var(--museo-ease-out);
-  border: none;
-  outline: none;
-}
-
-.btn-secondary {
+.museo-badge--secondary {
   background: var(--museo-bg-secondary);
   color: var(--museo-text-secondary);
-  border: 2px solid var(--museo-accent);
+  padding: var(--museo-space-1) var(--museo-space-2);
+  border-radius: var(--museo-radius-sm);
+  font-size: 11px;
+  font-weight: var(--museo-font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.btn-secondary:hover {
-  background: var(--museo-bg-hover);
-  color: var(--museo-primary);
-  border-color: var(--museo-gold-dark);
-}
-
-.btn-block {
-  width: 100%;
-  display: block;
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
+/* Responsive Design */
 @media (max-width: 1024px) {
-  .checkout-form {
+  .museo-checkout-content {
     grid-template-columns: 1fr;
+    min-height: auto; /* Reset min-height on tablet/mobile */
   }
   
-  .checkout-summary-section {
-    position: static;
-    order: -1;
+  .museo-checkout-sidebar {
+    position: static; /* Disable sticky on smaller screens */
+    order: -1; /* Move summary to top on mobile */
+    top: auto;
+    align-self: auto;
   }
   
-  .shipping-options,
-  .payment-options {
-    grid-template-columns: 1fr;
+  .museo-card--summary {
+    margin-bottom: var(--museo-space-6);
   }
 }
 
 @media (max-width: 768px) {
-  .checkout-content {
-    padding: 0 var(--museo-space-4);
+  .museo-checkout-page {
+    padding: var(--museo-space-4) var(--museo-space-3);
   }
   
-  .checkout-header {
-    padding: var(--museo-space-4) var(--museo-space-5);
-    flex-direction: column;
-    gap: var(--museo-space-4);
-    align-items: flex-start;
-  }
-  
-  .checkout-header h1 {
-    font-size: var(--museo-text-xl);
-  }
-  
-  .checkout-form {
-    padding: var(--museo-space-5);
-  }
-  
-  .form-grid {
+  .museo-form-row {
     grid-template-columns: 1fr;
   }
   
-  .checkout-section {
-    padding: var(--museo-space-4);
+  .museo-shipping-card,
+  .museo-payment-card {
+    flex-direction: column;
+    text-align: center;
   }
   
-  .section-title {
-    font-size: var(--museo-text-base);
+  .museo-shipping-price {
+    margin-top: var(--museo-space-2);
   }
 }
 
-@media (max-width: 480px) {
-  .checkout-page {
-    padding: var(--museo-space-4) 0;
-  }
-  
-  .checkout-content {
-    padding: 0 var(--museo-space-3);
-  }
-  
-  .checkout-form {
-    padding: var(--museo-space-4);
-    gap: var(--museo-space-4);
-  }
-  
-  .checkout-back {
-    width: 100%;
-    justify-content: center;
-  }
+/* Scrollbar Styles */
+.museo-summary-items::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* ===== ANIMATIONS ===== */
-@keyframes fadeIn {
+.museo-summary-items::-webkit-scrollbar-track {
+  background: var(--museo-bg-secondary);
+  border-radius: 3px;
+}
+
+.museo-summary-items::-webkit-scrollbar-thumb {
+  background: var(--museo-accent);
+  border-radius: 3px;
+}
+
+.museo-summary-items::-webkit-scrollbar-thumb:hover {
+  background: var(--museo-gold-dark);
+}
+
+/* Form Groups */
+.museo-form-group {
+  margin-bottom: var(--museo-space-5);
+}
+
+.museo-form-group .museo-label {
+  display: block;
+  margin-bottom: var(--museo-space-2);
+  font-size: 14px;
+  font-weight: var(--museo-font-semibold);
+  color: var(--museo-text-primary);
+  font-family: var(--museo-font-body);
+  letter-spacing: 0.3px;
+}
+
+/* Hover Animation Helper */
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -808,15 +605,88 @@
   }
 }
 
-.checkout-section {
-  animation: fadeIn var(--museo-duration-base) var(--museo-ease-out);
+.museo-card--checkout {
+  animation: fadeInUp 0.5s ease-out;
 }
 
-.summary-item {
-  animation: fadeIn var(--museo-duration-base) var(--museo-ease-out) backwards;
+.museo-card--checkout:nth-child(2) {
+  animation-delay: 0.1s;
 }
 
-.summary-item:nth-child(1) { animation-delay: 0.1s; }
-.summary-item:nth-child(2) { animation-delay: 0.2s; }
-.summary-item:nth-child(3) { animation-delay: 0.3s; }
-.summary-item:nth-child(4) { animation-delay: 0.4s; }
+.museo-card--checkout:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.museo-card--checkout:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* Additional Button Enhancements */
+.btn {
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Ghost Button Styles */
+.btn.btn-ghost {
+  background: transparent;
+  border-color: var(--museo-border);
+  color: var(--museo-text-secondary);
+}
+
+.btn.btn-ghost:hover {
+  background: var(--museo-bg-secondary);
+  border-color: var(--museo-accent);
+  color: var(--museo-accent);
+}
+
+/* Focus States for Accessibility */
+.museo-input:focus,
+.museo-textarea:focus,
+.museo-select:focus {
+  outline: none;
+  border-color: var(--museo-accent);
+  box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.2);
+}
+
+/* Card Hover Effects */
+.museo-card--checkout {
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+.museo-card--summary {
+  transition: all var(--museo-duration-base) var(--museo-ease-out);
+}
+
+.museo-card--summary:hover {
+  box-shadow: 0 15px 50px rgba(110, 74, 46, 0.12), 0 8px 20px rgba(212, 180, 138, 0.2);
+}
+
+/* Enhanced Animations */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212, 180, 138, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(212, 180, 138, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 180, 138, 0); }
+}
+
+.museo-btn--processing {
+  animation: pulse 2s infinite;
+}
+
+/* Success Animation for Order Completion */
+@keyframes checkmark {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.museo-success-checkmark {
+  stroke-dasharray: 100;
+  animation: checkmark 0.5s ease-out forwards;
+}

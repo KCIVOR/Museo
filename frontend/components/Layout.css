@@ -104,6 +104,19 @@
   padding: 0 !important;
 }
 
+/* Seller Dashboard layout: hide right panel, expand main content */
+.app--seller-dashboard {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+.app--seller-dashboard .app__main {
+  padding: 0 !important;
+}
+
 /* Artist profile layout: hide right panel, expand main content */
 .app--artist-profile {
   grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
@@ -131,13 +144,15 @@
     "footer" !important;
 }
 
-/* Ensure right sidebar is completely hidden on gallery, marketplace, checkout, artist profile, and myProfile pages */
+/* Ensure right sidebar is completely hidden on gallery, marketplace, checkout, seller dashboard, artist profile, and myProfile pages */
 .app--gallery .app__side-right,
 .app--marketplace .app__side-right,
 .app--checkout .app__side-right,
+.app--seller-dashboard .app__side-right,
 .app--artist-profile .app__side-right,
 .app--my-profile .app__side-right,
-.app--visit-museo .app__side-right {
+.app--visit-museo .app__side-right,
+.app--requests .app__side-right {
   display: none !important;
 }
 /* Ensure left sidebar is hidden on visit museo page */
@@ -174,6 +189,7 @@
   .app--gallery,
   .app--marketplace,
   .app--checkout,
+  .app--seller-dashboard,
   .app--artist-profile,
   .app--my-profile {
     grid-template-columns: var(--museo-sidebar-width) 1fr;
@@ -189,6 +205,7 @@
   .app--gallery,
   .app--marketplace,
   .app--checkout,
+  .app--seller-dashboard,
   .app--artist-profile,
   .app--my-profile {
     grid-template-columns: 1fr;

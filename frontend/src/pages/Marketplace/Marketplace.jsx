@@ -481,17 +481,31 @@ export default function Marketplace() {
         <div className="mp-main">
           {/* Toolbar */}
           <div className="mp-toolbar">
-            <button 
-              className="mp-filter-toggle"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="4" y1="6" x2="16" y2="6"/>
-                <line x1="8" y1="12" x2="20" y2="12"/>
-                <line x1="4" y1="18" x2="16" y2="18"/>
-              </svg>
-              Filters
-            </button>
+            <div className="mp-toolbar-left">
+              <button 
+                className="mp-filter-toggle"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="4" y1="6" x2="16" y2="6"/>
+                  <line x1="8" y1="12" x2="20" y2="12"/>
+                  <line x1="4" y1="18" x2="16" y2="18"/>
+                </svg>
+                Filters
+              </button>
+
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/marketplace/seller-dashboard')}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                  <line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+                Seller Dashboard
+              </button>
+            </div>
 
             <div className="mp-sort">
               <label>Sort by:</label>
