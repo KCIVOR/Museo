@@ -166,6 +166,19 @@ export const processPaymentSuccess = (webhookData) => {
       paymentMethod = payment.attributes.source.type;
     }
 
+    // Get reference number - different location for different event types
+    let referenceNumber = null;
+    if (payment.attributes.reference_number) {
+      // For link.payment.paid events
+      referenceNumber = payment.attributes.reference_number;
+    } else if (payment.attributes.external_reference_number) {
+      // For payment.paid events
+      referenceNumber = payment.attributes.external_reference_number;
+    } else if (attributes.reference_number) {
+      // Fallback
+      referenceNumber = attributes.reference_number;
+    }
+
     return {
       paymentId: payment.id,
       paymentLinkId: webhookData.data.id,
@@ -177,7 +190,7 @@ export const processPaymentSuccess = (webhookData) => {
       fee: payment.attributes.fee,
       netAmount: payment.attributes.net_amount,
       metadata: payment.attributes.metadata || {},
-      referenceNumber: payment.attributes.reference_number || attributes.reference_number,
+      referenceNumber: referenceNumber,
       remarks: payment.attributes.remarks
     };
 
