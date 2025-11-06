@@ -60,9 +60,6 @@ export const handlePaymongoWebhook = async (req, res) => {
  */
 const handlePaymentPaid = async (webhookData) => {
   try {
-    // DEBUG: Log the full webhook data
-    console.log('🔍 Full webhook data:', JSON.stringify(webhookData, null, 2));
-    
     // Extract payment data
     const paymentData = paymongoService.processPaymentSuccess(webhookData);
     
@@ -73,7 +70,7 @@ const handlePaymentPaid = async (webhookData) => {
       referenceNumber: paymentData.referenceNumber
     });
 
-    // Find the order by payment reference number (since metadata doesn't work with payment links)
+    // Find the order by payment reference number
     const { data: order, error: orderError } = await db
       .from('orders')
       .select('*')
@@ -82,11 +79,8 @@ const handlePaymentPaid = async (webhookData) => {
 
     if (orderError || !order) {
       console.error('❌ Order not found with reference:', paymentData.referenceNumber);
-      console.error('❌ Error:', orderError);
       return;
     }
-    
-    console.log('✅ Found order:', order.orderId);
 
     // Update order with payment details
     const { error: updateError } = await db

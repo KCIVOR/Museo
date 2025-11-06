@@ -3,8 +3,6 @@ import { createClient } from 'redis';
 // Check if Redis is configured
 const REDIS_ENABLED = !!process.env.REDIS_URL;
 
-console.log('🔍 Redis Status:', REDIS_ENABLED ? 'Enabled' : 'Disabled (running without cache)');
-
 let redis = null;
 
 // Only create and connect Redis if URL is provided
@@ -13,10 +11,7 @@ if (REDIS_ENABLED) {
   let redisUrl = process.env.REDIS_URL;
   if (redisUrl.includes('upstash.io') && redisUrl.startsWith('redis://')) {
     redisUrl = redisUrl.replace('redis://', 'rediss://');
-    console.log('🔧 Fixed URL for TLS: rediss://...');
   }
-
-  console.log('🔍 Using Redis URL:', redisUrl);
 
   // Create Redis client configuration
   const redisConfig = {
@@ -27,8 +22,8 @@ if (REDIS_ENABLED) {
 
   // Event handlers
   redis.on('error', (err) => console.error('❌ Redis error:', err));
-  redis.on('connect', () => console.log('✅ Redis connected successfully'));
-  redis.on('ready', () => console.log('🚀 Redis is ready to use'));
+  redis.on('connect', () => console.log('✅ Redis connected'));
+  redis.on('ready', () => console.log('✅ Redis ready'));
 
   // Connect to Redis
   try {
@@ -38,7 +33,7 @@ if (REDIS_ENABLED) {
     redis = null; // Disable Redis if connection fails
   }
 } else {
-  console.log('ℹ️ Redis not configured. App will run without caching.');
+  console.log('ℹ️ Redis not configured. Running without cache.');
 }
 
 // Cache utility functions
