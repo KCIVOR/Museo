@@ -60,6 +60,9 @@ export const handlePaymongoWebhook = async (req, res) => {
  */
 const handlePaymentPaid = async (webhookData) => {
   try {
+    // DEBUG: Log the full webhook data
+    console.log('🔍 Full webhook data:', JSON.stringify(webhookData, null, 2));
+    
     // Extract payment data
     const paymentData = paymongoService.processPaymentSuccess(webhookData);
     
@@ -68,12 +71,15 @@ const handlePaymentPaid = async (webhookData) => {
       amount: paymentData.amount,
       paymentMethod: paymentData.paymentMethod
     });
+    
+    console.log('🔍 Payment metadata:', paymentData.metadata);
 
     // Get orderId from metadata
     const orderId = paymentData.metadata?.orderId;
     
     if (!orderId) {
       console.error('❌ No orderId in payment metadata');
+      console.error('❌ Full paymentData:', JSON.stringify(paymentData, null, 2));
       return;
     }
 
