@@ -16,6 +16,8 @@ import requestRoutes from "./routes/requestRoutes.js"
 import messageRoutes from "./routes/messageRoutes.js"
 import galleryRoutes from "./routes/galleryRoutes.js"
 import visitBookingRoutes from "./routes/visitBookingRoutes.js"
+import marketplaceRoutes from "./routes/marketplaceRoutes.js"
+import webhookRoutes from "./routes/webhookRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { authMiddleware } from "./middleware/auth.js";
@@ -88,6 +90,13 @@ app.use("/api/gallery", authMiddleware, galleryRoutes)
 
 // Visit booking routes (public POST, protected GET/PUT/DELETE)
 app.use("/api/visit-bookings", visitBookingRoutes)
+
+// Marketplace routes
+app.use("/api/marketplace", authMiddleware, marketplaceRoutes)
+
+// Webhook routes (NO authentication - called by external services)
+app.use("/api/webhooks", webhookRoutes)
+
 
 // Create HTTP + Socket.IO
 const server = http.createServer(app);
