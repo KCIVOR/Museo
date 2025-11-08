@@ -101,6 +101,10 @@ export const getPaymentLink = async (linkId) => {
 
     return {
       success: true,
+      checkoutUrl: data.data.attributes.checkout_url,
+      referenceNumber: data.data.attributes.reference_number,
+      status: data.data.attributes.status,
+      expiresAt: data.data.attributes.archived_at,
       data: data.data
     };
 

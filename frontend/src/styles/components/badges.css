@@ -54,6 +54,37 @@
   border-color: var(--museo-info);
 }
 
+/* Prevent card hover from affecting badges */
+.museo-card:hover .museo-badge--primary {
+  background: var(--museo-accent-light);
+  color: var(--museo-primary);
+  border-color: var(--museo-accent);
+}
+
+.museo-card:hover .museo-badge--success {
+  background: var(--museo-success);
+  color: var(--museo-white);
+  border-color: var(--museo-success);
+}
+
+.museo-card:hover .museo-badge--warning {
+  background: var(--museo-warning);
+  color: var(--museo-primary);
+  border-color: var(--museo-warning);
+}
+
+.museo-card:hover .museo-badge--error {
+  background: var(--museo-error);
+  color: var(--museo-white);
+  border-color: var(--museo-error);
+}
+
+.museo-card:hover .museo-badge--info {
+  background: var(--museo-info);
+  color: var(--museo-white);
+  border-color: var(--museo-info);
+}
+
 /* ===== BADGE SIZES ===== */
 
 .museo-badge--sm {
@@ -106,5 +137,10 @@
 
 .museo-badge--interactive:hover {
   transform: scale(1.05);
-  box-shadow: var(--museo-shadow-sm);
+  box-shadow: var(--museo-shadow-md);
+  filter: brightness(1.15);
+}
+
+.museo-badge--info.museo-badge--interactive:hover {
+  color: var(--museo-primary);
 }

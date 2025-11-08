@@ -26,6 +26,7 @@ import ManagePage from "./pages/Shared/ManagePage";
 import Register from "./pages/Auth/Register";
 import Checkout from "./pages/Marketplace/checkout"
 import SellerDashboard from "./pages/Marketplace/SellerDashboard"
+import MyOrders from "./pages/Marketplace/MyOrders"
 import Settings from "./pages/Settings/Settings"
 
 export default function App() {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/MyProfile" element={<MyProfile />} />
           <Route path="/blindAuction" element={<BlindAuction />} />
           <Route path="/marketplace/category" element={<MarketplaceAll />} />
+          <Route path="/marketplace/myorders" element={<MyOrders />} />
           <Route path="/upcomingEvents" element={<UpcomingEvents />} />
           <Route path="/topArts" element={<TopArts />} /> 
           <Route path="/Search" element={<Search/>}/>

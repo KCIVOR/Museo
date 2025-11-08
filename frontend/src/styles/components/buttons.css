@@ -72,19 +72,19 @@ button {
 /* Secondary Button - Elegant Cream */
 .btn-secondary,
 .btn-museo-secondary {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
+  background: var(--museo-white);
   color: var(--museo-primary);
   border-color: var(--museo-accent);
-  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.1);
+  box-shadow: 0 2px 8px rgba(110, 74, 46, 0.15);
 }
 
 .btn-secondary:hover,
 .btn-museo-secondary:hover {
-  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, #e8dcc6 100%);
-  border-color: var(--museo-gold-dark);
+  background: linear-gradient(135deg, #e8c896 0%, #f5d9a8 100%);
+  border-color: var(--museo-accent);
   box-shadow: var(--museo-shadow-md);
   transform: translateY(-1px);
-  color: var(--museo-white);
+  color: var(--museo-primary);
 }
 
 .btn-secondary:active,

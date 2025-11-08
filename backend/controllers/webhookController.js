@@ -101,7 +101,43 @@ const handlePaymentPaid = async (webhookData) => {
       return;
     }
 
-    console.log('✅ Order updated successfully:', order.orderId);
+    console.log('✅ Order payment status updated:', order.orderId);
+
+    // NOW reduce inventory after successful payment
+    const { data: orderItems, error: itemsError } = await db
+      .from('order_items')
+      .select('marketplaceItemId, quantity')
+      .eq('orderId', order.orderId);
+
+    if (!itemsError && orderItems) {
+      for (const item of orderItems) {
+        // Get current quantity
+        const { data: marketItem, error: getError } = await db
+          .from('marketplace_items')
+          .select('quantity')
+          .eq('marketItemId', item.marketplaceItemId)
+          .single();
+
+        if (!getError && marketItem) {
+          const newQuantity = Math.max(0, marketItem.quantity - item.quantity);
+          
+          // Update inventory
+          const { error: updateError } = await db
+            .from('marketplace_items')
+            .update({ 
+              quantity: newQuantity,
+              updated_at: new Date().toISOString()
+            })
+            .eq('marketItemId', item.marketplaceItemId);
+
+          if (updateError) {
+            console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateError);
+          } else {
+            console.log(`📦 Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
+          }
+        }
+      }
+    }
 
     // Clear user's cart after successful payment
     const { error: clearError } = await db

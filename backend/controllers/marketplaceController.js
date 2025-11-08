@@ -1060,6 +1060,36 @@ export const createOrder = async (req, res) => {
 
     const { shipping_address, contact_info, payment_method } = req.body;
 
+    // ===== PREVENT DUPLICATE ORDERS =====
+    // Check if user already has a pending order (created in last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    const { data: existingPendingOrder, error: checkError } = await db
+      .from('orders')
+      .select('orderId, createdAt, paymentReference')
+      .eq('userId', userId)
+      .eq('paymentStatus', 'pending')
+      .eq('status', 'pending')
+      .gt('createdAt', fiveMinutesAgo)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (existingPendingOrder && !checkError) {
+      // User already has a recent pending order
+      const timeSinceCreation = Math.floor((Date.now() - new Date(existingPendingOrder.createdAt).getTime()) / 1000);
+      
+      return res.status(400).json({
+        success: false,
+        error: `You already have a pending order created ${timeSinceCreation} seconds ago. Please complete or cancel it first.`,
+        data: {
+          existingOrderId: existingPendingOrder.orderId,
+          createdAt: existingPendingOrder.createdAt,
+          paymentReference: existingPendingOrder.paymentReference
+        }
+      });
+    }
+
     // Get cart items with seller profiles
     const { data: cartItems, error: cartError } = await db
       .from('cart_items')
@@ -1240,24 +1270,12 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Update inventory quantities
-    for (const item of cartItems) {
-      const newQuantity = item.marketplace_items.quantity - item.quantity;
-      
-      const { error: updateError } = await db
-        .from('marketplace_items')
-        .update({ 
-          quantity: newQuantity,
-          updated_at: new Date().toISOString()
-        })
-        .eq('marketItemId', item.marketItemId);
-
-      if (updateError) {
-        console.error('Error updating inventory:', updateError);
-      }
-    }
+    // DON'T UPDATE INVENTORY HERE - Will be done after payment confirmation
+    // Just reserve the items by creating the order
+    console.log('📦 Order created with reserved items. Inventory will be reduced after payment confirmation.');
 
     // DON'T clear cart yet - will be cleared after successful payment via webhook
+    // DON'T reduce inventory yet - will be reduced after successful payment
 
     // Group items by seller profile for response
     const itemsBySeller = {};

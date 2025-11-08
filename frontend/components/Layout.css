@@ -135,6 +135,19 @@
     "footer footer" !important;
 }
 
+/* MyOrders layout: hide right panel, expand main content */
+.app--myorders {
+  grid-template-columns: var(--museo-sidebar-width) 1fr !important; /* left, main (no right) */
+  grid-template-areas:
+    "header header"
+    "sideL  main"
+    "footer footer" !important;
+}
+
+.app--myorders .app__main {
+  padding: 0 !important;
+}
+
 /* Visit Museo layout: full width, no sidebars */
 .app--visit-museo {
   grid-template-columns: 1fr !important; /* full width main only */
@@ -144,11 +157,12 @@
     "footer" !important;
 }
 
-/* Ensure right sidebar is completely hidden on gallery, marketplace, checkout, seller dashboard, artist profile, myProfile, and settings pages */
+/* Ensure right sidebar is completely hidden on gallery, marketplace, checkout, seller dashboard, artist profile, myProfile, myOrders, and settings pages */
 .app--gallery .app__side-right,
 .app--marketplace .app__side-right,
 .app--checkout .app__side-right,
 .app--seller-dashboard .app__side-right,
+.app--myorders .app__side-right,
 .app--artist-profile .app__side-right,
 .app--my-profile .app__side-right,
 .app--visit-museo .app__side-right,
@@ -204,6 +218,7 @@
   .app--marketplace,
   .app--checkout,
   .app--seller-dashboard,
+  .app--myorders,
   .app--artist-profile,
   .app--my-profile,
   .app--settings {
@@ -221,6 +236,7 @@
   .app--marketplace,
   .app--checkout,
   .app--seller-dashboard,
+  .app--myorders,
   .app--artist-profile,
   .app--my-profile,
   .app--settings {

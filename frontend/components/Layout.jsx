@@ -16,6 +16,7 @@ export default function Layout() {
   const isMarketplace = pathname === "/Marketplace" || pathname === "/marketplace";
   const isCheckout = pathname === "/marketplace/checkout" || pathname === "/Marketplace/checkout";
   const isSellerDashboard = pathname === "/marketplace/seller-dashboard" || pathname === "/Marketplace/seller-dashboard";
+  const isMyOrders = pathname === "/marketplace/myorders" || pathname === "/Marketplace/myorders";
   const isArtistProfile = pathname.startsWith("/artist/");
   const isMyProfile = pathname === "/MyProfile";
   const isVisitMuseo = pathname === "/visit-museo";
@@ -164,7 +165,7 @@ export default function Layout() {
   } : null;
 
   return (
-    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isSellerDashboard ? "app--seller-dashboard" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""} ${isSettings ? "app--settings" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isSellerDashboard ? "app--seller-dashboard" : ""} ${isMyOrders ? "app--myorders" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""} ${isSettings ? "app--settings" : ""}`}>
       <header className="app__header">
         <Navbar role={role} userData={navbarUserData} />
       </header>
@@ -180,7 +181,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {!isGallery && !isMarketplace && !isCheckout && !isSellerDashboard && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && !isSettings && (
+      {!isGallery && !isMarketplace && !isCheckout && !isSellerDashboard && !isMyOrders && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && !isSettings && (
         <aside className="app__side-right">
           <SidePanel2 
             userData={userData} 

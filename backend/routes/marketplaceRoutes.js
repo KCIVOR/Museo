@@ -1,5 +1,7 @@
 import express from 'express';
 import multer from 'multer';
+import db from '../database/db.js';
+import * as paymongoService from '../services/paymongoService.js';
 import {
   createMarketplaceItem,
   getMarketplaceItems,
@@ -110,6 +112,61 @@ router.get('/orders/seller', getSellerOrders);
 // Get order details
 router.get('/orders/:orderId', getOrderDetails);
 
+// Get payment link for pending order
+router.get('/orders/:orderId/payment-link', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Get order
+    const { data: order, error } = await db
+      .from('orders')
+      .select('*')
+      .eq('orderId', orderId)
+      .eq('userId', userId)
+      .single();
+
+    if (error || !order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    // Only allow for pending payment orders
+    if (order.paymentStatus !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Order payment is already completed or expired' 
+      });
+    }
+
+    // Get payment link from PayMongo using reference number
+    const paymentLink = await paymongoService.getPaymentLink(order.paymentReference);
+
+    if (!paymentLink || !paymentLink.checkoutUrl) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Payment link not found or expired' 
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        paymentUrl: paymentLink.checkoutUrl,
+        referenceNumber: order.paymentReference,
+        amount: order.totalAmount,
+        expiresAt: paymentLink.expiresAt
+      }
+    });
+  } catch (error) {
+    console.error('Error getting payment link:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ========================================
 // PHASE 3: ORDER STATUS UPDATES
 // ========================================
@@ -166,5 +223,17 @@ router.put('/addresses/:addressId', updateAddress);
 
 // Delete address
 router.delete('/addresses/:addressId', deleteAddress);
+
+// ========================================
+// ORDER CLEANUP (Admin/Testing)
+// ========================================
+
+import { manualCleanup, fixStuckOrders } from '../controllers/orderCleanupController.js';
+
+// Manual cleanup trigger (for testing)
+router.post('/orders/cleanup', manualCleanup);
+
+// Fix stuck orders with inventory issues (one-time fix)
+router.post('/orders/fix-stuck', fixStuckOrders);
 
 export default router;

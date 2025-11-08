@@ -21,6 +21,7 @@ import marketplaceRoutes from "./routes/marketplaceRoutes.js"
 import webhookRoutes from "./routes/webhookRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
+import { cancelExpiredOrders } from './controllers/orderCleanupController.js';
 import { authMiddleware } from "./middleware/auth.js";
 import { Server } from "socket.io"
 import http, { request } from "http";
@@ -196,10 +197,22 @@ server.listen(PORT, () => {
     timezone: "Asia/Manila"
   });
 
+  // Cancel expired orders - Every hour
+  cron.schedule('0 * * * *', async () => {
+    console.log('🛒 Running expired order cleanup...');
+    
+    try {
+      await cancelExpiredOrders();
+      console.log('✅ Expired order cleanup completed');
+    } catch (error) {
+      console.error('❌ Order cleanup failed:', error);
+    }
+  });
 
   console.log('📅 Cron jobs scheduled:');
   console.log('   🌅 Featured artwork maintenance: Daily at 12:00 AM (PH Time)');
   console.log('   🔄 Artwork rotation & re-featuring: Daily at midnight (PH Time)');
+  console.log('   🛒 Expired order cleanup: Every hour');
   console.log('   🏆 Top Arts generation: Every Sunday 11:59 PM (PH Time)');
   
 });
