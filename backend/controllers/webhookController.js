@@ -13,10 +13,11 @@ export const handlePaymongoWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
     
-    console.log('📥 Received PayMongo webhook:', {
-      type: webhookData.data?.attributes?.type,
-      id: webhookData.data?.id
-    });
+    console.log('📥 ========== PAYMONGO WEBHOOK RECEIVED ==========');
+    console.log('📥 Webhook Data:', JSON.stringify(webhookData, null, 2));
+    console.log('📥 Event Type:', webhookData.data?.attributes?.type);
+    console.log('📥 Event ID:', webhookData.data?.id);
+    console.log('📥 ==============================================');
 
     // Verify webhook signature (optional but recommended)
     const signature = req.headers['paymongo-signature'];
@@ -60,6 +61,8 @@ export const handlePaymongoWebhook = async (req, res) => {
  */
 const handlePaymentPaid = async (webhookData) => {
   try {
+    console.log('🔄 Starting handlePaymentPaid...');
+    
     // Extract payment data
     const paymentData = paymongoService.processPaymentSuccess(webhookData);
     
@@ -70,6 +73,8 @@ const handlePaymentPaid = async (webhookData) => {
       referenceNumber: paymentData.referenceNumber
     });
 
+    console.log('🔍 Searching for order with reference:', paymentData.referenceNumber);
+
     // Find the order by payment reference number
     const { data: order, error: orderError } = await db
       .from('orders')
@@ -79,8 +84,11 @@ const handlePaymentPaid = async (webhookData) => {
 
     if (orderError || !order) {
       console.error('❌ Order not found with reference:', paymentData.referenceNumber);
+      console.error('❌ Error details:', orderError);
       return;
     }
+
+    console.log('✅ Order found:', order.orderId);
 
     // Update order with payment details
     const { error: updateError } = await db
@@ -103,14 +111,24 @@ const handlePaymentPaid = async (webhookData) => {
 
     console.log('✅ Order payment status updated:', order.orderId);
 
+    console.log('📦 Starting inventory reduction...');
+
     // NOW reduce inventory after successful payment
     const { data: orderItems, error: itemsError } = await db
       .from('order_items')
       .select('marketplaceItemId, quantity')
       .eq('orderId', order.orderId);
 
-    if (!itemsError && orderItems) {
+    if (itemsError) {
+      console.error('❌ Error fetching order items:', itemsError);
+    } else if (!orderItems || orderItems.length === 0) {
+      console.warn('⚠️ No order items found for order:', order.orderId);
+    } else {
+      console.log(`📦 Found ${orderItems.length} items to process`);
+      
       for (const item of orderItems) {
+        console.log(`🔄 Processing item: ${item.marketplaceItemId}, Qty to reduce: ${item.quantity}`);
+        
         // Get current quantity
         const { data: marketItem, error: getError } = await db
           .from('marketplace_items')
@@ -118,11 +136,19 @@ const handlePaymentPaid = async (webhookData) => {
           .eq('marketItemId', item.marketplaceItemId)
           .single();
 
-        if (!getError && marketItem) {
+        if (getError) {
+          console.error(`❌ Error fetching marketplace item ${item.marketplaceItemId}:`, getError);
+        } else if (!marketItem) {
+          console.error(`❌ Marketplace item not found: ${item.marketplaceItemId}`);
+        } else {
+          console.log(`📊 Current inventory for ${item.marketplaceItemId}: ${marketItem.quantity}`);
+          
           const newQuantity = Math.max(0, marketItem.quantity - item.quantity);
           
+          console.log(`📊 New inventory will be: ${newQuantity}`);
+          
           // Update inventory
-          const { error: updateError } = await db
+          const { error: updateInventoryError } = await db
             .from('marketplace_items')
             .update({ 
               quantity: newQuantity,
@@ -130,15 +156,19 @@ const handlePaymentPaid = async (webhookData) => {
             })
             .eq('marketItemId', item.marketplaceItemId);
 
-          if (updateError) {
-            console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateError);
+          if (updateInventoryError) {
+            console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateInventoryError);
           } else {
-            console.log(`📦 Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
+            console.log(`✅ Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
           }
         }
       }
+      
+      console.log('✅ Inventory reduction completed');
     }
 
+    console.log('🗑️ Clearing user cart...');
+    
     // Clear user's cart after successful payment
     const { error: clearError } = await db
       .from('cart_items')
@@ -148,15 +178,19 @@ const handlePaymentPaid = async (webhookData) => {
     if (clearError) {
       console.error('⚠️ Error clearing cart:', clearError);
     } else {
-      console.log('🗑️ Cart cleared for user:', order.userId);
+      console.log('✅ Cart cleared for user:', order.userId);
     }
+
+    console.log('✅ ========== PAYMENT PROCESSING COMPLETED ==========');
 
     // TODO: Send confirmation email to buyer
     // TODO: Send notification to sellers
     // TODO: Trigger any post-payment workflows
 
   } catch (error) {
-    console.error('❌ Error handling payment success:', error);
+    console.error('❌ ========== ERROR IN PAYMENT PROCESSING ==========');
+    console.error('❌ Error details:', error);
+    console.error('❌ Stack trace:', error.stack);
     throw error;
   }
 };
