@@ -1,0 +1,128 @@
+/* ========================================
+   Add Product Modal Styles
+   ======================================== */
+
+.add-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-6);
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-4);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--museo-text-primary);
+  margin: 0;
+  padding-bottom: var(--museo-space-2);
+  border-bottom: 2px solid var(--museo-border);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--museo-space-4);
+}
+
+/* Form Groups */
+.museo-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+}
+
+.museo-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.museo-label--required::after {
+  content: ' *';
+  color: var(--museo-error);
+}
+
+/* Inputs */
+.museo-input,
+.museo-textarea,
+.museo-select {
+  padding: 12px 16px;
+  border: 1px solid var(--museo-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--museo-text-primary);
+  background: var(--museo-white);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.museo-input:focus,
+.museo-textarea:focus,
+.museo-select:focus {
+  outline: none;
+  border-color: var(--museo-accent);
+  box-shadow: 0 0 0 3px var(--museo-shadow-light);
+}
+
+.museo-input--error {
+  border-color: var(--museo-error);
+}
+
+.museo-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.museo-select {
+  cursor: pointer;
+}
+
+/* Checkboxes */
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-2);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--museo-text-primary);
+}
+
+.museo-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--museo-primary);
+}
+
+/* Error Messages */
+.museo-form-error {
+  font-size: 12px;
+  color: var(--museo-error);
+  margin-top: -4px;
+}
+
+.museo-error-message {
+  padding: 12px 16px;
+  background: var(--museo-error-bg);
+  border: 1px solid var(--museo-error);
+  border-radius: 8px;
+  color: var(--museo-error);
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -34,35 +34,83 @@ export default function Checkout() {
   
   const [savedAddresses, setSavedAddresses] = useState([]);
   
-  // Load cart and addresses from localStorage
-  useEffect(() => {
-    // Load cart
-    const savedCart = localStorage.getItem('museoCart');
-    if (savedCart) {
-      const parsedCart = JSON.parse(savedCart);
-      if (parsedCart.length === 0) {
-        // Redirect to marketplace if cart is empty
-        navigate('/marketplace');
+  // Fetch cart from database
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`${API}/marketplace/cart`, {
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        if (!result.data.items || result.data.items.length === 0) {
+          navigate('/marketplace');
+          return;
+        }
+        
+        // Transform cart data to match component format
+        const transformedCart = result.data.items.map(item => ({
+          id: item.cartItemId,
+          cartItemId: item.cartItemId,
+          marketItemId: item.marketplace_items.marketItemId,
+          title: item.marketplace_items.title,
+          price: item.marketplace_items.price,
+          quantity: item.quantity,
+          image: item.marketplace_items.images?.[0] || '/assets/default-art.jpg',
+          artist: item.marketplace_items.sellerProfiles?.shopName || 'Unknown Shop',
+          sellerId: item.marketplace_items.userId,
+          sellerProfileId: item.marketplace_items.sellerProfileId
+        }));
+        setCartItems(transformedCart);
       } else {
-        setCartItems(parsedCart);
+        navigate('/marketplace');
       }
-    } else {
+    } catch (error) {
+      console.error('Error fetching cart:', error);
       navigate('/marketplace');
     }
-    
-    // Load saved addresses
-    const storedAddresses = localStorage.getItem('museoAddresses');
-    if (storedAddresses) {
-      const addresses = JSON.parse(storedAddresses);
-      setSavedAddresses(addresses);
-      
-      // Set default address
-      const defaultAddr = addresses.find(addr => addr.isDefault);
-      if (defaultAddr) {
-        setSelectedAddress(defaultAddr.id);
+  };
+
+  // Fetch addresses from backend
+  const fetchAddresses = async () => {
+    try {
+      const response = await fetch(`${API}/marketplace/addresses`, {
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSavedAddresses(result.data || []);
+        
+        // Set default address if exists
+        const defaultAddr = result.data?.find(addr => addr.isDefault);
+        if (defaultAddr) {
+          setSelectedAddress(defaultAddr.userAddressId);
+        } else if (result.data?.length > 0) {
+          // Select first address if no default
+          setSelectedAddress(result.data[0].userAddressId);
+        }
       }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
     }
-  }, []);
+  };
+
+  // Load cart and addresses on mount
+  useEffect(() => {
+    if (!userData) {
+      navigate('/login');
+      return;
+    }
+    
+    // Fetch cart from database
+    fetchCart();
+    
+    // Fetch addresses from backend
+    fetchAddresses();
+  }, [userData]);
   
   // Shipping options
   const shippingOptions = [
@@ -175,9 +223,9 @@ export default function Checkout() {
     // Auto-select if it's the first or default address
     const defaultAddr = updatedAddresses.find(addr => addr.isDefault);
     if (defaultAddr) {
-      setSelectedAddress(defaultAddr.id);
+      setSelectedAddress(defaultAddr.userAddressId);
     } else if (updatedAddresses.length === 1) {
-      setSelectedAddress(updatedAddresses[0].id);
+      setSelectedAddress(updatedAddresses[0].userAddressId);
     }
   };
   
@@ -189,15 +237,71 @@ export default function Checkout() {
     
     setIsProcessing(true);
     
-    // Simulate order processing
-    setTimeout(() => {
-      // Clear cart
-      localStorage.removeItem('museoCart');
+    try {
+      // Get selected address details
+      const address = savedAddresses.find(addr => addr.userAddressId === selectedAddress);
       
-      // Redirect to success page or show success message
-      alert("Order placed successfully! Order #" + Date.now());
-      navigate('/marketplace');
-    }, 2000);
+      // Prepare order data
+      const orderData = {
+        shipping_address: {
+          fullName: address.fullName,
+          phone: address.phoneNumber || address.phone,
+          street: address.addressLine1 || address.street,
+          barangay: address.barangayName || address.barangay,
+          city: address.cityMunicipalityName || address.city,
+          province: address.provinceName || address.province,
+          postalCode: address.postalCode,
+          landmark: address.landmark || ''
+        },
+        contact_info: {
+          name: userData?.firstName + ' ' + userData?.lastName,
+          email: userData?.email,
+          phone: address.phoneNumber || address.phone
+        },
+        payment_method: selectedPayment,
+        shipping_method: selectedShipping,
+        order_notes: orderNotes
+      };
+      
+      // Create order via API
+      const response = await fetch(`${API}/marketplace/orders/create`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create order');
+      }
+      
+      if (result.success) {
+        // If payment link is provided, open in new tab
+        if (result.data.payment && result.data.payment.paymentUrl) {
+          // Open payment link in new tab
+          window.open(result.data.payment.paymentUrl, '_blank');
+          
+          // Show success message with order ID
+          alert(`Order created successfully! Order #${result.data.order.orderId}\n\nPlease complete payment in the new tab.`);
+          
+          // Navigate to orders page
+          navigate('/marketplace/orders');
+        } else {
+          // For COD or other payment methods
+          alert(`Order placed successfully! Order #${result.data.order.orderId}`);
+          navigate('/marketplace/orders');
+        }
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      alert(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   return (
@@ -219,12 +323,12 @@ export default function Checkout() {
               <div className="museo-card__body museo-address-options">
                 {savedAddresses.map(addr => (
                   <div 
-                    key={addr.id}
-                    className={`museo-address-card ${selectedAddress === addr.id ? 'museo-address-card--selected' : ''}`}
-                    onClick={() => setSelectedAddress(addr.id)}
+                    key={addr.userAddressId}
+                    className={`museo-address-card ${selectedAddress === addr.userAddressId ? 'museo-address-card--selected' : ''}`}
+                    onClick={() => setSelectedAddress(addr.userAddressId)}
                   >
                     <div className="museo-address-radio">
-                      {selectedAddress === addr.id && (
+                      {selectedAddress === addr.userAddressId && (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                         </svg>
@@ -236,14 +340,14 @@ export default function Checkout() {
                         {addr.isDefault && <span className="museo-badge museo-badge--gold">Default</span>}
                         {addr.addressType && <span className="museo-badge museo-badge--secondary">{addr.addressType}</span>}
                       </div>
-                      <div className="museo-address-phone">{addr.phoneNumber || addr.phone}</div>
+                      <div className="museo-address-phone">{addr.phoneNumber}</div>
                       <div className="museo-address-text">
                         {addr.addressLine1}
                         {addr.addressLine2 && `, ${addr.addressLine2}`}
                       </div>
                       <div className="museo-address-location">
-                        {addr.barangayName || addr.barangay}, {addr.cityMunicipalityName || addr.city}, 
-                        {addr.provinceName || addr.province} {addr.postalCode}
+                        {addr.barangayName}, {addr.cityMunicipalityName}, 
+                        {addr.provinceName} {addr.postalCode}
                       </div>
                       {addr.landmark && <div className="museo-address-landmark">Near: {addr.landmark}</div>}
                     </div>

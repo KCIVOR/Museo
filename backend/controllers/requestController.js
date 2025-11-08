@@ -295,18 +295,19 @@ export const deleteRequest = async (req, res) => {
     }
 
     // Verify requester is authenticated
-    if (!requesterId) {
+    if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Verify requester is an admin
-    const { data: requesterProfile, error: requesterError } = await db
+    // Get the requester's profile to check admin status
+    const { data: requesterProfile, error: requesterProfileErr } = await db
       .from('profile')
       .select('role')
-      .eq('userId', requesterId)
+      .eq('userId', req.user?.id || '')
       .single();
 
-    if (requesterError || !requesterProfile) {
+    if (requesterProfileErr || !requesterProfile) {
+      console.error('Failed to fetch requester profile:', requesterProfileErr);
       return res.status(403).json({ error: 'Access denied. Unable to verify permissions.' });
     }
 
@@ -314,12 +315,78 @@ export const deleteRequest = async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
+    // First, fetch the request to get associated images
+    const { data: request, error: fetchError } = await db
+      .from("request")
+      .select("*")
+      .eq("requestId", id)
+      .single();
+
+    if (fetchError || !request) {
+      console.error("Request not found", fetchError);
+      return res.status(404).json({ error: "Request not found" });
+    }
+
+    // Handle image deletion based on request type
+    if (request.requestType === 'artist_verification' && request.data?.images) {
+      // Delete artist verification images
+      const images = request.data.images;
+      for (const imageUrl of images) {
+        if (imageUrl) {
+          try {
+            // Extract file path from URL
+            // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/requests/userId/filename
+            const urlParts = imageUrl.split('/uploads/');
+            if (urlParts.length > 1) {
+              const filePath = urlParts[1];
+              
+              // Delete from Supabase storage
+              const { error: storageError } = await db.storage
+                .from('uploads')
+                .remove([filePath]);
+              
+              if (storageError) {
+                console.error('Error deleting image from storage:', storageError);
+              } else {
+                console.log('Successfully deleted image:', filePath);
+              }
+            }
+          } catch (imgError) {
+            console.error('Error processing image deletion:', imgError);
+          }
+        }
+      }
+    } else if (request.requestType === 'seller_application' && request.data?.idDocumentUrl) {
+      // Delete seller ID document
+      const idDocumentUrl = request.data.idDocumentUrl;
+      if (idDocumentUrl) {
+        try {
+          const urlParts = idDocumentUrl.split('/uploads/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            
+            const { error: storageError } = await db.storage
+              .from('uploads')
+              .remove([filePath]);
+            
+            if (storageError) {
+              console.error('Error deleting ID document from storage:', storageError);
+            } else {
+              console.log('Successfully deleted ID document:', filePath);
+            }
+          }
+        } catch (imgError) {
+          console.error('Error processing ID document deletion:', imgError);
+        }
+      }
+    }
+    // Note: visit_booking doesn't have any uploaded files
+
     // Delete the request
     const { error } = await db
       .from("request")
       .delete()
       .eq("requestId", id);
-
     if (error) {
       console.error("Failed to delete request", error);
       return res.status(500).json({ error: "Failed to delete request" });

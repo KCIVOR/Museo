@@ -1,11 +1,12 @@
 import express from 'express';
+import multer from 'multer';
 import {
-  createTestItems,
   createMarketplaceItem,
-  getMarketplaceItem,
   getMarketplaceItems,
+  getMarketplaceItem,
   updateMarketplaceItem,
   deleteMarketplaceItem,
+  createTestItems,
   getCart,
   addToCart,
   updateCartQuantity,
@@ -17,10 +18,40 @@ import {
   getOrderDetails,
   markOrderAsShipped,
   markOrderAsDelivered,
-  cancelOrder
+  cancelOrder,
+  submitSellerApplication,
+  getMySellerApplication,
+  getAllSellerApplications,
+  approveSellerApplication,
+  rejectSellerApplication,
+  deleteSellerApplication,
+  checkSellerStatus,
+  cancelMyApplication,
+  getUserAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow images and PDFs for ID documents
+    if (file.mimetype === 'image/jpeg' || 
+        file.mimetype === 'image/jpg' || 
+        file.mimetype === 'image/png' ||
+        file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPG, PNG, and PDF files are allowed'), false);
+    }
+  }
+});
 
 // ========================================
 // MARKETPLACE ITEMS (CRUD)
@@ -29,8 +60,8 @@ const router = express.Router();
 // TESTING ONLY - Create test items
 router.post('/items/test', createTestItems);
 
-// Create marketplace item
-router.post('/items', createMarketplaceItem);
+// Create marketplace item (with image upload)
+router.post('/items', upload.array('images', 10), createMarketplaceItem);
 
 // Get all marketplace items
 router.get('/items', getMarketplaceItems);
@@ -38,8 +69,8 @@ router.get('/items', getMarketplaceItems);
 // Get single marketplace item
 router.get('/items/:id', getMarketplaceItem);
 
-// Update marketplace item
-router.put('/items/:id', updateMarketplaceItem);
+// Update marketplace item (with image upload)
+router.put('/items/:id', upload.array('images', 10), updateMarketplaceItem);
 
 // Delete marketplace item
 router.delete('/items/:id', deleteMarketplaceItem);
@@ -91,5 +122,49 @@ router.put('/orders/:orderId/deliver', markOrderAsDelivered);
 
 // Cancel order (Buyer or Seller)
 router.put('/orders/:orderId/cancel', cancelOrder);
+
+// ========================================
+// SELLER APPLICATIONS
+// ========================================
+
+// Submit seller application (with file upload)
+router.post('/seller/apply', upload.single('idDocument'), submitSellerApplication);
+
+// Check if user is an active seller
+router.get('/seller/status', checkSellerStatus);
+
+// Get my seller application status
+router.get('/seller/my-application', getMySellerApplication);
+
+// Get all seller applications (Admin only)
+router.get('/seller/applications', getAllSellerApplications);
+
+// Approve seller application (Admin only)
+router.put('/seller/applications/:applicationId/approve', approveSellerApplication);
+
+// Reject seller application (Admin only)
+router.put('/seller/applications/:applicationId/reject', rejectSellerApplication);
+
+// Delete seller application (Admin only)
+router.delete('/seller/applications/:applicationId', deleteSellerApplication);
+
+// TESTING ONLY - Cancel my own application
+router.post('/seller/cancel-my-application', cancelMyApplication);
+
+// ========================================
+// ADDRESS MANAGEMENT
+// ========================================
+
+// Get all user addresses
+router.get('/addresses', getUserAddresses);
+
+// Create new address
+router.post('/addresses', createAddress);
+
+// Update address
+router.put('/addresses/:addressId', updateAddress);
+
+// Delete address
+router.delete('/addresses/:addressId', deleteAddress);
 
 export default router;

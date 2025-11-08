@@ -1,0 +1,96 @@
+/* ========================================
+   🛍️ PRODUCT MODAL STYLES
+   Museo marketplace product form modal
+   Using museo input classes from styles/components/inputs.css
+   ======================================== */
+
+   .product-modal-form {
+    width: 100%;
+    display: block;
+  }
+  
+  /* Scrollbar styling for MuseoModalBody handles scrolling */
+  
+  /* Form Sections */
+  .product-modal-form .form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--museo-bg-secondary, #f9f7f4);
+    border-radius: 8px;
+    border: 1px solid var(--museo-border-light, #f2efea);
+  }
+  
+  .product-modal-form .form-section:last-of-type {
+    margin-bottom: 0;
+  }
+  
+  .product-modal-form .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--museo-text-primary, #1a0f08);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--museo-accent, #d4b48a);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Form Layout */
+  .product-modal-form .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .product-modal-form .form-row:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* Override museo-form-group margin for modal */
+  .product-modal-form .museo-form-group {
+    margin-bottom: 0; /* Remove default margin since we handle it with form-row gap */
+  }
+  
+  /* Checkbox Groups */
+  .product-modal-form .checkbox-group {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+  }
+  
+  .product-modal-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.95rem;
+    color: var(--museo-text-secondary, #3d2817);
+    transition: color var(--museo-duration-fast) var(--museo-ease-out);
+  }
+  
+  .product-modal-form .checkbox-label:hover {
+    color: var(--museo-text-primary, #1a0f08);
+  }
+  
+  .product-modal-form .museo-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.75rem;
+    accent-color: var(--museo-accent, #d4b48a);
+    cursor: pointer;
+  }
+  
+  .product-modal-form .checkbox-label span {
+    font-weight: 500;
+  }
+  
+  /* Image Upload handled by ImageUploadZone component styles */
+  /* The component uses museo-dropzone and museo-image-previews classes from modal-features.css */
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .product-modal-form .form-row {
+      grid-template-columns: 1fr;
+    }
+  }

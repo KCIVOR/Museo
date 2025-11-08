@@ -1,0 +1,794 @@
+/* ========================================
+   🎨 SELLER DASHBOARD STYLES
+   Using Museo color palette & animations
+   ======================================== */
+
+   .seller-dashboard {
+    padding: 2rem;
+    background: var(--museo-bg-primary, #f8f5f0);
+    min-height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeIn var(--museo-duration-slow) var(--museo-ease-out);
+  }
+  
+  /* ========================================
+     HEADER SECTION
+     ======================================== */
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--museo-border, #e8e2d8);
+  }
+  
+  .dashboard-title {
+    font-size: 2.5rem;
+    color: var(--museo-text-primary, #1a0f08);
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .period-selector {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--museo-border, #e8e2d8);
+    background: white;
+    color: var(--museo-text-primary, #1a0f08);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--museo-duration-base) var(--museo-ease-out);
+  }
+  
+  .period-selector:hover {
+    border-color: var(--museo-accent, #d4b48a);
+    transform: translateY(-1px);
+  }
+  
+  /* Using existing btn classes from styles/components/buttons.css */
+  
+  /* ========================================
+     SUMMARY CARDS
+     ======================================== */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  /* Stagger animation for cards */
+  .stat-card:nth-child(1) { animation-delay: 0.1s; }
+  .stat-card:nth-child(2) { animation-delay: 0.2s; }
+  .stat-card:nth-child(3) { animation-delay: 0.3s; }
+  .stat-card:nth-child(4) { animation-delay: 0.4s; }
+  .stat-card:nth-child(5) { animation-delay: 0.5s; }
+  
+  .stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--museo-border-light, #f2efea);
+    display: flex;
+    gap: 1rem;
+    transition: all var(--museo-duration-base) var(--museo-ease-smooth);
+    box-shadow: 0 2px 8px rgba(26, 15, 8, 0.05);
+    animation: fadeInUp var(--museo-duration-slow) var(--museo-ease-out) backwards;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(26, 15, 8, 0.1);
+    border-color: var(--museo-accent-light, #f0e6d2);
+  }
+  
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .stat-icon.sales-icon {
+    background: rgba(212, 180, 138, 0.15);
+  }
+  
+  .stat-icon.orders-icon {
+    background: rgba(139, 90, 60, 0.15);
+  }
+  
+  .stat-icon.products-icon {
+    background: rgba(110, 74, 46, 0.15);
+  }
+  
+  .stat-icon.earnings-icon {
+    background: rgba(184, 149, 111, 0.15);
+  }
+  
+  .stat-icon.shipment-icon {
+    background: rgba(156, 134, 104, 0.15);
+  }
+  
+  .stat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .stat-title {
+    font-size: 0.85rem;
+    color: var(--museo-text-muted, #7d6b4f);
+    margin: 0 0 0.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--museo-text-primary, #1a0f08);
+    margin: 0 0 0.25rem;
+    line-height: 1;
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .stat-change {
+    font-size: 0.8rem;
+    color: var(--museo-text-muted, #7d6b4f);
+  }
+  
+  .stat-change.positive {
+    color: var(--museo-success, #7d8471);
+  }
+  
+  .stat-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--museo-accent-light, #f0e6d2);
+    color: var(--museo-primary, #6e4a2e);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+  
+  .stat-info {
+    font-size: 0.8rem;
+    color: var(--museo-text-secondary, #3d2817);
+    margin-top: 0.25rem;
+  }
+  
+  .stat-period {
+    font-size: 0.75rem;
+    color: var(--museo-text-muted, #7d6b4f);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .stat-action {
+    padding: 0.4rem 1rem;
+    margin-top: 0.5rem;
+    background: transparent;
+    color: var(--museo-accent, #d4b48a);
+    border: 1px solid var(--museo-accent, #d4b48a);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: fit-content;
+  }
+  
+  .stat-action:hover {
+    background: var(--museo-accent, #d4b48a);
+    color: white;
+  }
+  
+  /* ========================================
+     MAIN CONTENT
+     ======================================== */
+  .dashboard-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  /* ========================================
+     PRODUCT FORM SECTION
+     ======================================== */
+  .product-form-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--museo-border, #e8e2d8);
+    overflow: hidden;
+    animation: scaleIn var(--museo-duration-base) var(--museo-ease-out);
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--museo-border-light, #f2efea);
+  }
+  
+  .section-header h2 {
+    font-size: 1.5rem;
+    color: var(--museo-text-primary, #1a0f08);
+    margin: 0;
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .btn-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--museo-text-muted, #7d6b4f);
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all var(--museo-duration-fast) var(--museo-ease-out);
+  }
+  
+  .btn-close:hover {
+    background: var(--museo-bg-secondary, #f2efea);
+    color: var(--museo-text-primary, #1a0f08);
+  }
+  
+  .product-form {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--museo-text-secondary, #3d2817);
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--museo-border, #e8e2d8);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--museo-text-primary, #1a0f08);
+    background: white;
+    transition: all 0.3s ease;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--museo-accent, #d4b48a);
+    box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.1);
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+  }
+  
+  /* ========================================
+     IMAGE UPLOAD
+     ======================================== */
+  .image-upload-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .image-upload-section label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--museo-text-secondary, #3d2817);
+    margin-bottom: 0.5rem;
+  }
+  
+  .image-upload-container {
+    position: relative;
+  }
+  
+  .file-input {
+    display: none;
+  }
+  
+  .upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border: 2px dashed var(--museo-border-dark, #d4c9b8);
+    border-radius: 8px;
+    background: var(--museo-bg-secondary, #f2efea);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .upload-label:hover {
+    background: var(--museo-bg-tertiary, #e8e2d8);
+    border-color: var(--museo-accent, #d4b48a);
+  }
+  
+  .upload-label span {
+    margin-top: 0.5rem;
+    font-weight: 600;
+    color: var(--museo-text-primary, #1a0f08);
+  }
+  
+  .upload-label small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--museo-text-muted, #7d6b4f);
+    font-size: 0.8rem;
+  }
+  
+  .image-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .image-preview {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--museo-border, #e8e2d8);
+    animation: scaleIn var(--museo-duration-base) var(--museo-ease-out);
+  }
+  
+  .image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .remove-image {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background: rgba(26, 15, 8, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .remove-image:hover {
+    background: rgba(26, 15, 8, 0.9);
+  }
+  
+  /* ========================================
+     FORM ACTIONS
+     ======================================== */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--museo-border-light, #f2efea);
+  }
+  
+  /* Form buttons use existing btn classes - removed custom styles */
+  
+  /* ========================================
+     PRODUCTS SECTION
+     ======================================== */
+  .products-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--museo-border, #e8e2d8);
+    overflow: hidden;
+    animation: fadeInUp var(--museo-duration-slower) var(--museo-ease-out) 0.3s backwards;
+  }
+  
+  .section-actions {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .btn-bulk-upload {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    color: var(--museo-accent, #d4b48a);
+    border: 1px solid var(--museo-accent, #d4b48a);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-bulk-upload:hover {
+    background: var(--museo-accent, #d4b48a);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(212, 180, 138, 0.3);
+  }
+  
+  /* ========================================
+     PRODUCTS TABLE
+     ======================================== */
+  .products-table-container {
+    overflow-x: auto;
+  }
+  
+  .products-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .products-table thead {
+    background: var(--museo-bg-secondary, #f2efea);
+    border-bottom: 2px solid var(--museo-border, #e8e2d8);
+  }
+  
+  .products-table th {
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--museo-text-secondary, #3d2817);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .products-table tbody tr {
+    border-bottom: 1px solid var(--museo-border-light, #f2efea);
+    transition: all var(--museo-duration-fast) var(--museo-ease-out);
+    animation: fadeIn var(--museo-duration-base) var(--museo-ease-out) backwards;
+  }
+  
+  .products-table tbody tr:hover {
+    background: var(--museo-bg-primary, #f8f5f0);
+  }
+  
+  .products-table td {
+    padding: 1rem;
+    vertical-align: middle;
+  }
+  
+  .product-thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--museo-border, #e8e2d8);
+  }
+  
+  .product-name {
+    font-weight: 600;
+    color: var(--museo-text-primary, #1a0f08);
+  }
+  
+  .product-title {
+    font-weight: 600;
+    color: var(--museo-text-primary, #1a0f08);
+    margin-bottom: 0.25rem;
+  }
+  
+  .product-medium {
+    font-size: 0.9rem;
+    color: var(--museo-text-secondary, #3d2817);
+  }
+  
+  .product-dimensions {
+    font-size: 0.9rem;
+    color: var(--museo-text-secondary, #3d2817);
+  }
+  
+  .product-price {
+    font-weight: 600;
+    color: var(--museo-primary, #6e4a2e);
+  }
+  
+  .product-stock {
+    font-weight: 500;
+  }
+  
+  .low-stock {
+    color: var(--museo-error, #a0522d);
+    font-weight: 600;
+  }
+  
+  /* Small badges for original and framed */
+  .badge-original,
+  .badge-framed {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    margin-left: 0.25rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  
+  .badge-original {
+    background: rgba(212, 180, 138, 0.2);
+    color: var(--museo-accent, #d4b48a);
+  }
+  
+  .badge-framed {
+    background: rgba(110, 74, 46, 0.15);
+    color: var(--museo-primary, #6e4a2e);
+  }
+  
+  .status-badge,
+  .condition-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Status badges */
+  .status-badge.active {
+    background: rgba(125, 132, 113, 0.15);
+    color: var(--museo-success, #7d8471);
+  }
+  
+  .status-badge.pending {
+    background: rgba(212, 180, 138, 0.15);
+    color: var(--museo-accent-dark, #b8956f);
+  }
+  
+  .status-badge.inactive {
+    background: rgba(125, 107, 79, 0.15);
+    color: var(--museo-text-muted, #7d6b4f);
+  }
+  
+  .status-badge.sold {
+    background: rgba(110, 74, 46, 0.15);
+    color: var(--museo-primary, #6e4a2e);
+  }
+  
+  /* Condition badges */
+  .condition-badge.excellent {
+    background: rgba(125, 132, 113, 0.15);
+    color: var(--museo-success, #7d8471);
+  }
+  
+  .condition-badge.good {
+    background: rgba(212, 180, 138, 0.15);
+    color: var(--museo-accent-dark, #b8956f);
+  }
+  
+  .condition-badge.fair {
+    background: rgba(184, 149, 111, 0.15);
+    color: var(--museo-text-secondary, #3d2817);
+  }
+  
+  .condition-badge.poor {
+    background: rgba(160, 82, 45, 0.15);
+    color: var(--museo-error, #a0522d);
+  }
+  
+  /* ========================================
+     ACTION BUTTONS
+     ======================================== */
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .btn-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--museo-duration-fast) var(--museo-ease-out);
+    background: var(--museo-bg-secondary, #f2efea);
+    color: var(--museo-text-muted, #7d6b4f);
+  }
+  
+  .btn-action.view:hover {
+    background: rgba(212, 180, 138, 0.2);
+    color: var(--museo-accent, #d4b48a);
+  }
+  
+  .btn-action.edit:hover {
+    background: rgba(110, 74, 46, 0.2);
+    color: var(--museo-primary, #6e4a2e);
+  }
+  
+  .btn-action.delete:hover {
+    background: rgba(160, 82, 45, 0.2);
+    color: var(--museo-error, #a0522d);
+  }
+  
+  /* ========================================
+     EMPTY STATE
+     ======================================== */
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeIn var(--museo-duration-slow) var(--museo-ease-out);
+  }
+  
+  .empty-state p {
+    color: var(--museo-text-muted, #7d6b4f);
+    margin: 0;
+  }
+  
+  .btn-add-first {
+    padding: 0.75rem 1.5rem;
+    background: var(--museo-primary, #6e4a2e);
+    color: var(--museo-text-inverse, #f8f5f0);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-add-first:hover {
+    background: var(--museo-primary-light, #8b5a3c);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(110, 74, 46, 0.3);
+  }
+  
+  /* ========================================
+     QUICK ACTIONS
+     ======================================== */
+  .quick-actions {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--museo-border, #e8e2d8);
+    animation: fadeInUp var(--museo-duration-slower) var(--museo-ease-out) 0.5s backwards;
+  }
+  
+  .quick-actions h3 {
+    font-size: 1.25rem;
+    color: var(--museo-text-primary, #1a0f08);
+    margin: 0 0 1rem;
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  
+  .quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--museo-bg-secondary, #f2efea);
+    color: var(--museo-text-primary, #1a0f08);
+    border: 1px solid var(--museo-border, #e8e2d8);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--museo-duration-base) var(--museo-ease-smooth);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .quick-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--museo-accent-light, #f0e6d2);
+    transform: translate(-50%, -50%);
+    transition: width var(--museo-duration-slow) var(--museo-ease-out),
+                height var(--museo-duration-slow) var(--museo-ease-out);
+  }
+  
+  .quick-action-btn:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .quick-action-btn:hover {
+    border-color: var(--museo-accent, #d4b48a);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(26, 15, 8, 0.1);
+    z-index: 1;
+  }
+  
+  .quick-action-btn > * {
+    position: relative;
+    z-index: 2;
+  }
+  
+  /* ========================================
+     RESPONSIVE DESIGN
+     ======================================== */
+  @media (max-width: 768px) {
+    .seller-dashboard {
+      padding: 1rem;
+    }
+  
+    .dashboard-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+  
+    .header-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+  
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+  
+    .products-table-container {
+      overflow-x: scroll;
+    }
+  
+    .products-table {
+      min-width: 700px;
+    }
+  
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  
+    .action-grid {
+      grid-template-columns: 1fr;
+    }
+  }

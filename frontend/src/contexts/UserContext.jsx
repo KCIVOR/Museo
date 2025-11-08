@@ -79,7 +79,29 @@ export const UserProvider = ({ children }) => {
         profile = profileData.profile || {};
       }
 
-      // Step 4: Combine user data and profile data
+      // Step 4: Check if user is an active seller
+      let sellerData = { isSeller: false, sellerProfile: null };
+      try {
+        const sellerRes = await fetch(`${API}/marketplace/seller/status`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        if (sellerRes.ok) {
+          const sellerInfo = await sellerRes.json();
+          if (sellerInfo.success) {
+            sellerData = {
+              isSeller: sellerInfo.isSeller || false,
+              sellerProfile: sellerInfo.sellerProfile || null
+            };
+          }
+        }
+      } catch (sellerError) {
+        console.warn('UserContext: Could not fetch seller status:', sellerError);
+        // Continue without seller data
+      }
+
+      // Step 5: Combine user data, profile data, and seller data
       setUserData({
         id: userData.id || null,
         userId: userData.id || null, // Duplicate for backward compatibility
@@ -91,6 +113,8 @@ export const UserProvider = ({ children }) => {
         bio: profile.bio || null,
         email: userData.email || null,
         role: profile.role || null,
+        isSeller: sellerData.isSeller,
+        sellerProfile: sellerData.sellerProfile,
         ...userData, // Include any other fields from user data
         ...profile // Include any other fields from profile
       });

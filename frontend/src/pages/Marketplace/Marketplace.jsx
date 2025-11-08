@@ -20,180 +20,103 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showCart, setShowCart] = useState(false);
-  const [cartItems, setCartItems] = useState(() => {
-    // Load cart from localStorage on mount
-    const savedCart = localStorage.getItem('museoCart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cartItems, setCartItems] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
 
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('museoCart', JSON.stringify(cartItems));
-  }, [cartItems]);
+  // Fetch cart from database
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`${API}/marketplace/cart`, {
+        method: 'GET',
+        credentials: 'include'
+      });
 
-  // Mock data for demonstration
-  useEffect(() => {
-    loadMarketplaceData();
-  }, [selectedCategory, listingType, priceRange, sortBy]);
+      const result = await response.json();
 
-  const loadMarketplaceData = async () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setMarketplaceItems(mockMarketplaceItems);
-      setLoading(false);
-    }, 500);
+      if (response.ok && result.success) {
+        // Transform cart data to match frontend format
+        const transformedCart = result.data.items.map(item => ({
+          cartItemId: item.cartItemId,
+          quantity: item.quantity,
+          marketItemId: item.marketplace_items.marketItemId,
+          title: item.marketplace_items.title,
+          description: item.marketplace_items.description,
+          price: item.marketplace_items.price,
+          primary_image: item.marketplace_items.images?.[0] || null,
+          medium: item.marketplace_items.medium,
+          dimensions: item.marketplace_items.dimensions,
+          sellerName: item.marketplace_items.sellerProfiles?.shopName || 'Unknown Shop',
+          stock: item.marketplace_items.quantity
+        }));
+        setCartItems(transformedCart);
+      }
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
   };
 
-  // Mock marketplace items with mixed listing types
-  const mockMarketplaceItems = [
-    {
-      id: 1,
-      title: "Sunset Over Mountains",
-      artist: "Emily Chen",
-      price: 2500,
-      originalPrice: 3000,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "landscape",
-      medium: "Oil on Canvas",
-      dimensions: "24x36 inches",
-      year: 2024,
-      isOriginal: true,
-      isFeatured: true,
-      quantity: 1,
-      views: 234,
-      likes: 45,
-      listingType: "buy-now"
-    },
-    {
-      id: 2,
-      title: "Abstract Emotions",
-      artist: "Marcus Rodriguez",
-      price: 1800,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "abstract",
-      medium: "Acrylic on Canvas",
-      dimensions: "30x40 inches",
-      year: 2023,
-      isOriginal: true,
-      quantity: 1,
-      views: 156,
-      likes: 32,
-      listingType: "auction",
-      currentBid: 1800,
-      startingPrice: 1200,
-      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 3,
-      title: "Portrait of Serenity",
-      artist: "Sofia Williams",
-      price: 3200,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "portrait",
-      medium: "Digital Art Print",
-      dimensions: "18x24 inches",
-      year: 2024,
-      isOriginal: false,
-      isFramed: true,
-      quantity: 10,
-      views: 312,
-      likes: 67,
-      listingType: "buy-now"
-    },
-    {
-      id: 4,
-      title: "Urban Dreams",
-      artist: "James Park",
-      price: 2100,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "urban",
-      medium: "Mixed Media",
-      dimensions: "36x48 inches",
-      year: 2024,
-      isOriginal: true,
-      quantity: 1,
-      views: 189,
-      listingType: "auction",
-      currentBid: 2100,
-      startingPrice: 1500,
-      endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      likes: 41
-    },
-    {
-      id: 5,
-      title: "Morning Mist",
-      artist: "Chen Wei",
-      price: 1500,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "landscape",
-      medium: "Watercolor on Paper",
-      dimensions: "16x20 inches",
-      year: 2024,
-      isOriginal: true,
-      quantity: 1,
-      views: 278,
-      likes: 52,
-      listingType: "buy-now"
-    },
-    {
-      id: 6,
-      title: "City Lights",
-      artist: "Alex Morgan",
-      price: 2800,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "urban",
-      medium: "Digital Print",
-      dimensions: "24x36 inches",
-      year: 2023,
-      isOriginal: false,
-      quantity: 25,
-      views: 412,
-      likes: 89,
-      listingType: "auction",
-      currentBid: 2800,
-      startingPrice: 2000,
-      endTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 7,
-      title: "Serene Garden",
-      artist: "Lisa Park",
-      price: 1900,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "landscape",
-      medium: "Oil on Canvas",
-      dimensions: "20x24 inches",
-      year: 2024,
-      isOriginal: true,
-      quantity: 1,
-      views: 156,
-      likes: 34,
-      listingType: "buy-now"
-    },
-    {
-      id: 8,
-      title: "Abstract Mind",
-      artist: "David Kim",
-      price: 3500,
-      image: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/gallery/5f3d985f-6a76-4745-a11e-782b2930ba6b/1761039149778-272916701_675557750463982_1659043457488353897_n.jpg",
-      category: "abstract",
-      medium: "Acrylic on Canvas",
-      dimensions: "36x36 inches",
-      year: 2024,
-      isOriginal: true,
-      quantity: 1,
-      views: 334,
-      likes: 76,
-      listingType: "auction",
-      currentBid: 3500,
-      startingPrice: 2500,
-      endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+  // Fetch marketplace items from API
+  const fetchMarketplaceItems = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API}/marketplace/items`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch marketplace items');
+      }
+
+      const result = await response.json();
+      
+      // Get items from response
+      let items = result.data || [];
+      
+      // Apply client-side filters
+      if (selectedCategory !== 'all') {
+        items = items.filter(item => 
+          item.categories?.includes(selectedCategory) || 
+          item.medium?.toLowerCase() === selectedCategory.toLowerCase()
+        );
+      }
+      
+      if (listingType !== 'all') {
+        items = items.filter(item => item.listingType === listingType);
+      }
+      
+      items = items.filter(item => 
+        item.price >= priceRange.min && item.price <= priceRange.max
+      );
+      
+      // Sort items
+      switch (sortBy) {
+        case 'price-low':
+          items.sort((a, b) => a.price - b.price);
+          break;
+        case 'price-high':
+          items.sort((a, b) => b.price - a.price);
+          break;
+        case 'newest':
+          items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          break;
+        case 'popular':
+          items.sort((a, b) => (b.views || 0) - (a.views || 0));
+          break;
+      }
+      
+      setMarketplaceItems(items);
+    } catch (error) {
+      console.error('Error loading marketplace:', error);
+      setMarketplaceItems([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Category definitions (removed mock data)
 
 
   const categories = [
@@ -274,34 +197,93 @@ export default function Marketplace() {
     }
   ];
 
-  const handleAddToCart = (item) => {
-    const existingItem = cartItems.find(cartItem => cartItem.id === item.id);
-    
-    if (existingItem) {
-      setCartItems(cartItems.map(cartItem => 
-        cartItem.id === item.id 
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
-    } else {
-      setCartItems([...cartItems, { ...item, quantity: 1 }]);
+  const handleAddToCart = async (item, quantityToAdd = 1) => {
+    try {
+      const response = await fetch(`${API}/marketplace/cart/add`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          marketplace_item_id: item.marketItemId || item.id,
+          quantity: quantityToAdd
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add item to cart');
+      }
+
+      if (result.success) {
+        // Refresh cart from database
+        await fetchCart();
+        
+        // Show cart sidebar
+        setShowCart(true);
+        
+        alert('Item added to cart successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding item to cart:', error);
+      alert(error.message || 'Failed to add item to cart. Please try again.');
     }
-    
-    // Show cart sidebar
-    setShowCart(true);
   };
 
-  const handleRemoveFromCart = (itemId) => {
-    setCartItems(cartItems.filter(item => item.id !== itemId));
+  const handleRemoveFromCart = async (cartItemId) => {
+    try {
+      const response = await fetch(`${API}/marketplace/cart/${cartItemId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to remove item from cart');
+      }
+
+      if (result.success) {
+        // Refresh cart from database
+        await fetchCart();
+        alert('Item removed from cart');
+      }
+    } catch (error) {
+      console.error('Error removing item from cart:', error);
+      alert(error.message || 'Failed to remove item. Please try again.');
+    }
   };
 
-  const handleUpdateQuantity = (itemId, newQuantity) => {
+  const handleUpdateQuantity = async (cartItemId, newQuantity) => {
     if (newQuantity <= 0) {
-      handleRemoveFromCart(itemId);
+      await handleRemoveFromCart(cartItemId);
     } else {
-      setCartItems(cartItems.map(item => 
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      ));
+      try {
+        const response = await fetch(`${API}/marketplace/cart/${cartItemId}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ quantity: newQuantity })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to update cart');
+        }
+
+        if (result.success) {
+          // Refresh cart from database
+          await fetchCart();
+        }
+      } catch (error) {
+        console.error('Error updating cart:', error);
+        alert(error.message || 'Failed to update quantity. Please try again.');
+      }
     }
   };
 
@@ -312,6 +294,15 @@ export default function Marketplace() {
   const getCartItemsCount = () => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
   };
+
+  // Effects
+  useEffect(() => {
+    fetchMarketplaceItems();
+    // Fetch cart from database when user is logged in
+    if (userData) {
+      fetchCart();
+    }
+  }, [userData]);
 
   const handleProductClick = (item) => {
     setSelectedProduct(item);
@@ -494,17 +485,19 @@ export default function Marketplace() {
                 Filters
               </button>
 
-              <button 
-                className="btn btn-primary"
-                onClick={() => navigate('/marketplace/seller-dashboard')}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="3" y1="9" x2="21" y2="9"/>
-                  <line x1="9" y1="21" x2="9" y2="9"/>
-                </svg>
-                Seller Dashboard
-              </button>
+              {userData?.isSeller && (
+                <button 
+                  className="mp-seller-dashboard-btn"
+                  onClick={() => navigate('/marketplace/seller-dashboard')}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="21" x2="9" y2="9"/>
+                  </svg>
+                  Seller Dashboard
+                </button>
+              )}
             </div>
 
             <div className="mp-sort">
@@ -528,6 +521,29 @@ export default function Marketplace() {
               <div className="mp-loading-spinner"></div>
               <p>Loading artworks...</p>
             </div>
+          ) : marketplaceItems.length === 0 ? (
+            <div className="mp-empty">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="9" y1="21" x2="9" y2="9"/>
+              </svg>
+              <h3>No Items Found</h3>
+              <p>Try adjusting your filters or check back later for new items.</p>
+              {(selectedCategory !== 'all' || listingType !== 'all' || searchQuery) && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setListingType('all');
+                    setSearchQuery('');
+                    setPriceRange({ min: 0, max: 10000 });
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           ) : (
             <div className="mp-grid">
               {marketplaceItems
@@ -546,15 +562,20 @@ export default function Marketplace() {
                     return false;
                   }
                   // Filter by search query
-                  if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-                      !item.artist.toLowerCase().includes(searchQuery.toLowerCase())) {
-                    return false;
+                  if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    const matchesTitle = item.title?.toLowerCase().includes(query);
+                    const matchesShop = item.seller?.shopName?.toLowerCase().includes(query);
+                    const matchesMedium = item.medium?.toLowerCase().includes(query);
+                    if (!matchesTitle && !matchesShop && !matchesMedium) {
+                      return false;
+                    }
                   }
                   return true;
                 })
                 .map(item => (
                   <MarketplaceCard 
-                    key={item.id} 
+                    key={item.marketItemId || item.id} 
                     item={item} 
                     onAddToCart={handleAddToCart}
                     onClick={() => handleProductClick(item)}
@@ -596,36 +617,42 @@ export default function Marketplace() {
             ) : (
               <>
                 {cartItems.map(item => (
-                  <div key={item.id} className="mp-cart-item">
+                  <div key={item.cartItemId} className="mp-cart-item">
                     <img 
-                      src={item.image} 
+                      src={item.primary_image || '/assets/default-art.jpg'} 
                       alt={item.title}
                       className="mp-cart-item-image"
+                      onError={(e) => {e.target.src = '/assets/default-art.jpg'}}
                     />
                     <div className="mp-cart-item-details">
                       <h4 className="mp-cart-item-title">{item.title}</h4>
-                      <p className="mp-cart-item-artist">by {item.artist}</p>
-                      <div className="mp-cart-item-price">${item.price}</div>
+                      <p className="mp-cart-item-artist">by {item.sellerName}</p>
+                      <div className="mp-cart-item-info">
+                        <span className="mp-cart-item-size">{item.dimensions || item.medium || 'Original'}</span>
+                      </div>
+                      <div className="mp-cart-item-price">${item.price.toFixed(2)}</div>
                     </div>
                     <div className="mp-cart-item-actions">
                       <div className="mp-quantity">
                         <button 
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
                         >
                           -
                         </button>
                         <span>{item.quantity}</span>
                         <button 
                           className="btn btn-ghost btn-sm"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}
+                          disabled={item.quantity >= item.stock}
                         >
                           +
                         </button>
                       </div>
                       <button 
                         className="btn btn-ghost btn-sm"
-                        onClick={() => handleRemoveFromCart(item.id)}
+                        onClick={() => handleRemoveFromCart(item.cartItemId)}
                       >
                         Remove
                       </button>
@@ -699,13 +726,16 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
       {/* Image Container */}
       <div className="mp-card-image-container">
         <img 
-          src={item.image} 
+          src={item.primary_image || item.images?.[0] || '/placeholder-art.jpg'} 
           alt={item.title}
           className="mp-card-image"
+          onError={(e) => {
+            e.target.src = '/placeholder-art.jpg';
+          }}
         />
 
         {/* Badges */}
-        {item.isFeatured && (
+        {item.is_featured && (
           <span className="mp-badge mp-badge--featured">Featured</span>
         )}
         {item.originalPrice && item.listingType === "buy-now" && (
@@ -727,16 +757,16 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
       {/* Card Content */}
       <div className="mp-card-content">
         <div className="mp-card-meta">
-          <span className="mp-card-category">{item.medium}</span>
-          <span className="mp-card-year">{item.year}</span>
+          <span className="mp-card-category">{item.medium || 'Mixed Media'}</span>
+          <span className="mp-card-year">{item.year_created || new Date().getFullYear()}</span>
         </div>
         
         <h3 className="mp-card-title">{item.title}</h3>
-        <p className="mp-card-artist">by {item.artist}</p>
+        <p className="mp-card-artist">by {item.seller?.shopName || 'Unknown Artist'}</p>
         
         <div className="mp-card-details">
-          <span className="mp-card-size">{item.dimensions}</span>
-          {item.isOriginal && <span className="mp-card-original">Original</span>}
+          <span className="mp-card-size">{item.dimensions || 'Size not specified'}</span>
+          {item.is_original && <span className="mp-card-original">Original</span>}
         </div>
 
         <div className="mp-card-footer">

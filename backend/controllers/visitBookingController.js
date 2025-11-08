@@ -75,8 +75,8 @@ export const createVisitBooking = async (req, res) => {
       });
     }
 
-    // Prepare data for insertion
-    const bookingData = {
+    // Prepare data for JSONB column
+    const visitData = {
       visitor_type: visitorType,
       organization_name: visitorType !== 'individual' ? organizationName : null,
       number_of_visitors: numberOfVisitors,
@@ -92,15 +92,18 @@ export const createVisitBooking = async (req, res) => {
       preferred_time: preferredTime || null,
       purpose_of_visit: purposeOfVisit,
       purpose_other: purposeOfVisit === 'other' ? purposeOther : null,
-      remarks: remarks || null,
-      status: 'pending',
-      user_id: req.user?.id || null // If user is authenticated
+      remarks: remarks || null
     };
 
-    // Insert into database
+    // Insert into unified request table
     const { data, error } = await supabase
-      .from('visit_bookings')
-      .insert(bookingData)
+      .from('request')
+      .insert({
+        userId: req.user?.id || null,
+        requestType: 'visit_booking',
+        status: 'pending',
+        data: visitData
+      })
       .select()
       .single();
 
@@ -140,25 +143,26 @@ export const getAllVisitBookings = async (req, res) => {
     const { status, visitorType, startDate, endDate, page = 1, limit = 20 } = req.query;
 
     let query = supabase
-      .from('visit_bookings')
-      .select('*', { count: 'exact' });
+      .from('request')
+      .select('*', { count: 'exact' })
+      .eq('requestType', 'visit_booking');
 
     // Filter by status
     if (status) {
       query = query.eq('status', status);
     }
 
-    // Filter by visitor type
+    // Filter by visitor type (now in JSONB data)
     if (visitorType) {
-      query = query.eq('visitor_type', visitorType);
+      query = query.filter('data->visitor_type', 'eq', visitorType);
     }
 
-    // Filter by date range
+    // Filter by date range (now in JSONB data)
     if (startDate) {
-      query = query.gte('preferred_date', startDate);
+      query = query.filter('data->preferred_date', 'gte', startDate);
     }
     if (endDate) {
-      query = query.lte('preferred_date', endDate);
+      query = query.filter('data->preferred_date', 'lte', endDate);
     }
 
     // Pagination
@@ -167,7 +171,7 @@ export const getAllVisitBookings = async (req, res) => {
     query = query.range(from, to);
 
     // Order by creation date (newest first)
-    query = query.order('created_at', { ascending: false });
+    query = query.order('createdAt', { ascending: false });
 
     const { data, error, count } = await query;
 
@@ -180,12 +184,23 @@ export const getAllVisitBookings = async (req, res) => {
       });
     }
 
+    // Transform data to match expected format
+    const transformedData = data.map(item => ({
+      visitId: item.requestId,
+      user_id: item.userId,
+      status: item.status,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
+      admin_notes: item.data.admin_notes || null,
+      ...item.data  // Spread the JSONB data
+    }));
+
     res.status(200).json({
       success: true,
       count,
       totalPages: Math.ceil(count / limit),
       currentPage: parseInt(page),
-      data
+      data: transformedData
     });
 
   } catch (error) {
@@ -206,9 +221,10 @@ export const getVisitBookingById = async (req, res) => {
     const { id } = req.params;
 
     const { data, error } = await supabase
-      .from('visit_bookings')
+      .from('request')
       .select('*')
-      .eq('visitId', id)  // Fixed: use visitId instead of id
+      .eq('requestId', id)
+      .eq('requestType', 'visit_booking')
       .single();
 
     if (error) {
@@ -220,16 +236,26 @@ export const getVisitBookingById = async (req, res) => {
     }
 
     // Check if user has permission to view this booking
-    if (req.user?.role !== 'admin' && data.user_id !== req.user?.id) {
+    if (req.user?.role !== 'admin' && data.userId !== req.user?.id) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view this booking'
       });
     }
 
+    // Transform data to match expected format
+    const transformedData = {
+      visitId: data.requestId,
+      user_id: data.userId,
+      status: data.status,
+      created_at: data.createdAt,
+      updated_at: data.updatedAt,
+      ...data.data  // Spread the JSONB data
+    };
+
     res.status(200).json({
       success: true,
-      data
+      data: transformedData
     });
 
   } catch (error) {
@@ -259,17 +285,37 @@ export const updateVisitBooking = async (req, res) => {
       });
     }
 
+    // Get existing data first
+    const { data: existing, error: fetchError } = await supabase
+      .from('request')
+      .select('*')
+      .eq('requestId', id)
+      .eq('requestType', 'visit_booking')
+      .single();
+
+    if (fetchError || !existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
     // Prepare update data
-    const updateData = {};
-    if (status) updateData.status = status;
-    if (adminNotes !== undefined) updateData.admin_notes = adminNotes;
-    if (preferredDate) updateData.preferred_date = preferredDate;
-    if (preferredTime !== undefined) updateData.preferred_time = preferredTime;
+    const updatedData = { ...existing.data };
+    if (adminNotes !== undefined) updatedData.admin_notes = adminNotes;
+    if (preferredDate) updatedData.preferred_date = preferredDate;
+    if (preferredTime !== undefined) updatedData.preferred_time = preferredTime;
+
+    const updateFields = {
+      data: updatedData,
+      updatedAt: new Date().toISOString()
+    };
+    if (status) updateFields.status = status;
 
     const { data, error } = await supabase
-      .from('visit_bookings')
-      .update(updateData)
-      .eq('visitId', id)  // Fixed: use visitId instead of id
+      .from('request')
+      .update(updateFields)
+      .eq('requestId', id)
       .select()
       .single();
 
@@ -282,15 +328,25 @@ export const updateVisitBooking = async (req, res) => {
       });
     }
 
+    // Transform data to match expected format
+    const transformedData = {
+      visitId: data.requestId,
+      user_id: data.userId,
+      status: data.status,
+      created_at: data.createdAt,
+      updated_at: data.updatedAt,
+      ...data.data
+    };
+
     // TODO: Send notification email/SMS if status changed
     // if (status) {
-    //   await sendStatusUpdateNotification(data);
+    //   await sendStatusUpdateNotification(transformedData);
     // }
 
     res.status(200).json({
       success: true,
       message: 'Booking updated successfully',
-      data
+      data: transformedData
     });
 
   } catch (error) {
@@ -311,9 +367,10 @@ export const deleteVisitBooking = async (req, res) => {
     const { id } = req.params;
 
     const { error } = await supabase
-      .from('visit_bookings')
+      .from('request')
       .delete()
-      .eq('visitId', id);  // Fixed: use visitId instead of id
+      .eq('requestId', id)
+      .eq('requestType', 'visit_booking');
 
     if (error) {
       console.error('Supabase error:', error);
@@ -346,80 +403,95 @@ export const getBookingStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    // Build query with optional date filtering
-    let query = supabase.from('visit_bookings').select('*');
+    // Build query from unified request table
+    let query = supabase
+      .from('request')
+      .select('*')
+      .eq('requestType', 'visit_booking');
     
-    if (startDate && endDate) {
-      query = query
-        .gte('preferred_date', startDate)
-        .lte('preferred_date', endDate);
-    }
-    
-    const { data: bookings, error } = await query;
+    // Fetch all visit bookings first, then filter in JavaScript
+    // (Supabase has limitations with JSONB date filtering)
+    const { data: allRequests, error } = await query;
     
     if (error) throw error;
     
+    // Apply date filtering in JavaScript
+    let requests = allRequests || [];
+    if (startDate && endDate) {
+      requests = allRequests.filter(r => {
+        const bookingDate = r.data?.preferred_date;
+        if (!bookingDate) return false;
+        return bookingDate >= startDate && bookingDate <= endDate;
+      });
+    }
+    
     // Calculate statistics
     const stats = {
-      total: bookings.length,
-      pending: bookings.filter(b => b.status === 'pending').length,
-      approved: bookings.filter(b => b.status === 'approved').length,
-      rejected: bookings.filter(b => b.status === 'rejected').length,
-      completed: bookings.filter(b => b.status === 'completed').length,
-      cancelled: bookings.filter(b => b.status === 'cancelled').length
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'pending').length,
+      approved: requests.filter(r => r.status === 'approved').length,
+      rejected: requests.filter(r => r.status === 'rejected').length,
+      completed: requests.filter(r => r.status === 'completed').length,
+      cancelled: requests.filter(r => r.status === 'cancelled').length
     };
     
     // Calculate total number of actual visitors
-    stats.totalVisitors = bookings.reduce((sum, booking) => {
-      return sum + (booking.number_of_visitors || 0);
+    stats.totalVisitors = requests.reduce((sum, request) => {
+      return sum + (request.data?.number_of_visitors || 0);
     }, 0);
     
     // Calculate visitors by status
     stats.visitorsByStatus = {
-      approved: bookings
-        .filter(b => b.status === 'approved')
-        .reduce((sum, b) => sum + (b.number_of_visitors || 0), 0),
-      pending: bookings
-        .filter(b => b.status === 'pending')
-        .reduce((sum, b) => sum + (b.number_of_visitors || 0), 0)
+      approved: requests
+        .filter(r => r.status === 'approved')
+        .reduce((sum, r) => sum + (r.data?.number_of_visitors || 0), 0),
+      pending: requests
+        .filter(r => r.status === 'pending')
+        .reduce((sum, r) => sum + (r.data?.number_of_visitors || 0), 0)
     };
     
     // Get bookings by visitor type
     stats.byVisitorType = {
-      individual: bookings.filter(b => b.visitor_type === 'individual').length,
-      school: bookings.filter(b => b.visitor_type === 'school').length,
-      organization: bookings.filter(b => b.visitor_type === 'organization').length
+      individual: requests.filter(r => r.data?.visitor_type === 'individual').length,
+      school: requests.filter(r => r.data?.visitor_type === 'school').length,
+      organization: requests.filter(r => r.data?.visitor_type === 'organization').length
     };
     
     // Calculate actual visitors by type
     stats.visitorsByType = {
-      individual: bookings
-        .filter(b => b.visitor_type === 'individual')
-        .reduce((sum, b) => sum + (b.number_of_visitors || 0), 0),
-      school: bookings
-        .filter(b => b.visitor_type === 'school')
-        .reduce((sum, b) => sum + (b.number_of_visitors || 0), 0),
-      organization: bookings
-        .filter(b => b.visitor_type === 'organization')
-        .reduce((sum, b) => sum + (b.number_of_visitors || 0), 0)
+      individual: requests
+        .filter(r => r.data?.visitor_type === 'individual')
+        .reduce((sum, r) => sum + (r.data?.number_of_visitors || 0), 0),
+      school: requests
+        .filter(r => r.data?.visitor_type === 'school')
+        .reduce((sum, r) => sum + (r.data?.number_of_visitors || 0), 0),
+      organization: requests
+        .filter(r => r.data?.visitor_type === 'organization')
+        .reduce((sum, r) => sum + (r.data?.number_of_visitors || 0), 0)
     };
 
     // Get upcoming bookings (next 30 days)
     const today = new Date().toISOString().split('T')[0];
     const thirtyDaysLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const { data: upcoming, error: upcomingError } = await supabase
-      .from('visit_bookings')
+    const { data: allUpcoming, error: upcomingError } = await supabase
+      .from('request')
       .select('*')
-      .gte('preferred_date', today)
-      .lte('preferred_date', thirtyDaysLater)
+      .eq('requestType', 'visit_booking')
       .in('status', ['pending', 'approved'])
-      .order('preferred_date', { ascending: true });
+      .order('createdAt', { ascending: true });
 
     if (upcomingError) throw upcomingError;
 
-    stats.upcomingVisits = upcoming.length;
-    stats.upcomingBookings = upcoming;
+    // Filter upcoming bookings in JavaScript
+    const upcomingRequests = (allUpcoming || []).filter(r => {
+      const bookingDate = r.data?.preferred_date;
+      if (!bookingDate) return false;
+      return bookingDate >= today && bookingDate <= thirtyDaysLater;
+    });
+
+    stats.upcomingVisits = upcomingRequests.length;
+    stats.upcomingBookings = upcomingRequests;
 
     res.status(200).json({
       success: true,

@@ -100,23 +100,56 @@ export const createMarketplaceItem = async (req, res) => {
       });
     }
 
-    const {
-      title,
-      description,
-      price,
-      medium,
-      dimensions,
-      year_created,
-      weight_kg,
-      is_original,
-      is_framed,
-      condition,
-      images,
-      primary_image,
-      quantity,
-      categories,
-      tags
-    } = req.body;
+    // STEP 1: Verify user is an artist
+    const { data: userProfile, error: profileError } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !userProfile || userProfile.role !== 'artist') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only verified artists can list items in the marketplace. Please apply for artist verification first.' 
+      });
+    }
+
+    // STEP 2: Get active seller profile
+    const { data: sellerProfile, error: sellerError } = await db
+      .from('sellerProfiles')
+      .select('*')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .eq('isSuspended', false)
+      .single();
+
+    if (sellerError || !sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an approved seller to list items. Please apply to become a seller first.',
+        requiresSellerProfile: true
+      });
+    }
+
+    // Parse FormData fields
+    const title = req.body.title;
+    const description = req.body.description;
+    const price = parseFloat(req.body.price);
+    const medium = req.body.medium;
+    const dimensions = req.body.dimensions;
+    const year_created = req.body.year_created ? parseInt(req.body.year_created) : null;
+    const weight_kg = req.body.weight_kg ? parseFloat(req.body.weight_kg) : null;
+    const is_original = req.body.is_original === 'true';
+    const is_framed = req.body.is_framed === 'true';
+    const condition = req.body.condition || 'excellent';
+    const quantity = parseInt(req.body.quantity) || 1;
+    const is_available = req.body.is_available === 'true';
+    const is_featured = req.body.is_featured === 'true';
+    const status = req.body.status || 'active';
+    
+    // Parse JSON fields
+    const categories = req.body.categories ? JSON.parse(req.body.categories) : [];
+    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
 
     // Validation
     if (!title || !price) {
@@ -133,27 +166,68 @@ export const createMarketplaceItem = async (req, res) => {
       });
     }
 
-    // Create marketplace item
+    // Handle image uploads (similar to galleryController)
+    let imageUrls = [];
+    let primaryImageUrl = null;
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+          const fileName = `${Date.now()}-${safeName}`;
+          const filePath = `marketplace/${userId}/${fileName}`;
+
+          const { data, error } = await db.storage
+            .from("uploads")
+            .upload(filePath, file.buffer, {
+              contentType: file.mimetype,
+              upsert: false,
+            });
+
+          if (error) {
+            continue;
+          }
+
+          const { data: publicUrlData } = db.storage
+            .from("uploads")
+            .getPublicUrl(data.path);
+
+          if (publicUrlData?.publicUrl) {
+            imageUrls.push(publicUrlData.publicUrl);
+          }
+        } catch (uploadError) {
+          continue;
+        }
+      }
+
+      // First image becomes primary
+      if (imageUrls.length > 0) {
+        primaryImageUrl = imageUrls[0];
+      }
+    }
+
+    // Create marketplace item with seller profile
     const newItem = {
       userId: userId,
+      sellerProfileId: sellerProfile.sellerProfileId,
       title,
       description: description || null,
       price,
       medium: medium || null,
       dimensions: dimensions || null,
-      year_created: year_created || null,
-      weight_kg: weight_kg || null,
-      is_original: is_original !== undefined ? is_original : true,
-      is_framed: is_framed !== undefined ? is_framed : false,
-      condition: condition || 'excellent',
-      images: images || [],
-      primary_image: primary_image || null,
-      is_available: true,
-      is_featured: false,
-      quantity: quantity || 1,
-      categories: categories || [],
-      tags: tags || [],
-      status: 'active' // You can change to 'pending' if you want admin approval
+      year_created,
+      weight_kg,
+      is_original,
+      is_framed,
+      condition,
+      images: imageUrls,
+      primary_image: primaryImageUrl,
+      is_available,
+      is_featured,
+      quantity,
+      categories,
+      tags,
+      status
     };
 
     const { data, error } = await db
@@ -192,7 +266,23 @@ export const getMarketplaceItem = async (req, res) => {
 
     const { data: item, error } = await db
       .from('marketplace_items')
-      .select('*')
+      .select(`
+        *,
+        sellerProfiles (
+          sellerProfileId,
+          shopName,
+          shopDescription,
+          fullName,
+          email,
+          phoneNumber,
+          street,
+          city,
+          province,
+          region,
+          isActive,
+          isSuspended
+        )
+      `)
       .eq('marketItemId', id)
       .single();
 
@@ -200,6 +290,16 @@ export const getMarketplaceItem = async (req, res) => {
       return res.status(404).json({ 
         success: false, 
         error: 'Item not found' 
+      });
+    }
+
+    // Check if seller is still active
+    if (!item.sellerProfiles || 
+        !item.sellerProfiles.isActive || 
+        item.sellerProfiles.isSuspended) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'This item is no longer available (seller inactive or suspended)' 
       });
     }
 
@@ -220,17 +320,34 @@ export const getMarketplaceItem = async (req, res) => {
 // Get all marketplace items
 export const getMarketplaceItems = async (req, res) => {
   try {
-    const { status } = req.query; // Optional filter by status
+    const { status, sellerProfileId } = req.query; // Optional filters
     
     let query = db
       .from('marketplace_items')
-      .select('*')
+      .select(`
+        *,
+        sellerProfiles!inner (
+          sellerProfileId,
+          shopName,
+          city,
+          province,
+          isActive,
+          isSuspended
+        )
+      `)
+      .eq('sellerProfiles.isActive', true)
+      .eq('sellerProfiles.isSuspended', false)
       .order('created_at', { ascending: false })
       .limit(20);
     
-    // Only filter by status if provided, otherwise show all
+    // Filter by status if provided
     if (status) {
       query = query.eq('status', status);
+    }
+
+    // Filter by seller profile if provided (for seller dashboard)
+    if (sellerProfileId) {
+      query = query.eq('sellerProfileId', sellerProfileId);
     }
     
     const { data: items, error } = await query;
@@ -243,10 +360,19 @@ export const getMarketplaceItems = async (req, res) => {
       });
     }
 
+    // Transform to include seller info at root level
+    const transformedItems = items.map(item => ({
+      ...item,
+      seller: {
+        shopName: item.sellerProfiles.shopName,
+        location: `${item.sellerProfiles.city}, ${item.sellerProfiles.province}`
+      }
+    }));
+
     res.json({ 
       success: true, 
-      data: items,
-      count: items.length
+      data: transformedItems,
+      count: transformedItems.length
     });
 
   } catch (error) {
@@ -271,10 +397,26 @@ export const updateMarketplaceItem = async (req, res) => {
       });
     }
 
-    // Check if item exists and belongs to user
+    // Check if user is admin
+    const { data: userProfile, error: profileError } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to verify user profile' 
+      });
+    }
+
+    const isAdmin = userProfile.role === 'admin';
+
+    // Check if item exists
     const { data: existingItem, error: checkError } = await db
       .from('marketplace_items')
-      .select('userId')
+      .select('userId, sellerProfileId')
       .eq('marketItemId', id)
       .single();
 
@@ -285,23 +427,93 @@ export const updateMarketplaceItem = async (req, res) => {
       });
     }
 
-    if (existingItem.userId !== userId) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'You can only edit your own items' 
-      });
+    // If not admin, verify seller profile and ownership
+    if (!isAdmin) {
+      // Get user's active seller profile
+      const { data: sellerProfile, error: sellerError } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .eq('isSuspended', false)
+        .single();
+
+      if (sellerError || !sellerProfile) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'You must be an active seller to update items' 
+        });
+      }
+
+      // Check ownership via sellerProfileId
+      if (existingItem.sellerProfileId !== sellerProfile.sellerProfileId) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'You can only edit your own items' 
+        });
+      }
     }
 
-    // Update item
-    const updateData = {
-      ...req.body,
-      updated_at: new Date().toISOString()
-    };
+    // Parse FormData fields if they exist
+    let updateData = {};
+    
+    // Handle text fields from FormData
+    if (req.body.title) updateData.title = req.body.title;
+    if (req.body.description) updateData.description = req.body.description;
+    if (req.body.price !== undefined) updateData.price = parseFloat(req.body.price);
+    if (req.body.medium) updateData.medium = req.body.medium;
+    if (req.body.dimensions) updateData.dimensions = req.body.dimensions;
+    if (req.body.year_created) updateData.year_created = parseInt(req.body.year_created);
+    if (req.body.weight_kg) updateData.weight_kg = parseFloat(req.body.weight_kg);
+    if (req.body.is_original !== undefined) updateData.is_original = req.body.is_original === 'true';
+    if (req.body.is_framed !== undefined) updateData.is_framed = req.body.is_framed === 'true';
+    if (req.body.condition) updateData.condition = req.body.condition;
+    if (req.body.quantity !== undefined) updateData.quantity = parseInt(req.body.quantity);
+    if (req.body.is_available !== undefined) updateData.is_available = req.body.is_available === 'true';
+    if (req.body.is_featured !== undefined) updateData.is_featured = req.body.is_featured === 'true';
+    if (req.body.status) updateData.status = req.body.status;
+    if (req.body.categories) updateData.categories = JSON.parse(req.body.categories);
+    if (req.body.tags) updateData.tags = JSON.parse(req.body.tags);
+    
+    // Handle new image uploads if provided
+    if (req.files && req.files.length > 0) {
+      let imageUrls = [];
+      for (const file of req.files) {
+        try {
+          const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+          const fileName = `${Date.now()}-${safeName}`;
+          const filePath = `marketplace/${userId}/${fileName}`;
 
-    // Remove fields that shouldn't be updated
-    delete updateData.marketItemId;
-    delete updateData.userId;
-    delete updateData.created_at;
+          const { data, error } = await db.storage
+            .from("uploads")
+            .upload(filePath, file.buffer, {
+              contentType: file.mimetype,
+              upsert: false,
+            });
+
+          if (error) {
+            continue;
+          }
+
+          const { data: publicUrlData } = db.storage
+            .from("uploads")
+            .getPublicUrl(data.path);
+
+          if (publicUrlData?.publicUrl) {
+            imageUrls.push(publicUrlData.publicUrl);
+          }
+        } catch (uploadError) {
+          continue;
+        }
+      }
+
+      if (imageUrls.length > 0) {
+        updateData.images = imageUrls;
+        updateData.primary_image = imageUrls[0];
+      }
+    }
+    
+    updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await db
       .from('marketplace_items')
@@ -346,10 +558,26 @@ export const deleteMarketplaceItem = async (req, res) => {
       });
     }
 
-    // Check if item exists and belongs to user
+    // Check if user is admin
+    const { data: userProfile, error: profileError } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to verify user profile' 
+      });
+    }
+
+    const isAdmin = userProfile.role === 'admin';
+
+    // Check if item exists
     const { data: existingItem, error: checkError } = await db
       .from('marketplace_items')
-      .select('userId')
+      .select('userId, sellerProfileId, images')
       .eq('marketItemId', id)
       .single();
 
@@ -360,12 +588,37 @@ export const deleteMarketplaceItem = async (req, res) => {
       });
     }
 
-    if (existingItem.userId !== userId) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'You can only delete your own items' 
-      });
+    // If not admin, verify seller profile and ownership
+    if (!isAdmin) {
+      // Get user's active seller profile
+      const { data: sellerProfile, error: sellerError } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .eq('isSuspended', false)
+        .single();
+
+      if (sellerError || !sellerProfile) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'You must be an active seller to delete items' 
+        });
+      }
+
+      // Check ownership via sellerProfileId
+      if (existingItem.sellerProfileId !== sellerProfile.sellerProfileId) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'You can only delete your own items' 
+        });
+      }
     }
+
+    // TODO: Delete associated images from storage if needed
+    // if (existingItem.images && existingItem.images.length > 0) {
+    //   // Delete images from Supabase storage
+    // }
 
     // Delete item
     const { error } = await db
@@ -411,7 +664,7 @@ export const getCart = async (req, res) => {
       });
     }
 
-    // Get cart items with marketplace item details
+    // Get cart items with marketplace item details and seller profiles
     const { data: cartItems, error } = await db
       .from('cart_items')
       .select(`
@@ -427,7 +680,14 @@ export const getCart = async (req, res) => {
           is_original,
           quantity,
           status,
-          userId
+          userId,
+          sellerProfileId,
+          sellerProfiles (
+            sellerProfileId,
+            shopName,
+            city,
+            province
+          )
         )
       `)
       .eq('userId', userId)
@@ -800,7 +1060,7 @@ export const createOrder = async (req, res) => {
 
     const { shipping_address, contact_info, payment_method } = req.body;
 
-    // Get cart items
+    // Get cart items with seller profiles
     const { data: cartItems, error: cartError } = await db
       .from('cart_items')
       .select(`
@@ -811,7 +1071,14 @@ export const createOrder = async (req, res) => {
           price,
           quantity,
           status,
-          userId
+          userId,
+          sellerProfileId,
+          sellerProfiles (
+            sellerProfileId,
+            shopName,
+            isActive,
+            isSuspended
+          )
         )
       `)
       .eq('userId', userId);
@@ -831,12 +1098,22 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Validate all items are still available
+    // Validate all items are still available and sellers are active
     for (const item of cartItems) {
       if (!item.marketplace_items) {
         return res.status(400).json({ 
           success: false, 
           error: 'One or more items no longer exist' 
+        });
+      }
+
+      // Check if seller is active
+      if (!item.marketplace_items.sellerProfiles || 
+          !item.marketplace_items.sellerProfiles.isActive || 
+          item.marketplace_items.sellerProfiles.isSuspended) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Seller for "${item.marketplace_items.title}" is no longer active` 
         });
       }
 
@@ -869,7 +1146,8 @@ export const createOrder = async (req, res) => {
       return {
         userId: userId, // buyer
         marketplaceItemId: item.marketItemId,
-        sellerId: item.marketplace_items.userId,
+        sellerId: item.marketplace_items.userId, // Keep for backward compatibility
+        sellerProfileId: item.marketplace_items.sellerProfileId, // Use seller profile
         title: item.marketplace_items.title,
         priceAtPurchase: item.marketplace_items.price,
         quantity: item.quantity,
@@ -981,13 +1259,13 @@ export const createOrder = async (req, res) => {
 
     // DON'T clear cart yet - will be cleared after successful payment via webhook
 
-    // Group items by seller for response
+    // Group items by seller profile for response
     const itemsBySeller = {};
     createdOrderItems.forEach(item => {
-      if (!itemsBySeller[item.sellerId]) {
-        itemsBySeller[item.sellerId] = [];
+      if (!itemsBySeller[item.sellerProfileId]) {
+        itemsBySeller[item.sellerProfileId] = [];
       }
-      itemsBySeller[item.sellerId].push(item);
+      itemsBySeller[item.sellerProfileId].push(item);
     });
 
     res.status(201).json({ 
@@ -1060,13 +1338,13 @@ export const getBuyerOrders = async (req, res) => {
           .select('*')
           .eq('orderId', order.orderId);
 
-        // Group items by seller
+        // Group items by seller profile
         const itemsBySeller = {};
         items.forEach(item => {
-          if (!itemsBySeller[item.sellerId]) {
-            itemsBySeller[item.sellerId] = [];
+          if (!itemsBySeller[item.sellerProfileId]) {
+            itemsBySeller[item.sellerProfileId] = [];
           }
-          itemsBySeller[item.sellerId].push(item);
+          itemsBySeller[item.sellerProfileId].push(item);
         });
 
         return {
@@ -1106,10 +1384,25 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
+    // Get seller's profile
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an active seller to view orders' 
+      });
+    }
+
     const { data: orders, error } = await db
       .from('order_items')
       .select('*')
-      .eq('sellerId', userId)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
       .order('createdAt', { ascending: false });
 
     if (error) {
@@ -1175,9 +1468,20 @@ export const getOrderDetails = async (req, res) => {
       });
     }
 
-    // Check if user is buyer or any of the sellers
+    // Check if user is buyer or seller
     const isBuyer = order.userId === userId;
-    const isSeller = items.some(item => item.sellerId === userId);
+    
+    // Check if user is seller (need to get seller profile)
+    let isSeller = false;
+    const { data: sellerProfile } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .single();
+    
+    if (sellerProfile) {
+      isSeller = items.some(item => item.sellerProfileId === sellerProfile.sellerProfileId);
+    }
 
     if (!isBuyer && !isSeller) {
       return res.status(403).json({ 
@@ -1186,13 +1490,13 @@ export const getOrderDetails = async (req, res) => {
       });
     }
 
-    // Group items by seller
+    // Group items by seller profile
     const itemsBySeller = {};
     items.forEach(item => {
-      if (!itemsBySeller[item.sellerId]) {
-        itemsBySeller[item.sellerId] = [];
+      if (!itemsBySeller[item.sellerProfileId]) {
+        itemsBySeller[item.sellerProfileId] = [];
       }
-      itemsBySeller[item.sellerId].push(item);
+      itemsBySeller[item.sellerProfileId].push(item);
     });
 
     res.json({ 
@@ -1247,18 +1551,33 @@ export const markOrderAsShipped = async (req, res) => {
       });
     }
 
-    // Check if user is a seller in this order
+    // Get user's seller profile
+    const { data: sellerProfile } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+
+    if (!sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an active seller to ship orders' 
+      });
+    }
+
+    // Check if seller has items in this order
     const { data: items } = await db
       .from('order_items')
-      .select('sellerId')
+      .select('sellerProfileId')
       .eq('orderId', orderId);
 
-    const isSeller = items.some(item => item.sellerId === userId);
+    const isSeller = items.some(item => item.sellerProfileId === sellerProfile.sellerProfileId);
 
     if (!isSeller) {
       return res.status(403).json({ 
         success: false, 
-        error: 'Only sellers can mark orders as shipped' 
+        error: 'Only sellers with items in this order can mark it as shipped' 
       });
     }
 
@@ -1399,11 +1718,22 @@ export const cancelOrder = async (req, res) => {
     // Check if user is buyer or seller
     const { data: items } = await db
       .from('order_items')
-      .select('sellerId')
+      .select('sellerProfileId')
       .eq('orderId', orderId);
 
     const isBuyer = order.userId === userId;
-    const isSeller = items.some(item => item.sellerId === userId);
+    
+    // Check if user is seller
+    let isSeller = false;
+    const { data: sellerProfile } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .single();
+    
+    if (sellerProfile) {
+      isSeller = items.some(item => item.sellerProfileId === sellerProfile.sellerProfileId);
+    }
 
     if (!isBuyer && !isSeller) {
       return res.status(403).json({ 
@@ -1473,6 +1803,1018 @@ export const cancelOrder = async (req, res) => {
 
   } catch (error) {
     console.error('Error in cancelOrder:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// ========================================
+// SELLER APPLICATIONS
+// ========================================
+
+// Submit seller application
+export const submitSellerApplication = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // CRITICAL: Check if user is an artist first
+    const { data: userProfile, error: profileError } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to verify user profile' 
+      });
+    }
+
+    if (userProfile.role !== 'artist') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only verified artists can apply to become sellers. Please apply for artist verification first.',
+        requiresArtistRole: true
+      });
+    }
+
+    const {
+      shopName,
+      fullName,
+      email,
+      phoneNumber,
+      street,
+      landmark,
+      region,
+      province,
+      city,
+      barangay,
+      postalCode,
+      shopDescription
+    } = req.body;
+
+
+    // Validation
+    const missingFields = [];
+    if (!shopName) missingFields.push('shopName');
+    if (!fullName) missingFields.push('fullName');
+    if (!email) missingFields.push('email');
+    if (!phoneNumber) missingFields.push('phoneNumber');
+    if (!street) missingFields.push('street');
+    if (!region) missingFields.push('region');
+    if (!province) missingFields.push('province');
+    if (!city) missingFields.push('city');
+    if (!barangay) missingFields.push('barangay');
+    if (!postalCode) missingFields.push('postalCode');
+    if (!shopDescription) missingFields.push('shopDescription');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'All required fields must be filled',
+        missingFields
+      });
+    }
+
+    // Check if user already has a seller application in the request table
+    const { data: existingApp, error: checkError } = await db
+      .from('request')
+      .select('*')
+      .eq('userId', userId)
+      .eq('requestType', 'seller_application')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing application:', checkError);
+      return res.status(500).json({ 
+        success: false, 
+        error: checkError.message 
+      });
+    }
+
+    // Block ONLY if approved (already a seller)
+    if (existingApp && existingApp.status === 'approved') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You already have an approved seller account.' 
+      });
+    }
+
+    // Handle ID document upload (multer single file)
+    let idDocumentUrl = null;
+    if (req.file) {
+      const file = req.file;
+      
+      // Sanitize filename
+      const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "id-document";
+      const fileName = `${Date.now()}-${safeName}`;
+      const filePath = `seller-documents/${userId}/${fileName}`;
+
+      // Upload to Supabase storage
+      const { data, error } = await db.storage
+        .from("uploads")
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to upload ID document',
+          message: error.message
+        });
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = db.storage
+        .from("uploads")
+        .getPublicUrl(filePath);
+
+      idDocumentUrl = publicUrlData.publicUrl;
+    }
+
+    if (!idDocumentUrl) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Government ID document is required' 
+      });
+    }
+
+    // Prepare data for JSONB column
+    const requestData = {
+      shopName,
+      fullName,
+      email,
+      phoneNumber,
+      street,
+      landmark: landmark || null,
+      region,
+      province,
+      city,
+      barangay,
+      postalCode,
+      shopDescription,
+      idDocumentUrl,
+      agreedToTerms: true,
+      reviewedBy: null,
+      reviewedAt: null,
+      rejectionReason: null
+    };
+
+    let application;
+    let isUpdate = false;
+
+    // If any existing application (pending or rejected), UPDATE it
+    if (existingApp && (existingApp.status === 'pending' || existingApp.status === 'rejected')) {
+      isUpdate = true;
+      
+      const { data, error: updateError } = await db
+        .from('request')
+        .update({
+          data: requestData,
+          status: 'pending',
+          updatedAt: new Date().toISOString()
+        })
+        .eq('requestId', existingApp.requestId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating seller application:', updateError);
+        return res.status(500).json({ 
+          success: false, 
+          error: updateError.message 
+        });
+      }
+
+      application = data;
+    } 
+    // Otherwise, CREATE new application
+    else {
+      const { data, error: insertError } = await db
+        .from('request')
+        .insert([{
+          userId,
+          requestType: 'seller_application',
+          data: requestData,
+          status: 'pending'
+        }])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating seller application:', insertError);
+        return res.status(500).json({ 
+          success: false, 
+          error: insertError.message 
+        });
+      }
+
+      application = data;
+    }
+
+    res.status(isUpdate ? 200 : 201).json({ 
+      success: true, 
+      message: isUpdate 
+        ? 'Seller application updated successfully' 
+        : 'Seller application submitted successfully',
+      data: application,
+      isResubmission: isUpdate
+    });
+
+  } catch (error) {
+    console.error('Error in submitSellerApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Get user's seller application status
+export const getMySellerApplication = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    const { data: application, error } = await db
+      .from('request')
+      .select('*')
+      .eq('userId', userId)
+      .eq('requestType', 'seller_application')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching application:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+
+    // Transform the data to match expected format
+    if (application) {
+      const transformedApp = {
+        sellerApplicationId: application.requestId,
+        userId: application.userId,
+        status: application.status,
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
+        ...application.data  // Spread the JSONB data
+      };
+      
+      res.json({ 
+        success: true, 
+        data: transformedApp
+      });
+    } else {
+      res.json({ 
+        success: true, 
+        data: null
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in getMySellerApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Get all seller applications (Admin only)
+export const getAllSellerApplications = async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let query = db
+      .from('request')
+      .select('*')
+      .eq('requestType', 'seller_application')
+      .order('createdAt', { ascending: false });
+    
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    const { data: applications, error } = await query;
+
+    if (error) {
+      console.error('Error fetching applications:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+
+    // Transform the applications to match expected format
+    const transformedApps = applications.map(app => ({
+      sellerApplicationId: app.requestId,
+      userId: app.userId,
+      status: app.status,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+      ...app.data  // Spread the JSONB data
+    }));
+
+    res.json({ 
+      success: true, 
+      data: transformedApps,
+      count: transformedApps.length
+    });
+
+  } catch (error) {
+    console.error('Error in getAllSellerApplications:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Approve seller application (Admin only)
+export const approveSellerApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const adminId = req.user?.id;
+    
+    if (!adminId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Get the application first
+    const { data: application, error: fetchError } = await db
+      .from('request')
+      .select('*')
+      .eq('requestId', applicationId)
+      .eq('requestType', 'seller_application')
+      .single();
+
+    if (fetchError || !application) {
+      console.error('Error fetching application:', fetchError);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Application not found' 
+      });
+    }
+
+    // Check if already approved
+    if (application.status === 'approved') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Application is already approved' 
+      });
+    }
+
+    // 1. Update application status in the data JSONB
+    const updatedData = {
+      ...application.data,
+      reviewedBy: adminId,
+      reviewedAt: new Date().toISOString()
+    };
+
+    const { error: updateError } = await db
+      .from('request')
+      .update({
+        status: 'approved',
+        data: updatedData,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('requestId', applicationId);
+
+    if (updateError) {
+      console.error('Error approving application:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        error: updateError.message 
+      });
+    }
+
+    // 2. Create seller profile
+    const { data: profile, error: profileError } = await db
+      .from('sellerProfiles')
+      .insert({
+        userId: application.userId,
+        shopName: application.data.shopName,
+        shopDescription: application.data.shopDescription,
+        fullName: application.data.fullName,
+        email: application.data.email,
+        phoneNumber: application.data.phoneNumber,
+        street: application.data.street,
+        landmark: application.data.landmark,
+        region: application.data.region,
+        province: application.data.province,
+        city: application.data.city,
+        barangay: application.data.barangay,
+        postalCode: application.data.postalCode,
+        isActive: true,
+        isSuspended: false
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Error creating seller profile:', profileError);
+      // If profile already exists, that's okay
+      if (profileError.code !== '23505') { // Not a duplicate key error
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to create seller profile: ' + profileError.message 
+        });
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Seller application approved successfully. User is now a seller!',
+      data: {
+        application: { ...application, status: 'approved' },
+        profile: profile
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in approveSellerApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Reject seller application (Admin only)
+export const rejectSellerApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const adminId = req.user?.id;
+    const { rejectionReason } = req.body;
+    
+    if (!adminId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    if (!rejectionReason) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Rejection reason is required' 
+      });
+    }
+
+    // Get the application first
+    const { data: application, error: fetchError } = await db
+      .from('request')
+      .select('*')
+      .eq('requestId', applicationId)
+      .eq('requestType', 'seller_application')
+      .single();
+
+    if (fetchError || !application) {
+      console.error('Error fetching application:', fetchError);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Application not found' 
+      });
+    }
+
+    // Update application status and add rejection reason to data
+    const updatedData = {
+      ...application.data,
+      reviewedBy: adminId,
+      reviewedAt: new Date().toISOString(),
+      rejectionReason
+    };
+
+    const { data: updated, error: updateError } = await db
+      .from('request')
+      .update({
+        status: 'rejected',
+        data: updatedData,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('requestId', applicationId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error rejecting application:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        error: updateError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Seller application rejected',
+      data: updated
+    });
+
+  } catch (error) {
+    console.error('Error in rejectSellerApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Delete seller application (Admin only)
+export const deleteSellerApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const adminId = req.user?.id;
+    
+    if (!adminId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Get the application first to retrieve the image URL
+    const { data: application, error: fetchError } = await db
+      .from('request')
+      .select('*')
+      .eq('requestId', applicationId)
+      .eq('requestType', 'seller_application')
+      .single();
+
+    if (fetchError || !application) {
+      console.error('Error fetching application:', fetchError);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Application not found' 
+      });
+    }
+
+    // Extract the image URL from the data
+    const idDocumentUrl = application.data?.idDocumentUrl;
+    
+    // If there's an image, delete it from Supabase storage
+    if (idDocumentUrl) {
+      try {
+        // Extract the file path from the URL
+        // URL format: https://xxx.supabase.co/storage/v1/object/public/uploads/seller-documents/userId/filename
+        const urlParts = idDocumentUrl.split('/uploads/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          
+          // Delete from Supabase storage
+          const { error: storageError } = await db.storage
+            .from('uploads')
+            .remove([filePath]);
+          
+          if (storageError) {
+            console.error('Error deleting image from storage:', storageError);
+            // Continue with deletion even if image deletion fails
+          } else {
+            console.log('Successfully deleted image:', filePath);
+          }
+        }
+      } catch (imgError) {
+        console.error('Error processing image deletion:', imgError);
+        // Continue with deletion even if image deletion fails
+      }
+    }
+
+    // Delete the application from the database
+    const { error: deleteError } = await db
+      .from('request')
+      .delete()
+      .eq('requestId', applicationId)
+      .eq('requestType', 'seller_application');
+
+    if (deleteError) {
+      console.error('Error deleting application:', deleteError);
+      return res.status(500).json({ 
+        success: false, 
+        error: deleteError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Seller application and associated documents deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in deleteSellerApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Check if user has an active seller profile
+export const checkSellerStatus = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Check for active seller profile
+    const { data: sellerProfile, error } = await db
+      .from('sellerProfiles')
+      .select('*')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .eq('isSuspended', false)
+      .single();
+
+    if (error || !sellerProfile) {
+      return res.json({ 
+        success: true, 
+        isSeller: false,
+        sellerProfile: null
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      isSeller: true,
+      sellerProfile: sellerProfile
+    });
+
+  } catch (error) {
+    console.error('Error in checkSellerStatus:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// TESTING ONLY - Cancel my own application (for testing resubmission)
+export const cancelMyApplication = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Find user's application
+    const { data: application, error: findError } = await db
+      .from('request')
+      .select('*')
+      .eq('userId', userId)
+      .eq('requestType', 'seller_application')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (findError || !application) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No application found' 
+      });
+    }
+
+    // Update to rejected status (for testing)
+    const updatedData = {
+      ...application.data,
+      rejectionReason: 'Cancelled by user for testing'
+    };
+
+    const { data: updated, error: updateError } = await db
+      .from('request')
+      .update({
+        status: 'rejected',
+        data: updatedData,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('requestId', application.requestId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error cancelling application:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        error: updateError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Application cancelled. You can now resubmit.',
+      data: updated
+    });
+
+  } catch (error) {
+    console.error('Error in cancelMyApplication:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// ========================================
+// ADDRESS MANAGEMENT
+// ========================================
+
+// Get all user addresses
+export const getUserAddresses = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    const { data: addresses, error } = await db
+      .from('user_addresses')
+      .select('*')
+      .eq('userId', userId)
+      .order('isDefault', { ascending: false })
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching addresses:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      data: addresses || []
+    });
+
+  } catch (error) {
+    console.error('Error in getUserAddresses:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Create new address
+export const createAddress = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    const {
+      fullName, email, phoneNumber, alternatePhone,
+      addressLine1, addressLine2, landmark,
+      regionCode, provinceCode, cityMunicipalityCode, barangayCode,
+      regionName, provinceName, cityMunicipalityName, barangayName,
+      postalCode, addressType, isDefault, deliveryInstructions
+    } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !phoneNumber || !addressLine1 || 
+        !regionCode || !provinceCode || !cityMunicipalityCode || !barangayCode ||
+        !regionName || !provinceName || !cityMunicipalityName || !barangayName || 
+        !postalCode) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Please provide all required address fields' 
+      });
+    }
+
+    // Validate phone number format (Philippine)
+    const phoneRegex = /^(09|\+639)\d{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX' 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid email format' 
+      });
+    }
+
+    // Validate postal code
+    if (!/^\d{4}$/.test(postalCode)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Postal code must be 4 digits' 
+      });
+    }
+
+    // If this is set as default, update other addresses
+    if (isDefault) {
+      await db
+        .from('user_addresses')
+        .update({ isDefault: false })
+        .eq('userId', userId);
+    }
+
+    // Create new address
+    const { data: newAddress, error: insertError } = await db
+      .from('user_addresses')
+      .insert({
+        userId,
+        fullName,
+        email,
+        phoneNumber,
+        alternatePhone: alternatePhone || null,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+        landmark: landmark || null,
+        regionCode,
+        provinceCode,
+        cityMunicipalityCode,
+        barangayCode,
+        regionName,
+        provinceName,
+        cityMunicipalityName,
+        barangayName,
+        postalCode,
+        addressType: addressType || null,
+        isDefault: isDefault || false,
+        deliveryInstructions: deliveryInstructions || null
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating address:', insertError);
+      return res.status(500).json({ 
+        success: false, 
+        error: insertError.message 
+      });
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Address created successfully',
+      data: newAddress
+    });
+
+  } catch (error) {
+    console.error('Error in createAddress:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Update address
+export const updateAddress = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Check if address exists and belongs to user
+    const { data: existingAddress, error: checkError } = await db
+      .from('user_addresses')
+      .select('*')
+      .eq('userAddressId', addressId)
+      .eq('userId', userId)
+      .single();
+
+    if (checkError || !existingAddress) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Address not found' 
+      });
+    }
+
+    const updateData = { ...req.body };
+
+    // If setting as default, update other addresses
+    if (updateData.isDefault === true) {
+      await db
+        .from('user_addresses')
+        .update({ isDefault: false })
+        .eq('userId', userId)
+        .neq('userAddressId', addressId);
+    }
+
+    // Update address
+    const { data: updatedAddress, error: updateError } = await db
+      .from('user_addresses')
+      .update(updateData)
+      .eq('userAddressId', addressId)
+      .eq('userId', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating address:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        error: updateError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Address updated successfully',
+      data: updatedAddress
+    });
+
+  } catch (error) {
+    console.error('Error in updateAddress:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Delete address
+export const deleteAddress = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Delete address
+    const { error: deleteError } = await db
+      .from('user_addresses')
+      .delete()
+      .eq('userAddressId', addressId)
+      .eq('userId', userId);
+
+    if (deleteError) {
+      console.error('Error deleting address:', deleteError);
+      return res.status(500).json({ 
+        success: false, 
+        error: deleteError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Address deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in deleteAddress:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Internal server error' 

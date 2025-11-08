@@ -8,8 +8,11 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
   const [showBidSuccess, setShowBidSuccess] = useState(false);
   const [selectedTab, setSelectedTab] = useState("details");
 
-  // Mock multiple images
-  const images = item?.image ? [item.image, item.image, item.image, item.image] : [];
+  // Handle images from API (primary_image + images array)
+  const images = item ? [
+    item.primary_image,
+    ...(Array.isArray(item.images) ? item.images : [])
+  ].filter(Boolean) : [];
 
   useEffect(() => {
     if (isOpen) {
@@ -30,8 +33,8 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
 
   if (!isOpen || !item) return null;
 
-  const isBlindAuction = item.listingType === "auction";
-  const suggestedMinBid = item.startingPrice || 1000;
+  const isBlindAuction = item?.listingType === "auction";
+  const suggestedMinBid = item?.startingPrice || item?.price || 1000;
 
   const handleAddToCart = () => {
     onAddToCart({ ...item, quantity });
@@ -55,7 +58,7 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
         {/* Header Bar */}
         <div className="pdm-header">
           <div className="pdm-breadcrumb">
-            Marketplace / {item.category || 'Artwork'} / {item.title}
+            Marketplace / {item.categories?.[0] || item.medium || 'Artwork'} / {item.title}
           </div>
           <button className="pdm-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -114,19 +117,19 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
             <div className="pdm-quick-info">
               <div className="pdm-info-item">
                 <span className="pdm-info-label">Medium</span>
-                <span className="pdm-info-value">{item.medium || 'Oil on Canvas'}</span>
+                <span className="pdm-info-value">{item.medium || 'N/A'}</span>
               </div>
               <div className="pdm-info-item">
                 <span className="pdm-info-label">Dimensions</span>
-                <span className="pdm-info-value">{item.dimensions || '24" × 36"'}</span>
+                <span className="pdm-info-value">{item.dimensions || 'N/A'}</span>
               </div>
               <div className="pdm-info-item">
                 <span className="pdm-info-label">Year</span>
-                <span className="pdm-info-value">{item.year || '2024'}</span>
+                <span className="pdm-info-value">{item.year_created || 'N/A'}</span>
               </div>
               <div className="pdm-info-item">
                 <span className="pdm-info-label">Authenticity</span>
-                <span className="pdm-info-value">{item.isOriginal ? 'Original' : 'Print'}</span>
+                <span className="pdm-info-value">{item.is_original ? 'Original' : 'Print'}</span>
               </div>
             </div>
           </div>
@@ -147,17 +150,17 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
               <h1 className="pdm-title">{item.title}</h1>
               <div className="pdm-artist">
                 <img 
-                  src={`https://ui-avatars.com/api/?name=${item.artist}&background=d4b48a&color=fff&size=32`} 
-                  alt={item.artist}
+                  src={item.seller?.profilePicture || `https://ui-avatars.com/api/?name=${item.seller?.shopName || 'Artist'}&background=d4b48a&color=fff&size=32`} 
+                  alt={item.seller?.shopName || 'Artist'}
                   className="pdm-artist-avatar"
                 />
                 <div>
-                  <span className="pdm-artist-name">{item.artist}</span>
+                  <span className="pdm-artist-name">{item.seller?.shopName || 'Unknown Artist'}</span>
                   <span className="pdm-artist-verified">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Verified Artist
+                    Verified Seller
                   </span>
                 </div>
               </div>
@@ -185,15 +188,21 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
             <div className="pdm-tab-content">
               {selectedTab === 'details' && (
                 <div className="pdm-description">
-                  <p>
-                    This exceptional {item.medium?.toLowerCase() || 'artwork'} represents a masterful exploration 
-                    of contemporary artistic expression. Created by {item.artist}, this piece showcases remarkable 
-                    technical skill and emotional depth.
-                  </p>
-                  <p>
-                    Each detail has been carefully crafted to create a work that resonates with both collectors 
-                    and art enthusiasts. The piece comes with a certificate of authenticity and is ready for display.
-                  </p>
+                  {item.description ? (
+                    <p>{item.description}</p>
+                  ) : (
+                    <>
+                      <p>
+                        This exceptional {item.medium?.toLowerCase() || 'artwork'} represents a masterful exploration 
+                        of contemporary artistic expression. Created by {item.seller?.shopName || 'the artist'}, this piece showcases remarkable 
+                        technical skill and emotional depth.
+                      </p>
+                      <p>
+                        Each detail has been carefully crafted to create a work that resonates with both collectors 
+                        and art enthusiasts. {item.is_original && 'The piece comes with a certificate of authenticity and is ready for display.'}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
               
@@ -293,13 +302,13 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                       <span>{quantity}</span>
                       <button 
                         onClick={() => setQuantity(quantity + 1)}
-                        disabled={quantity >= (item.stock || 10)}
+                        disabled={quantity >= (item.quantity || 10)}
                       >
                         +
                       </button>
                     </div>
                     <span className="pdm-stock">
-                      {item.stock > 0 ? `${item.stock} available` : 'In stock'}
+                      {item.quantity > 0 ? `${item.quantity} available` : 'In stock'}
                     </span>
                   </div>
 

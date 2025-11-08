@@ -170,12 +170,18 @@ export default function ImageUploadZone({
         onClick={pickImage}
       >
         <div className="museo-dropzone-content">
-          <div className="museo-dropzone-icon">🎨</div>
+          <div className="museo-dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
           <div className="museo-dropzone-text">
-            <strong>Drop your {isMultiple ? 'images' : 'image'} here</strong> or click to browse
+            <strong>Drop your {isMultiple ? 'files' : 'file'} here</strong> or click to browse
           </div>
           <div className="museo-dropzone-hint">
-            {hint || `Support: JPG, PNG up to ${maxSize}MB${isMultiple ? ` • Maximum ${maxFiles} images` : ' • Single image only'}`}
+            {hint || `Support: JPG, PNG up to ${maxSize}MB${isMultiple ? ` • Maximum ${maxFiles} files` : ' • Single file only'}`}
           </div>
         </div>
       </div>

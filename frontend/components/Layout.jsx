@@ -20,6 +20,7 @@ export default function Layout() {
   const isMyProfile = pathname === "/MyProfile";
   const isVisitMuseo = pathname === "/visit-museo";
   const isRequestsPage = pathname === "/requests";
+  const isSettings = pathname === "/settings";
   
   // Get user data from UserContext instead of fetching
   const { userData, isLoading } = useUser();
@@ -163,7 +164,7 @@ export default function Layout() {
   } : null;
 
   return (
-    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isSellerDashboard ? "app--seller-dashboard" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""}`}>
+    <div className={`app ${isMessage ? "app--message" : ""} ${isGallery ? "app--gallery" : ""} ${isMarketplace ? "app--marketplace" : ""} ${isCheckout ? "app--checkout" : ""} ${isSellerDashboard ? "app--seller-dashboard" : ""} ${isArtistProfile ? "app--artist-profile" : ""} ${isMyProfile ? "app--my-profile" : ""} ${isVisitMuseo ? "app--visit-museo" : ""} ${isRequestsPage ? "app--requests" : ""} ${isSettings ? "app--settings" : ""}`}>
       <header className="app__header">
         <Navbar role={role} userData={navbarUserData} />
       </header>
@@ -179,7 +180,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {!isGallery && !isMarketplace && !isCheckout && !isSellerDashboard && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && (
+      {!isGallery && !isMarketplace && !isCheckout && !isSellerDashboard && !isArtistProfile && !isMyProfile && !isVisitMuseo && !isRequestsPage && !isSettings && (
         <aside className="app__side-right">
           <SidePanel2 
             userData={userData} 

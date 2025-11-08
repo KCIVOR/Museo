@@ -6,6 +6,8 @@ import '../styles/components/buttons.css';
 import '../styles/components/inputs.css';
 import '../styles/components/address-form.css';
 
+const API = import.meta.env.VITE_API_BASE;
+
 export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
   const { userData } = useUser();
   
@@ -28,9 +30,15 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
     cityMunicipalityCode: '',
     barangayCode: '',
     
+    // Location Names (will be filled when location is selected)
+    regionName: '',
+    provinceName: '',
+    cityMunicipalityName: '',
+    barangayName: '',
+    
     // Additional Details
     postalCode: '',
-    addressType: 'home',
+    addressType: 'Home', // Changed to match backend enum: 'Home', 'Work', 'Other'
     isDefault: false,
     deliveryInstructions: ''
   });
@@ -50,8 +58,16 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
   useEffect(() => {
     if (isOpen) {
       fetchRegions();
+      // Pre-fill email and name if available
+      if (userData) {
+        setFormData(prev => ({
+          ...prev,
+          fullName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || prev.fullName,
+          email: userData.email || prev.email
+        }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, userData]);
   
   // Fetch Regions from PSGC API
   const fetchRegions = async () => {
@@ -235,37 +251,47 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
         regionName: selectedRegion?.name || '',
         provinceName: selectedProvince?.name || '',
         cityMunicipalityName: selectedCity?.name || '',
-        barangayName: selectedBarangay?.name || '',
-        createdAt: new Date().toISOString()
+        barangayName: selectedBarangay?.name || ''
       };
       
-      // Save to localStorage
-      const savedAddresses = JSON.parse(localStorage.getItem('museoAddresses') || '[]');
-      
-      // If this is set as default, update other addresses
-      if (addressData.isDefault) {
-        savedAddresses.forEach(addr => addr.isDefault = false);
-      }
-      
-      savedAddresses.push({
-        ...addressData,
-        id: Date.now()
+      // Save to backend API
+      const response = await fetch(`${API}/marketplace/addresses`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(addressData)
       });
       
-      localStorage.setItem('museoAddresses', JSON.stringify(savedAddresses));
+      const result = await response.json();
       
-      // Call parent callback
-      if (onAddressSaved) {
-        onAddressSaved(savedAddresses);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save address');
       }
       
-      // Reset form
-      resetForm();
-      onClose();
+      if (result.success) {
+        // Fetch updated addresses from backend
+        const addressesResponse = await fetch(`${API}/marketplace/addresses`, {
+          credentials: 'include'
+        });
+        const addressesResult = await addressesResponse.json();
+        
+        // Call parent callback with updated addresses
+        if (onAddressSaved && addressesResult.success) {
+          onAddressSaved(addressesResult.data);
+        }
+        
+        // Reset form
+        resetForm();
+        onClose();
+        
+        alert('Address saved successfully!');
+      }
       
     } catch (error) {
       console.error('Error saving address:', error);
-      alert('Failed to save address. Please try again.');
+      alert(error.message || 'Failed to save address. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -285,8 +311,12 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
       provinceCode: '',
       cityMunicipalityCode: '',
       barangayCode: '',
+      regionName: '',
+      provinceName: '',
+      cityMunicipalityName: '',
+      barangayName: '',
       postalCode: '',
-      addressType: 'home',
+      addressType: 'Home',
       isDefault: false,
       deliveryInstructions: ''
     });

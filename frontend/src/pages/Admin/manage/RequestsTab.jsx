@@ -50,6 +50,41 @@ export default function RequestsTab() {
         return { success: true, deleted: true };
       }
     },
+    seller_application: {
+      approve: async (id) => {
+        const res = await fetch(`${API}/marketplace/seller/applications/${id}/approve`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) throw new Error('Failed to approve seller application');
+        const data = await res.json();
+        return { success: true, status: 'approved', data };
+      },
+      reject: async (id, req) => {
+        const reason = window.prompt('Please provide a reason for rejection:');
+        if (!reason) throw new Error('Rejection reason is required');
+        
+        const res = await fetch(`${API}/marketplace/seller/applications/${id}/reject`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rejectionReason: reason })
+        });
+        if (!res.ok) throw new Error('Failed to reject seller application');
+        const data = await res.json();
+        return { success: true, status: 'rejected', data };
+      },
+      delete: async (id) => {
+        const res = await fetch(`${API}/marketplace/seller/applications/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Failed to delete seller application');
+        const data = await res.json();
+        return { success: true, deleted: true, data };
+      }
+    },
     artist_verification: {
       approve: async (id, req) => {
         const res = await fetch(`${API}/request/action`, {
@@ -137,60 +172,76 @@ export default function RequestsTab() {
     setLoading(true);
     setError("");
     try {
-      // Fetch regular requests
+      // Fetch all requests (including seller applications from unified table)
       const res = await fetch(`${API}/request/getRequest`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error(`Failed to load requests (${res.status})`);
       const data = await res.json();
-      const regularRequests = Array.isArray(data?.requests) ? data.requests : (Array.isArray(data) ? data : []);
+      const allRequests = Array.isArray(data?.requests) ? data.requests : (Array.isArray(data) ? data : []);
       
-      // Fetch visit bookings
-      let visitBookings = [];
-      try {
-        const visitRes = await fetch(`${API}/visit-bookings`, {
-          credentials: "include",
-        });
-        if (visitRes.ok) {
-          const visitData = await visitRes.json();
-          if (visitData.success && Array.isArray(visitData.data)) {
-            visitBookings = visitData.data.map(booking => ({
-              id: booking.visitId,
-              visitId: booking.visitId,
-              requestId: booking.visitId,
-              userId: booking.user_id,
-              requestType: 'visit_booking',
-              type: 'visit_booking',
-              status: booking.status,
-              createdAt: booking.created_at,
-              data: {
-                visitorType: booking.visitor_type,
-                organizationName: booking.organization_name,
-                numberOfVisitors: booking.number_of_visitors,
-                classification: booking.classification,
-                yearLevel: booking.year_level,
-                institutionalType: booking.institutional_type,
-                location: booking.location,
-                contactName: booking.contact_name,
-                contactEmail: booking.contact_email,
-                contactPhone: booking.contact_phone,
-                preferredDate: booking.preferred_date,
-                preferredTime: booking.preferred_time,
-                purposeOfVisit: booking.purpose_of_visit,
-                purposeOther: booking.purpose_other,
-                remarks: booking.remarks,
-                organizationDetails: booking.organization_details,
-                adminNotes: booking.admin_notes
-              }
-            }));
-          }
+      // Transform requests - both seller applications and visit bookings have data in JSONB
+      const regularRequests = allRequests.map(req => {
+        if (req.requestType === 'seller_application' && req.data) {
+          // For seller applications, spread the JSONB data
+          return {
+            ...req,
+            id: req.requestId,
+            data: {
+              ...req.data,
+              // Ensure all expected fields are present
+              shopName: req.data.shopName,
+              fullName: req.data.fullName,
+              email: req.data.email,
+              phoneNumber: req.data.phoneNumber,
+              street: req.data.street,
+              landmark: req.data.landmark,
+              region: req.data.region,
+              province: req.data.province,
+              city: req.data.city,
+              barangay: req.data.barangay,
+              postalCode: req.data.postalCode,
+              shopDescription: req.data.shopDescription,
+              idDocumentUrl: req.data.idDocumentUrl,
+              rejectionReason: req.data.rejectionReason
+            }
+          };
+        } else if (req.requestType === 'visit_booking' && req.data) {
+          // For visit bookings, transform to expected format
+          return {
+            ...req,
+            id: req.requestId,
+            visitId: req.requestId,
+            userId: req.userId,
+            type: 'visit_booking',
+            data: {
+              ...req.data,
+              // Map snake_case to camelCase for consistency
+              visitorType: req.data.visitor_type,
+              organizationName: req.data.organization_name,
+              numberOfVisitors: req.data.number_of_visitors,
+              classification: req.data.classification,
+              yearLevel: req.data.year_level,
+              institutionalType: req.data.institutional_type,
+              location: req.data.location,
+              contactName: req.data.contact_name,
+              contactEmail: req.data.contact_email,
+              contactPhone: req.data.contact_phone,
+              preferredDate: req.data.preferred_date,
+              preferredTime: req.data.preferred_time,
+              purposeOfVisit: req.data.purpose_of_visit,
+              purposeOther: req.data.purpose_other,
+              remarks: req.data.remarks,
+              organizationDetails: req.data.organization_details,
+              adminNotes: req.data.admin_notes
+            }
+          };
         }
-      } catch (visitError) {
-        console.warn('Could not fetch visit bookings:', visitError);
-      }
+        return req;
+      });
       
-      // Combine both types and sort by date (newest first)
-      const combined = [...regularRequests, ...visitBookings];
+      // Sort by date (newest first)
+      const combined = [...regularRequests];
       combined.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.created_at || 0);
         const dateB = new Date(b.createdAt || b.created_at || 0);
@@ -386,11 +437,15 @@ export default function RequestsTab() {
             const data = r.data || {};
             const isVisit = r.requestType === 'visit_booking' || r.type === 'visit_booking';
             const isArtistVerification = r.requestType === 'artist_verification' || r.type === 'artist_verification';
+            const isSellerApplication = r.requestType === 'seller_application' || r.type === 'seller_application';
             
             // Get display name based on request type
             const getDisplayName = () => {
               if (isVisit) {
                 return data.organizationName || data.contactName || 'Visit Request';
+              }
+              if (isSellerApplication) {
+                return data.shopName || data.fullName || 'Seller Application';
               }
               if (isArtistVerification || data.firstName || data.lastName) {
                 const name = [data.firstName, data.midInit, data.lastName].filter(Boolean).join(' ');
@@ -403,6 +458,9 @@ export default function RequestsTab() {
             const getContactInfo = () => {
               if (isVisit) {
                 return data.contactEmail || data.contactPhone || 'No contact info';
+              }
+              if (isSellerApplication) {
+                return data.email || data.phoneNumber || 'No contact info';
               }
               return data.email || data.phone || 'No email provided';
             };
@@ -490,6 +548,41 @@ export default function RequestsTab() {
                           </svg>
                           <span style={{ fontSize: 'var(--museo-font-size-sm)' }}>
                             {data.preferredTime || 'morning'}
+                          </span>
+                        </div>
+                      </>
+                    ) : isSellerApplication ? (
+                      <>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--museo-space-2)'
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.6">
+                            <path d="M3 3h18v18H3z"/>
+                            <path d="M12 8v8"/>
+                            <path d="M8 12h8"/>
+                          </svg>
+                          <span style={{ fontSize: 'var(--museo-font-size-sm)' }}>
+                            {getContactInfo()}
+                          </span>
+                        </div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--museo-space-2)'
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.6">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          <span style={{ 
+                            fontSize: 'var(--museo-font-size-sm)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {[data.city, data.province].filter(Boolean).join(', ') || 'Location not provided'}
                           </span>
                         </div>
                       </>

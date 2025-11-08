@@ -32,9 +32,8 @@ if (REDIS_ENABLED) {
     console.error('❌ Failed to connect to Redis:', err.message);
     redis = null; // Disable Redis if connection fails
   }
-} else {
-  console.log('ℹ️ Redis not configured. Running without cache.');
 }
+// Redis is optional - app runs fine without it
 
 // Cache utility functions
 export const cache = {

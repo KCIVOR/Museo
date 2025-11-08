@@ -46,6 +46,32 @@ export default function RequestsModal({
         const data = await res.json();
         return { success: true, status: 'rejected', data };
       }
+    },
+    seller_application: {
+      approve: async (id) => {
+        const res = await fetch(`${API}/marketplace/seller/applications/${id}/approve`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) throw new Error('Failed to approve seller application');
+        const data = await res.json();
+        return { success: true, status: 'approved', data };
+      },
+      reject: async (id, req) => {
+        const reason = window.prompt('Please provide a reason for rejection:');
+        if (!reason) throw new Error('Rejection reason is required');
+        
+        const res = await fetch(`${API}/marketplace/seller/applications/${id}/reject`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rejectionReason: reason })
+        });
+        if (!res.ok) throw new Error('Failed to reject seller application');
+        const data = await res.json();
+        return { success: true, status: 'rejected', data };
+      }
     }
     // Add more request type handlers here as needed
   };
@@ -107,8 +133,53 @@ export default function RequestsModal({
         console.error('Failed to load visit bookings:', visitError);
       }
       
-      // Combine both types and sort by date (newest first)
-      const combined = [...regularRequests, ...visitBookings];
+      // Fetch seller applications
+      let sellerApplications = [];
+      try {
+        const sellerRes = await fetch(`${API}/marketplace/seller/applications`, {
+          credentials: "include",
+        });
+        if (sellerRes.ok) {
+          const sellerData = await sellerRes.json();
+          if (sellerData.success && Array.isArray(sellerData.data)) {
+            // Transform seller applications to match request format
+            sellerApplications = sellerData.data.map(app => ({
+              id: app.sellerApplicationId,
+              requestId: app.sellerApplicationId,
+              userId: app.userId,
+              requestType: 'seller_application',
+              type: 'seller_application',
+              status: app.status,
+              createdAt: app.createdAt,
+              updatedAt: app.updatedAt,
+              data: {
+                shopName: app.shopName,
+                fullName: app.fullName,
+                email: app.email,
+                phoneNumber: app.phoneNumber,
+                street: app.street,
+                landmark: app.landmark,
+                region: app.region,
+                province: app.province,
+                city: app.city,
+                barangay: app.barangay,
+                postalCode: app.postalCode,
+                shopDescription: app.shopDescription,
+                idDocumentUrl: app.idDocumentUrl,
+                agreedToTerms: app.agreedToTerms,
+                reviewedBy: app.reviewedBy,
+                reviewedAt: app.reviewedAt,
+                rejectionReason: app.rejectionReason
+              }
+            }));
+          }
+        }
+      } catch (sellerError) {
+        console.error('Failed to load seller applications:', sellerError);
+      }
+      
+      // Combine all types and sort by date (newest first)
+      const combined = [...regularRequests, ...visitBookings, ...sellerApplications];
       combined.sort((a, b) => {
         const dateA = new Date(a.createdAt || a.created_at || 0);
         const dateB = new Date(b.createdAt || b.created_at || 0);
@@ -198,9 +269,18 @@ export default function RequestsModal({
         const reqType = req?.requestType || req?.type || 'unknown';
         
         // Use appropriate endpoint for different request types
-        const deleteUrl = reqType === 'visit_booking' 
-          ? `${API}/visit-bookings/${id}`  // Visit booking endpoint
-          : `${API}/request/${id}`;         // Regular request endpoint
+        let deleteUrl;
+        if (reqType === 'visit_booking') {
+          deleteUrl = `${API}/visit-bookings/${id}`;  // Visit booking endpoint
+        } else if (reqType === 'seller_application') {
+          // Note: There's no delete endpoint for seller applications yet
+          // You might want to add one in the backend if needed
+          alert('Seller applications cannot be deleted. You can approve or reject them.');
+          setPendingAction(null);
+          return;
+        } else {
+          deleteUrl = `${API}/request/${id}`;  // Regular request endpoint
+        }
         
         const res = await fetch(deleteUrl, {
           method: 'DELETE',
@@ -393,6 +473,8 @@ export default function RequestsModal({
                       <h3 className="requests-modal__card-title">
                         {type === 'visit_booking' 
                           ? (data.organizationName || data.contactName || 'Visit Request')
+                          : type === 'seller_application'
+                          ? (data.shopName || data.fullName || 'Seller Application')
                           : (name || data.title || r.title || 'Request')
                         }
                       </h3>
@@ -427,6 +509,43 @@ export default function RequestsModal({
                             {data.classification && <div><strong>Classification:</strong> {data.classification}</div>}
                             {data.yearLevel && <div><strong>Year Level:</strong> {data.yearLevel}</div>}
                             {data.remarks && <div className="visit-booking-remarks"><strong>Remarks:</strong> {data.remarks}</div>}
+                          </>
+                        ) : type === 'seller_application' ? (
+                          // Seller Application specific metadata
+                          <>
+                            <div className="seller-app-highlight">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 3h18v18H3z"/>
+                                <path d="M12 8v8"/>
+                                <path d="M8 12h8"/>
+                              </svg>
+                              <strong>Shop Name:</strong> {data.shopName || '—'}
+                            </div>
+                            <div><strong>Full Name:</strong> {data.fullName || '—'}</div>
+                            <div><strong>Email:</strong> {data.email || '—'}</div>
+                            <div><strong>Phone:</strong> {data.phoneNumber || '—'}</div>
+                            <div className="seller-app-address">
+                              <strong>Address:</strong> 
+                              <span style={{ marginLeft: '4px' }}>
+                                {[data.street, data.barangay, data.city, data.province, data.region, data.postalCode]
+                                  .filter(Boolean)
+                                  .join(', ') || '—'}
+                              </span>
+                            </div>
+                            <div><strong>Shop Description:</strong> {data.shopDescription ? data.shopDescription.substring(0, 100) + '...' : '—'}</div>
+                            {data.idDocumentUrl && (
+                              <div>
+                                <strong>ID Document:</strong> 
+                                <a href={data.idDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '4px' }}>
+                                  View Document
+                                </a>
+                              </div>
+                            )}
+                            {data.rejectionReason && (
+                              <div className="rejection-reason" style={{ color: 'var(--museo-error)' }}>
+                                <strong>Rejection Reason:</strong> {data.rejectionReason}
+                              </div>
+                            )}
                           </>
                         ) : (
                           // Regular request metadata
