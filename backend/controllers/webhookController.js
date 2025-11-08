@@ -73,68 +73,82 @@ const handlePaymentPaid = async (webhookData) => {
       referenceNumber: paymentData.referenceNumber
     });
 
-    console.log('🔍 Searching for order with reference:', paymentData.referenceNumber);
+    console.log('🔍 Searching for orders with reference:', paymentData.referenceNumber);
 
-    // Find the order by payment reference number
-    const { data: order, error: orderError } = await db
+    // NEW: Find ALL orders with the same payment reference (multi-seller support)
+    const { data: orders, error: orderError } = await db
       .from('orders')
       .select('*')
-      .eq('paymentReference', paymentData.referenceNumber)
-      .single();
+      .eq('paymentReference', paymentData.referenceNumber);
 
-    if (orderError || !order) {
-      console.error('❌ Order not found with reference:', paymentData.referenceNumber);
+    if (orderError || !orders || orders.length === 0) {
+      console.error('❌ No orders found with reference:', paymentData.referenceNumber);
       console.error('❌ Error details:', orderError);
       return;
     }
 
-    console.log('✅ Order found:', order.orderId);
+    console.log(`✅ Found ${orders.length} order(s) with payment reference`);
 
-    // 🛡️ PREVENT DOUBLE PROCESSING: Check if order is already paid
-    if (order.paymentStatus === 'paid') {
-      console.warn('⚠️ Order already processed as paid. Skipping duplicate webhook.');
-      console.warn('⚠️ Order ID:', order.orderId);
-      console.warn('⚠️ Payment Intent:', order.paymentIntentId);
+    // Check if any order is already paid (prevent double processing)
+    const alreadyPaidOrders = orders.filter(o => o.paymentStatus === 'paid');
+    if (alreadyPaidOrders.length > 0) {
+      console.warn(`⚠️ ${alreadyPaidOrders.length} order(s) already processed as paid. Skipping duplicate webhook.`);
+      console.warn('⚠️ Order IDs:', alreadyPaidOrders.map(o => o.orderId).join(', '));
       return;
     }
 
-    console.log('✅ Order is pending payment. Proceeding with payment processing...');
+    console.log('✅ All orders are pending payment. Proceeding with payment processing...');
 
-    // Update order with payment details
-    const { error: updateError } = await db
-      .from('orders')
-      .update({
-        paymentStatus: 'paid',
-        paymentIntentId: paymentData.paymentId,
-        paymentMethodUsed: paymentData.paymentMethod,
-        paymentFee: paymentData.fee ? paymongoService.toPesos(paymentData.fee) : 0,
-        netAmount: paymentData.netAmount ? paymongoService.toPesos(paymentData.netAmount) : order.totalAmount,
-        paidAt: paymentData.paidAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      })
-      .eq('orderId', order.orderId);
+    // Calculate fee distribution per order
+    const totalAmount = orders.reduce((sum, o) => sum + parseFloat(o.totalAmount), 0);
+    
+    // Update ALL orders with payment details
+    for (const order of orders) {
+      const orderProportion = parseFloat(order.totalAmount) / totalAmount;
+      const orderFee = paymentData.fee ? paymongoService.toPesos(paymentData.fee) * orderProportion : 0;
+      const orderNetAmount = parseFloat(order.totalAmount) - orderFee;
+      
+      const { error: updateError } = await db
+        .from('orders')
+        .update({
+          paymentStatus: 'paid',
+          paymentIntentId: paymentData.paymentId,
+          paymentMethodUsed: paymentData.paymentMethod,
+          paymentFee: orderFee,
+          netAmount: orderNetAmount,
+          paidAt: paymentData.paidAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        .eq('orderId', order.orderId);
 
-    if (updateError) {
-      console.error('❌ Error updating order:', updateError);
-      return;
+      if (updateError) {
+        console.error(`❌ Error updating order ${order.orderId}:`, updateError);
+        continue;
+      }
+      
+      console.log(`✅ Order ${order.orderId} payment status updated (₱${order.totalAmount})`);
     }
 
-    console.log('✅ Order payment status updated:', order.orderId);
+    console.log('📦 Starting inventory reduction for all orders...');
 
-    console.log('📦 Starting inventory reduction...');
+    // Reduce inventory for ALL orders
+    for (const order of orders) {
+      const { data: orderItems, error: itemsError } = await db
+        .from('order_items')
+        .select('marketplaceItemId, quantity')
+        .eq('orderId', order.orderId);
 
-    // NOW reduce inventory after successful payment
-    const { data: orderItems, error: itemsError } = await db
-      .from('order_items')
-      .select('marketplaceItemId, quantity')
-      .eq('orderId', order.orderId);
-
-    if (itemsError) {
-      console.error('❌ Error fetching order items:', itemsError);
-    } else if (!orderItems || orderItems.length === 0) {
-      console.warn('⚠️ No order items found for order:', order.orderId);
-    } else {
-      console.log(`📦 Found ${orderItems.length} items to process`);
+      if (itemsError) {
+        console.error(`❌ Error fetching order items for ${order.orderId}:`, itemsError);
+        continue;
+      } 
+      
+      if (!orderItems || orderItems.length === 0) {
+        console.warn(`⚠️ No order items found for order: ${order.orderId}`);
+        continue;
+      }
+      
+      console.log(`📦 Found ${orderItems.length} items to process for order ${order.orderId}`);
       
       for (const item of orderItems) {
         console.log(`🔄 Processing item: ${item.marketplaceItemId}, Qty to reduce: ${item.quantity}`);
@@ -148,47 +162,54 @@ const handlePaymentPaid = async (webhookData) => {
 
         if (getError) {
           console.error(`❌ Error fetching marketplace item ${item.marketplaceItemId}:`, getError);
-        } else if (!marketItem) {
+          continue;
+        }
+        
+        if (!marketItem) {
           console.error(`❌ Marketplace item not found: ${item.marketplaceItemId}`);
-        } else {
-          console.log(`📊 Current inventory for ${item.marketplaceItemId}: ${marketItem.quantity}`);
-          
-          const newQuantity = Math.max(0, marketItem.quantity - item.quantity);
-          
-          console.log(`📊 New inventory will be: ${newQuantity}`);
-          
-          // Update inventory
-          const { error: updateInventoryError } = await db
-            .from('marketplace_items')
-            .update({ 
-              quantity: newQuantity,
-              updated_at: new Date().toISOString()
-            })
-            .eq('marketItemId', item.marketplaceItemId);
+          continue;
+        }
+        
+        console.log(`📊 Current inventory for ${item.marketplaceItemId}: ${marketItem.quantity}`);
+        
+        const newQuantity = Math.max(0, marketItem.quantity - item.quantity);
+        
+        console.log(`📊 New inventory will be: ${newQuantity}`);
+        
+        // Update inventory
+        const { error: updateInventoryError } = await db
+          .from('marketplace_items')
+          .update({ 
+            quantity: newQuantity,
+            updated_at: new Date().toISOString()
+          })
+          .eq('marketItemId', item.marketplaceItemId);
 
-          if (updateInventoryError) {
-            console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateInventoryError);
-          } else {
-            console.log(`✅ Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
-          }
+        if (updateInventoryError) {
+          console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateInventoryError);
+        } else {
+          console.log(`✅ Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
         }
       }
-      
-      console.log('✅ Inventory reduction completed');
     }
+    
+    console.log('✅ Inventory reduction completed for all orders');
 
     console.log('🗑️ Clearing user cart...');
+    
+    // Get the userId from the first order (all orders belong to the same user)
+    const userId = orders[0].userId;
     
     // Clear user's cart after successful payment
     const { error: clearError } = await db
       .from('cart_items')
       .delete()
-      .eq('userId', order.userId);
+      .eq('userId', userId);
 
     if (clearError) {
       console.error('⚠️ Error clearing cart:', clearError);
     } else {
-      console.log('✅ Cart cleared for user:', order.userId);
+      console.log('✅ Cart cleared for user:', userId);
     }
 
     console.log('✅ ========== PAYMENT PROCESSING COMPLETED ==========');

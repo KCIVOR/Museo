@@ -692,16 +692,52 @@ export const deleteMarketplaceItem = async (req, res) => {
     // Check if item has existing orders
     const { data: existingOrders, error: ordersError } = await db
       .from('order_items')
-      .select('orderItemId')
-      .eq('marketplaceItemId', id)
-      .limit(1);
+      .select(`
+        orderItemId,
+        orderId,
+        orders!inner(
+          status,
+          deliveredAt
+        )
+      `)
+      .eq('marketplaceItemId', id);
 
     if (existingOrders && existingOrders.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cannot delete this item because it has existing orders. To remove it from the marketplace, please edit the item and mark it as "Inactive" instead.',
-        hasOrders: true
+      // Check if any orders are still active or within return window
+      const activeOrders = existingOrders.filter(item => {
+        const order = item.orders;
+        
+        // If order is not delivered yet, it's active
+        if (order.status !== 'delivered') {
+          return true; // Cannot delete
+        }
+        
+        // If delivered, check if within return window
+        if (order.deliveredAt) {
+          const deliveryDate = new Date(order.deliveredAt);
+          const now = new Date();
+          const daysSinceDelivery = (now - deliveryDate) / (1000 * 60 * 60 * 24);
+          
+          // Still within 30-day return window
+          if (daysSinceDelivery < 30) {
+            return true; // Cannot delete
+          }
+        }
+        
+        return false; // Order is old enough, can delete
       });
+
+      if (activeOrders.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot delete this item because it has active orders or orders within the 30-day return window. To remove it from the marketplace, please edit the item and mark it as "Inactive" instead.',
+          hasOrders: true,
+          activeOrdersCount: activeOrders.length
+        });
+      }
+      
+      // All orders are delivered and past 30-day window - deletion allowed
+      console.log(`✅ All orders for item ${id} are delivered and past 30-day return window. Deletion allowed.`);
     }
 
     // If not admin, verify seller profile and ownership
@@ -1309,149 +1345,166 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Calculate totals
+    // ===== NEW: GROUP ITEMS BY SELLER =====
     const platformFeeRate = 0.10; // 10% platform fee
-    let subtotal = 0;
+    const itemsBySeller = {};
     
-    const orderItems = cartItems.map(item => {
-      // Debug: Check what fields are available
-      console.log('📦 Cart item fields:', Object.keys(item));
-      console.log('📦 Cart item marketItemId:', item.marketItemId);
-      console.log('📦 Marketplace item ID:', item.marketplace_items?.marketItemId);
+    // Group cart items by seller
+    cartItems.forEach(item => {
+      const sellerProfileId = item.marketplace_items.sellerProfileId;
+      if (!itemsBySeller[sellerProfileId]) {
+        itemsBySeller[sellerProfileId] = {
+          sellerProfileId: sellerProfileId,
+          shopName: item.marketplace_items.sellerProfiles.shopName,
+          items: [],
+          subtotal: 0
+        };
+      }
       
       const itemTotal = item.marketplace_items.price * item.quantity;
-      subtotal += itemTotal;
-      
-      const platformFee = itemTotal * platformFeeRate;
-      const artistEarnings = itemTotal - platformFee;
-
-      // Use marketplace_items.marketItemId if cart item's marketItemId is null
       const marketplaceItemId = item.marketItemId || item.marketplace_items?.marketItemId;
       
-      if (!marketplaceItemId) {
-        console.error('❌ No marketplaceItemId found for cart item:', item);
-      }
-
-      return {
-        userId: userId, // buyer
-        marketplaceItemId: marketplaceItemId, // Fixed: use the correct ID
-        sellerId: item.marketplace_items.userId, // Keep for backward compatibility
-        sellerProfileId: item.marketplace_items.sellerProfileId, // Use seller profile
+      itemsBySeller[sellerProfileId].items.push({
+        userId: userId,
+        marketplaceItemId: marketplaceItemId,
+        sellerId: item.marketplace_items.userId,
+        sellerProfileId: sellerProfileId,
         title: item.marketplace_items.title,
         priceAtPurchase: item.marketplace_items.price,
         quantity: item.quantity,
         itemTotal: itemTotal,
-        platformFeeAmount: platformFee,
-        artistEarnings: artistEarnings
-      };
+        platformFeeAmount: itemTotal * platformFeeRate,
+        artistEarnings: itemTotal - (itemTotal * platformFeeRate)
+      });
+      
+      itemsBySeller[sellerProfileId].subtotal += itemTotal;
     });
 
-    const platformFeeTotal = subtotal * platformFeeRate;
-    const artistEarningsTotal = subtotal - platformFeeTotal;
+    // Calculate grand total across all sellers
+    const grandTotal = Object.values(itemsBySeller).reduce((sum, seller) => sum + seller.subtotal, 0);
+    const grandPlatformFee = grandTotal * platformFeeRate;
+    
+    // Generate ONE payment group ID for all orders
+    const { randomUUID } = await import('crypto');
+    const paymentGroupId = randomUUID();
+    
+    console.log(`🛒 Creating ${Object.keys(itemsBySeller).length} orders for payment group ${paymentGroupId}`);
+    
+    // ===== CREATE SEPARATE ORDER FOR EACH SELLER =====
+    const createdOrders = [];
+    const allOrderItems = [];
+    
+    for (const [sellerProfileId, sellerData] of Object.entries(itemsBySeller)) {
+      const sellerSubtotal = sellerData.subtotal;
+      const sellerPlatformFee = sellerSubtotal * platformFeeRate;
+      
+      // Create order for this seller
+      const { data: sellerOrder, error: orderError } = await db
+        .from('orders')
+        .insert({
+          userId: userId,
+          sellerProfileId: sellerProfileId, // NEW: Link to seller
+          paymentGroupId: paymentGroupId,   // NEW: Link all orders together
+          subtotal: sellerSubtotal,
+          platformFee: sellerPlatformFee,
+          shippingCost: 0,
+          totalAmount: sellerSubtotal,
+          status: 'pending',
+          paymentStatus: 'pending',
+          shippingAddress: shipping_address,
+          contactInfo: contact_info,
+          paymentMethod: payment_method,
+          paymentProvider: 'paymongo'
+        })
+        .select()
+        .single();
 
-    // Create main order (without payment link first)
-    const { data: mainOrder, error: orderError} = await db
-      .from('orders')
-      .insert({
-        userId: userId,
-        subtotal: subtotal,
-        platformFee: platformFeeTotal,
-        shippingCost: 0,
-        totalAmount: subtotal,
-        status: 'pending',
-        paymentStatus: 'pending',
-        shippingAddress: shipping_address,
-        contactInfo: contact_info,
-        paymentMethod: payment_method,
-        paymentProvider: 'paymongo'
-      })
-      .select()
-      .single();
+      if (orderError) {
+        console.error(`Error creating order for seller ${sellerProfileId}:`, orderError);
+        return res.status(500).json({ 
+          success: false, 
+          error: orderError.message 
+        });
+      }
+      
+      console.log(`✅ Created order ${sellerOrder.orderId} for seller ${sellerData.shopName} (₱${sellerSubtotal})`);
+      
+      // Add orderId to items for this seller
+      const orderItemsForSeller = sellerData.items.map(item => ({
+        ...item,
+        orderId: sellerOrder.orderId
+      }));
+      
+      // Create order_items for this seller
+      const { data: createdItems, error: itemsError } = await db
+        .from('order_items')
+        .insert(orderItemsForSeller)
+        .select();
 
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      return res.status(500).json({ 
-        success: false, 
-        error: orderError.message 
+      if (itemsError) {
+        console.error('Error creating order items:', itemsError);
+        return res.status(500).json({ 
+          success: false, 
+          error: itemsError.message 
+        });
+      }
+      
+      createdOrders.push({
+        ...sellerOrder,
+        shopName: sellerData.shopName,
+        itemCount: sellerData.items.length
       });
+      allOrderItems.push(...createdItems);
     }
+    
+    // Use the first order for payment link (represents the whole payment group)
+    const mainOrder = createdOrders[0];
 
-    // Create PayMongo payment link
+    // Create PayMongo payment link for the TOTAL amount
     let paymentLink;
     try {
       paymentLink = await paymongoService.createPaymentLink({
-        amount: paymongoService.toCentavos(subtotal), // Convert to centavos
-        description: `Museo Order #${mainOrder.orderId.substring(0, 8)}`,
+        amount: paymongoService.toCentavos(grandTotal), // Total across all sellers
+        description: `Museo Orders (${createdOrders.length} seller${createdOrders.length > 1 ? 's' : ''})`,
         metadata: {
-          orderId: mainOrder.orderId,
+          paymentGroupId: paymentGroupId,
           userId: userId,
-          itemCount: orderItems.length,
-          remarks: 'Museo Marketplace Purchase'
+          orderCount: createdOrders.length,
+          orderIds: createdOrders.map(o => o.orderId).join(','),
+          remarks: 'Museo Marketplace Multi-Seller Purchase'
         }
       });
 
-      // Update order with payment link details
-      const { error: updateError } = await db
-        .from('orders')
-        .update({
-          paymentLinkId: paymentLink.paymentLinkId,
-          paymentReference: paymentLink.referenceNumber
-        })
-        .eq('orderId', mainOrder.orderId);
+      // Update ALL orders with payment link details
+      for (const order of createdOrders) {
+        const { error: updateError } = await db
+          .from('orders')
+          .update({
+            paymentLinkId: paymentLink.paymentLinkId,
+            paymentReference: paymentLink.referenceNumber
+          })
+          .eq('orderId', order.orderId);
 
-      if (updateError) {
-        console.error('Error updating order with payment link:', updateError);
+        if (updateError) {
+          console.error(`Error updating order ${order.orderId} with payment link:`, updateError);
+        }
       }
 
     } catch (paymentError) {
       console.error('Error creating payment link:', paymentError);
       // Don't fail the order creation, just log the error
-      // Order can still be processed manually
-    }
-
-    // Add orderId to each order item
-    const orderItemsWithOrderId = orderItems.map(item => ({
-      ...item,
-      orderId: mainOrder.orderId
-    }));
-
-    // Create order_items
-    const { data: createdOrderItems, error: itemsError } = await db
-      .from('order_items')
-      .insert(orderItemsWithOrderId)
-      .select();
-
-    if (itemsError) {
-      console.error('Error creating order items:', itemsError);
-      return res.status(500).json({ 
-        success: false, 
-        error: itemsError.message 
-      });
     }
 
     // DON'T UPDATE INVENTORY HERE - Will be done after payment confirmation
-    // Just reserve the items by creating the order
-    console.log('📦 Order created with reserved items. Inventory will be reduced after payment confirmation.');
-
-    // DON'T clear cart yet - will be cleared after successful payment via webhook
-    // DON'T reduce inventory yet - will be reduced after successful payment
-
-    // Group items by seller profile for response
-    const itemsBySeller = {};
-    createdOrderItems.forEach(item => {
-      if (!itemsBySeller[item.sellerProfileId]) {
-        itemsBySeller[item.sellerProfileId] = [];
-      }
-      itemsBySeller[item.sellerProfileId].push(item);
-    });
+    console.log('📦 Orders created with reserved items. Inventory will be reduced after payment confirmation.');
 
     res.status(201).json({ 
       success: true, 
-      message: 'Order created successfully. Please complete payment.',
+      message: `${createdOrders.length} order${createdOrders.length > 1 ? 's' : ''} created successfully. Please complete payment.`,
       data: {
-        order: mainOrder,
-        orderItems: createdOrderItems,
-        itemsBySeller: itemsBySeller,
+        paymentGroupId: paymentGroupId,
+        orders: createdOrders,
+        orderItems: allOrderItems,
         payment: paymentLink ? {
           paymentUrl: paymentLink.checkoutUrl,
           paymentLinkId: paymentLink.paymentLinkId,
@@ -1459,14 +1512,14 @@ export const createOrder = async (req, res) => {
           expiresAt: paymentLink.expiresAt
         } : null,
         summary: {
-          orderId: mainOrder.orderId,
-          itemCount: orderItems.length,
+          paymentGroupId: paymentGroupId,
+          orderCount: createdOrders.length,
           sellerCount: Object.keys(itemsBySeller).length,
-          subtotal: subtotal,
-          platformFee: platformFeeTotal,
-          artistEarnings: artistEarningsTotal,
+          totalItems: allOrderItems.length,
+          subtotal: grandTotal,
+          platformFee: grandPlatformFee,
           shippingCost: 0,
-          total: subtotal
+          total: grandTotal
         }
       }
     });
@@ -1577,22 +1630,30 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
-    // Get all order items for this seller
-    const { data: orderItems, error: itemsError } = await db
-      .from('order_items')
+    // NEW: Get orders directly for this seller (more efficient)
+    let ordersQuery = db
+      .from('orders')
       .select('*')
       .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .eq('paymentStatus', 'paid') // Only show paid orders
       .order('createdAt', { ascending: false });
+    
+    // Apply status filter if provided
+    if (status) {
+      ordersQuery = ordersQuery.eq('status', status);
+    }
+    
+    const { data: allOrders, error: ordersError } = await ordersQuery;
 
-    if (itemsError) {
-      console.error('Error fetching order items:', itemsError);
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
       return res.status(500).json({ 
         success: false, 
-        error: itemsError.message 
+        error: ordersError.message 
       });
     }
 
-    if (!orderItems || orderItems.length === 0) {
+    if (!allOrders || allOrders.length === 0) {
       return res.json({ 
         success: true, 
         data: [],
@@ -1606,15 +1667,13 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
-    // Get unique order IDs
-    const orderIds = [...new Set(orderItems.map(item => item.orderId))];
-
-    // Fetch order details
-    const { data: allOrders, error: ordersError } = await db
-      .from('orders')
+    // Get order items for these orders
+    const orderIds = allOrders.map(order => order.orderId);
+    const { data: orderItems, error: itemsError } = await db
+      .from('order_items')
       .select('*')
       .in('orderId', orderIds)
-      .eq('paymentStatus', 'paid'); // Only show paid orders
+      .eq('sellerProfileId', sellerProfile.sellerProfileId);
 
     if (ordersError) {
       console.error('Error fetching orders:', ordersError);
@@ -1665,10 +1724,13 @@ export const getSellerOrders = async (req, res) => {
     orderItems.forEach(item => {
       if (groupedOrdersMap.has(item.orderId)) {
         const marketItem = itemsMap.get(item.marketplaceItemId);
+        
+        // Use stored title from order_items first (preserved even if item deleted)
+        // Fall back to marketplace item data if available
         groupedOrdersMap.get(item.orderId).items.push({
           orderItemId: item.orderItemId,
           marketplaceItemId: item.marketplaceItemId,
-          title: marketItem?.title || 'Unknown Item',
+          title: item.title || marketItem?.title || 'Unknown Item',
           image: marketItem?.primary_image,
           medium: marketItem?.medium,
           dimensions: marketItem?.dimensions,
