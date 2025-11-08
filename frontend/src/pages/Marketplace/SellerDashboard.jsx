@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import AddProductModal from './AddProductModal';
+import EditProductModal from './EditProductModal';
+import ConfirmModal from '../Shared/ConfirmModal';
 import { 
   SalesIcon, 
   OrdersIcon, 
@@ -35,6 +37,10 @@ export default function SellerDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('weekly');
   const [products, setProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   
@@ -254,20 +260,35 @@ export default function SellerDashboard() {
     setIsAddModalOpen(true);
   };
   
-  // Handle edit product (TODO: Create EditProductModal similar to AddProductModal)
+  // Handle edit product
   const handleEditProduct = (product) => {
-    alert('Edit functionality coming soon! Product ID: ' + product.marketItemId);
-    // TODO: Create EditProductModal component
+    console.log('Edit button clicked for product:', product);
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+    console.log('Modal should open now, isEditModalOpen:', true);
+  };
+
+  // Handle edit product success
+  const handleEditSuccess = async (updatedProduct) => {
+    // Refresh products list
+    await fetchProducts();
+    setIsEditModalOpen(false);
+    setSelectedProduct(null);
+    alert('Product updated successfully!');
   };
 
   // Handle delete product
-  const handleDeleteProduct = async (product) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
-      return;
-    }
+  const handleDeleteProduct = (product) => {
+    setProductToDelete(product);
+    setDeleteConfirmOpen(true);
+  };
+
+  // Confirm delete product
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
 
     try {
-      const response = await fetch(`${API}/marketplace/items/${product.marketItemId}`, {
+      const response = await fetch(`${API}/marketplace/items/${productToDelete.marketItemId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -275,7 +296,11 @@ export default function SellerDashboard() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to delete product');
+        // Show the error message from backend
+        alert(result.error || 'Failed to delete product');
+        setDeleteConfirmOpen(false);
+        setProductToDelete(null);
+        return;
       }
 
       if (result.success) {
@@ -286,7 +311,16 @@ export default function SellerDashboard() {
     } catch (error) {
       console.error('Error deleting product:', error);
       alert(error.message || 'Failed to delete product. Please try again.');
+    } finally {
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
     }
+  };
+
+  // Cancel delete
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setProductToDelete(null);
   };
 
   // Handle view product
@@ -760,6 +794,30 @@ export default function SellerDashboard() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleProductAdded}
+      />
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onSuccess={handleEditSuccess}
+        product={selectedProduct}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Delete Product"
+        message={productToDelete ? 
+          `Are you sure you want to delete "${productToDelete.title}"? This action cannot be undone.` : 
+          'Are you sure you want to delete this product?'}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteProduct}
+        onCancel={cancelDelete}
       />
     </div>
   );

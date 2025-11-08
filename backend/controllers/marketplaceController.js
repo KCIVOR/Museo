@@ -303,6 +303,14 @@ export const getMarketplaceItem = async (req, res) => {
       });
     }
 
+    // Check if item is active and available
+    if (item.status !== 'active' || !item.is_available) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'This item is no longer available' 
+      });
+    }
+
     res.json({ 
       success: true, 
       data: item
@@ -340,10 +348,16 @@ export const getMarketplaceItems = async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(20);
     
-    // Filter by status if provided
+    // Filter by status if provided, otherwise show only active items
     if (status) {
       query = query.eq('status', status);
+    } else {
+      // Default: only show active items in public marketplace
+      query = query.eq('status', 'active');
     }
+    
+    // Also filter by is_available flag
+    query = query.eq('is_available', true);
 
     // Filter by seller profile if provided (for seller dashboard)
     if (sellerProfileId) {
@@ -475,43 +489,130 @@ export const updateMarketplaceItem = async (req, res) => {
     if (req.body.categories) updateData.categories = JSON.parse(req.body.categories);
     if (req.body.tags) updateData.tags = JSON.parse(req.body.tags);
     
-    // Handle new image uploads if provided
-    if (req.files && req.files.length > 0) {
-      let imageUrls = [];
-      for (const file of req.files) {
+    // Handle image updates
+    let finalImageUrls = [];
+    
+    // Get current images from database
+    const { data: itemWithImages } = await db
+      .from('marketplace_items')
+      .select('images')
+      .eq('marketItemId', id)
+      .single();
+    
+    const currentImages = itemWithImages?.images || [];
+    
+    // Handle different image update scenarios
+    if (req.body.remove_all_images === 'true') {
+      // User removed all images
+      finalImageUrls = [];
+      
+      // Delete all existing images from storage
+      for (const imageUrl of currentImages) {
         try {
-          const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
-          const fileName = `${Date.now()}-${safeName}`;
-          const filePath = `marketplace/${userId}/${fileName}`;
-
-          const { data, error } = await db.storage
-            .from("uploads")
-            .upload(filePath, file.buffer, {
-              contentType: file.mimetype,
-              upsert: false,
-            });
-
-          if (error) {
-            continue;
+          let filePath = '';
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
           }
 
-          const { data: publicUrlData } = db.storage
-            .from("uploads")
-            .getPublicUrl(data.path);
-
-          if (publicUrlData?.publicUrl) {
-            imageUrls.push(publicUrlData.publicUrl);
+          if (filePath) {
+            const { error: deleteError } = await db.storage
+              .from('uploads')
+              .remove([filePath]);
+            
+            if (deleteError) {
+              console.error(`Error deleting image ${filePath}:`, deleteError);
+            }
           }
-        } catch (uploadError) {
-          continue;
+        } catch (err) {
+          console.error('Error processing image deletion:', err);
         }
       }
+    } else {
+      // Parse existing images to keep
+      let existingImagesToKeep = [];
+      if (req.body.existing_images_to_keep) {
+        try {
+          existingImagesToKeep = JSON.parse(req.body.existing_images_to_keep);
+        } catch (e) {
+          existingImagesToKeep = [];
+        }
+      }
+      
+      // Find images to delete (ones that are not in the keep list)
+      const imagesToDelete = currentImages.filter(img => !existingImagesToKeep.includes(img));
+      
+      // Delete removed images from storage
+      for (const imageUrl of imagesToDelete) {
+        try {
+          let filePath = '';
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
+          }
 
-      if (imageUrls.length > 0) {
-        updateData.images = imageUrls;
-        updateData.primary_image = imageUrls[0];
+          if (filePath) {
+            console.log(`🗑️ Deleting removed image: ${filePath}`);
+            const { error: deleteError } = await db.storage
+              .from('uploads')
+              .remove([filePath]);
+            
+            if (deleteError) {
+              console.error(`Error deleting image ${filePath}:`, deleteError);
+            }
+          }
+        } catch (err) {
+          console.error('Error processing image deletion:', err);
+        }
+      }
+      
+      // Start with existing images to keep
+      finalImageUrls = [...existingImagesToKeep];
+      
+      // Upload and add new images
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          try {
+            const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${safeName}`;
+            const filePath = `marketplace/${userId}/${fileName}`;
+
+            const { data, error } = await db.storage
+              .from("uploads")
+              .upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: false,
+              });
+
+            if (error) {
+              console.error('Upload error:', error);
+              continue;
+            }
+
+            const { data: publicUrlData } = db.storage
+              .from("uploads")
+              .getPublicUrl(data.path);
+
+            if (publicUrlData?.publicUrl) {
+              finalImageUrls.push(publicUrlData.publicUrl);
+            }
+          } catch (uploadError) {
+            console.error('Error uploading new image:', uploadError);
+            continue;
+          }
+        }
       }
     }
+    
+    // Update images in database
+    updateData.images = finalImageUrls;
+    updateData.primary_image = finalImageUrls.length > 0 ? finalImageUrls[0] : null;
     
     updateData.updated_at = new Date().toISOString();
 
@@ -588,6 +689,21 @@ export const deleteMarketplaceItem = async (req, res) => {
       });
     }
 
+    // Check if item has existing orders
+    const { data: existingOrders, error: ordersError } = await db
+      .from('order_items')
+      .select('orderItemId')
+      .eq('marketplaceItemId', id)
+      .limit(1);
+
+    if (existingOrders && existingOrders.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot delete this item because it has existing orders. To remove it from the marketplace, please edit the item and mark it as "Inactive" instead.',
+        hasOrders: true
+      });
+    }
+
     // If not admin, verify seller profile and ownership
     if (!isAdmin) {
       // Get user's active seller profile
@@ -615,10 +731,41 @@ export const deleteMarketplaceItem = async (req, res) => {
       }
     }
 
-    // TODO: Delete associated images from storage if needed
-    // if (existingItem.images && existingItem.images.length > 0) {
-    //   // Delete images from Supabase storage
-    // }
+    // Delete associated images from storage
+    if (existingItem.images && Array.isArray(existingItem.images) && existingItem.images.length > 0) {
+      console.log(`🗑️ Deleting ${existingItem.images.length} images for marketplace item ${id}`);
+      
+      for (const imageUrl of existingItem.images) {
+        try {
+          let filePath = '';
+          
+          // Extract file path from URL
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            const pathPart = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+            filePath = pathPart;
+          } else if (imageUrl.includes('/uploads/')) {
+            const pathPart = imageUrl.split('/uploads/')[1];
+            filePath = pathPart;
+          }
+          
+          if (filePath) {
+            console.log(`🗑️ Attempting to delete: ${filePath}`);
+            
+            const { error: storageError } = await db.storage
+              .from('uploads')
+              .remove([filePath]);
+            
+            if (storageError) {
+              console.error(`❌ Error deleting image ${filePath}:`, storageError);
+            } else {
+              console.log(`✅ Successfully deleted image: ${filePath}`);
+            }
+          }
+        } catch (err) {
+          console.error(`Error processing image deletion:`, err);
+        }
+      }
+    }
 
     // Delete item
     const { error } = await db
@@ -1167,15 +1314,27 @@ export const createOrder = async (req, res) => {
     let subtotal = 0;
     
     const orderItems = cartItems.map(item => {
+      // Debug: Check what fields are available
+      console.log('📦 Cart item fields:', Object.keys(item));
+      console.log('📦 Cart item marketItemId:', item.marketItemId);
+      console.log('📦 Marketplace item ID:', item.marketplace_items?.marketItemId);
+      
       const itemTotal = item.marketplace_items.price * item.quantity;
       subtotal += itemTotal;
       
       const platformFee = itemTotal * platformFeeRate;
       const artistEarnings = itemTotal - platformFee;
 
+      // Use marketplace_items.marketItemId if cart item's marketItemId is null
+      const marketplaceItemId = item.marketItemId || item.marketplace_items?.marketItemId;
+      
+      if (!marketplaceItemId) {
+        console.error('❌ No marketplaceItemId found for cart item:', item);
+      }
+
       return {
         userId: userId, // buyer
-        marketplaceItemId: item.marketItemId,
+        marketplaceItemId: marketplaceItemId, // Fixed: use the correct ID
         sellerId: item.marketplace_items.userId, // Keep for backward compatibility
         sellerProfileId: item.marketplace_items.sellerProfileId, // Use seller profile
         title: item.marketplace_items.title,
