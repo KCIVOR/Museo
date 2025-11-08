@@ -35,102 +35,41 @@ export default function SellerDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('weekly');
   const [products, setProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  
+  // Orders management state
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orderFilter, setOrderFilter] = useState('all');
+  const [orderStats, setOrderStats] = useState({
+    totalOrders: 0,
+    toShip: 0,
+    shipping: 0,
+    completed: 0
+  });
+  
+  // Modal states
+  const [processingModal, setProcessingModal] = useState(false);
+  const [shippingModal, setShippingModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [trackingNumber, setTrackingNumber] = useState('');
   
   // Stats data
   const [stats, setStats] = useState({
-    totalSales: 45250,
-    totalOrders: 156,
-    totalProducts: 28,
+    totalSales: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    activeProducts: 0,
     earnings: {
-      daily: 850,
-      weekly: 5950,
-      monthly: 23800
+      gross: 0,
+      net: 0,
+      platformFee: 0
     },
-    pendingOrders: 12,
-    pendingShipments: 8
+    pendingOrders: 0,
+    pendingShipments: 0
   });
 
-  // Mock product data with new database structure
-  const mockProducts = [
-    {
-      id: 1,
-      marketItemId: "8140610e-e5ae-4757-a6a6-a36cab670176",
-      name: "Urban Decay - Mixed Media Sculpture",
-      title: "Urban Decay - Mixed Media Sculpture",
-      description: "Contemporary mixed media sculpture exploring themes of urbanization and nature.",
-      price: 3200,
-      medium: "Mixed Media (Metal, Wood, Found Objects)",
-      dimensions: "18x12x24 inches (HxWxD)",
-      year_created: 2023,
-      weight_kg: 4.5,
-      is_original: true,
-      is_framed: false,
-      condition: "excellent",
-      stock: 1,
-      quantity: 1,
-      category: "sculpture, mixed media, contemporary",
-      categories: ["sculpture", "mixed media", "contemporary"],
-      tags: ["sculpture", "mixed media", "contemporary art", "urban", "recycled"],
-      status: "active",
-      is_available: true,
-      is_featured: false,
-      sold: 0,
-      views: 234,
-      image: "https://images.unsplash.com/photo-1578301978018-3005759f48f7"
-    },
-    {
-      id: 2,
-      marketItemId: "09ec606e-e60a-4f3a-acfe-2864b09676bc",
-      name: "Spring Garden - Watercolor Botanical Study",
-      title: "Spring Garden - Watercolor Botanical Study",
-      description: "Delicate watercolor painting featuring a variety of spring flowers.",
-      price: 950,
-      medium: "Watercolor on Paper",
-      dimensions: "16x20 inches",
-      year_created: 2024,
-      weight_kg: 0.8,
-      is_original: true,
-      is_framed: true,
-      condition: "excellent",
-      stock: 1,
-      quantity: 1,
-      category: "floral, botanical, traditional",
-      categories: ["floral", "botanical", "traditional"],
-      tags: ["watercolor", "flowers", "spring", "botanical", "pastel"],
-      status: "active",
-      is_available: true,
-      is_featured: false,
-      sold: 5,
-      views: 156,
-      image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
-    },
-    {
-      id: 3,
-      marketItemId: "592f2d98-1fdd-4dc0-82ae-34e149e0ae25",
-      name: "City Lights at Night - Limited Edition Print",
-      title: "City Lights at Night - Limited Edition Print",
-      description: "Stunning urban photography capturing the vibrant energy of city life after dark.",
-      price: 450,
-      medium: "Digital Photography Print",
-      dimensions: "20x30 inches",
-      year_created: 2024,
-      weight_kg: 0.5,
-      is_original: false,
-      is_framed: true,
-      condition: "excellent",
-      stock: 15,
-      quantity: 15,
-      category: "photography, urban, prints",
-      categories: ["photography", "urban", "prints"],
-      tags: ["city", "night", "photography", "limited edition", "urban"],
-      status: "active",
-      is_available: true,
-      is_featured: false,
-      sold: 23,
-      views: 890,
-      image: "https://images.unsplash.com/photo-1514565131-fce0801e5785"
-    }
-  ];
 
 
   // Handle product added successfully
@@ -143,30 +82,172 @@ export default function SellerDashboard() {
   // Fetch products from API
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${API}/marketplace/items`, {
+      setLoading(true);
+      const response = await fetch(`${API}/marketplace/seller/my-items`, {
         credentials: 'include'
       });
       
       const result = await response.json();
       
-      if (result.success && result.data) {
-        setProducts(result.data);
-        setStats(prev => ({
-          ...prev,
-          totalProducts: result.data.length
-        }));
+      if (result.success) {
+        setProducts(result.data || []);
+      } else {
+        console.error('Failed to fetch products:', result.error);
+        setProducts([]);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Load products on mount
+  // Fetch stats from API
+  const fetchStats = async (period = 'all') => {
+    try {
+      setStatsLoading(true);
+      const response = await fetch(`${API}/marketplace/seller/stats?period=${period}`, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.stats) {
+        setStats(result.stats);
+      } else {
+        console.error('Failed to fetch stats:', result.error);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // Fetch seller's orders
+  const fetchOrders = async (status = null) => {
+    try {
+      setOrdersLoading(true);
+      
+      const url = status && status !== 'all'
+        ? `${API}/marketplace/orders/seller?status=${status}`
+        : `${API}/marketplace/orders/seller`;
+        
+      const response = await fetch(url, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setOrders(result.data || []);
+        
+        // Update order stats if available
+        if (result.stats) {
+          setOrderStats(result.stats);
+        }
+      } else {
+        console.error('Failed to fetch orders:', result.error);
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Mark order as processing
+  const handleMarkAsProcessing = async (order) => {
+    if (!window.confirm('Mark this order as processing? This means you are preparing the items for shipment.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API}/marketplace/orders/${order.orderId}/process`, {
+        method: 'PUT',
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Order marked as processing!');
+        fetchOrders(orderFilter === 'all' ? null : orderFilter);
+        fetchStats(selectedPeriod === 'daily' ? 'daily' : 
+                   selectedPeriod === 'weekly' ? 'weekly' : 
+                   selectedPeriod === 'monthly' ? 'monthly' : 'all');
+      } else {
+        alert(result.error || 'Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Failed to update order. Please try again.');
+    }
+  };
+
+  // Mark order as shipped
+  const handleMarkAsShipped = (order) => {
+    setSelectedOrder(order);
+    setShippingModal(true);
+    setTrackingNumber('');
+  };
+
+  // Submit tracking information
+  const submitTracking = async () => {
+    if (!trackingNumber.trim()) {
+      alert('Please enter a tracking number');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API}/marketplace/orders/${selectedOrder.orderId}/ship`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          tracking_number: trackingNumber
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Order marked as shipped successfully!');
+        setShippingModal(false);
+        setSelectedOrder(null);
+        setTrackingNumber('');
+        fetchOrders(orderFilter === 'all' ? null : orderFilter);
+        fetchStats(selectedPeriod === 'daily' ? 'daily' : 
+                   selectedPeriod === 'weekly' ? 'weekly' : 
+                   selectedPeriod === 'monthly' ? 'monthly' : 'all');
+      } else {
+        alert(result.error || 'Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order:', error);
+      alert('Failed to update order. Please try again.');
+    }
+  };
+
+  // Load data on mount and when period changes
   useEffect(() => {
     if (userData?.isSeller) {
       fetchProducts();
+      fetchStats(selectedPeriod === 'daily' ? 'daily' : 
+                 selectedPeriod === 'weekly' ? 'weekly' : 
+                 selectedPeriod === 'monthly' ? 'monthly' : 'all');
+      
+      // Fetch orders if on orders tab
+      if (activeTab === 'orders') {
+        fetchOrders(orderFilter === 'all' ? null : orderFilter);
+      }
     }
-  }, [userData]);
+  }, [userData, selectedPeriod, activeTab, orderFilter]);
 
   // Handle add new product
   const handleAddProduct = () => {
@@ -210,7 +291,7 @@ export default function SellerDashboard() {
 
   // Handle view product
   const handleViewProduct = (product) => {
-    navigate(`/marketplace/${product.id}`);
+    navigate(`/marketplace/item/${product.marketItemId}`);
   };
 
   // Handle bulk upload
@@ -260,16 +341,44 @@ export default function SellerDashboard() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="dashboard-tabs">
+        <button 
+          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          <ProductsIcon size={20} />
+          Overview
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+          onClick={() => setActiveTab('products')}
+        >
+          <ProductsIcon size={20} />
+          My Products
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('orders')}
+        >
+          <OrdersIcon size={20} />
+          My Orders
+          {orderStats.toShip > 0 && (
+            <span className="tab-badge">{orderStats.toShip}</span>
+          )}
+        </button>
+      </div>
+
       {/* Summary Cards */}
-      <div className="summary-cards">
+      <div className="summary-cards" style={{ opacity: statsLoading ? 0.6 : 1 }}>
         <div className="stat-card">
           <div className="stat-icon sales-icon">
             <SalesIcon size={28} color="#d4b48a" />
           </div>
           <div className="stat-content">
             <h3 className="stat-title">Total Sales</h3>
-            <p className="stat-value">${stats.totalSales.toLocaleString()}</p>
-            <span className="stat-change positive">+12% from last {selectedPeriod}</span>
+            <p className="stat-value">₱{stats.totalSales.toLocaleString()}</p>
+            <span className="stat-info">{selectedPeriod} period</span>
           </div>
         </div>
 
@@ -280,7 +389,7 @@ export default function SellerDashboard() {
           <div className="stat-content">
             <h3 className="stat-title">Total Orders</h3>
             <p className="stat-value">{stats.totalOrders}</p>
-            <span className="stat-badge">{stats.pendingOrders} pending</span>
+            <span className="stat-badge">{stats.pendingOrders > 0 && `${stats.pendingOrders} pending`}</span>
           </div>
         </div>
 
@@ -291,7 +400,7 @@ export default function SellerDashboard() {
           <div className="stat-content">
             <h3 className="stat-title">Products Listed</h3>
             <p className="stat-value">{stats.totalProducts}</p>
-            <span className="stat-info">{products.filter(p => p.status === 'active').length} active</span>
+            <span className="stat-info">{stats.activeProducts} active</span>
           </div>
         </div>
 
@@ -300,13 +409,9 @@ export default function SellerDashboard() {
             <EarningsIcon size={28} color="#b8956f" />
           </div>
           <div className="stat-content">
-            <h3 className="stat-title">Earnings</h3>
-            <p className="stat-value">
-              ${selectedPeriod === 'daily' ? stats.earnings.daily :
-                 selectedPeriod === 'weekly' ? stats.earnings.weekly :
-                 stats.earnings.monthly}
-            </p>
-            <span className="stat-period">{selectedPeriod}</span>
+            <h3 className="stat-title">Net Earnings</h3>
+            <p className="stat-value">₱{stats.earnings.net.toLocaleString()}</p>
+            <span className="stat-info">After {((stats.earnings.platformFee / stats.earnings.gross) * 100 || 0).toFixed(0)}% fees</span>
           </div>
         </div>
 
@@ -317,14 +422,40 @@ export default function SellerDashboard() {
           <div className="stat-content">
             <h3 className="stat-title">Pending Shipments</h3>
             <p className="stat-value">{stats.pendingShipments}</p>
-            <button className="btn btn-outline btn-sm">View All</button>
+            <button className="btn btn-outline btn-sm" onClick={() => navigate('/marketplace/orders')}>View All</button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="dashboard-content">
-        {/* Product List Table */}
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+        <div className="quick-actions">
+          <h3>Quick Actions</h3>
+          <div className="action-grid">
+            <button className="quick-action-btn" onClick={() => setActiveTab('products')}>
+              <ProductsIcon size={20} />
+              Manage Products
+            </button>
+            <button className="quick-action-btn" onClick={() => setActiveTab('orders')}>
+              <OrdersIcon size={20} />
+              View Orders
+            </button>
+            <button className="quick-action-btn">
+              <SalesIcon size={20} />
+              Sales Report
+            </button>
+            <button className="quick-action-btn">
+              <ShipmentIcon size={20} />
+              Shipping Labels
+            </button>
+          </div>
+        </div>
+        )}
+
+        {/* Products Tab */}
+        {activeTab === 'products' && (
         <div className="products-section">
           <div className="section-header">
             <h2>Product Inventory</h2>
@@ -337,22 +468,28 @@ export default function SellerDashboard() {
           </div>
 
           <div className="products-table-container">
-            <table className="products-table">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Title</th>
-                  <th>Medium</th>
-                  <th>Dimensions</th>
-                  <th>Price</th>
-                  <th>Qty</th>
-                  <th>Condition</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(product => (
+            {loading ? (
+              <div className="loading-state">
+                <ProductsIcon size={48} color="#d4c9b8" />
+                <p>Loading your products...</p>
+              </div>
+            ) : products.length > 0 ? (
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Title</th>
+                    <th>Medium</th>
+                    <th>Dimensions</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Condition</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(product => (
                   <tr key={product.marketItemId || product.id}>
                     <td>
                       <img 
@@ -412,11 +549,10 @@ export default function SellerDashboard() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {products.length === 0 && (
+                  ))}
+                </tbody>
+              </table>
+            ) : (
               <div className="empty-state">
                 <ProductsIcon size={48} color="#d4c9b8" />
                 <p>No products listed yet</p>
@@ -427,30 +563,197 @@ export default function SellerDashboard() {
             )}
           </div>
         </div>
+        )}
 
-        {/* Quick Actions */}
-        <div className="quick-actions">
-          <h3>Quick Actions</h3>
-          <div className="action-grid">
-            <button className="quick-action-btn">
-              <CalendarIcon size={20} />
-              Schedule Discount
-            </button>
-            <button className="quick-action-btn">
-              <OrdersIcon size={20} />
-              View Orders
-            </button>
-            <button className="quick-action-btn">
-              <SalesIcon size={20} />
-              Sales Report
-            </button>
-            <button className="quick-action-btn">
-              <ShipmentIcon size={20} />
-              Shipping Labels
-            </button>
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+        <div className="orders-section">
+          <div className="section-header">
+            <h2>Order Management</h2>
+            <div className="order-filters">
+              <button 
+                className={`filter-btn ${orderFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setOrderFilter('all')}
+              >
+                All Orders ({orderStats.totalOrders})
+              </button>
+              <button 
+                className={`filter-btn ${orderFilter === 'paid' ? 'active' : ''}`}
+                onClick={() => setOrderFilter('paid')}
+              >
+                To Ship ({orderStats.toShip})
+              </button>
+              <button 
+                className={`filter-btn ${orderFilter === 'shipped' ? 'active' : ''}`}
+                onClick={() => setOrderFilter('shipped')}
+              >
+                Shipping ({orderStats.shipping})
+              </button>
+              <button 
+                className={`filter-btn ${orderFilter === 'delivered' ? 'active' : ''}`}
+                onClick={() => setOrderFilter('delivered')}
+              >
+                Completed ({orderStats.completed})
+              </button>
+            </div>
+          </div>
+
+          <div className="orders-list">
+            {ordersLoading ? (
+              <div className="loading-state">
+                <OrdersIcon size={48} color="#d4c9b8" />
+                <p>Loading orders...</p>
+              </div>
+            ) : orders.length > 0 ? (
+              orders.map(order => (
+                <div key={order.orderId} className="order-card">
+                  <div className="order-header">
+                    <div className="order-info">
+                      <span className="order-id">Order #{order.orderId.slice(0, 8)}</span>
+                      <span className={`order-status ${order.status}`}>
+                        {(order.status === 'pending' && order.paymentStatus === 'paid') ? 'To Ship' :
+                         order.status === 'processing' ? 'Processing' :
+                         order.status === 'shipped' ? 'Shipping' : 
+                         order.status === 'delivered' ? 'Completed' : 
+                         order.status.toUpperCase()}
+                      </span>
+                      <span className="order-date">
+                        {new Date(order.paidAt || order.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="order-total">₱{order.totalAmount.toLocaleString()}</div>
+                  </div>
+
+                  <div className="order-items">
+                    {order.items?.map((item, idx) => (
+                      <div key={idx} className="order-item">
+                        <img 
+                          src={item.image || 'https://via.placeholder.com/60'} 
+                          alt={item.title}
+                        />
+                        <div className="item-details">
+                          <div className="item-title">{item.title}</div>
+                          <div className="item-info">
+                            Qty: {item.quantity} × ₱{item.priceAtPurchase.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {order.trackingNumber && (
+                    <div className="tracking-info">
+                      <strong>Tracking:</strong> {order.trackingNumber}
+                    </div>
+                  )}
+
+                  <div className="order-actions">
+                    {(order.status === 'pending' && order.paymentStatus === 'paid') && (
+                      <>
+                        <button 
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleMarkAsProcessing(order)}
+                        >
+                          Mark as Processing
+                        </button>
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleMarkAsShipped(order)}
+                        >
+                          Mark as Shipped
+                        </button>
+                      </>
+                    )}
+                    {order.status === 'processing' && (
+                      <button 
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleMarkAsShipped(order)}
+                      >
+                        Mark as Shipped
+                      </button>
+                    )}
+                    {order.status === 'shipped' && (
+                      <button className="btn btn-outline btn-sm" disabled>
+                        Waiting for Delivery
+                      </button>
+                    )}
+                    {order.status === 'delivered' && (
+                      <span className="order-completed">✓ Completed</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <OrdersIcon size={48} color="#d4c9b8" />
+                <p>No orders found</p>
+              </div>
+            )}
           </div>
         </div>
+        )}
       </div>
+      
+      {/* Shipping Modal */}
+      {shippingModal && selectedOrder && (
+        <div className="modal-overlay" onClick={() => setShippingModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Add Tracking Information</h2>
+              <button className="modal-close" onClick={() => setShippingModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="order-summary">
+                <p><strong>Order ID:</strong> #{selectedOrder.orderId.slice(0, 8)}</p>
+                <p><strong>Total:</strong> ₱{selectedOrder.totalAmount.toLocaleString()}</p>
+                <p><strong>Items:</strong> {selectedOrder.items?.length || 0}</p>
+              </div>
+
+              <div className="form-group">
+                <label>Tracking Number</label>
+                <input 
+                  type="text"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Enter tracking number (e.g., 420612345678)"
+                  className="form-control"
+                />
+                <small className="form-hint">
+                  Enter the tracking number provided by your courier service
+                </small>
+              </div>
+
+              <div className="tracking-tips">
+                <h4>📦 Shipping Tips:</h4>
+                <ul>
+                  <li>Pack items securely to prevent damage</li>
+                  <li>Include invoice and packing slip</li>
+                  <li>Use tracking service for valuable items</li>
+                  <li>Update buyer with tracking information</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShippingModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={submitTracking}
+                disabled={!trackingNumber.trim()}
+              >
+                Confirm Shipment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       
       {/* Add Product Modal */}
       <AddProductModal

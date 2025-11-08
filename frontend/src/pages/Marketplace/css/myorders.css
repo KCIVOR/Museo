@@ -174,6 +174,35 @@
   line-height: var(--museo-leading-relaxed);
 }
 
+/* Tracking Information (Order Card) */
+.order-tracking {
+  display: flex;
+  gap: var(--museo-space-2);
+  padding: var(--museo-space-3);
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-bg-primary) 100%);
+  border-radius: var(--museo-radius-md);
+  border: 1px solid var(--museo-border);
+  align-items: flex-start;
+  margin-top: var(--museo-space-3);
+}
+
+.order-tracking svg {
+  flex-shrink: 0;
+  color: var(--museo-primary);
+  margin-top: 2px;
+}
+
+.order-tracking span {
+  color: var(--museo-text-primary);
+  font-size: var(--museo-text-sm);
+  line-height: var(--museo-leading-relaxed);
+}
+
+.order-tracking strong {
+  color: var(--museo-primary);
+  font-weight: var(--museo-font-semibold);
+}
+
 /* Order Actions */
 .order-actions {
   display: flex;
@@ -293,6 +322,52 @@
 .shipping-details p strong {
   color: var(--museo-text-primary);
   font-weight: var(--museo-font-semibold);
+}
+
+/* Tracking Details (Modal) */
+.tracking-details {
+  padding: var(--museo-space-4);
+  background: linear-gradient(135deg, var(--museo-bg-secondary) 0%, var(--museo-bg-primary) 100%);
+  border-radius: var(--museo-radius-md);
+  border: 1px solid var(--museo-border);
+}
+
+.tracking-number-box {
+  display: flex;
+  gap: var(--museo-space-3);
+  align-items: center;
+  padding: var(--museo-space-4);
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-md);
+  margin-bottom: var(--museo-space-3);
+}
+
+.tracking-number-box svg {
+  color: var(--museo-primary);
+  flex-shrink: 0;
+}
+
+.tracking-label {
+  margin: 0 0 var(--museo-space-1) 0;
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  font-weight: var(--museo-font-medium);
+}
+
+.tracking-number {
+  margin: 0;
+  color: var(--museo-primary);
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-semibold);
+  font-family: var(--museo-font-mono, monospace);
+  letter-spacing: 0.5px;
+}
+
+.tracking-date {
+  margin: 0;
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  text-align: center;
 }
 
 /* Payment Summary */

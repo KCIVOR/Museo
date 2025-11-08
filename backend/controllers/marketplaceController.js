@@ -1390,10 +1390,11 @@ export const getBuyerOrders = async (req, res) => {
   }
 };
 
-// 3. Get seller's orders
+// 3. Get seller's orders with full details
 export const getSellerOrders = async (req, res) => {
   try {
     const userId = req.user?.id;
+    const { status } = req.query; // Optional status filter
     
     if (!userId) {
       return res.status(401).json({ 
@@ -1417,24 +1418,124 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
-    const { data: orders, error } = await db
+    // Get all order items for this seller
+    const { data: orderItems, error: itemsError } = await db
       .from('order_items')
       .select('*')
       .eq('sellerProfileId', sellerProfile.sellerProfileId)
       .order('createdAt', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching seller orders:', error);
+    if (itemsError) {
+      console.error('Error fetching order items:', itemsError);
       return res.status(500).json({ 
         success: false, 
-        error: error.message 
+        error: itemsError.message 
       });
     }
 
+    if (!orderItems || orderItems.length === 0) {
+      return res.json({ 
+        success: true, 
+        data: [],
+        stats: {
+          totalOrders: 0,
+          toShip: 0,
+          shipping: 0,
+          completed: 0
+        },
+        count: 0
+      });
+    }
+
+    // Get unique order IDs
+    const orderIds = [...new Set(orderItems.map(item => item.orderId))];
+
+    // Fetch order details
+    const { data: allOrders, error: ordersError } = await db
+      .from('orders')
+      .select('*')
+      .in('orderId', orderIds)
+      .eq('paymentStatus', 'paid'); // Only show paid orders
+
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      return res.status(500).json({ 
+        success: false, 
+        error: ordersError.message 
+      });
+    }
+
+    // Get marketplace item details
+    const itemIds = [...new Set(orderItems.map(item => item.marketplaceItemId))];
+    const { data: marketItems } = await db
+      .from('marketplace_items')
+      .select('marketItemId, title, primary_image, medium, dimensions')
+      .in('marketItemId', itemIds);
+
+    // Create a map for quick lookup
+    const itemsMap = new Map(marketItems?.map(i => [i.marketItemId, i]) || []);
+
+    // Filter by status if provided
+    let filteredOrders = allOrders;
+    if (status && status !== 'all') {
+      filteredOrders = allOrders.filter(o => o.status === status);
+    }
+
+    // Group items by order for better organization
+    const groupedOrdersMap = new Map();
+    
+    filteredOrders.forEach(order => {
+      groupedOrdersMap.set(order.orderId, {
+        orderId: order.orderId,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        shippingAddress: order.shippingAddress,
+        contactInfo: order.contactInfo,
+        trackingNumber: order.trackingNumber,
+        createdAt: order.createdAt,
+        paidAt: order.paidAt,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+        updatedAt: order.updatedAt,
+        items: []
+      });
+    });
+    
+    // Add items to their respective orders
+    orderItems.forEach(item => {
+      if (groupedOrdersMap.has(item.orderId)) {
+        const marketItem = itemsMap.get(item.marketplaceItemId);
+        groupedOrdersMap.get(item.orderId).items.push({
+          orderItemId: item.orderItemId,
+          marketplaceItemId: item.marketplaceItemId,
+          title: marketItem?.title || 'Unknown Item',
+          image: marketItem?.primary_image,
+          medium: marketItem?.medium,
+          dimensions: marketItem?.dimensions,
+          quantity: item.quantity,
+          priceAtPurchase: item.priceAtPurchase,
+          subtotal: item.priceAtPurchase * item.quantity
+        });
+      }
+    });
+    
+    // Convert map to array
+    const finalOrders = Array.from(groupedOrdersMap.values());
+    
+    // Calculate statistics from ALL orders (not filtered)
+    const stats = {
+      totalOrders: allOrders.length,
+      toShip: allOrders.filter(o => o.status === 'paid' || o.status === 'processing').length,
+      shipping: allOrders.filter(o => o.status === 'shipped').length,
+      completed: allOrders.filter(o => o.status === 'delivered').length
+    };
+
     res.json({ 
       success: true, 
-      data: orders,
-      count: orders.length
+      data: finalOrders,
+      stats: stats,
+      count: finalOrders.length
     });
 
   } catch (error) {
@@ -1541,7 +1642,98 @@ export const getOrderDetails = async (req, res) => {
 // PHASE 3: ORDER STATUS UPDATES
 // ========================================
 
-// 5. Mark order as shipped (Seller)
+// 5. Mark order as processing (Seller)
+export const markOrderAsProcessing = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { orderId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Get order
+    const { data: order, error: orderError } = await db
+      .from('orders')
+      .select('*')
+      .eq('orderId', orderId)
+      .single();
+
+    if (orderError || !order) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found' 
+      });
+    }
+
+    // Get user's seller profile
+    const { data: sellerProfile } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+
+    if (!sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an active seller to process orders' 
+      });
+    }
+
+    // Check if seller has items in this order
+    const { data: items } = await db
+      .from('order_items')
+      .select('sellerProfileId')
+      .eq('orderId', orderId);
+
+    const isSeller = items.some(item => item.sellerProfileId === sellerProfile.sellerProfileId);
+
+    if (!isSeller) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only sellers with items in this order can mark it as processing' 
+      });
+    }
+
+    // Update order status
+    const { data: updatedOrder, error: updateError } = await db
+      .from('orders')
+      .update({ 
+        status: 'processing',
+        updatedAt: new Date().toISOString()
+      })
+      .eq('orderId', orderId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating order:', updateError);
+      return res.status(500).json({ 
+        success: false, 
+        error: updateError.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Order marked as processing',
+      data: updatedOrder
+    });
+
+  } catch (error) {
+    console.error('Error in markOrderAsProcessing:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// 6. Mark order as shipped (Seller)
 export const markOrderAsShipped = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -2490,6 +2682,182 @@ export const checkSellerStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Error in checkSellerStatus:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Get seller's own items for dashboard
+export const getMyItems = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Get seller profile
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .eq('isSuspended', false)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an active seller to view your items' 
+      });
+    }
+
+    // Get all items for this seller
+    const { data: items, error } = await db
+      .from('marketplace_items')
+      .select('*')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching seller items:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      data: items || [],
+      count: items ? items.length : 0
+    });
+
+  } catch (error) {
+    console.error('Error in getMyItems:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
+// Get seller dashboard statistics
+export const getSellerStats = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { period = 'all' } = req.query; // all, daily, weekly, monthly
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // Get seller profile
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .eq('isSuspended', false)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'You must be an active seller to view stats' 
+      });
+    }
+
+    // Get date range based on period
+    let dateFilter = null;
+    const now = new Date();
+    
+    if (period === 'daily') {
+      dateFilter = new Date(now.setDate(now.getDate() - 1)).toISOString();
+    } else if (period === 'weekly') {
+      dateFilter = new Date(now.setDate(now.getDate() - 7)).toISOString();
+    } else if (period === 'monthly') {
+      dateFilter = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+    }
+
+    // Build base query for orders
+    let ordersQuery = db
+      .from('order_items')
+      .select('*, orders!inner(*)')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .eq('orders.paymentStatus', 'paid');
+
+    if (dateFilter) {
+      ordersQuery = ordersQuery.gte('orders.paidAt', dateFilter);
+    }
+
+    // Get order statistics
+    const { data: orderItems, error: ordersError } = await ordersQuery;
+
+    if (ordersError) {
+      console.error('Error fetching order stats:', ordersError);
+    }
+
+    // Calculate statistics
+    let totalSales = 0;
+    let totalOrders = new Set();
+    let pendingOrders = 0;
+    let pendingShipments = 0;
+
+    if (orderItems) {
+      orderItems.forEach(item => {
+        totalSales += item.priceAtPurchase * item.quantity;
+        totalOrders.add(item.orderId);
+        
+        if (item.orders.status === 'pending') {
+          pendingOrders++;
+        }
+        if (item.orders.status === 'processing' || item.orders.status === 'paid') {
+          pendingShipments++;
+        }
+      });
+    }
+
+    // Get product count
+    const { data: products, error: productsError } = await db
+      .from('marketplace_items')
+      .select('marketItemId, status')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId);
+
+    const activeProducts = products ? products.filter(p => p.status === 'active').length : 0;
+    const totalProducts = products ? products.length : 0;
+
+    // Calculate earnings (after platform fee)
+    const platformFeeRate = 0.10; // 10%
+    const netEarnings = totalSales * (1 - platformFeeRate);
+
+    res.json({ 
+      success: true,
+      stats: {
+        totalSales: totalSales,
+        totalOrders: totalOrders.size,
+        totalProducts: totalProducts,
+        activeProducts: activeProducts,
+        pendingOrders: pendingOrders,
+        pendingShipments: pendingShipments,
+        earnings: {
+          gross: totalSales,
+          net: netEarnings,
+          platformFee: totalSales * platformFeeRate
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getSellerStats:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Internal server error' 

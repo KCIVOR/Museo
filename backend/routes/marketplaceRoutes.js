@@ -18,6 +18,7 @@ import {
   getBuyerOrders,
   getSellerOrders,
   getOrderDetails,
+  markOrderAsProcessing,
   markOrderAsShipped,
   markOrderAsDelivered,
   cancelOrder,
@@ -32,7 +33,9 @@ import {
   getUserAddresses,
   createAddress,
   updateAddress,
-  deleteAddress
+  deleteAddress,
+  getMyItems,
+  getSellerStats
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -171,6 +174,9 @@ router.get('/orders/:orderId/payment-link', async (req, res) => {
 // PHASE 3: ORDER STATUS UPDATES
 // ========================================
 
+// Mark order as processing (Seller)
+router.put('/orders/:orderId/process', markOrderAsProcessing);
+
 // Mark order as shipped (Seller)
 router.put('/orders/:orderId/ship', markOrderAsShipped);
 
@@ -207,6 +213,16 @@ router.delete('/seller/applications/:applicationId', deleteSellerApplication);
 
 // TESTING ONLY - Cancel my own application
 router.post('/seller/cancel-my-application', cancelMyApplication);
+
+// ========================================
+// SELLER DASHBOARD
+// ========================================
+
+// Get seller's own items
+router.get('/seller/my-items', getMyItems);
+
+// Get seller dashboard statistics
+router.get('/seller/stats', getSellerStats);
 
 // ========================================
 // ADDRESS MANAGEMENT

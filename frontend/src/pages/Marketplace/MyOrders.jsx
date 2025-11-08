@@ -334,6 +334,20 @@ export default function MyOrders() {
                       </span>
                     </div>
                   )}
+
+                  {order.trackingNumber && (
+                    <div className="order-tracking">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="1" y="3" width="15" height="13"/>
+                        <path d="M16 8h5l3 3v5h-2"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                      </svg>
+                      <span>
+                        <strong>Tracking:</strong> {order.trackingNumber}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="museo-card__footer order-actions">
@@ -452,6 +466,32 @@ export default function MyOrders() {
                     <p>{selectedOrder.shippingAddress.street}</p>
                     <p>{selectedOrder.shippingAddress.barangay}, {selectedOrder.shippingAddress.city}</p>
                     <p>{selectedOrder.shippingAddress.province} {selectedOrder.shippingAddress.postalCode}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tracking Information */}
+              {selectedOrder.trackingNumber && (
+                <div className="order-details-section">
+                  <h3 className="section-title">Tracking Information</h3>
+                  <div className="tracking-details">
+                    <div className="tracking-number-box">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="1" y="3" width="15" height="13"/>
+                        <path d="M16 8h5l3 3v5h-2"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                      </svg>
+                      <div>
+                        <p className="tracking-label">Tracking Number</p>
+                        <p className="tracking-number">{selectedOrder.trackingNumber}</p>
+                      </div>
+                    </div>
+                    {selectedOrder.shippedAt && (
+                      <p className="tracking-date">
+                        Shipped on: {formatDate(selectedOrder.shippedAt)}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

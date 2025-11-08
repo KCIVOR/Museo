@@ -289,11 +289,11 @@ export default function Checkout() {
           alert(`Order created successfully! Order #${result.data.order.orderId}\n\nPlease complete payment in the new tab.`);
           
           // Navigate to orders page
-          navigate('/marketplace/orders');
+          navigate('/marketplace/myorders');
         } else {
           // For COD or other payment methods
           alert(`Order placed successfully! Order #${result.data.order.orderId}`);
-          navigate('/marketplace/orders');
+          navigate('/marketplace/myorders');
         }
       }
     } catch (error) {
