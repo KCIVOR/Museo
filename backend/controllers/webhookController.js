@@ -90,6 +90,16 @@ const handlePaymentPaid = async (webhookData) => {
 
     console.log('✅ Order found:', order.orderId);
 
+    // 🛡️ PREVENT DOUBLE PROCESSING: Check if order is already paid
+    if (order.paymentStatus === 'paid') {
+      console.warn('⚠️ Order already processed as paid. Skipping duplicate webhook.');
+      console.warn('⚠️ Order ID:', order.orderId);
+      console.warn('⚠️ Payment Intent:', order.paymentIntentId);
+      return;
+    }
+
+    console.log('✅ Order is pending payment. Proceeding with payment processing...');
+
     // Update order with payment details
     const { error: updateError } = await db
       .from('orders')
