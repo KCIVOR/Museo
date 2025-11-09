@@ -129,88 +129,13 @@ const handlePaymentPaid = async (webhookData) => {
       console.log(`✅ Order ${order.orderId} payment status updated (₱${order.totalAmount})`);
     }
 
-    console.log('📦 Starting inventory reduction for all orders...');
-
-    // Reduce inventory for ALL orders
-    for (const order of orders) {
-      const { data: orderItems, error: itemsError } = await db
-        .from('order_items')
-        .select('marketplaceItemId, quantity')
-        .eq('orderId', order.orderId);
-
-      if (itemsError) {
-        console.error(`❌ Error fetching order items for ${order.orderId}:`, itemsError);
-        continue;
-      } 
-      
-      if (!orderItems || orderItems.length === 0) {
-        console.warn(`⚠️ No order items found for order: ${order.orderId}`);
-        continue;
-      }
-      
-      console.log(`📦 Found ${orderItems.length} items to process for order ${order.orderId}`);
-      
-      for (const item of orderItems) {
-        console.log(`🔄 Processing item: ${item.marketplaceItemId}, Qty to reduce: ${item.quantity}`);
-        
-        // Get current quantity
-        const { data: marketItem, error: getError } = await db
-          .from('marketplace_items')
-          .select('quantity')
-          .eq('marketItemId', item.marketplaceItemId)
-          .single();
-
-        if (getError) {
-          console.error(`❌ Error fetching marketplace item ${item.marketplaceItemId}:`, getError);
-          continue;
-        }
-        
-        if (!marketItem) {
-          console.error(`❌ Marketplace item not found: ${item.marketplaceItemId}`);
-          continue;
-        }
-        
-        console.log(`📊 Current inventory for ${item.marketplaceItemId}: ${marketItem.quantity}`);
-        
-        const newQuantity = Math.max(0, marketItem.quantity - item.quantity);
-        
-        console.log(`📊 New inventory will be: ${newQuantity}`);
-        
-        // Update inventory
-        const { error: updateInventoryError } = await db
-          .from('marketplace_items')
-          .update({ 
-            quantity: newQuantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('marketItemId', item.marketplaceItemId);
-
-        if (updateInventoryError) {
-          console.error('❌ Error updating inventory for item:', item.marketplaceItemId, updateInventoryError);
-        } else {
-          console.log(`✅ Inventory updated: ${item.marketplaceItemId} - Reduced by ${item.quantity}, New qty: ${newQuantity}`);
-        }
-      }
-    }
+    // NOTE: Inventory is already reduced during order creation
+    // We no longer need to update inventory here to prevent double-reduction
+    console.log('📦 Inventory was already reserved during order creation');
     
-    console.log('✅ Inventory reduction completed for all orders');
-
-    console.log('🗑️ Clearing user cart...');
-    
-    // Get the userId from the first order (all orders belong to the same user)
-    const userId = orders[0].userId;
-    
-    // Clear user's cart after successful payment
-    const { error: clearError } = await db
-      .from('cart_items')
-      .delete()
-      .eq('userId', userId);
-
-    if (clearError) {
-      console.error('⚠️ Error clearing cart:', clearError);
-    } else {
-      console.log('✅ Cart cleared for user:', userId);
-    }
+    // NOTE: Cart is already cleared during order creation
+    // No need to clear it again here
+    console.log('🗑️ Cart was already cleared during order creation');
 
     console.log('✅ ========== PAYMENT PROCESSING COMPLETED ==========');
 

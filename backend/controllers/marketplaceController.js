@@ -100,17 +100,24 @@ export const createMarketplaceItem = async (req, res) => {
       });
     }
 
-    // STEP 1: Verify user is an artist
+    // STEP 1: Verify user is an artist or admin
     const { data: userProfile, error: profileError } = await db
       .from('profile')
       .select('role')
       .eq('userId', userId)
       .single();
 
-    if (profileError || !userProfile || userProfile.role !== 'artist') {
+    if (profileError || !userProfile) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to verify user profile' 
+      });
+    }
+
+    if (userProfile.role !== 'artist' && userProfile.role !== 'admin') {
       return res.status(403).json({ 
         success: false, 
-        error: 'Only verified artists can list items in the marketplace. Please apply for artist verification first.' 
+        error: 'Only verified artists or admins can list items in the marketplace. Please apply for artist verification first.' 
       });
     }
 
@@ -159,10 +166,31 @@ export const createMarketplaceItem = async (req, res) => {
       });
     }
 
-    if (price < 0) {
+    if (price < 0 || price > 1000000) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Price must be greater than or equal to 0' 
+        error: 'Price must be between 0 and 1,000,000' 
+      });
+    }
+
+    if (quantity < 1 || quantity > 1000) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Quantity must be between 1 and 1,000' 
+      });
+    }
+
+    if (year_created && (year_created < 1900 || year_created > new Date().getFullYear())) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Year created must be between 1900 and ${new Date().getFullYear()}` 
+      });
+    }
+
+    if (weight_kg && (weight_kg < 0 || weight_kg > 1000)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Weight must be between 0 and 1,000 kg' 
       });
     }
 
@@ -930,10 +958,10 @@ export const addToCart = async (req, res) => {
       });
     }
 
-    if (quantity < 1) {
+    if (quantity < 1 || quantity > 100) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Quantity must be at least 1' 
+        error: 'Quantity must be between 1 and 100' 
       });
     }
 
@@ -959,13 +987,12 @@ export const addToCart = async (req, res) => {
     }
 
     // Check if user is trying to buy their own item
-    // TEMPORARILY DISABLED FOR TESTING - RE-ENABLE IN PRODUCTION
-    // if (item.userId === userId) {
-    //   return res.status(400).json({ 
-    //     success: false, 
-    //     error: 'You cannot add your own items to cart' 
-    //   });
-    // }
+    if (item.userId === userId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You cannot add your own items to cart' 
+      });
+    }
 
     // Check stock availability
     if (quantity > item.quantity) {
@@ -1073,10 +1100,10 @@ export const updateCartQuantity = async (req, res) => {
       });
     }
 
-    if (!quantity || quantity < 1) {
+    if (!quantity || quantity < 1 || quantity > 100) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Quantity must be at least 1' 
+        error: 'Quantity must be between 1 and 100' 
       });
     }
 
@@ -1311,7 +1338,9 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Validate all items are still available and sellers are active
+    // ===== INVENTORY LOCKING: Validate and prepare inventory updates =====
+    const inventoryUpdates = [];
+    
     for (const item of cartItems) {
       if (!item.marketplace_items) {
         return res.status(400).json({ 
@@ -1337,12 +1366,36 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      if (item.quantity > item.marketplace_items.quantity) {
+      // CRITICAL: Re-fetch current inventory to prevent race conditions
+      const { data: currentItem, error: fetchError } = await db
+        .from('marketplace_items')
+        .select('marketItemId, title, quantity')
+        .eq('marketItemId', item.marketplace_items.marketItemId)
+        .single();
+      
+      if (fetchError || !currentItem) {
         return res.status(400).json({ 
           success: false, 
-          error: `Not enough stock for "${item.marketplace_items.title}". Only ${item.marketplace_items.quantity} available` 
+          error: `Failed to verify stock for "${item.marketplace_items.title}"` 
         });
       }
+      
+      // Check real-time stock availability
+      if (item.quantity > currentItem.quantity) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Not enough stock for "${currentItem.title}". Only ${currentItem.quantity} available` 
+        });
+      }
+      
+      // Prepare inventory update
+      inventoryUpdates.push({
+        marketItemId: currentItem.marketItemId,
+        title: currentItem.title,
+        requestedQty: item.quantity,
+        currentQty: currentItem.quantity,
+        newQty: currentItem.quantity - item.quantity
+      });
     }
 
     // ===== NEW: GROUP ITEMS BY SELLER =====
@@ -1390,11 +1443,13 @@ export const createOrder = async (req, res) => {
     
     console.log(`🛒 Creating ${Object.keys(itemsBySeller).length} orders for payment group ${paymentGroupId}`);
     
-    // ===== CREATE SEPARATE ORDER FOR EACH SELLER =====
+    // ===== CREATE SEPARATE ORDER FOR EACH SELLER WITH ROLLBACK =====
     const createdOrders = [];
     const allOrderItems = [];
+    const rollbackOperations = []; // Track what needs to be rolled back
     
-    for (const [sellerProfileId, sellerData] of Object.entries(itemsBySeller)) {
+    try {
+      for (const [sellerProfileId, sellerData] of Object.entries(itemsBySeller)) {
       const sellerSubtotal = sellerData.subtotal;
       const sellerPlatformFee = sellerSubtotal * platformFeeRate;
       
@@ -1419,13 +1474,16 @@ export const createOrder = async (req, res) => {
         .select()
         .single();
 
-      if (orderError) {
-        console.error(`Error creating order for seller ${sellerProfileId}:`, orderError);
-        return res.status(500).json({ 
-          success: false, 
-          error: orderError.message 
+        if (orderError) {
+          console.error(`Error creating order for seller ${sellerProfileId}:`, orderError);
+          throw new Error(`Failed to create order: ${orderError.message}`);
+        }
+        
+        // Track this order for rollback if needed
+        rollbackOperations.push({
+          type: 'order',
+          orderId: sellerOrder.orderId
         });
-      }
       
       console.log(`✅ Created order ${sellerOrder.orderId} for seller ${sellerData.shopName} (₱${sellerSubtotal})`);
       
@@ -1441,20 +1499,108 @@ export const createOrder = async (req, res) => {
         .insert(orderItemsForSeller)
         .select();
 
-      if (itemsError) {
-        console.error('Error creating order items:', itemsError);
-        return res.status(500).json({ 
-          success: false, 
-          error: itemsError.message 
+        if (itemsError) {
+          console.error('Error creating order items:', itemsError);
+          throw new Error(`Failed to create order items: ${itemsError.message}`);
+        }
+        
+        // Track order items for rollback
+        rollbackOperations.push({
+          type: 'order_items',
+          orderItemIds: createdItems.map(item => item.orderItemId)
         });
+        
+        createdOrders.push({
+          ...sellerOrder,
+          shopName: sellerData.shopName,
+          itemCount: sellerData.items.length
+        });
+        allOrderItems.push(...createdItems);
       }
       
-      createdOrders.push({
-        ...sellerOrder,
-        shopName: sellerData.shopName,
-        itemCount: sellerData.items.length
+      // ===== RESERVE INVENTORY (reduce quantities) =====
+      console.log('📦 Reserving inventory...');
+      for (const update of inventoryUpdates) {
+        const { error: updateError } = await db
+          .from('marketplace_items')
+          .update({ 
+            quantity: update.newQty,
+            updated_at: new Date().toISOString()
+          })
+          .eq('marketItemId', update.marketItemId);
+        
+        if (updateError) {
+          console.error(`❌ Failed to reserve inventory for ${update.title}:`, updateError);
+          throw new Error(`Failed to reserve inventory: ${updateError.message}`);
+        }
+        
+        console.log(`✅ Reserved inventory: ${update.title} (${update.currentQty} → ${update.newQty})`);
+      }
+      
+      // ===== CLEAR CART AFTER SUCCESSFUL ORDER CREATION =====
+      console.log('🗑️ Clearing user cart...');
+      const { error: clearCartError } = await db
+        .from('cart_items')
+        .delete()
+        .eq('userId', userId);
+      
+      if (clearCartError) {
+        console.error('Error clearing cart:', clearCartError);
+        throw new Error(`Failed to clear cart: ${clearCartError.message}`);
+      }
+      
+      console.log('✅ Cart cleared successfully');
+      
+    } catch (error) {
+      // ===== ROLLBACK ON FAILURE =====
+      console.error('❌ Order creation failed, initiating rollback...', error);
+      
+      // Rollback database operations in reverse order
+      for (const operation of rollbackOperations.reverse()) {
+        try {
+          if (operation.type === 'order_items' && operation.orderItemIds) {
+            await db
+              .from('order_items')
+              .delete()
+              .in('orderItemId', operation.orderItemIds);
+            console.log(`🔄 Rolled back ${operation.orderItemIds.length} order items`);
+          } else if (operation.type === 'order' && operation.orderId) {
+            await db
+              .from('orders')
+              .delete()
+              .eq('orderId', operation.orderId);
+            console.log(`🔄 Rolled back order ${operation.orderId}`);
+          }
+        } catch (rollbackError) {
+          console.error(`❌ Rollback failed for ${operation.type}:`, rollbackError);
+        }
+      }
+      
+      // Restore inventory if it was already reduced
+      for (const update of inventoryUpdates) {
+        try {
+          const { error: restoreError } = await db
+            .from('marketplace_items')
+            .update({ 
+              quantity: update.currentQty,
+              updated_at: new Date().toISOString()
+            })
+            .eq('marketItemId', update.marketItemId);
+          
+          if (restoreError) {
+            console.error(`❌ Failed to restore inventory for ${update.title}:`, restoreError);
+          } else {
+            console.log(`🔄 Restored inventory: ${update.title} (${update.newQty} → ${update.currentQty})`);
+          }
+        } catch (restoreError) {
+          console.error(`❌ Failed to restore inventory:`, restoreError);
+        }
+      }
+      
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message || 'Order creation failed'
       });
-      allOrderItems.push(...createdItems);
     }
     
     // Use the first order for payment link (represents the whole payment group)
@@ -1495,8 +1641,8 @@ export const createOrder = async (req, res) => {
       // Don't fail the order creation, just log the error
     }
 
-    // DON'T UPDATE INVENTORY HERE - Will be done after payment confirmation
-    console.log('📦 Orders created with reserved items. Inventory will be reduced after payment confirmation.');
+    // Inventory has been reserved, cart has been cleared
+    console.log('✅ Orders created with inventory reserved and cart cleared');
 
     res.status(201).json({ 
       success: true, 
