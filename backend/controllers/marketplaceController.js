@@ -2432,10 +2432,11 @@ export const markOrderAsDelivered = async (req, res) => {
       
       // Create payout with escrow period
       await payoutService.createPayout(orderId);
-      console.log(`Payout created for delivered order ${orderId}`);
+      console.log(`✅ Payout created for delivered order ${orderId}`);
     } catch (payoutError) {
       // Log error but don't fail the delivery confirmation
-      console.error('Error creating payout:', payoutError);
+      console.error('❌ Error creating payout for order', orderId, ':', payoutError.message);
+      console.error('Stack trace:', payoutError.stack);
     }
 
     res.json({ 

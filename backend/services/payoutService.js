@@ -38,7 +38,7 @@ class PayoutService {
           orderId,
           sellerProfileId,
           totalAmount,
-          buyerId,
+          userId,
           createdAt
         `)
         .eq('orderId', orderId)
@@ -103,7 +103,7 @@ class PayoutService {
           payoutType: 'standard',
           readyDate: readyDate.toISOString(),
           payoutMethod: sellerProfile?.paymentMethod || null,
-          notes: safetyChecks.notes
+          notes: safetyChecks.notes.join('; ')  // Convert array to string
         })
         .select()
         .single();
@@ -164,7 +164,7 @@ class PayoutService {
       const { data: buyerOrders } = await db
         .from('orders')
         .select('orderId')
-        .eq('buyerId', order.buyerId)
+        .eq('userId', order.userId)
         .eq('paymentStatus', 'paid')
         .limit(2);
 
