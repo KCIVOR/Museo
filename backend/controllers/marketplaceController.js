@@ -1760,12 +1760,12 @@ export const checkPaymentStatus = async (req, res) => {
             });
           }
           
-          // Update order status
+          // Update order status (match webhook behavior - only update paymentStatus, not status)
           const { error: updateError } = await db
             .from('orders')
             .update({
               paymentStatus: 'paid',
-              status: 'processing',
+              // NOTE: Keep status as 'pending' - seller will change to 'processing' later
               paidAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
             })

@@ -91,7 +91,7 @@ export default function MyOrders() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        alert('✅ Payment confirmed! Your order is now processing.');
+        alert('✅ Payment confirmed! Your order has been paid. The seller will process it soon.');
         fetchOrders(); // Refresh orders list
       } else {
         alert(result.message || 'Payment not yet completed. Please complete payment first.');
