@@ -15,9 +15,9 @@ export const handleXenditWebhook = async (req, res) => {
     
     console.log('📥 ========== XENDIT WEBHOOK RECEIVED ==========');
     console.log('📥 Webhook Data:', JSON.stringify(webhookData, null, 2));
-    console.log('📥 Event Type:', req.headers['x-callback-event']);
     console.log('📥 Invoice ID:', webhookData.id);
     console.log('📥 Status:', webhookData.status);
+    console.log('📥 External ID:', webhookData.external_id);
     console.log('📥 ==============================================');
 
     // Verify webhook signature (optional but recommended)
@@ -27,8 +27,15 @@ export const handleXenditWebhook = async (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // Xendit uses header for event type
-    const eventType = req.headers['x-callback-event'];
+    // Determine event type based on invoice status
+    let eventType = 'invoice.unknown';
+    if (webhookData.status === 'PAID' || webhookData.status === 'SETTLED') {
+      eventType = 'invoice.paid';
+    } else if (webhookData.status === 'EXPIRED') {
+      eventType = 'invoice.expired';
+    }
+    
+    console.log('📥 Determined Event Type:', eventType);
 
     // Handle different webhook events
     switch (eventType) {
