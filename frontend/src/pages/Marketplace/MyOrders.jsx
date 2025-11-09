@@ -81,6 +81,27 @@ export default function MyOrders() {
     }
   };
 
+  const handleCheckPaymentStatus = async (orderId) => {
+    try {
+      const response = await fetch(`${API}/marketplace/orders/${orderId}/check-payment`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert('✅ Payment confirmed! Your order is now processing.');
+        fetchOrders(); // Refresh orders list
+      } else {
+        alert(result.message || 'Payment not yet completed. Please complete payment first.');
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      alert('Failed to check payment status. Please try again.');
+    }
+  };
+
   const handleCancelOrder = async (orderId) => {
     if (!confirm('Are you sure you want to cancel this order?')) {
       return;
@@ -365,6 +386,13 @@ export default function MyOrders() {
                         onClick={() => handlePayNow(order)}
                       >
                         💳 Pay Now
+                      </button>
+                      <button 
+                        className="btn-secondary btn-sm"
+                        onClick={() => handleCheckPaymentStatus(order.orderId)}
+                        title="Check if payment was completed"
+                      >
+                        🔄 Check Payment
                       </button>
                       <button 
                         className="btn-danger btn-sm"
