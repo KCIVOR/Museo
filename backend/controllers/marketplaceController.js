@@ -1679,6 +1679,155 @@ export const createOrder = async (req, res) => {
   }
 };
 
+// 1.5. Check payment status manually (backup for webhook failures)
+export const checkPaymentStatus = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { orderId } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Unauthorized' 
+      });
+    }
+
+    // ===== SECURITY: Rate limiting - prevent spam clicks =====
+    // Check if user checked this order recently (within last 30 seconds)
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+    const { data: recentCheck } = await db
+      .from('orders')
+      .select('updatedAt')
+      .eq('orderId', orderId)
+      .eq('userId', userId)
+      .gte('updatedAt', thirtySecondsAgo)
+      .single();
+    
+    if (recentCheck && recentCheck.updatedAt > thirtySecondsAgo) {
+      return res.status(429).json({ 
+        success: false, 
+        error: 'Please wait 30 seconds before checking again' 
+      });
+    }
+
+    // Get the order
+    const { data: order, error: orderError } = await db
+      .from('orders')
+      .select('*')
+      .eq('orderId', orderId)
+      .eq('userId', userId) // SECURITY: Ensure user owns this order
+      .single();
+
+    if (orderError || !order) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Order not found or you do not have permission to view it' 
+      });
+    }
+
+    // If already paid, return success
+    if (order.paymentStatus === 'paid') {
+      return res.json({ 
+        success: true, 
+        message: 'Payment already confirmed',
+        data: { paymentStatus: 'paid' }
+      });
+    }
+
+    // Check with PayMongo if payment was actually completed
+    if (order.paymentLinkId) {
+      try {
+        const paymentLinkStatus = await paymongoService.getPaymentLinkStatus(order.paymentLinkId);
+        
+        console.log(`🔍 Payment status check for order ${orderId}:`, {
+          paymongoStatus: paymentLinkStatus.status,
+          currentDbStatus: order.paymentStatus,
+          hasPayments: paymentLinkStatus.payments?.length > 0
+        });
+        
+        // ===== SECURITY: Only trust PayMongo's response =====
+        // If PayMongo says it's paid, update our database
+        if (paymentLinkStatus.status === 'paid') {
+          console.log(`✅ Manual payment check: Order ${orderId} was paid but webhook missed. Updating now...`);
+          
+          // Double-check: Verify payment actually exists
+          if (!paymentLinkStatus.payments || paymentLinkStatus.payments.length === 0) {
+            console.warn(`⚠️ PayMongo says paid but no payment records found for order ${orderId}`);
+            return res.json({ 
+              success: false, 
+              message: 'Payment verification failed. Please contact support.',
+              data: { paymentStatus: order.paymentStatus }
+            });
+          }
+          
+          // Update order status
+          const { error: updateError } = await db
+            .from('orders')
+            .update({
+              paymentStatus: 'paid',
+              status: 'processing',
+              paidAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+            .eq('orderId', orderId)
+            .eq('userId', userId); // SECURITY: Ensure user owns this order
+
+          if (updateError) {
+            console.error('Error updating order:', updateError);
+            return res.status(500).json({ 
+              success: false, 
+              error: 'Failed to update order status' 
+            });
+          }
+
+          console.log(`✅ Order ${orderId} status updated to paid via manual check`);
+
+          return res.json({ 
+            success: true, 
+            message: 'Payment confirmed! Order status updated.',
+            data: { paymentStatus: 'paid' }
+          });
+        } else if (paymentLinkStatus.status === 'failed') {
+          // Payment explicitly failed
+          console.log(`❌ Payment failed for order ${orderId}`);
+          return res.json({ 
+            success: false, 
+            message: 'Payment failed. Please try again or use a different payment method.',
+            data: { paymentStatus: 'failed' }
+          });
+        } else {
+          // Still pending
+          console.log(`⏳ Payment still pending for order ${orderId}`);
+          return res.json({ 
+            success: false, 
+            message: 'Payment not yet completed. Please complete payment first.',
+            data: { paymentStatus: order.paymentStatus }
+          });
+        }
+      } catch (paymentError) {
+        console.error('Error checking payment status:', paymentError);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to check payment status. Please try again later.' 
+        });
+      }
+    }
+
+    return res.json({ 
+      success: false, 
+      message: 'No payment link found',
+      data: { paymentStatus: order.paymentStatus }
+    });
+
+  } catch (error) {
+    console.error('Error in checkPaymentStatus:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+};
+
 // 2. Get buyer's orders
 export const getBuyerOrders = async (req, res) => {
   try {

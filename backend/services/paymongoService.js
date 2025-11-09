@@ -115,6 +115,49 @@ export const getPaymentLink = async (linkId) => {
 };
 
 /**
+ * Get payment link status (for manual checking)
+ * @param {string} linkId - Payment link ID
+ * @returns {Promise<Object>} Payment status
+ */
+export const getPaymentLinkStatus = async (linkId) => {
+  try {
+    const response = await fetch(`${PAYMONGO_API_URL}/links/${linkId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('PayMongo API Error:', data);
+      throw new Error(data.errors?.[0]?.detail || 'Failed to get payment link status');
+    }
+
+    const attributes = data.data.attributes;
+    
+    // Check if payment link has been paid
+    const isPaid = attributes.status === 'paid' || 
+                   (attributes.payments && attributes.payments.length > 0);
+
+    return {
+      success: true,
+      status: isPaid ? 'paid' : 'pending',
+      referenceNumber: attributes.reference_number,
+      checkoutUrl: attributes.checkout_url,
+      payments: attributes.payments || [],
+      data: data.data
+    };
+
+  } catch (error) {
+    console.error('Error getting payment link status:', error);
+    throw error;
+  }
+};
+
+/**
  * Verify webhook signature
  * @param {Object} payload - Webhook payload
  * @param {string} signature - Webhook signature from headers
@@ -242,6 +285,7 @@ export const getPaymentMethodName = (type) => {
 export default {
   createPaymentLink,
   getPaymentLink,
+  getPaymentLinkStatus,
   verifyWebhookSignature,
   processPaymentSuccess,
   toCentavos,

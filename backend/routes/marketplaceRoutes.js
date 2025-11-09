@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import db from '../database/db.js';
 import * as paymongoService from '../services/paymongoService.js';
+import { requirePermission } from '../middleware/permission.js';
 import {
   createMarketplaceItem,
   getMarketplaceItems,
@@ -15,6 +16,7 @@ import {
   removeFromCart,
   clearCart,
   createOrder,
+  checkPaymentStatus,
   getBuyerOrders,
   getSellerOrders,
   getOrderDetails,
@@ -63,10 +65,10 @@ const upload = multer({
 // ========================================
 
 // TESTING ONLY - Create test items
-router.post('/items/test', createTestItems);
+router.post('/items/test', requirePermission(['admin']), createTestItems);
 
 // Create marketplace item (with image upload)
-router.post('/items', upload.array('images', 10), createMarketplaceItem);
+router.post('/items', requirePermission(['artist', 'admin']), upload.array('images', 10), createMarketplaceItem);
 
 // Get all marketplace items
 router.get('/items', getMarketplaceItems);
@@ -75,10 +77,10 @@ router.get('/items', getMarketplaceItems);
 router.get('/items/:id', getMarketplaceItem);
 
 // Update marketplace item (with image upload)
-router.put('/items/:id', upload.array('images', 10), updateMarketplaceItem);
+router.put('/items/:id', requirePermission(['artist', 'admin']), upload.array('images', 10), updateMarketplaceItem);
 
 // Delete marketplace item
-router.delete('/items/:id', deleteMarketplaceItem);
+router.delete('/items/:id', requirePermission(['artist', 'admin']), deleteMarketplaceItem);
 
 // ========================================
 // PHASE 1: CART ROUTES
@@ -105,6 +107,9 @@ router.delete('/cart/clear', clearCart);
 
 // Create order from cart
 router.post('/orders/create', createOrder);
+
+// Check payment status manually (backup for webhook failures)
+router.get('/orders/:orderId/check-payment', checkPaymentStatus);
 
 // Get buyer's orders
 router.get('/orders/buyer', getBuyerOrders);
@@ -200,16 +205,16 @@ router.get('/seller/status', checkSellerStatus);
 router.get('/seller/my-application', getMySellerApplication);
 
 // Get all seller applications (Admin only)
-router.get('/seller/applications', getAllSellerApplications);
+router.get('/seller/applications', requirePermission(['admin']), getAllSellerApplications);
 
 // Approve seller application (Admin only)
-router.put('/seller/applications/:applicationId/approve', approveSellerApplication);
+router.put('/seller/applications/:applicationId/approve', requirePermission(['admin']), approveSellerApplication);
 
 // Reject seller application (Admin only)
-router.put('/seller/applications/:applicationId/reject', rejectSellerApplication);
+router.put('/seller/applications/:applicationId/reject', requirePermission(['admin']), rejectSellerApplication);
 
 // Delete seller application (Admin only)
-router.delete('/seller/applications/:applicationId', deleteSellerApplication);
+router.delete('/seller/applications/:applicationId', requirePermission(['admin']), deleteSellerApplication);
 
 // TESTING ONLY - Cancel my own application
 router.post('/seller/cancel-my-application', cancelMyApplication);
