@@ -2341,9 +2341,23 @@ export const markOrderAsShipped = async (req, res) => {
       });
     }
 
+    // TEMPORARY: Create payout when shipped (for testing only)
+    // Remove this in production - payouts should only happen after delivery confirmation
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const payoutService = (await import('../services/payoutService.js')).default;
+        await payoutService.createPayout(orderId);
+        console.log(`[TEST MODE] Payout created for shipped order ${orderId}`);
+      } catch (payoutError) {
+        console.error('Error creating test payout:', payoutError);
+      }
+    }
+
     res.json({ 
       success: true, 
-      message: 'Order marked as shipped',
+      message: process.env.NODE_ENV !== 'production' 
+        ? 'Order marked as shipped. [TEST MODE] Payout created.'
+        : 'Order marked as shipped',
       data: updatedOrder
     });
 
