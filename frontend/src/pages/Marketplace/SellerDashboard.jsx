@@ -61,6 +61,8 @@ export default function SellerDashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState('');
   
+  // Payment settings state - REMOVED (will be replaced)
+  
   // Stats data
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -240,6 +242,8 @@ export default function SellerDashboard() {
     }
   };
 
+  // Payment functions - REMOVED (will be replaced)
+
   // Load data on mount and when period changes
   useEffect(() => {
     if (userData?.isSeller) {
@@ -252,6 +256,8 @@ export default function SellerDashboard() {
       if (activeTab === 'orders') {
         fetchOrders(orderFilter === 'all' ? null : orderFilter);
       }
+      
+      // Settings tab - REMOVED (will be replaced)
     }
   }, [userData, selectedPeriod, activeTab, orderFilter]);
 
@@ -400,6 +406,16 @@ export default function SellerDashboard() {
           {orderStats.toShip > 0 && (
             <span className="tab-badge">{orderStats.toShip}</span>
           )}
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"/>
+          </svg>
+          Settings
         </button>
       </div>
 
@@ -725,6 +741,21 @@ export default function SellerDashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {/* Settings Tab - REMOVED (will be replaced) */}
+        {activeTab === 'settings' && (
+          <div className="settings-section">
+            <div className="section-header">
+              <h2>Payout Settings</h2>
+              <p>New artist-friendly payout system coming soon!</p>
+            </div>
+            <div className="empty-state">
+              <EarningsIcon size={48} color="#d4c9b8" />
+              <p>We're building a better payout system that truly helps artists.</p>
+              <small>Coming soon: Daily payouts, lower fees, and instant withdrawals!</small>
+            </div>
+          </div>
         )}
       </div>
       

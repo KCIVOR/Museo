@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import db from '../database/db.js';
-import * as paymongoService from '../services/paymongoService.js';
+import * as xenditService from '../services/xenditService.js';
 import { requirePermission } from '../middleware/permission.js';
 import {
   createMarketplaceItem,
@@ -37,7 +37,7 @@ import {
   updateAddress,
   deleteAddress,
   getMyItems,
-  getSellerStats
+  getSellerStats,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -150,8 +150,26 @@ router.get('/orders/:orderId/payment-link', async (req, res) => {
       });
     }
 
-    // Get payment link from PayMongo using reference number
-    const paymentLink = await paymongoService.getPaymentLink(order.paymentReference);
+    // Check if payment link ID exists
+    if (!order.paymentLinkId) {
+      console.error('Order missing paymentLinkId:', orderId);
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Payment link not found for this order' 
+      });
+    }
+
+    // Get payment link from Xendit using the payment link ID
+    let paymentLink;
+    try {
+      paymentLink = await xenditService.getPaymentLink(order.paymentLinkId);
+    } catch (err) {
+      console.error('Error fetching payment link:', err.message);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to retrieve payment link' 
+      });
+    }
 
     if (!paymentLink || !paymentLink.checkoutUrl) {
       return res.status(404).json({ 
@@ -244,6 +262,10 @@ router.put('/addresses/:addressId', updateAddress);
 
 // Delete address
 router.delete('/addresses/:addressId', deleteAddress);
+
+// ========================================
+// PAYOUT SYSTEM - REMOVED (To be replaced)
+// ========================================
 
 // ========================================
 // ORDER CLEANUP (Admin/Testing)

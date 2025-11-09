@@ -361,15 +361,15 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Payment Settings */}
+                {/* Payment Settings - Coming Soon */}
                 <div className="settings-group">
                   <h3 className="settings-group-title">Payment Methods</h3>
                   <div className="settings-item">
                     <div className="settings-item-info">
                       <label className="museo-label">Payout Method</label>
-                      <p className="settings-description">Choose how you receive payments</p>
+                      <p className="settings-description">New artist-friendly payout system coming soon!</p>
                     </div>
-                    <button className="btn btn-secondary">Setup Payment</button>
+                    <button className="btn btn-secondary" disabled>Coming Soon</button>
                   </div>
                 </div>
               </>

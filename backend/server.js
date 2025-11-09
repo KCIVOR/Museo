@@ -17,11 +17,13 @@ import messageRoutes from "./routes/messageRoutes.js"
 import galleryRoutes from "./routes/galleryRoutes.js"
 import visitBookingRoutes from "./routes/visitBookingRoutes.js"
 import marketplaceRoutes from "./routes/marketplaceRoutes.js"
+import payoutRoutes from "./routes/payoutRoutes.js"
 
 import webhookRoutes from "./routes/webhookRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { cancelExpiredOrders } from './controllers/orderCleanupController.js';
+import payoutService from './services/payoutService.js';
 import { authMiddleware } from "./middleware/auth.js";
 import { Server } from "socket.io"
 import http, { request } from "http";
@@ -96,6 +98,8 @@ app.use("/api/visit-bookings", visitBookingRoutes)
 // Marketplace routes
 app.use("/api/marketplace", authMiddleware, marketplaceRoutes)
 
+// Payout routes
+app.use("/api/payouts", authMiddleware, payoutRoutes)
 
 // Webhook routes (NO authentication - called by external services)
 app.use("/api/webhooks", webhookRoutes)
@@ -209,10 +213,28 @@ server.listen(PORT, () => {
     }
   });
 
+  // Process ready payouts - Daily at 9:00 AM (Philippine Time)
+  cron.schedule('0 9 * * *', async () => {
+    console.log('💰 Running daily payout processing...');
+    
+    try {
+      const result = await payoutService.processReadyPayouts();
+      console.log(`✅ Processed ${result.processed} payouts`);
+      if (result.errors && result.errors.length > 0) {
+        console.log('⚠️ Errors:', result.errors);
+      }
+    } catch (error) {
+      console.error('❌ Payout processing failed:', error);
+    }
+  }, {
+    timezone: "Asia/Manila"
+  });
+
   console.log('📅 Cron jobs scheduled:');
   console.log('   🌅 Featured artwork maintenance: Daily at 12:00 AM (PH Time)');
   console.log('   🔄 Artwork rotation & re-featuring: Daily at midnight (PH Time)');
   console.log('   🛒 Expired order cleanup: Every hour');
   console.log('   🏆 Top Arts generation: Every Sunday 11:59 PM (PH Time)');
+  console.log('   💰 Payout processing: Daily at 9:00 AM (PH Time)');
   
 });

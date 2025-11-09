@@ -1,45 +1,43 @@
 /**
  * Webhook Controller
- * Handles webhooks from payment providers (PayMongo, etc.)
+ * Handles webhooks from payment providers (Xendit)
  */
 
 import db from '../database/db.js';
-import * as paymongoService from '../services/paymongoService.js';
+import * as xenditService from '../services/xenditService.js';
 
 /**
- * Handle PayMongo webhook events
+ * Handle Xendit webhook events
  */
-export const handlePaymongoWebhook = async (req, res) => {
+export const handleXenditWebhook = async (req, res) => {
   try {
     const webhookData = req.body;
     
-    console.log('📥 ========== PAYMONGO WEBHOOK RECEIVED ==========');
+    console.log('📥 ========== XENDIT WEBHOOK RECEIVED ==========');
     console.log('📥 Webhook Data:', JSON.stringify(webhookData, null, 2));
-    console.log('📥 Event Type:', webhookData.data?.attributes?.type);
-    console.log('📥 Event ID:', webhookData.data?.id);
+    console.log('📥 Event Type:', req.headers['x-callback-event']);
+    console.log('📥 Invoice ID:', webhookData.id);
+    console.log('📥 Status:', webhookData.status);
     console.log('📥 ==============================================');
 
     // Verify webhook signature (optional but recommended)
-    const signature = req.headers['paymongo-signature'];
-    if (signature && !paymongoService.verifyWebhookSignature(webhookData, signature)) {
+    const signature = req.headers['x-callback-token'];
+    if (signature && !xenditService.verifyWebhookSignature(webhookData, signature)) {
       console.error('❌ Invalid webhook signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const eventType = webhookData.data?.attributes?.type;
+    // Xendit uses header for event type
+    const eventType = req.headers['x-callback-event'];
 
     // Handle different webhook events
     switch (eventType) {
-      case 'link.payment.paid':
+      case 'invoice.paid':
         await handlePaymentPaid(webhookData);
         break;
       
-      case 'payment.paid':
-        await handlePaymentPaid(webhookData);
-        break;
-      
-      case 'payment.failed':
-        await handlePaymentFailed(webhookData);
+      case 'invoice.expired':
+        await handlePaymentExpired(webhookData);
         break;
       
       default:
@@ -51,7 +49,7 @@ export const handlePaymongoWebhook = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error processing webhook:', error);
-    // Still return 200 to prevent PayMongo from retrying
+    // Still return 200 to prevent Xendit from retrying
     res.status(200).json({ received: true, error: error.message });
   }
 };
@@ -63,8 +61,8 @@ const handlePaymentPaid = async (webhookData) => {
   try {
     console.log('🔄 Starting handlePaymentPaid...');
     
-    // Extract payment data
-    const paymentData = paymongoService.processPaymentSuccess(webhookData);
+    // Extract payment data from Xendit webhook
+    const paymentData = xenditService.processPaymentSuccess(webhookData);
     
     console.log('💰 Payment successful:', {
       paymentId: paymentData.paymentId,
@@ -105,7 +103,7 @@ const handlePaymentPaid = async (webhookData) => {
     // Update ALL orders with payment details
     for (const order of orders) {
       const orderProportion = parseFloat(order.totalAmount) / totalAmount;
-      const orderFee = paymentData.fee ? paymongoService.toPesos(paymentData.fee) * orderProportion : 0;
+      const orderFee = paymentData.fee ? paymentData.fee * orderProportion : 0;
       const orderNetAmount = parseFloat(order.totalAmount) - orderFee;
       
       const { error: updateError } = await db
@@ -152,47 +150,61 @@ const handlePaymentPaid = async (webhookData) => {
 };
 
 /**
- * Handle failed payment
+ * Handle expired payment
  */
-const handlePaymentFailed = async (webhookData) => {
+const handlePaymentExpired = async (webhookData) => {
   try {
-    console.log('❌ Payment failed:', webhookData);
+    console.log('⏰ Payment expired:', webhookData);
 
-    // Extract payment data
-    const attributes = webhookData.data?.attributes;
-    const metadata = attributes?.data?.attributes?.metadata || {};
-    const orderId = metadata.orderId;
+    // Extract payment data from Xendit webhook
+    const externalId = webhookData.external_id;
+    const metadata = webhookData.metadata || {};
 
-    if (!orderId) {
-      console.error('❌ No orderId in failed payment metadata');
+    if (!externalId) {
+      console.error('❌ No external_id in expired payment webhook');
       return;
     }
 
-    // Update order status
-    const { error: updateError } = await db
+    console.log('🔍 Searching for orders with reference:', externalId);
+
+    // Find orders with the payment reference
+    const { data: orders, error: orderError } = await db
       .from('orders')
-      .update({
-        paymentStatus: 'failed',
-        updatedAt: new Date().toISOString()
-      })
-      .eq('orderId', orderId);
+      .select('*')
+      .eq('paymentReference', externalId);
 
-    if (updateError) {
-      console.error('❌ Error updating order:', updateError);
+    if (orderError || !orders || orders.length === 0) {
+      console.error('❌ No orders found with reference:', externalId);
       return;
     }
 
-    console.log('✅ Order marked as payment failed:', orderId);
+    // Update all related orders
+    for (const order of orders) {
+      const { error: updateError } = await db
+        .from('orders')
+        .update({
+          paymentStatus: 'expired',
+          updatedAt: new Date().toISOString()
+        })
+        .eq('orderId', order.orderId);
 
-    // TODO: Send notification to buyer about failed payment
+      if (updateError) {
+        console.error(`❌ Error updating order ${order.orderId}:`, updateError);
+        continue;
+      }
+
+      console.log(`✅ Order ${order.orderId} marked as payment expired`);
+    }
+
+    // TODO: Send notification to buyer about expired payment
     // TODO: Optionally restore inventory if needed
 
   } catch (error) {
-    console.error('❌ Error handling payment failure:', error);
+    console.error('❌ Error handling payment expiration:', error);
     throw error;
   }
 };
 
 export default {
-  handlePaymongoWebhook
+  handleXenditWebhook
 };

@@ -11,6 +11,170 @@
     margin: 0 auto;
     animation: fadeIn var(--museo-duration-slow) var(--museo-ease-out);
   }
+
+  /* ========================================
+     PAYMENT SETTINGS SECTION
+     ======================================== */
+  .settings-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .payment-form {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .payment-method-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .payment-option {
+    position: relative;
+    border: 2px solid #e8e2d8;
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+  }
+
+  .payment-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .payment-option.active {
+    border-color: #d4b48a;
+    background: #faf8f5;
+    box-shadow: 0 4px 12px rgba(212, 180, 138, 0.2);
+  }
+
+  .payment-option:hover {
+    border-color: #d4b48a;
+    transform: translateY(-2px);
+  }
+
+  .option-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .option-content svg {
+    color: #d4b48a;
+  }
+
+  .option-content span {
+    font-weight: 600;
+    color: #1a0f08;
+  }
+
+  .payment-fields {
+    animation: fadeIn 0.3s ease;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #1a0f08;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e8e2d8;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #d4b48a;
+    box-shadow: 0 0 0 3px rgba(212, 180, 138, 0.1);
+  }
+
+  .form-hint {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b5d4f;
+  }
+
+  .security-notice {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    margin: 2rem 0;
+  }
+
+  .security-notice svg {
+    flex-shrink: 0;
+    color: #0284c7;
+  }
+
+  .security-notice strong {
+    display: block;
+    color: #0c4a6e;
+    margin-bottom: 0.25rem;
+  }
+
+  .security-notice p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #075985;
+    line-height: 1.5;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e8e2d8;
+  }
+
+  .form-actions .btn {
+    min-width: 200px;
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b5d4f;
+    font-size: 1.1rem;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
   
   /* ========================================
      HEADER SECTION

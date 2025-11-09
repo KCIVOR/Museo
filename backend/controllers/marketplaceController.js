@@ -1,6 +1,6 @@
 // marketplaceController.js
 import db from '../database/db.js';
-import * as paymongoService from '../services/paymongoService.js';
+import * as xenditService from '../services/xenditService.js';
 
 // ========================================
 // PHASE 1: CART SYSTEM
@@ -1469,7 +1469,7 @@ export const createOrder = async (req, res) => {
           shippingAddress: shipping_address,
           contactInfo: contact_info,
           paymentMethod: payment_method,
-          paymentProvider: 'paymongo'
+          paymentProvider: 'xendit'
         })
         .select()
         .single();
@@ -1606,19 +1606,32 @@ export const createOrder = async (req, res) => {
     // Use the first order for payment link (represents the whole payment group)
     const mainOrder = createdOrders[0];
 
-    // Create PayMongo payment link for the TOTAL amount
+    // Create Xendit invoice (payment link) for the TOTAL amount
     let paymentLink;
     try {
-      paymentLink = await paymongoService.createPaymentLink({
-        amount: paymongoService.toCentavos(grandTotal), // Total across all sellers
+      console.log('📝 Creating Xendit payment link for ₱' + grandTotal);
+      paymentLink = await xenditService.createPaymentLink({
+        amount: grandTotal, // Xendit uses regular amount, not centavos
         description: `Museo Orders (${createdOrders.length} seller${createdOrders.length > 1 ? 's' : ''})`,
         metadata: {
           paymentGroupId: paymentGroupId,
           userId: userId,
           orderCount: createdOrders.length,
           orderIds: createdOrders.map(o => o.orderId).join(','),
-          remarks: 'Museo Marketplace Multi-Seller Purchase'
+          email: contact_info?.email || 'customer@museo.art',
+          customerInfo: {
+            given_names: contact_info?.name?.split(' ')[0] || 'Museo',
+            surname: contact_info?.name?.split(' ')[1] || 'Customer',
+            email: contact_info?.email || 'customer@museo.art',
+            mobile_number: contact_info?.phone || ''
+          }
         }
+      });
+      
+      console.log('✅ Xendit payment link created:', {
+        paymentLinkId: paymentLink.paymentLinkId,
+        checkoutUrl: paymentLink.checkoutUrl,
+        referenceNumber: paymentLink.referenceNumber
       });
 
       // Update ALL orders with payment link details
@@ -1734,25 +1747,25 @@ export const checkPaymentStatus = async (req, res) => {
       });
     }
 
-    // Check with PayMongo if payment was actually completed
+    // Check with Xendit if payment was actually completed
     if (order.paymentLinkId) {
       try {
-        const paymentLinkStatus = await paymongoService.getPaymentLinkStatus(order.paymentLinkId);
+        const paymentLinkStatus = await xenditService.getPaymentLinkStatus(order.paymentLinkId);
         
         console.log(`🔍 Payment status check for order ${orderId}:`, {
-          paymongoStatus: paymentLinkStatus.status,
+          xenditStatus: paymentLinkStatus.status,
           currentDbStatus: order.paymentStatus,
           hasPayments: paymentLinkStatus.payments?.length > 0
         });
         
-        // ===== SECURITY: Only trust PayMongo's response =====
-        // If PayMongo says it's paid, update our database
+        // ===== SECURITY: Only trust Xendit's response =====
+        // If Xendit says it's paid, update our database
         if (paymentLinkStatus.status === 'paid') {
           console.log(`✅ Manual payment check: Order ${orderId} was paid but webhook missed. Updating now...`);
           
           // Double-check: Verify payment actually exists
-          if (!paymentLinkStatus.payments || paymentLinkStatus.payments.length === 0) {
-            console.warn(`⚠️ PayMongo says paid but no payment records found for order ${orderId}`);
+          if (!paymentLinkStatus.paidAt) {
+            console.warn(`⚠️ Xendit says paid but no payment timestamp found for order ${orderId}`);
             return res.json({ 
               success: false, 
               message: 'Payment verification failed. Please contact support.',
@@ -2398,9 +2411,22 @@ export const markOrderAsDelivered = async (req, res) => {
       });
     }
 
+    // Create payout for the seller (NEW)
+    try {
+      // Import payout service at the top of the file
+      const payoutService = (await import('../services/payoutService.js')).default;
+      
+      // Create payout with escrow period
+      await payoutService.createPayout(orderId);
+      console.log(`Payout created for delivered order ${orderId}`);
+    } catch (payoutError) {
+      // Log error but don't fail the delivery confirmation
+      console.error('Error creating payout:', payoutError);
+    }
+
     res.json({ 
       success: true, 
-      message: 'Order marked as delivered',
+      message: 'Order marked as delivered. Seller payout will be available after escrow period.',
       data: updatedOrder
     });
 
@@ -3723,3 +3749,5 @@ export const deleteAddress = async (req, res) => {
     });
   }
 };
+
+// PAYOUT SYSTEM REMOVED - Will be replaced with simpler implementation
