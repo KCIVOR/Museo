@@ -1,22 +1,94 @@
 // marketplaceController.js
 import db from '../database/db.js';
 import * as xenditService from '../services/xenditService.js';
+import payoutService from '../services/payoutService.js';
 
-// ========================================
-// PHASE 1: CART SYSTEM
-// ========================================
+// Simple inline helper functions
+const sanitizeInput = (text) => {
+  if (typeof text !== 'string') return text;
+  return text
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .trim();
+};
+
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { valid: false, error: 'Invalid email format' };
+  }
+  return { valid: true };
+};
+
+const validatePhone = (phone) => {
+  // Philippine phone format
+  const phoneRegex = /^(\+63|0)?9\d{9}$/;
+  if (!phoneRegex.test(phone.replace(/[\s-]/g, ''))) {
+    return { valid: false, error: 'Invalid phone number format' };
+  }
+  return { valid: true };
+};
+
+const validateAddress = (address) => {
+  const required = ['street', 'barangay', 'city', 'province', 'postal_code'];
+  const missing = required.filter(field => !address[field] || address[field].toString().trim() === '');
+  
+  if (missing.length > 0) {
+    return { valid: false, errors: [`Missing address fields: ${missing.join(', ')}`] };
+  }
+  
+  // Validate postal code format (4 digits for Philippines)
+  const postalCode = address.postal_code.toString();
+  if (!/^\d{4}$/.test(postalCode)) {
+    return { valid: false, errors: ['Postal code must be 4 digits'] };
+  }
+  
+  return { valid: true };
+};
+
+const validateTextLength = (text, min, max, fieldName = 'Field') => {
+  if (typeof text !== 'string') {
+    return { valid: false, error: `${fieldName} must be a string` };
+  }
+  const trimmed = text.trim();
+  if (trimmed.length < min) {
+    return { valid: false, error: `${fieldName} must be at least ${min} characters` };
+  }
+  if (trimmed.length > max) {
+    return { valid: false, error: `${fieldName} must not exceed ${max} characters` };
+  }
+  return { valid: true };
+};
+
+const validateRequiredFields = (data, fields) => {
+  const missing = fields.filter(field => !data[field] || data[field].toString().trim() === '');
+  if (missing.length > 0) {
+    return { valid: false, error: `Missing required fields: ${missing.join(', ')}` };
+  }
+  return { valid: true };
+};
+
+const validateAuth = (req) => {
+  if (!req.user || !req.user.id) {
+    return { valid: false, error: 'Authentication required' };
+  }
+  return { valid: true, userId: req.user.id };
+};
 
 // Helper: Create test marketplace items (TESTING ONLY - REMOVE IN PRODUCTION)
 export const createTestItems = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
     const testItems = [
       {
@@ -139,60 +211,101 @@ export const createMarketplaceItem = async (req, res) => {
     }
 
     // Parse FormData fields
-    const title = req.body.title;
-    const description = req.body.description;
+    const {
+      title, description, medium, dimensions,
+      year_created, weight_kg, is_original, is_framed,
+      condition, quantity, is_available, is_featured, status
+    } = req.body;
+    
     const price = parseFloat(req.body.price);
-    const medium = req.body.medium;
-    const dimensions = req.body.dimensions;
-    const year_created = req.body.year_created ? parseInt(req.body.year_created) : null;
-    const weight_kg = req.body.weight_kg ? parseFloat(req.body.weight_kg) : null;
-    const is_original = req.body.is_original === 'true';
-    const is_framed = req.body.is_framed === 'true';
-    const condition = req.body.condition || 'excellent';
-    const quantity = parseInt(req.body.quantity) || 1;
-    const is_available = req.body.is_available === 'true';
-    const is_featured = req.body.is_featured === 'true';
-    const status = req.body.status || 'active';
+    const parsedQuantity = parseInt(quantity) || 1;
     
     // Parse JSON fields
     const categories = req.body.categories ? JSON.parse(req.body.categories) : [];
     const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
 
-    // Validation
-    if (!title || !price) {
+    // Check required fields
+    if (!title || !title.trim() || !req.body.price) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Title and price are required' 
+        message: 'Title and price are required' 
       });
     }
 
-    if (price < 0 || price > 1000000) {
+    // Check title length
+    if (title.trim().length < 3 || title.trim().length > 200) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Price must be between 0 and 1,000,000' 
+        message: 'Title must be between 3 and 200 characters' 
       });
     }
 
-    if (quantity < 1 || quantity > 1000) {
+    // Check price
+    if (isNaN(price) || price <= 0) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Quantity must be between 1 and 1,000' 
+        message: 'Price must be a positive number' 
+      });
+    }
+    if (price > 10000000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Price must not exceed 10,000,000' 
       });
     }
 
-    if (year_created && (year_created < 1900 || year_created > new Date().getFullYear())) {
+    // Check quantity
+    if (parsedQuantity < 1 || parsedQuantity > 1000) {
       return res.status(400).json({ 
         success: false, 
-        error: `Year created must be between 1900 and ${new Date().getFullYear()}` 
+        message: 'Quantity must be between 1 and 1000' 
       });
     }
 
-    if (weight_kg && (weight_kg < 0 || weight_kg > 1000)) {
+    // Check description if provided
+    if (description && description.trim().length > 5000) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Weight must be between 0 and 1,000 kg' 
+        message: 'Description must not exceed 5000 characters' 
       });
     }
+
+    // Check year if provided
+    if (year_created) {
+      const currentYear = new Date().getFullYear();
+      const yearInt = parseInt(year_created);
+      if (yearInt < 1000 || yearInt > currentYear) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Year created must be between 1000 and ${currentYear}` 
+        });
+      }
+    }
+
+    // Check weight if provided
+    if (weight_kg) {
+      const weightFloat = parseFloat(weight_kg);
+      if (weightFloat < 0 || weightFloat > 1000) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Weight must be between 0 and 1000 kg' 
+        });
+      }
+    }
+
+    // Check categories array
+    if (categories.length > 10) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Categories must not exceed 10 items' 
+      });
+    }
+
+    // Sanitize text inputs
+    const sanitizedTitle = sanitizeInput(title);
+    const sanitizedDescription = description ? sanitizeInput(description) : '';
+    const sanitizedMedium = medium ? sanitizeInput(medium) : '';
+    const sanitizedDimensions = dimensions ? sanitizeInput(dimensions) : '';
 
     // Handle image uploads (similar to galleryController)
     let imageUrls = [];
@@ -234,30 +347,31 @@ export const createMarketplaceItem = async (req, res) => {
       }
     }
 
-    // Create marketplace item with seller profile
+    // Create the item object with sanitized values
     const newItem = {
-      userId: userId,
+      userId,
       sellerProfileId: sellerProfile.sellerProfileId,
-      title,
-      description: description || null,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       price,
-      medium: medium || null,
-      dimensions: dimensions || null,
-      year_created,
-      weight_kg,
-      is_original,
-      is_framed,
-      condition,
-      images: imageUrls,
-      primary_image: primaryImageUrl,
-      is_available,
-      is_featured,
-      quantity,
+      medium: sanitizedMedium,
+      dimensions: sanitizedDimensions,
+      year_created: year_created ? parseInt(year_created) : null,
+      weight_kg: weight_kg ? parseFloat(weight_kg) : null,
+      is_original: is_original === 'true',
+      is_framed: is_framed === 'true',
+      condition: condition || 'excellent',
+      quantity: parsedQuantity,
+      is_available: is_available === 'true',
+      is_featured: is_featured === 'true',
+      status: status || 'active',
       categories,
       tags,
-      status
+      images: imageUrls,
+      primary_image: primaryImageUrl
     };
 
+    // Insert marketplace item with sanitized values
     const { data, error } = await db
       .from('marketplace_items')
       .insert([newItem])
@@ -356,7 +470,26 @@ export const getMarketplaceItem = async (req, res) => {
 // Get all marketplace items
 export const getMarketplaceItems = async (req, res) => {
   try {
-    const { status, sellerProfileId } = req.query; // Optional filters
+    const { status, sellerProfileId, page, limit } = req.query;
+    
+    // Check pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+    
+    if (pageNum < 1) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid page number' 
+      });
+    }
+    if (limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Limit must be between 1 and 100' 
+      });
+    }
+    
+    const offset = (pageNum - 1) * limitNum;
     
     let query = db
       .from('marketplace_items')
@@ -374,7 +507,7 @@ export const getMarketplaceItems = async (req, res) => {
       .eq('sellerProfiles.isActive', true)
       .eq('sellerProfiles.isSuspended', false)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .range(offset, offset + limitNum - 1);
     
     // Filter by status if provided, otherwise show only active items
     if (status) {
@@ -414,7 +547,12 @@ export const getMarketplaceItems = async (req, res) => {
     res.json({ 
       success: true, 
       data: transformedItems,
-      count: transformedItems.length
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: transformedItems.length,
+        hasMore: transformedItems.length === limitNum
+      }
     });
 
   } catch (error) {
@@ -491,31 +629,127 @@ export const updateMarketplaceItem = async (req, res) => {
       if (existingItem.sellerProfileId !== sellerProfile.sellerProfileId) {
         return res.status(403).json({ 
           success: false, 
-          error: 'You can only edit your own items' 
+          error: 'You do not have permission to update this item'
         });
       }
     }
-
-    // Parse FormData fields if they exist
-    let updateData = {};
     
-    // Handle text fields from FormData
-    if (req.body.title) updateData.title = req.body.title;
-    if (req.body.description) updateData.description = req.body.description;
-    if (req.body.price !== undefined) updateData.price = parseFloat(req.body.price);
-    if (req.body.medium) updateData.medium = req.body.medium;
-    if (req.body.dimensions) updateData.dimensions = req.body.dimensions;
-    if (req.body.year_created) updateData.year_created = parseInt(req.body.year_created);
-    if (req.body.weight_kg) updateData.weight_kg = parseFloat(req.body.weight_kg);
+    // Build update object with validation
+    let updateData = {};
+    const errors = [];
+    
+    // Check and sanitize title if provided
+    if (req.body.title !== undefined) {
+      const titleTrimmed = req.body.title.trim();
+      if (titleTrimmed.length < 3 || titleTrimmed.length > 200) {
+        errors.push('Title must be between 3 and 200 characters');
+      } else {
+        updateData.title = sanitizeInput(req.body.title);
+      }
+    }
+    
+    // Check and sanitize description if provided
+    if (req.body.description !== undefined) {
+      if (req.body.description.trim().length > 5000) {
+        errors.push('Description must not exceed 5000 characters');
+      } else {
+        updateData.description = sanitizeInput(req.body.description);
+      }
+    }
+    
+    // Check price if provided
+    if (req.body.price !== undefined) {
+      const price = parseFloat(req.body.price);
+      if (isNaN(price) || price <= 0) {
+        errors.push('Price must be a positive number');
+      } else if (price > 10000000) {
+        errors.push('Price must not exceed 10,000,000');
+      } else {
+        updateData.price = price;
+      }
+    }
+    
+    // Check and sanitize medium if provided
+    if (req.body.medium !== undefined) {
+      if (req.body.medium.trim().length > 100) {
+        errors.push('Medium must not exceed 100 characters');
+      } else {
+        updateData.medium = sanitizeInput(req.body.medium);
+      }
+    }
+    
+    // Check and sanitize dimensions if provided
+    if (req.body.dimensions !== undefined) {
+      if (req.body.dimensions.trim().length > 100) {
+        errors.push('Dimensions must not exceed 100 characters');
+      } else {
+        updateData.dimensions = sanitizeInput(req.body.dimensions);
+      }
+    }
+    
+    // Check year if provided
+    if (req.body.year_created !== undefined) {
+      const year = parseInt(req.body.year_created);
+      const currentYear = new Date().getFullYear();
+      if (year < 1000 || year > currentYear) {
+        errors.push(`Year created must be between 1000 and ${currentYear}`);
+      } else {
+        updateData.year_created = year;
+      }
+    }
+    
+    // Check weight if provided
+    if (req.body.weight_kg !== undefined) {
+      const weight = parseFloat(req.body.weight_kg);
+      if (weight < 0 || weight > 1000) {
+        errors.push('Weight must be between 0 and 1000 kg');
+      } else {
+        updateData.weight_kg = weight;
+      }
+    }
+    
+    // Check quantity if provided
+    if (req.body.quantity !== undefined) {
+      const quantity = parseInt(req.body.quantity);
+      if (quantity < 1 || quantity > 1000) {
+        errors.push('Quantity must be between 1 and 1000');
+      } else {
+        updateData.quantity = quantity;
+      }
+    }
+    
+    // Boolean fields
     if (req.body.is_original !== undefined) updateData.is_original = req.body.is_original === 'true';
     if (req.body.is_framed !== undefined) updateData.is_framed = req.body.is_framed === 'true';
-    if (req.body.condition) updateData.condition = req.body.condition;
-    if (req.body.quantity !== undefined) updateData.quantity = parseInt(req.body.quantity);
     if (req.body.is_available !== undefined) updateData.is_available = req.body.is_available === 'true';
     if (req.body.is_featured !== undefined) updateData.is_featured = req.body.is_featured === 'true';
+    
+    // Other fields
+    if (req.body.condition) updateData.condition = req.body.condition;
     if (req.body.status) updateData.status = req.body.status;
-    if (req.body.categories) updateData.categories = JSON.parse(req.body.categories);
+    
+    // Check categories array if provided
+    if (req.body.categories) {
+      const categories = JSON.parse(req.body.categories);
+      if (!Array.isArray(categories)) {
+        errors.push('Categories must be an array');
+      } else if (categories.length > 10) {
+        errors.push('Categories must not exceed 10 items');
+      } else {
+        updateData.categories = categories;
+      }
+    }
+    
+    // Parse tags if provided
     if (req.body.tags) updateData.tags = JSON.parse(req.body.tags);
+    
+    // Return errors if any validation failed
+    if (errors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: errors.join(', ')
+      });
+    }
     
     // Handle image updates
     let finalImageUrls = [];
@@ -677,15 +911,15 @@ export const updateMarketplaceItem = async (req, res) => {
 // Delete marketplace item
 export const deleteMarketplaceItem = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { id } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { id } = req.params;
 
     // Check if user is admin
     const { data: userProfile, error: profileError } = await db
@@ -866,14 +1100,14 @@ export const deleteMarketplaceItem = async (req, res) => {
 // 1. Get user's cart
 export const getCart = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
     // Get cart items with marketplace item details and seller profiles
     const { data: cartItems, error } = await db
@@ -941,27 +1175,31 @@ export const getCart = async (req, res) => {
 // 2. Add item to cart
 export const addToCart = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { marketplace_item_id, quantity = 1 } = req.body;
-
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
+    const { marketplace_item_id, quantity = 1 } = req.body;
+
+    // Check required fields
     if (!marketplace_item_id) {
       return res.status(400).json({ 
         success: false, 
-        error: 'marketplace_item_id is required' 
+        message: 'Marketplace item ID is required' 
       });
     }
 
-    if (quantity < 1 || quantity > 100) {
+    // Check quantity
+    const qty = parseInt(quantity);
+    if (qty < 1 || qty > 100) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Quantity must be between 1 and 100' 
+        message: 'Quantity must be between 1 and 100' 
       });
     }
 
@@ -1089,21 +1327,23 @@ export const addToCart = async (req, res) => {
 // 3. Update cart item quantity
 export const updateCartQuantity = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { itemId } = req.params;
-    const { quantity } = req.body;
-
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
-
-    if (!quantity || quantity < 1 || quantity > 100) {
+    const userId = req.user.id;
+    const { itemId } = req.params;
+    const { quantity } = req.body;
+    
+    // Check quantity
+    const qty = parseInt(quantity);
+    if (qty < 1 || qty > 100) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Quantity must be between 1 and 100' 
+        message: 'Quantity must be between 1 and 100' 
       });
     }
 
@@ -1131,7 +1371,7 @@ export const updateCartQuantity = async (req, res) => {
     }
 
     // Check stock
-    if (quantity > cartItem.marketplace_items.quantity) {
+    if (qty > cartItem.marketplace_items.quantity) {
       return res.status(400).json({ 
         success: false, 
         error: `Only ${cartItem.marketplace_items.quantity} items available` 
@@ -1141,7 +1381,7 @@ export const updateCartQuantity = async (req, res) => {
     // Update quantity
     const { data: updatedItem, error: updateError } = await db
       .from('cart_items')
-      .update({ quantity })
+      .update({ quantity: qty })
       .eq('cartItemId', itemId)
       .eq('userId', userId)
       .select()
@@ -1173,15 +1413,15 @@ export const updateCartQuantity = async (req, res) => {
 // 4. Remove item from cart
 export const removeFromCart = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { itemId } = req.params;
-
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { itemId } = req.params;
 
     // Delete cart item
     const { error } = await db
@@ -1215,14 +1455,14 @@ export const removeFromCart = async (req, res) => {
 // 5. Clear entire cart
 export const clearCart = async (req, res) => {
   try {
-    const userId = req.user?.id;
-
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
     // Delete all cart items for user
     const { error } = await db
@@ -1259,18 +1499,86 @@ export const clearCart = async (req, res) => {
 // 1. Create order from cart
 export const createOrder = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
     const { shipping_address, contact_info, payment_method } = req.body;
 
-    // ===== PREVENT DUPLICATE ORDERS =====
+    // Check required fields
+    if (!shipping_address || !contact_info || !payment_method) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Shipping address, contact info, and payment method are required' 
+      });
+    }
+
+    // Check shipping address - be flexible with field names
+    if (!shipping_address) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Shipping address is required' 
+      });
+    }
+    
+    // Check for required address fields (flexible field names)
+    const addressErrors = [];
+    if (!shipping_address.street && !shipping_address.addressLine1 && !shipping_address.address) {
+      addressErrors.push('Street address is required');
+    }
+    if (!shipping_address.city && !shipping_address.cityMunicipalityName) {
+      addressErrors.push('City is required');
+    }
+    if (!shipping_address.province && !shipping_address.provinceName) {
+      addressErrors.push('Province is required');
+    }
+    if (!shipping_address.postal_code && !shipping_address.postalCode) {
+      addressErrors.push('Postal code is required');
+    }
+    
+    if (addressErrors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Shipping address: ${addressErrors.join(', ')}`
+      });
+    }
+
+    // Check contact info
+    const contactErrors = [];
+    if (!contact_info.name || contact_info.name.trim().length < 2) {
+      contactErrors.push('Contact name must be at least 2 characters');
+    }
+    const emailValidation = validateEmail(contact_info.email);
+    if (!emailValidation.valid) {
+      contactErrors.push(`Contact ${emailValidation.error}`);
+    }
+    const phoneValidation = validatePhone(contact_info.phone);
+    if (!phoneValidation.valid) {
+      contactErrors.push(`Contact ${phoneValidation.error}`);
+    }
+    
+    if (contactErrors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: contactErrors.join(', ')
+      });
+    }
+
+    // Check payment method
+    const validPaymentMethods = ['xendit', 'credit_card', 'debit_card', 'gcash', 'paymaya', 'bank_transfer', 'cod'];
+    if (!validPaymentMethods.includes(payment_method)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Invalid payment method. Valid methods: ${validPaymentMethods.join(', ')}`
+      });
+    }
+
+    // ===== PREVENT DUPLICATE ORDERS & RATE LIMITING =====
     // Check if user already has a pending order (created in last 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     
@@ -1297,6 +1605,23 @@ export const createOrder = async (req, res) => {
           createdAt: existingPendingOrder.createdAt,
           paymentReference: existingPendingOrder.paymentReference
         }
+      });
+    }
+    
+    // Additional rate limiting: Check total orders in last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recentOrders, error: rateCheckError } = await db
+      .from('orders')
+      .select('orderId')
+      .eq('userId', userId)
+      .gt('createdAt', oneHourAgo);
+    
+    if (!rateCheckError && recentOrders && recentOrders.length >= 10) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many orders. Please wait before creating more orders.',
+        retryAfter: '1 hour',
+        orderCount: recentOrders.length
       });
     }
 
@@ -1399,16 +1724,23 @@ export const createOrder = async (req, res) => {
     }
 
     // ===== NEW: GROUP ITEMS BY SELLER =====
-    const platformFeeRate = 0.10; // 10% platform fee
+    const platformFeeRate = 0.04; // 4% platform fee (matches payout service)
     const itemsBySeller = {};
     
-    // Group cart items by seller
+    // Group cart items by seller and validate
     cartItems.forEach(item => {
       const sellerProfileId = item.marketplace_items.sellerProfileId;
+      const sellerProfile = item.marketplace_items.sellerProfiles;
+      
+      // Validate seller is active
+      if (!sellerProfile?.isActive || sellerProfile?.isSuspended) {
+        throw new Error(`Seller "${sellerProfile?.shopName || 'Unknown'}" is not available. Please remove from cart.`);
+      }
+      
       if (!itemsBySeller[sellerProfileId]) {
         itemsBySeller[sellerProfileId] = {
           sellerProfileId: sellerProfileId,
-          shopName: item.marketplace_items.sellerProfiles.shopName,
+          shopName: sellerProfile.shopName,
           items: [],
           subtotal: 0
         };
@@ -1518,23 +1850,46 @@ export const createOrder = async (req, res) => {
         allOrderItems.push(...createdItems);
       }
       
-      // ===== RESERVE INVENTORY (reduce quantities) =====
-      console.log('📦 Reserving inventory...');
+      // ===== RESERVE INVENTORY (reduce quantities) WITH ATOMIC UPDATES =====
+      console.log('📦 Reserving inventory with atomic updates...');
       for (const update of inventoryUpdates) {
-        const { error: updateError } = await db
+        // Use atomic update with conditional check
+        // This prevents race conditions by only updating if quantity hasn't changed
+        const { data: updatedItem, error: updateError } = await db
           .from('marketplace_items')
           .update({ 
             quantity: update.newQty,
             updated_at: new Date().toISOString()
           })
-          .eq('marketItemId', update.marketItemId);
+          .eq('marketItemId', update.marketItemId)
+          .eq('quantity', update.currentQty) // Only update if quantity matches what we expect
+          .select()
+          .single();
         
-        if (updateError) {
-          console.error(`❌ Failed to reserve inventory for ${update.title}:`, updateError);
-          throw new Error(`Failed to reserve inventory: ${updateError.message}`);
+        if (updateError || !updatedItem) {
+          // Failed to update - someone else might have bought it
+          console.error(`❌ Failed to reserve inventory for ${update.title} - possible race condition`);
+          
+          // Check actual current quantity
+          const { data: currentItem } = await db
+            .from('marketplace_items')
+            .select('quantity')
+            .eq('marketItemId', update.marketItemId)
+            .single();
+          
+          const actualQty = currentItem?.quantity || 0;
+          
+          if (actualQty < update.requestedQty) {
+            throw new Error(`Not enough stock for "${update.title}". Only ${actualQty} available (someone else may have just purchased)`);
+          } else {
+            throw new Error(`Failed to reserve inventory for "${update.title}": ${updateError?.message || 'Unknown error'}`);
+          }
         }
         
-        console.log(`✅ Reserved inventory: ${update.title} (${update.currentQty} → ${update.newQty})`);
+        // Mark this update as completed for rollback purposes
+        update.completed = true;
+        
+        console.log(`✅ Reserved inventory atomically: ${update.title} (${update.currentQty} → ${update.newQty})`);
       }
       
       // ===== CLEAR CART AFTER SUCCESSFUL ORDER CREATION =====
@@ -1554,6 +1909,28 @@ export const createOrder = async (req, res) => {
     } catch (error) {
       // ===== ROLLBACK ON FAILURE =====
       console.error('❌ Order creation failed, initiating rollback...', error);
+      
+      // Track which inventory updates were completed
+      const completedInventoryUpdates = inventoryUpdates.filter(update => update.completed);
+      
+      // Restore inventory FIRST (most critical)
+      if (completedInventoryUpdates.length > 0) {
+        console.log(`🔄 Restoring inventory for ${completedInventoryUpdates.length} items...`);
+        for (const update of completedInventoryUpdates) {
+          try {
+            await db
+              .from('marketplace_items')
+              .update({ 
+                quantity: update.currentQty, // Restore original quantity
+                updated_at: new Date().toISOString()
+              })
+              .eq('marketItemId', update.marketItemId);
+            console.log(`✅ Restored inventory: ${update.title} (${update.newQty} → ${update.currentQty})`);
+          } catch (restoreError) {
+            console.error(`❌ Failed to restore inventory for ${update.title}:`, restoreError);
+          }
+        }
+      }
       
       // Rollback database operations in reverse order
       for (const operation of rollbackOperations.reverse()) {
@@ -1695,15 +2072,15 @@ export const createOrder = async (req, res) => {
 // 1.5. Check payment status manually (backup for webhook failures)
 export const checkPaymentStatus = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { orderId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { orderId } = req.params;
 
     // ===== SECURITY: Rate limiting - prevent spam clicks =====
     // Check if user checked this order recently (within last 30 seconds)
@@ -1844,14 +2221,14 @@ export const checkPaymentStatus = async (req, res) => {
 // 2. Get buyer's orders
 export const getBuyerOrders = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
 
     // Get all orders for this buyer
     const { data: orders, error: ordersError } = await db
@@ -1913,15 +2290,15 @@ export const getBuyerOrders = async (req, res) => {
 // 3. Get seller's orders with full details
 export const getSellerOrders = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { status } = req.query; // Optional status filter
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { status } = req.query; // Optional status filter
 
     // Get seller's profile
     const { data: sellerProfile, error: profileError } = await db
@@ -2079,15 +2456,15 @@ export const getSellerOrders = async (req, res) => {
 // 4. Get order details
 export const getOrderDetails = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { orderId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { orderId } = req.params;
 
     // Get main order
     const { data: order, error: orderError } = await db
@@ -2174,15 +2551,15 @@ export const getOrderDetails = async (req, res) => {
 // 5. Mark order as processing (Seller)
 export const markOrderAsProcessing = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { orderId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { orderId } = req.params;
 
     // Get order
     const { data: order, error: orderError } = await db
@@ -2265,16 +2642,16 @@ export const markOrderAsProcessing = async (req, res) => {
 // 6. Mark order as shipped (Seller)
 export const markOrderAsShipped = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { orderId } = req.params;
-    const { tracking_number } = req.body;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { orderId } = req.params;
+    const { tracking_number } = req.body;
 
     // Get order
     const { data: order, error: orderError } = await db
@@ -2320,12 +2697,36 @@ export const markOrderAsShipped = async (req, res) => {
       });
     }
 
-    // Update order status
+    // Check tracking number
+    if (!tracking_number || tracking_number.trim().length < 5) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Tracking number must be at least 5 characters' 
+      });
+    }
+    if (tracking_number.length > 100) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Tracking number must not exceed 100 characters' 
+      });
+    }
+    const sanitizedTrackingNumber = sanitizeInput(tracking_number);
+
+    // Send email notification to buyer about shipment
+    try {
+      const emailService = (await import('../services/emailService.js')).default;
+      await emailService.sendOrderShippedEmail(orderId);
+      console.log(`✉ Email sent to buyer about shipped order ${orderId}`);
+    } catch (emailError) {
+      console.error('Failed to send email about shipped order:', emailError);
+    }
+
+    // Update order status and tracking
     const { data: updatedOrder, error: updateError } = await db
       .from('orders')
       .update({ 
         status: 'shipped',
-        trackingNumber: tracking_number,
+        trackingNumber: sanitizedTrackingNumber,
         shippedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
@@ -2341,23 +2742,9 @@ export const markOrderAsShipped = async (req, res) => {
       });
     }
 
-    // TEMPORARY: Create payout when shipped (for testing only)
-    // Remove this in production - payouts should only happen after delivery confirmation
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        const payoutService = (await import('../services/payoutService.js')).default;
-        await payoutService.createPayout(orderId);
-        console.log(`[TEST MODE] Payout created for shipped order ${orderId}`);
-      } catch (payoutError) {
-        console.error('Error creating test payout:', payoutError);
-      }
-    }
-
     res.json({ 
       success: true, 
-      message: process.env.NODE_ENV !== 'production' 
-        ? 'Order marked as shipped. [TEST MODE] Payout created.'
-        : 'Order marked as shipped',
+      message: 'Order marked as shipped',
       data: updatedOrder
     });
 
@@ -2373,15 +2760,15 @@ export const markOrderAsShipped = async (req, res) => {
 // 6. Mark order as delivered
 export const markOrderAsDelivered = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { orderId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: 'Authentication required' 
       });
     }
+    const userId = req.user.id;
+    const { orderId } = req.params;
 
     // Get order
     const { data: order, error: orderError } = await db
@@ -2434,9 +2821,23 @@ export const markOrderAsDelivered = async (req, res) => {
       await payoutService.createPayout(orderId);
       console.log(`✅ Payout created for delivered order ${orderId}`);
     } catch (payoutError) {
-      // Log error but don't fail the delivery confirmation
-      console.error('❌ Error creating payout for order', orderId, ':', payoutError.message);
-      console.error('Stack trace:', payoutError.stack);
+      // Log error to database for admin review
+      console.error('❌ CRITICAL: Failed to create payout for order', orderId, payoutError);
+      
+      try {
+        await db.from('payoutSafetyLogs').insert({
+          orderId: orderId,
+          sellerProfileId: order.sellerProfileId,
+          checkType: 'payout_creation_failed',
+          passed: false,
+          notes: `Failed to create payout: ${payoutError.message}`
+        });
+      } catch (logError) {
+        console.error('Failed to log payout error:', logError);
+      }
+      
+      // Don't fail delivery, but flag it
+      console.warn(`⚠️ Order ${orderId} delivered but payout creation failed. Manual intervention needed.`);
     }
 
     res.json({ 
@@ -2457,15 +2858,27 @@ export const markOrderAsDelivered = async (req, res) => {
 // 7. Cancel order
 export const cancelOrder = async (req, res) => {
   try {
-    const userId = req.user?.id;
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: auth.error 
+      });
+    }
+    const userId = auth.userId;
     const { orderId } = req.params;
     const { reason } = req.body;
     
-    if (!userId) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      });
+    // Check reason if provided
+    if (reason) {
+      const reasonValidation = validateTextLength(reason, 1, 500, 'Cancellation reason');
+      if (!reasonValidation.valid) {
+        return res.status(400).json({ 
+          success: false, 
+          message: reasonValidation.error 
+        });
+      }
     }
 
     // Get order
@@ -2584,14 +2997,15 @@ export const cancelOrder = async (req, res) => {
 // Submit seller application
 export const submitSellerApplication = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     // CRITICAL: Check if user is an artist first
     const { data: userProfile, error: profileError } = await db
@@ -2630,28 +3044,81 @@ export const submitSellerApplication = async (req, res) => {
       shopDescription
     } = req.body;
 
-
-    // Validation
-    const missingFields = [];
-    if (!shopName) missingFields.push('shopName');
-    if (!fullName) missingFields.push('fullName');
-    if (!email) missingFields.push('email');
-    if (!phoneNumber) missingFields.push('phoneNumber');
-    if (!street) missingFields.push('street');
-    if (!region) missingFields.push('region');
-    if (!province) missingFields.push('province');
-    if (!city) missingFields.push('city');
-    if (!barangay) missingFields.push('barangay');
-    if (!postalCode) missingFields.push('postalCode');
-    if (!shopDescription) missingFields.push('shopDescription');
-
-    if (missingFields.length > 0) {
+    // Check required fields
+    const required = validateRequiredFields(req.body, [
+      'shopName', 'fullName', 'email', 'phoneNumber',
+      'street', 'region', 'province', 'city', 'barangay', 
+      'postalCode', 'shopDescription'
+    ]);
+    if (!required.valid) {
       return res.status(400).json({ 
         success: false, 
-        error: 'All required fields must be filled',
-        missingFields
+        message: required.error 
       });
     }
+
+    const errors = [];
+
+    // Validate shop name
+    const shopNameValidation = validateTextLength(shopName, 3, 100, 'Shop name');
+    if (!shopNameValidation.valid) errors.push(shopNameValidation.error);
+
+    // Validate full name
+    const nameValidation = validateTextLength(fullName, 2, 100, 'Full name');
+    if (!nameValidation.valid) errors.push(nameValidation.error);
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) errors.push(emailValidation.error);
+
+    // Validate phone
+    const phoneValidation = validatePhone(phoneNumber);
+    if (!phoneValidation.valid) errors.push(phoneValidation.error);
+
+    // Validate address fields
+    const streetValidation = validateTextLength(street, 5, 200, 'Street address');
+    if (!streetValidation.valid) errors.push(streetValidation.error);
+
+    const barangayValidation = validateTextLength(barangay, 2, 100, 'Barangay');
+    if (!barangayValidation.valid) errors.push(barangayValidation.error);
+
+    const cityValidation = validateTextLength(city, 2, 100, 'City');
+    if (!cityValidation.valid) errors.push(cityValidation.error);
+
+    const provinceValidation = validateTextLength(province, 2, 100, 'Province');
+    if (!provinceValidation.valid) errors.push(provinceValidation.error);
+
+    // Validate postal code
+    if (!/^\d{4}$/.test(postalCode)) {
+      errors.push('Postal code must be 4 digits');
+    }
+
+    // Validate shop description
+    const descValidation = validateTextLength(shopDescription, 20, 1000, 'Shop description');
+    if (!descValidation.valid) errors.push(descValidation.error);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: errors.join(', ')
+      });
+    }
+
+    // Sanitize text inputs
+    const sanitizedData = {
+      shopName: sanitizeInput(shopName),
+      fullName: sanitizeInput(fullName),
+      email,
+      phoneNumber,
+      street: sanitizeInput(street),
+      landmark: landmark ? sanitizeInput(landmark) : '',
+      region: sanitizeInput(region),
+      province: sanitizeInput(province),
+      city: sanitizeInput(city),
+      barangay: sanitizeInput(barangay),
+      postalCode,
+      shopDescription: sanitizeInput(shopDescription)
+    };
 
     // Check if user already has a seller application in the request table
     const { data: existingApp, error: checkError } = await db
@@ -2721,20 +3188,20 @@ export const submitSellerApplication = async (req, res) => {
       });
     }
 
-    // Prepare data for JSONB column
+    // Prepare data for JSONB column using sanitized data
     const requestData = {
-      shopName,
-      fullName,
-      email,
-      phoneNumber,
-      street,
-      landmark: landmark || null,
-      region,
-      province,
-      city,
-      barangay,
-      postalCode,
-      shopDescription,
+      shopName: sanitizedData.shopName,
+      fullName: sanitizedData.fullName,
+      email: sanitizedData.email,
+      phoneNumber: sanitizedData.phoneNumber,
+      street: sanitizedData.street,
+      landmark: sanitizedData.landmark,
+      region: sanitizedData.region,
+      province: sanitizedData.province,
+      city: sanitizedData.city,
+      barangay: sanitizedData.barangay,
+      postalCode: sanitizedData.postalCode,
+      shopDescription: sanitizedData.shopDescription,
       idDocumentUrl,
       agreedToTerms: true,
       reviewedBy: null,
@@ -2815,14 +3282,15 @@ export const submitSellerApplication = async (req, res) => {
 // Get user's seller application status
 export const getMySellerApplication = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     const { data: application, error } = await db
       .from('request')
@@ -2925,15 +3393,16 @@ export const getAllSellerApplications = async (req, res) => {
 // Approve seller application (Admin only)
 export const approveSellerApplication = async (req, res) => {
   try {
-    const { applicationId } = req.params;
-    const adminId = req.user?.id;
-    
-    if (!adminId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const adminId = auth.userId;
+    const { applicationId } = req.params;
 
     // Get the application first
     const { data: application, error: fetchError } = await db
@@ -2956,6 +3425,40 @@ export const approveSellerApplication = async (req, res) => {
       return res.status(400).json({ 
         success: false, 
         error: 'Application is already approved' 
+      });
+    }
+
+    // Check if seller profile already exists
+    const { data: existingProfile } = await db
+      .from('sellerProfiles')
+      .select('*')
+      .eq('userId', application.userId)
+      .single();
+
+    if (existingProfile) {
+      // Just update the request status, don't create duplicate profile
+      const updatedData = {
+        ...application.data,
+        reviewedBy: adminId,
+        reviewedAt: new Date().toISOString()
+      };
+
+      await db
+        .from('request')
+        .update({
+          status: 'approved',
+          data: updatedData,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('requestId', applicationId);
+
+      return res.json({ 
+        success: true, 
+        message: 'Application approved. Seller profile already exists.',
+        data: {
+          application: { ...application, status: 'approved' },
+          profile: existingProfile
+        }
       });
     }
 
@@ -3038,21 +3541,24 @@ export const approveSellerApplication = async (req, res) => {
 // Reject seller application (Admin only)
 export const rejectSellerApplication = async (req, res) => {
   try {
-    const { applicationId } = req.params;
-    const adminId = req.user?.id;
-    const { rejectionReason } = req.body;
-    
-    if (!adminId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
-
-    if (!rejectionReason) {
+    const adminId = auth.userId;
+    const { applicationId } = req.params;
+    const { rejectionReason } = req.body;
+    
+    // Check rejection reason
+    const reasonValidation = validateTextLength(rejectionReason, 10, 500, 'Rejection reason');
+    if (!reasonValidation.valid) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Rejection reason is required' 
+        message: reasonValidation.error 
       });
     }
 
@@ -3117,15 +3623,16 @@ export const rejectSellerApplication = async (req, res) => {
 // Delete seller application (Admin only)
 export const deleteSellerApplication = async (req, res) => {
   try {
-    const { applicationId } = req.params;
-    const adminId = req.user?.id;
-    
-    if (!adminId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const adminId = auth.userId;
+    const { applicationId } = req.params;
 
     // Get the application first to retrieve the image URL
     const { data: application, error: fetchError } = await db
@@ -3205,14 +3712,15 @@ export const deleteSellerApplication = async (req, res) => {
 // Check if user has an active seller profile
 export const checkSellerStatus = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     // Check for active seller profile
     const { data: sellerProfile, error } = await db
@@ -3249,14 +3757,15 @@ export const checkSellerStatus = async (req, res) => {
 // Get seller's own items for dashboard
 export const getMyItems = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     // Get seller profile
     const { data: sellerProfile, error: profileError } = await db
@@ -3307,15 +3816,16 @@ export const getMyItems = async (req, res) => {
 // Get seller dashboard statistics
 export const getSellerStats = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { period = 'all' } = req.query; // all, daily, weekly, monthly
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
+    const { period = 'all' } = req.query; // all, daily, weekly, monthly
 
     // Get seller profile
     const { data: sellerProfile, error: profileError } = await db
@@ -3393,7 +3903,7 @@ export const getSellerStats = async (req, res) => {
     const totalProducts = products ? products.length : 0;
 
     // Calculate earnings (after platform fee)
-    const platformFeeRate = 0.10; // 10%
+    const platformFeeRate = 0.04; // 4% (matches payout service)
     const netEarnings = totalSales * (1 - platformFeeRate);
 
     res.json({ 
@@ -3425,14 +3935,15 @@ export const getSellerStats = async (req, res) => {
 // TESTING ONLY - Cancel my own application (for testing resubmission)
 export const cancelMyApplication = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     // Find user's application
     const { data: application, error: findError } = await db
@@ -3498,14 +4009,15 @@ export const cancelMyApplication = async (req, res) => {
 // Get all user addresses
 export const getUserAddresses = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     const { data: addresses, error } = await db
       .from('user_addresses')
@@ -3539,14 +4051,15 @@ export const getUserAddresses = async (req, res) => {
 // Create new address
 export const createAddress = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
 
     const {
       fullName, email, phoneNumber, alternatePhone,
@@ -3556,42 +4069,61 @@ export const createAddress = async (req, res) => {
       postalCode, addressType, isDefault, deliveryInstructions
     } = req.body;
 
-    // Validate required fields
-    if (!fullName || !email || !phoneNumber || !addressLine1 || 
-        !regionCode || !provinceCode || !cityMunicipalityCode || !barangayCode ||
-        !regionName || !provinceName || !cityMunicipalityName || !barangayName || 
-        !postalCode) {
+    // Check required fields
+    const required = validateRequiredFields(req.body, [
+      'fullName', 'email', 'phoneNumber', 'addressLine1',
+      'regionCode', 'provinceCode', 'cityMunicipalityCode', 'barangayCode',
+      'regionName', 'provinceName', 'cityMunicipalityName', 'barangayName',
+      'postalCode'
+    ]);
+    if (!required.valid) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Please provide all required address fields' 
+        message: required.error 
       });
     }
 
-    // Validate phone number format (Philippine)
-    const phoneRegex = /^(09|\+639)\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    // Create address object for validation
+    const addressData = {
+      fullName: fullName,
+      phone: phoneNumber,
+      street: addressLine1,
+      barangay: barangayName,
+      city: cityMunicipalityName,
+      province: provinceName,
+      postalCode: postalCode
+    };
+
+    // Check address fields
+    const addressValidation = validateAddress(addressData);
+    if (!addressValidation.valid) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX' 
+        message: addressValidation.errors.join(', ')
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Check email separately
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid email format' 
+        message: emailValidation.error 
       });
     }
 
-    // Validate postal code
-    if (!/^\d{4}$/.test(postalCode)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Postal code must be 4 digits' 
-      });
-    }
+    // Sanitize text inputs
+    const sanitizedData = {
+      fullName: sanitizeInput(fullName),
+      addressLine1: sanitizeInput(addressLine1),
+      addressLine2: addressLine2 ? sanitizeInput(addressLine2) : '',
+      landmark: landmark ? sanitizeInput(landmark) : '',
+      regionName: sanitizeInput(regionName),
+      provinceName: sanitizeInput(provinceName),
+      cityMunicipalityName: sanitizeInput(cityMunicipalityName),
+      barangayName: sanitizeInput(barangayName),
+      deliveryInstructions: deliveryInstructions ? sanitizeInput(deliveryInstructions) : ''
+    };
 
     // If this is set as default, update other addresses
     if (isDefault) {
@@ -3601,39 +4133,39 @@ export const createAddress = async (req, res) => {
         .eq('userId', userId);
     }
 
-    // Create new address
-    const { data: newAddress, error: insertError } = await db
+    // Create new address with sanitized values
+    const { data: newAddress, error: createError } = await db
       .from('user_addresses')
       .insert({
         userId,
-        fullName,
+        fullName: sanitizedData.fullName,
         email,
         phoneNumber,
-        alternatePhone: alternatePhone || null,
-        addressLine1,
-        addressLine2: addressLine2 || null,
-        landmark: landmark || null,
+        alternatePhone,
+        addressLine1: sanitizedData.addressLine1,
+        addressLine2: sanitizedData.addressLine2,
+        landmark: sanitizedData.landmark,
         regionCode,
         provinceCode,
         cityMunicipalityCode,
         barangayCode,
-        regionName,
-        provinceName,
-        cityMunicipalityName,
-        barangayName,
+        regionName: sanitizedData.regionName,
+        provinceName: sanitizedData.provinceName,
+        cityMunicipalityName: sanitizedData.cityMunicipalityName,
+        barangayName: sanitizedData.barangayName,
         postalCode,
-        addressType: addressType || null,
+        addressType: addressType || 'home',
         isDefault: isDefault || false,
-        deliveryInstructions: deliveryInstructions || null
+        deliveryInstructions: sanitizedData.deliveryInstructions
       })
       .select()
       .single();
 
-    if (insertError) {
-      console.error('Error creating address:', insertError);
+    if (createError) {
+      console.error('Error creating address:', createError);
       return res.status(500).json({ 
         success: false, 
-        error: insertError.message 
+        error: createError.message 
       });
     }
 
@@ -3655,15 +4187,16 @@ export const createAddress = async (req, res) => {
 // Update address
 export const updateAddress = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { addressId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
+    const { addressId } = req.params;
 
     // Check if address exists and belongs to user
     const { data: existingAddress, error: checkError } = await db
@@ -3726,15 +4259,16 @@ export const updateAddress = async (req, res) => {
 // Delete address
 export const deleteAddress = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const { addressId } = req.params;
-    
-    if (!userId) {
+    // Check authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Unauthorized' 
+        message: auth.error 
       });
     }
+    const userId = auth.userId;
+    const { addressId } = req.params;
 
     // Delete address
     const { error: deleteError } = await db

@@ -45,11 +45,10 @@ export const getSellerBalance = async (req, res) => {
     res.json({
       success: true,
       data: {
-        available: balance.availableBalance,
-        pending: balance.pendingBalance,
-        totalPaidOut: balance.totalPaidOut,
-        canWithdraw: balance.canWithdraw,
-        canInstantPayout: balance.canInstantPayout,
+        available: balance.available,
+        pending: balance.pending,
+        totalPaidOut: balance.totalPaid,
+        canWithdraw: parseFloat(balance.available) >= 100,
         minimumPayout: 100,
         mode: PAYOUT_MODE // Show if demo or production
       }
