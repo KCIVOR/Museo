@@ -18,6 +18,7 @@ import {
   ShipmentIcon
 } from '../../styles/icons/DashboardIcons';
 import './css/sellerDashboard.css';
+import './css/payouts.css';
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -77,6 +78,24 @@ export default function SellerDashboard() {
     pendingOrders: 0,
     pendingShipments: 0
   });
+  
+  // Payout balance data - ACTUAL from payout system
+  const [payoutBalance, setPayoutBalance] = useState({
+    available: 0,
+    pending: 0,
+    totalPaidOut: 0,
+    canWithdraw: false,
+    minimumPayout: 100
+  });
+  
+  // Payment method data
+  const [paymentMethod, setPaymentMethod] = useState({
+    method: null,
+    gcashNumber: null,
+    bankAccountName: null,
+    bankAccountNumber: null,
+    bankName: null
+  });
 
 
 
@@ -111,6 +130,52 @@ export default function SellerDashboard() {
     }
   };
 
+  // Fetch actual payout balance from payout system
+  const fetchPayoutBalance = async () => {
+    try {
+      const response = await fetch(`${API}/payouts/balance`, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setPayoutBalance({
+          available: parseFloat(result.data.available || 0),
+          pending: parseFloat(result.data.pending || 0),
+          totalPaidOut: parseFloat(result.data.totalPaidOut || 0),
+          canWithdraw: result.data.canWithdraw || false,
+          minimumPayout: result.data.minimumPayout || 100
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payout balance:', error);
+    }
+  };
+  
+  // Fetch payment method info
+  const fetchPaymentMethod = async () => {
+    try {
+      const response = await fetch(`${API}/payouts/payment-info`, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setPaymentMethod({
+          method: result.data.paymentMethod,
+          gcashNumber: result.data.gcashNumber,
+          bankAccountName: result.data.bankAccountName,
+          bankAccountNumber: result.data.bankAccountNumber,
+          bankName: result.data.bankName
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payment method:', error);
+    }
+  };
+  
   // Fetch stats from API
   const fetchStats = async (period = 'all') => {
     try {
@@ -252,12 +317,14 @@ export default function SellerDashboard() {
                  selectedPeriod === 'weekly' ? 'weekly' : 
                  selectedPeriod === 'monthly' ? 'monthly' : 'all');
       
+      // Fetch payout data
+      fetchPayoutBalance();
+      fetchPaymentMethod();
+      
       // Fetch orders if on orders tab
       if (activeTab === 'orders') {
         fetchOrders(orderFilter === 'all' ? null : orderFilter);
       }
-      
-      // Settings tab - REMOVED (will be replaced)
     }
   }, [userData, selectedPeriod, activeTab, orderFilter]);
 
@@ -408,6 +475,13 @@ export default function SellerDashboard() {
           )}
         </button>
         <button 
+          className={`tab-btn ${activeTab === 'payouts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('payouts')}
+        >
+          <EarningsIcon size={20} />
+          Payouts
+        </button>
+        <button 
           className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
@@ -462,6 +536,15 @@ export default function SellerDashboard() {
             <h3 className="stat-title">Net Earnings</h3>
             <p className="stat-value">₱{stats.earnings.net.toLocaleString()}</p>
             <span className="stat-info">After {((stats.earnings.platformFee / stats.earnings.gross) * 100 || 0).toFixed(0)}% fees</span>
+            {stats.earnings.net >= 100 && (
+              <button 
+                className="btn btn-primary btn-sm" 
+                style={{marginTop: '8px'}}
+                onClick={() => setActiveTab('payouts')}
+              >
+                💰 Withdraw Funds
+              </button>
+            )}
           </div>
         </div>
 
@@ -743,23 +826,139 @@ export default function SellerDashboard() {
         </div>
         )}
 
-        {/* Settings Tab - REMOVED (will be replaced) */}
+        {/* Payouts Tab */}
+        {activeTab === 'payouts' && (
+          <div className="payouts-section">
+            <div className="section-header">
+              <h2>💰 Payouts & Earnings</h2>
+              <p>Manage your earnings and withdraw funds</p>
+            </div>
+
+            {/* Balance Card */}
+            <div className="payout-balance-card">
+              <div className="balance-info">
+                <h3>Available Balance</h3>
+                <p className="balance-amount">₱{payoutBalance.available.toLocaleString()}</p>
+                {payoutBalance.pending > 0 && (
+                  <p className="pending-amount">
+                    ⏳ Pending (Escrow): ₱{payoutBalance.pending.toLocaleString()}
+                  </p>
+                )}
+                <small>Minimum withdrawal: ₱{payoutBalance.minimumPayout}</small>
+                {!paymentMethod.method && (
+                  <small className="text-warning">⚠️ Set up payment method first</small>
+                )}
+              </div>
+              <div className="balance-actions">
+                {payoutBalance.canWithdraw && paymentMethod.method ? (
+                  <button 
+                    className="btn btn-primary btn-lg"
+                    onClick={async () => {
+                      const paymentMethodName = paymentMethod.method === 'gcash' ? 
+                        `GCash (${paymentMethod.gcashNumber})` : 
+                        paymentMethod.method === 'bank' ?
+                        `${paymentMethod.bankName} (${paymentMethod.bankAccountNumber})` :
+                        paymentMethod.method;
+                        
+                      if (!confirm(`Withdraw ₱${payoutBalance.available.toLocaleString()} to your ${paymentMethodName}?`)) return;
+                      
+                      try {
+                        const response = await fetch(`${API}/payouts/withdraw`, {
+                          method: 'POST',
+                          credentials: 'include'
+                        });
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                          alert(`✅ ${result.message}\n\nAmount: ₱${result.data.amount}\nReference: ${result.data.reference}\nMethod: ${result.data.paymentMethod}`);
+                          // Refresh balances
+                          fetchPayoutBalance();
+                          fetchStats();
+                        } else {
+                          alert(`❌ ${result.error}`);
+                        }
+                      } catch (error) {
+                        alert('Error processing withdrawal: ' + error.message);
+                      }
+                    }}
+                  >
+                    Withdraw Funds
+                  </button>
+                ) : !paymentMethod.method ? (
+                  <button className="btn btn-secondary btn-lg" disabled>
+                    Set Up Payment Method First
+                  </button>
+                ) : (
+                  <button className="btn btn-secondary btn-lg" disabled>
+                    Minimum ₱{payoutBalance.minimumPayout} Required
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Earnings Breakdown */}
+            <div className="earnings-breakdown">
+              <h3>Earnings Breakdown</h3>
+              <div className="breakdown-grid">
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Gross Sales</span>
+                  <span className="breakdown-value">₱{stats.earnings.gross.toLocaleString()}</span>
+                </div>
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Platform Fee (4%)</span>
+                  <span className="breakdown-value text-red">-₱{stats.earnings.platformFee.toLocaleString()}</span>
+                </div>
+                <div className="breakdown-item total">
+                  <span className="breakdown-label">Net Earnings</span>
+                  <span className="breakdown-value">₱{stats.earnings.net.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payout Info */}
+            <div className="payout-info-section">
+              <h3>How Payouts Work</h3>
+              <div className="info-grid">
+                <div className="info-card">
+                  <div className="info-icon">⏰</div>
+                  <h4>24-Hour Escrow</h4>
+                  <p>Funds are held for 24 hours after delivery for buyer protection</p>
+                </div>
+                <div className="info-card">
+                  <div className="info-icon">💳</div>
+                  <h4>GCash Payout</h4>
+                  <p>Receive money directly to your GCash account</p>
+                </div>
+                <div className="info-card">
+                  <div className="info-icon">📊</div>
+                  <h4>4% Platform Fee</h4>
+                  <p>Low fees to help artists earn more</p>
+                </div>
+                <div className="info-card">
+                  <div className="info-icon">⚡</div>
+                  <h4>Fast Processing</h4>
+                  <p>Withdrawals processed within minutes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="settings-section">
             <div className="section-header">
-              <h2>Payout Settings</h2>
-              <p>New artist-friendly payout system coming soon!</p>
+              <h2>Payment Settings</h2>
+              <p>Configure how you receive payouts</p>
             </div>
             <div className="empty-state">
-              <EarningsIcon size={48} color="#d4c9b8" />
-              <p>We're building a better payout system that truly helps artists.</p>
-              <small>Coming soon: Daily payouts, lower fees, and instant withdrawals!</small>
+              <p>Payment settings coming soon</p>
             </div>
           </div>
         )}
       </div>
-      
-      {/* Shipping Modal */}
+
+      {/* Modals */}
       {shippingModal && selectedOrder && (
         <div className="modal-overlay" onClick={() => setShippingModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>

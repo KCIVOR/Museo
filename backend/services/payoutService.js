@@ -39,13 +39,20 @@ class PayoutService {
           sellerProfileId,
           totalAmount,
           userId,
+          paymentStatus,
           createdAt
         `)
         .eq('orderId', orderId)
         .single();
 
       if (orderError || !order) {
-        throw new Error('Order not found');
+        console.error('Order lookup error:', orderError);
+        throw new Error(`Order not found: ${orderId}`);
+      }
+      
+      // Verify order has required fields
+      if (!order.sellerProfileId) {
+        throw new Error(`Order ${orderId} has no sellerProfileId`);
       }
 
       // Check if payout already exists for this order
@@ -70,7 +77,15 @@ class PayoutService {
 
       // Determine ready date based on safety checks
       let readyDate = new Date();
-      if (safetyChecks.isFirstSale) {
+      
+      // 🧪 TEST MODE: 4 minute escrow for testing
+      const TEST_MODE = process.env.PAYOUT_TEST_MODE === 'true';
+      
+      if (TEST_MODE) {
+        // TEST: 4 minute escrow
+        readyDate.setMinutes(readyDate.getMinutes() + 4);
+        console.log(`🧪 TEST MODE: 4 minute escrow for order ${orderId}`);
+      } else if (safetyChecks.isFirstSale) {
         // First sale: 3 days hold for extra safety
         readyDate.setDate(readyDate.getDate() + 3);
         console.log(`First sale for seller ${order.sellerProfileId} - 3 day hold`);
@@ -91,6 +106,15 @@ class PayoutService {
         .single();
 
       // Create payout record
+      console.log(`Creating payout for order ${orderId}:`, {
+        sellerProfileId: order.sellerProfileId,
+        amount: grossAmount,
+        platformFee: platformFee,
+        netAmount: netAmount,
+        readyDate: readyDate.toISOString(),
+        notes: safetyChecks.notes
+      });
+      
       const { data: payout, error: payoutError } = await db
         .from('seller_payouts')
         .insert({
@@ -103,14 +127,20 @@ class PayoutService {
           payoutType: 'standard',
           readyDate: readyDate.toISOString(),
           payoutMethod: sellerProfile?.paymentMethod || null,
-          notes: safetyChecks.notes.join('; ')  // Convert array to string
+          notes: safetyChecks.notes
         })
         .select()
         .single();
 
       if (payoutError) {
         console.error('Error creating payout:', payoutError);
-        throw new Error('Failed to create payout');
+        console.error('Payout data attempted:', {
+          sellerProfileId: order.sellerProfileId,
+          orderId: orderId,
+          amount: grossAmount,
+          notes: safetyChecks.notes
+        });
+        throw new Error(`Failed to create payout: ${payoutError.message}`);
       }
 
       console.log(`Payout created for order ${orderId}: ₱${netAmount} ready on ${readyDate.toLocaleDateString()}`);
@@ -262,39 +292,52 @@ class PayoutService {
    */
   async getSellerBalance(sellerProfileId) {
     try {
-      // Get all payouts for this seller
+      // Auto-update payouts that have passed escrow period
+      const now = new Date();
+      const { data: pendingPayouts } = await db
+        .from('seller_payouts')
+        .select('*')
+        .eq('sellerProfileId', sellerProfileId)
+        .eq('status', 'pending')
+        .lte('readyDate', now.toISOString());
+
+      if (pendingPayouts && pendingPayouts.length > 0) {
+        const payoutIds = pendingPayouts.map(p => p.payoutId);
+        await db
+          .from('seller_payouts')
+          .update({ status: 'ready', updatedAt: now.toISOString() })
+          .in('payoutId', payoutIds);
+      }
+
+      // Get all payouts
       const { data: payouts, error } = await db
         .from('seller_payouts')
-        .select('status, netAmount')
+        .select('*')
         .eq('sellerProfileId', sellerProfileId);
 
       if (error) {
         throw error;
       }
 
-      // Calculate balances
-      let availableBalance = 0;
-      let pendingBalance = 0;
-      let totalPaidOut = 0;
+      const available = payouts
+        .filter(p => p.status === 'ready')
+        .reduce((sum, p) => sum + parseFloat(p.netAmount), 0);
 
-      for (const payout of payouts || []) {
-        const amount = parseFloat(payout.netAmount);
-        
-        if (payout.status === 'ready') {
-          availableBalance += amount;
-        } else if (payout.status === 'pending') {
-          pendingBalance += amount;
-        } else if (payout.status === 'paid') {
-          totalPaidOut += amount;
-        }
-      }
+      const pending = payouts
+        .filter(p => p.status === 'pending')
+        .reduce((sum, p) => sum + parseFloat(p.netAmount), 0);
+
+      const totalPaid = payouts
+        .filter(p => p.status === 'paid')
+        .reduce((sum, p) => sum + parseFloat(p.netAmount), 0);
 
       return {
-        availableBalance,
-        pendingBalance,
-        totalPaidOut,
-        canWithdraw: availableBalance >= this.MIN_PAYOUT_AMOUNT,
-        canInstantPayout: pendingBalance >= this.MIN_PAYOUT_AMOUNT
+        available: available.toFixed(2),
+        pending: pending.toFixed(2),
+        totalPaid: totalPaid.toFixed(2),
+        totalEarnings: (available + pending + totalPaid).toFixed(2),
+        readyPayouts: payouts.filter(p => p.status === 'ready').length,
+        pendingPayouts: payouts.filter(p => p.status === 'pending').length
       };
 
     } catch (error) {
@@ -308,6 +351,24 @@ class PayoutService {
    */
   async withdrawBalance(sellerProfileId) {
     try {
+      // FIRST: Auto-update any payouts that have passed their escrow period
+      const now = new Date();
+      const { data: pendingPayouts } = await db
+        .from('seller_payouts')
+        .select('*')
+        .eq('sellerProfileId', sellerProfileId)
+        .eq('status', 'pending')
+        .lte('readyDate', now.toISOString());
+
+      if (pendingPayouts && pendingPayouts.length > 0) {
+        console.log(`🔄 Auto-updating ${pendingPayouts.length} payouts from pending to ready...`);
+        const payoutIds = pendingPayouts.map(p => p.payoutId);
+        await db
+          .from('seller_payouts')
+          .update({ status: 'ready', updatedAt: now.toISOString() })
+          .in('payoutId', payoutIds);
+      }
+
       // Get seller's payment info
       const { data: sellerProfile, error: profileError } = await db
         .from('sellerProfiles')
@@ -323,7 +384,7 @@ class PayoutService {
         throw new Error('Please set up your payment method first');
       }
 
-      // Get all ready payouts
+      // Get all ready payouts (after auto-update)
       const { data: readyPayouts, error: payoutsError } = await db
         .from('seller_payouts')
         .select('*')

@@ -4,12 +4,15 @@ import db from '../database/db.js';
 import * as xenditService from '../services/xenditService.js';
 import { requirePermission } from '../middleware/permission.js';
 import {
+  validateAuth,
+  formatValidationResponse
+} from '../utils/validation.js';
+import {
   createMarketplaceItem,
   getMarketplaceItems,
   getMarketplaceItem,
   updateMarketplaceItem,
   deleteMarketplaceItem,
-  createTestItems,
   getCart,
   addToCart,
   updateCartQuantity,
@@ -31,7 +34,6 @@ import {
   rejectSellerApplication,
   deleteSellerApplication,
   checkSellerStatus,
-  cancelMyApplication,
   getUserAddresses,
   createAddress,
   updateAddress,
@@ -63,9 +65,6 @@ const upload = multer({
 // ========================================
 // MARKETPLACE ITEMS (CRUD)
 // ========================================
-
-// TESTING ONLY - Create test items
-router.post('/items/test', requirePermission(['admin']), createTestItems);
 
 // Create marketplace item (with image upload)
 router.post('/items', requirePermission(['artist', 'admin']), upload.array('images', 10), createMarketplaceItem);
@@ -123,12 +122,13 @@ router.get('/orders/:orderId', getOrderDetails);
 // Get payment link for pending order
 router.get('/orders/:orderId/payment-link', async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    // Validate authentication
+    const auth = validateAuth(req);
+    if (!auth.valid) {
+      return res.status(401).json(formatValidationResponse(false, auth.error));
     }
+    const userId = auth.userId;
+    const { orderId } = req.params;
 
     // Get order
     const { data: order, error } = await db
@@ -233,9 +233,6 @@ router.put('/seller/applications/:applicationId/reject', requirePermission(['adm
 
 // Delete seller application (Admin only)
 router.delete('/seller/applications/:applicationId', requirePermission(['admin']), deleteSellerApplication);
-
-// TESTING ONLY - Cancel my own application
-router.post('/seller/cancel-my-application', cancelMyApplication);
 
 // ========================================
 // SELLER DASHBOARD

@@ -15,7 +15,7 @@ export default function Checkout() {
   const [cartItems, setCartItems] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedShipping, setSelectedShipping] = useState("standard");
-  const [selectedPayment, setSelectedPayment] = useState("card");
+  // Payment method removed - Xendit handles this
   const [orderNotes, setOrderNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -152,54 +152,7 @@ export default function Checkout() {
       )
     }
   ];
-  
-  // Payment methods
-  const paymentMethods = [
-    {
-      id: "card",
-      name: "Credit/Debit Card",
-      description: "Visa, Mastercard, Amex",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-          <line x1="1" y1="10" x2="23" y2="10"/>
-        </svg>
-      )
-    },
-    {
-      id: "gcash",
-      name: "GCash",
-      description: "Digital wallet payment",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-        </svg>
-      )
-    },
-    {
-      id: "bank",
-      name: "Bank Transfer",
-      description: "Direct bank payment",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="12" y1="1" x2="12" y2="23"/>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-      )
-    },
-    {
-      id: "cod",
-      name: "Cash on Delivery",
-      description: "Pay when you receive",
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-          <path d="M12 3v4"/>
-          <circle cx="12" cy="14" r="3"/>
-        </svg>
-      )
-    }
-  ];
+  // Payment methods removed - Xendit handles payment selection
   
   // Calculations
   const getSubtotal = () => {
@@ -258,7 +211,7 @@ export default function Checkout() {
           email: userData?.email,
           phone: address.phoneNumber || address.phone
         },
-        payment_method: selectedPayment,
+        payment_method: 'xendit', // Xendit handles actual payment method selection
         shipping_method: selectedShipping,
         order_notes: orderNotes
       };
@@ -409,64 +362,6 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
-            </section>
-            
-            {/* Payment Method Section */}
-            <section className="museo-card museo-card--checkout">
-              <div className="museo-card__header museo-checkout-header">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                  <line x1="1" y1="10" x2="23" y2="10"/>
-                </svg>
-                <h2 className="museo-checkout-title">Payment Method</h2>
-              </div>
-              
-              <div className="museo-card__body museo-payment-options">
-                {paymentMethods.map(method => (
-                  <div 
-                    key={method.id}
-                    className={`museo-payment-card ${selectedPayment === method.id ? 'museo-payment-card--selected' : ''}`}
-                    onClick={() => setSelectedPayment(method.id)}
-                  >
-                    <div className="museo-payment-radio">
-                      {selectedPayment === method.id && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                      )}
-                    </div>
-                    <div className="museo-payment-icon">{method.icon}</div>
-                    <div className="museo-payment-details">
-                      <div className="museo-payment-name">{method.name}</div>
-                      <div className="museo-payment-desc">{method.description}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Payment form for card */}
-              {selectedPayment === 'card' && (
-                <div className="museo-card-details-form">
-                  <div className="museo-form-group">
-                    <label className="museo-label">Card Number</label>
-                    <input type="text" className="museo-input" placeholder="1234 5678 9012 3456" />
-                  </div>
-                  <div className="museo-form-row">
-                    <div className="museo-form-group">
-                      <label className="museo-label">Expiry Date</label>
-                      <input type="text" className="museo-input" placeholder="MM/YY" />
-                    </div>
-                    <div className="museo-form-group">
-                      <label className="museo-label">CVV</label>
-                      <input type="text" className="museo-input" placeholder="123" />
-                    </div>
-                  </div>
-                  <div className="museo-form-group">
-                    <label className="museo-label">Cardholder Name</label>
-                    <input type="text" className="museo-input" placeholder="John Doe" />
-                  </div>
-                </div>
-              )}
             </section>
             
             {/* Order Notes Section */}

@@ -1,0 +1,147 @@
+/* Payouts Section Styles */
+
+.payouts-section {
+  padding: 20px;
+}
+
+.payout-balance-card {
+  background: linear-gradient(135deg, #b8956f 0%, #9c8668 100%);
+  color: white;
+  padding: 30px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(184, 149, 111, 0.3);
+}
+
+.balance-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.balance-amount {
+  font-size: 48px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.balance-info small {
+  opacity: 0.8;
+}
+
+.balance-actions .btn-lg {
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Earnings Breakdown */
+.earnings-breakdown {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.earnings-breakdown h3 {
+  margin: 0 0 20px 0;
+  color: #5a4a3a;
+}
+
+.breakdown-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  background: #f8f6f4;
+  border-radius: 8px;
+}
+
+.breakdown-item.total {
+  background: #e8dfd5;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.breakdown-label {
+  color: #5a4a3a;
+}
+
+.breakdown-value {
+  color: #2d2416;
+  font-weight: 600;
+}
+
+.breakdown-value.text-red {
+  color: #d9534f;
+}
+
+/* Payout Info Section */
+.payout-info-section {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.payout-info-section h3 {
+  margin: 0 0 20px 0;
+  color: #5a4a3a;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.info-card {
+  padding: 20px;
+  background: #f8f6f4;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.info-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.info-card h4 {
+  margin: 10px 0;
+  color: #5a4a3a;
+  font-size: 16px;
+}
+
+.info-card p {
+  margin: 0;
+  color: #7a6a5a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payout-balance-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .balance-amount {
+    font-size: 36px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
