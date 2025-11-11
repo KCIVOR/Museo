@@ -232,6 +232,25 @@ export const cancelPaymentLink = async (invoiceId) => {
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle specific error cases gracefully
+      if (response.status === 404) {
+        console.warn(`⚠️ Payment link ${invoiceId} not found (already expired or deleted)`);
+        return {
+          success: true,
+          message: 'Payment link already expired or not found',
+          alreadyExpired: true
+        };
+      }
+      
+      if (response.status === 400 && data.error_code === 'INVOICE_ALREADY_EXPIRED') {
+        console.warn(`⚠️ Payment link ${invoiceId} already expired`);
+        return {
+          success: true,
+          message: 'Payment link already expired',
+          alreadyExpired: true
+        };
+      }
+      
       console.error('Xendit API Error:', data);
       throw new Error(data.message || 'Failed to cancel invoice');
     }

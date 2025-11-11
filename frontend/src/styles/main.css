@@ -29,6 +29,11 @@
 @import './components/widgets.css';
 @import './components/hero.css';
 @import './components/composer.css';
+@import './components/order-cards.css';
+@import './components/productModal.css';
+@import './components/checkout.css';
+@import './components/address-modal.css';
+@import './components/address-form.css';
 
 /* 4️⃣ LAYOUTS */
 @import './layouts/grid.css';

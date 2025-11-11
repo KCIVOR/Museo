@@ -91,7 +91,7 @@ export default function MyOrders() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        alert('✅ Payment confirmed! Your order has been paid. The seller will process it soon.');
+        alert('Payment confirmed! Your order has been paid. The seller will process it soon.');
         fetchOrders(); // Refresh orders list
       } else {
         alert(result.message || 'Payment not yet completed. Please complete payment first.');
@@ -103,7 +103,15 @@ export default function MyOrders() {
   };
 
   const handleCancelOrder = async (orderId) => {
-    if (!confirm('Are you sure you want to cancel this order?')) {
+    // Find the order to get context for the confirmation message
+    const orderToCancel = orders.find(o => o.orderId === orderId);
+    const isPartOfGroup = orderToCancel?.paymentGroupId ? true : false;
+    
+    const confirmMessage = isPartOfGroup 
+      ? 'Are you sure you want to cancel this order? The payment total will be updated to exclude this order amount.'
+      : 'Are you sure you want to cancel this order?';
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -122,9 +130,16 @@ export default function MyOrders() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        alert('Order cancelled successfully');
-        fetchOrders();
-        setShowDetailsModal(false);
+        const successMessage = isPartOfGroup 
+          ? 'Order cancelled successfully. The payment total has been updated for remaining orders.'
+          : 'Order cancelled successfully';
+        alert(successMessage);
+        
+        // Small delay to ensure backend processing completes
+        setTimeout(() => {
+          fetchOrders();
+          setShowDetailsModal(false);
+        }, 500);
       } else {
         alert(result.error || 'Failed to cancel order');
       }
@@ -164,7 +179,7 @@ export default function MyOrders() {
     if (activeTab === 'all') return orders;
     
     if (activeTab === 'pending') {
-      return orders.filter(order => order.paymentStatus === 'pending');
+      return orders.filter(order => order.paymentStatus === 'pending' && order.status !== 'cancelled');
     }
     
     if (activeTab === 'paid') {
@@ -188,23 +203,68 @@ export default function MyOrders() {
 
   const getStatusBadge = (order) => {
     if (order.status === 'cancelled') {
-      return <span className="museo-badge museo-badge--error museo-badge--interactive">Cancelled</span>;
+      return (
+        <span className="museo-badge museo-badge--error museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          Cancelled
+        </span>
+      );
     }
     
     if (order.paymentStatus === 'pending') {
-      return <span className="museo-badge museo-badge--warning museo-badge--interactive">Awaiting Payment</span>;
+      return (
+        <span className="museo-badge museo-badge--warning museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="6" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Awaiting Payment
+        </span>
+      );
     }
     
     if (order.paymentStatus === 'paid' && order.status === 'pending') {
-      return <span className="museo-badge museo-badge--info museo-badge--interactive">Processing</span>;
+      return (
+        <span className="museo-badge museo-badge--info museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          Processing
+        </span>
+      );
     }
     
     if (order.status === 'shipped') {
-      return <span className="museo-badge museo-badge--primary museo-badge--interactive">Shipped</span>;
+      return (
+        <span className="museo-badge museo-badge--info museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="1" y="3" width="15" height="13"/>
+            <path d="M16 8h5l3 3v5h-2"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+          Shipped
+        </span>
+      );
     }
     
     if (order.status === 'delivered') {
-      return <span className="museo-badge museo-badge--success museo-badge--interactive">Delivered</span>;
+      return (
+        <span className="museo-badge museo-badge--success museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          Delivered
+        </span>
+      );
     }
     
     return <span className="museo-badge museo-badge--interactive">{order.status}</span>;
@@ -262,7 +322,7 @@ export default function MyOrders() {
         </div>
 
         {/* Tabs */}
-        <div className="museo-tabs museo-tabs--scrollable">
+        <div className="museo-tabs museo-tabs--full">
           <button 
             className={`museo-tab ${activeTab === 'all' ? 'museo-tab--active' : ''}`}
             onClick={() => setActiveTab('all')}
@@ -275,7 +335,7 @@ export default function MyOrders() {
             onClick={() => setActiveTab('pending')}
           >
             Pending Payment
-            <span className="museo-tab__badge">{orders.filter(o => o.paymentStatus === 'pending').length}</span>
+            <span className="museo-tab__badge">{orders.filter(o => o.paymentStatus === 'pending' && o.status !== 'cancelled').length}</span>
           </button>
           <button 
             className={`museo-tab ${activeTab === 'paid' ? 'museo-tab--active' : ''}`}
@@ -298,6 +358,13 @@ export default function MyOrders() {
             Delivered
             <span className="museo-tab__badge">{orders.filter(o => o.status === 'delivered').length}</span>
           </button>
+          <button 
+            className={`museo-tab ${activeTab === 'cancelled' ? 'museo-tab--active' : ''}`}
+            onClick={() => setActiveTab('cancelled')}
+          >
+            Cancelled
+            <span className="museo-tab__badge">{orders.filter(o => o.status === 'cancelled').length}</span>
+          </button>
         </div>
 
         {/* Orders List */}
@@ -312,108 +379,178 @@ export default function MyOrders() {
               <h3>No orders found</h3>
               <p>You haven't placed any orders yet</p>
               <button 
-                className="btn-primary"
+                className="btn btn-primary btn-sm"
                 onClick={() => navigate('/marketplace')}
               >
                 Start Shopping
               </button>
             </div>
           ) : (
-            filteredOrders.map(order => (
-              <div key={order.orderId} className="museo-card order-card">
-                <div className="museo-card__header order-header">
-                  <div className="order-info">
-                    <span className="order-id">Order #{order.orderId.slice(0, 8)}</span>
-                    <span className="order-date">{formatDate(order.createdAt)}</span>
-                  </div>
-                  {getStatusBadge(order)}
-                </div>
+            filteredOrders.map(order => {
+              const statusInfo = order.status === 'pending' && order.paymentStatus === 'pending' 
+                ? { label: 'Pending', icon: '⏳' }
+                : order.status === 'pending' && order.paymentStatus === 'paid'
+                ? { label: 'Processing', icon: '📦' }
+                : order.status === 'shipped'
+                ? { label: 'Shipped', icon: '🚚' }
+                : order.status === 'delivered'
+                ? { label: 'Delivered', icon: '✅' }
+                : order.status === 'cancelled'
+                ? { label: 'Cancelled', icon: '❌' }
+                : { label: order.status, icon: '📋' };
 
-                <div className="museo-card__body">
-                  <div className="order-summary">
-                    <div className="order-amount">
-                      <span className="order-label">Total Amount:</span>
-                      <span className="order-value">{formatPrice(order.totalAmount)}</span>
-                    </div>
-                    {order.paymentMethodUsed && (
-                      <div className="order-payment">
-                        <span className="order-label">Payment:</span>
-                        <span className="order-value">{order.paymentMethodUsed}</span>
+              return (
+                <div key={order.orderId} className="order-card" data-status={order.status}>
+                  {/* Order Image Section */}
+                  <div className="order-image-section">
+                    {order.items && order.items[0]?.image ? (
+                      <img 
+                        src={order.items[0].image} 
+                        alt={order.items[0].itemTitle || order.items[0].title}
+                        className="order-image"
+                      />
+                    ) : (
+                      <div className="order-image-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                          <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
                       </div>
                     )}
                   </div>
 
-                  {order.shippingAddress && (
-                    <div className="order-shipping">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                      <span>
-                        {order.shippingAddress.street}, {order.shippingAddress.barangay}, 
-                        {order.shippingAddress.city}, {order.shippingAddress.province}
-                      </span>
+                  {/* Order Info Section */}
+                  <div className="order-info-section">
+                    <div className="order-header">
+                      {getStatusBadge(order)}
+                      <span className="order-id">#{order.orderId.slice(0, 8).toUpperCase()}</span>
+                      {order.trackingNumber && (
+                        <span className="order-tracking">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="1" y="3" width="15" height="13"/>
+                            <path d="M16 8h5l3 3v5h-2"/>
+                            <circle cx="5.5" cy="18.5" r="2.5"/>
+                            <circle cx="18.5" cy="18.5" r="2.5"/>
+                          </svg>
+                          {order.trackingNumber}
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  {order.trackingNumber && (
-                    <div className="order-tracking">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="1" y="3" width="15" height="13"/>
-                        <path d="M16 8h5l3 3v5h-2"/>
-                        <circle cx="5.5" cy="18.5" r="2.5"/>
-                        <circle cx="18.5" cy="18.5" r="2.5"/>
-                      </svg>
-                      <span>
-                        <strong>Tracking:</strong> {order.trackingNumber}
-                      </span>
+                    <div className="order-items-info">
+                      {order.items && order.items[0] && (
+                        <>
+                          <div className="order-item-title">
+                            {order.items[0].itemTitle || order.items[0].title || 'Artwork'}
+                            {order.items.length > 1 && ` + ${order.items.length - 1} more`}
+                          </div>
+                          <div className="order-item-details">
+                            {order.items[0].quantity}x 
+                            {order.items[0].medium && ` • ${order.items[0].medium}`}
+                            {order.items[0].dimensions && ` • ${order.items[0].dimensions}`}
+                          </div>
+                        </>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="museo-card__footer order-actions">
-                  <button 
-                    className="btn-secondary btn-sm"
-                    onClick={() => handleViewDetails(order.orderId)}
-                  >
-                    View Details
-                  </button>
-                  
-                  {order.paymentStatus === 'pending' && order.status !== 'cancelled' && (
-                    <>
+                    <div className="order-meta">
+                      <span className="order-date">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        {formatDate(order.createdAt)}
+                      </span>
+                      {order.sellerCount && order.sellerCount > 1 && (
+                        <span className="order-seller-count">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                          {order.sellerCount} sellers
+                        </span>
+                      )}
+                      {order.itemCount && (
+                        <span className="order-item-count">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          </svg>
+                          {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Order Action Section */}
+                  <div className="order-action-section">
+                    <div className="order-total">
+                      <div className="order-total-label">Total</div>
+                      <div className="order-total-amount">{formatPrice(order.totalAmount)}</div>
+                    </div>
+                    
+                    <div className="order-buttons">
                       <button 
-                        className="btn-primary btn-sm"
-                        onClick={() => handlePayNow(order)}
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleViewDetails(order.orderId)}
                       >
-                        💳 Pay Now
+                        View Details
                       </button>
-                      <button 
-                        className="btn-secondary btn-sm"
-                        onClick={() => handleCheckPaymentStatus(order.orderId)}
-                        title="Check if payment was completed"
-                      >
-                        🔄 Check Payment
-                      </button>
-                      <button 
-                        className="btn-danger btn-sm"
-                        onClick={() => handleCancelOrder(order.orderId)}
-                      >
-                        Cancel Order
-                      </button>
-                    </>
-                  )}
-                  
-                  {order.status === 'shipped' && (
-                    <button 
-                      className="btn-success btn-sm"
-                      onClick={() => handleMarkAsDelivered(order.orderId)}
-                    >
-                      Mark as Received
-                    </button>
-                  )}
+
+                      {order.paymentStatus === 'pending' && order.status !== 'cancelled' && (
+                        <>
+                          <button 
+                            className="btn btn-primary btn-sm"
+                            onClick={() => handlePayNow(order)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                              <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            Pay Now
+                          </button>
+                          <button 
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => handleCheckPaymentStatus(order.orderId)}
+                            title="Check if payment was completed"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="23 4 23 10 17 10"/>
+                              <polyline points="1 20 1 14 7 14"/>
+                              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Check Payment
+                          </button>
+                          <button 
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleCancelOrder(order.orderId)}
+                          >
+                            Cancel Order
+                          </button>
+                        </>
+                      )}
+                      
+                      {order.status === 'shipped' && (
+                        <button 
+                          className="btn btn-success btn-sm"
+                          onClick={() => handleMarkAsDelivered(order.orderId)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                          </svg>
+                          Mark as Received
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

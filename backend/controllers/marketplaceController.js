@@ -2229,12 +2229,20 @@ export const getBuyerOrders = async (req, res) => {
       });
     }
     const userId = req.user.id;
+    const { status } = req.query; // Optional status filter (e.g., 'cancelled')
 
-    // Get all orders for this buyer
-    const { data: orders, error: ordersError } = await db
+    // Build query with optional status filter
+    let query = db
       .from('orders')
       .select('*')
-      .eq('userId', userId)
+      .eq('userId', userId);
+    
+    // Apply status filter if provided
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    const { data: orders, error: ordersError } = await query
       .order('createdAt', { ascending: false });
 
     if (ordersError) {
@@ -2245,7 +2253,7 @@ export const getBuyerOrders = async (req, res) => {
       });
     }
 
-    // Get order items for each order
+    // Get order items for each order with marketplace item details for images
     const ordersWithItems = await Promise.all(
       orders.map(async (order) => {
         const { data: items } = await db
@@ -2253,9 +2261,35 @@ export const getBuyerOrders = async (req, res) => {
           .select('*')
           .eq('orderId', order.orderId);
 
+        // Get marketplace item details for images
+        const itemIds = [...new Set(items.map(item => item.marketplaceItemId))];
+        let marketItems = [];
+        
+        if (itemIds.length > 0) {
+          const { data: marketData } = await db
+            .from('marketplace_items')
+            .select('marketItemId, primary_image, images')
+            .in('marketItemId', itemIds);
+          marketItems = marketData || [];
+        }
+        
+        // Create a map for quick lookup
+        const itemsMap = new Map(marketItems?.map(i => [i.marketItemId, i]) || []);
+        
+        // Add image data to order items
+        const itemsWithImages = items.map(item => {
+          const marketItem = itemsMap.get(item.marketplaceItemId);
+          return {
+            ...item,
+            image: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
+            itemImage: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
+            itemTitle: item.title // Ensure itemTitle is set
+          };
+        });
+
         // Group items by seller profile
         const itemsBySeller = {};
-        items.forEach(item => {
+        itemsWithImages.forEach(item => {
           if (!itemsBySeller[item.sellerProfileId]) {
             itemsBySeller[item.sellerProfileId] = [];
           }
@@ -2264,9 +2298,9 @@ export const getBuyerOrders = async (req, res) => {
 
         return {
           ...order,
-          items: items,
+          items: itemsWithImages,
           itemsBySeller: itemsBySeller,
-          itemCount: items.length,
+          itemCount: itemsWithImages.length,
           sellerCount: Object.keys(itemsBySeller).length
         };
       })
@@ -2346,7 +2380,8 @@ export const getSellerOrders = async (req, res) => {
           totalOrders: 0,
           toShip: 0,
           shipping: 0,
-          completed: 0
+          completed: 0,
+          cancelled: 0
         },
         count: 0
       });
@@ -2434,7 +2469,8 @@ export const getSellerOrders = async (req, res) => {
       totalOrders: allOrders.length,
       toShip: allOrders.filter(o => o.status === 'paid' || o.status === 'processing').length,
       shipping: allOrders.filter(o => o.status === 'shipped').length,
-      completed: allOrders.filter(o => o.status === 'delivered').length
+      completed: allOrders.filter(o => o.status === 'delivered').length,
+      cancelled: allOrders.filter(o => o.status === 'cancelled').length
     };
 
     res.json({ 
