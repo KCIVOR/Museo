@@ -17,8 +17,8 @@ import {
   CalendarIcon,
   ShipmentIcon
 } from '../../styles/icons/DashboardIcons';
+import '../../styles/main.css';
 import './css/sellerDashboard.css';
-import './css/payouts.css';
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -53,7 +53,8 @@ export default function SellerDashboard() {
     totalOrders: 0,
     toShip: 0,
     shipping: 0,
-    completed: 0
+    completed: 0,
+    cancelled: 0
   });
   
   // Modal states
@@ -422,140 +423,335 @@ export default function SellerDashboard() {
   }
 
   return (
-    <div className="seller-dashboard">
-      <div className="dashboard-header">
-        <div className="header-content">
-          <h1>Seller Dashboard</h1>
-          <p className="subtitle">Welcome back, {userData?.sellerProfile?.shopName || userData?.fullName || 'Seller'}!</p>
+    <div className="museo-page">
+      <div className="museo-feed museo-container--lg">
+        {/* Header */}
+        <div className="museo-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 'var(--museo-space-6)',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div>
+            <h1 className="museo-heading">Seller Dashboard</h1>
+            <p className="museo-subtitle" style={{color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)'}}>
+              Welcome back, {userData?.sellerProfile?.shopName || userData?.fullName || 'Seller'}!
+            </p>
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: 'var(--museo-space-3)',
+            alignItems: 'center'
+          }}>
+            <select 
+              className="museo-select"
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              style={{
+                padding: 'var(--museo-space-2) var(--museo-space-3)',
+                borderRadius: 'var(--museo-radius-md)',
+                border: '1px solid var(--museo-border)',
+                background: 'var(--museo-white)',
+                fontSize: 'var(--museo-text-sm)',
+                color: 'var(--museo-text-primary)'
+              }}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <button 
+              className="btn btn-primary btn-sm"
+              onClick={handleAddProduct}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Product
+            </button>
+          </div>
         </div>
-        <div className="header-actions">
-          <select 
-            className="period-selector"
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-          <button 
-            className="btn btn-primary"
-            onClick={handleAddProduct}
-          >
-            <PlusIcon size={20} />
-            Add Product
-          </button>
-        </div>
-      </div>
 
-      {/* Tab Navigation */}
-      <div className="dashboard-tabs">
+      {/* Tab Navigation - Using Museo Tabs */}
+      <div className="museo-tabs museo-tabs--full">
         <button 
-          className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+          className={`museo-tab ${activeTab === 'overview' ? 'museo-tab--active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          <ProductsIcon size={20} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
+            <rect x="3" y="12" width="18" height="9" rx="2" ry="2"/>
+            <path d="M3 12v-1a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1"/>
+            <path d="M8 9V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v5"/>
+          </svg>
           Overview
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+          className={`museo-tab ${activeTab === 'products' ? 'museo-tab--active' : ''}`}
           onClick={() => setActiveTab('products')}
         >
-          <ProductsIcon size={20} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
           My Products
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+          className={`museo-tab ${activeTab === 'orders' ? 'museo-tab--active' : ''}`}
           onClick={() => setActiveTab('orders')}
         >
-          <OrdersIcon size={20} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
           My Orders
           {orderStats.toShip > 0 && (
-            <span className="tab-badge">{orderStats.toShip}</span>
+            <span className="museo-tab__badge">{orderStats.toShip}</span>
           )}
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'payouts' ? 'active' : ''}`}
+          className={`museo-tab ${activeTab === 'payouts' ? 'museo-tab--active' : ''}`}
           onClick={() => setActiveTab('payouts')}
         >
-          <EarningsIcon size={20} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
           Payouts
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          className={`museo-tab ${activeTab === 'settings' ? 'museo-tab--active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
             <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2-5.2l-4.2 4.2m0 6l4.2 4.2"/>
+            <path d="M12 1v6m0 6v6m3.5-10.5L21 3m-6 18l5.5-5.5M3 12h6m12 0h6M6.5 8.5L1 3m6 18l-5.5-5.5"/>
           </svg>
           Settings
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="summary-cards" style={{ opacity: statsLoading ? 0.6 : 1 }}>
-        <div className="stat-card">
-          <div className="stat-icon sales-icon">
-            <SalesIcon size={28} color="#d4b48a" />
+      {/* Summary Cards - Responsive Scroll */}
+      <div className="museo-stats-container" style={{ 
+        display: 'flex',
+        gap: 'var(--museo-space-3)',
+        marginBottom: 'var(--museo-space-6)',
+        overflowX: 'auto',
+        paddingBottom: 'var(--museo-space-2)',
+        scrollbarWidth: 'thin',
+        opacity: statsLoading ? 0.6 : 1
+      }}>
+        <div className="museo-stat-card" style={{
+          minWidth: '250px',
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-4)',
+          border: '1px solid var(--museo-border)',
+          display: 'flex',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div className="museo-stat-icon" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: 'var(--museo-radius-md)',
+            background: 'var(--museo-accent-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--museo-accent)" strokeWidth="2">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
           </div>
-          <div className="stat-content">
-            <h3 className="stat-title">Total Sales</h3>
-            <p className="stat-value">₱{stats.totalSales.toLocaleString()}</p>
-            <span className="stat-info">{selectedPeriod} period</span>
+          <div className="museo-stat-content" style={{flex: 1}}>
+            <h3 style={{
+              fontSize: 'var(--museo-text-sm)',
+              color: 'var(--museo-text-secondary)',
+              fontWeight: 'var(--museo-font-medium)',
+              margin: '0 0 var(--museo-space-1) 0'
+            }}>Total Sales</h3>
+            <p style={{
+              fontSize: 'var(--museo-text-2xl)',
+              color: 'var(--museo-text-primary)',
+              fontWeight: 'var(--museo-font-bold)',
+              margin: 0
+            }}>₱{stats.totalSales.toLocaleString()}</p>
+            <span style={{
+              fontSize: 'var(--museo-text-xs)',
+              color: 'var(--museo-text-muted)'
+            }}>{selectedPeriod} period</span>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon orders-icon">
-            <OrdersIcon size={28} color="#8b5a3c" />
+        <div className="museo-stat-card" style={{
+          minWidth: '250px',
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-4)',
+          border: '1px solid var(--museo-border)',
+          display: 'flex',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div className="museo-stat-icon" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: 'var(--museo-radius-md)',
+            background: 'var(--museo-bg-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--museo-primary)" strokeWidth="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
           </div>
-          <div className="stat-content">
-            <h3 className="stat-title">Total Orders</h3>
-            <p className="stat-value">{stats.totalOrders}</p>
-            <span className="stat-badge">{stats.pendingOrders > 0 && `${stats.pendingOrders} pending`}</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon products-icon">
-            <ProductsIcon size={28} color="#6e4a2e" />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-title">Products Listed</h3>
-            <p className="stat-value">{stats.totalProducts}</p>
-            <span className="stat-info">{stats.activeProducts} active</span>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon earnings-icon">
-            <EarningsIcon size={28} color="#b8956f" />
-          </div>
-          <div className="stat-content">
-            <h3 className="stat-title">Net Earnings</h3>
-            <p className="stat-value">₱{stats.earnings.net.toLocaleString()}</p>
-            <span className="stat-info">After {((stats.earnings.platformFee / stats.earnings.gross) * 100 || 0).toFixed(0)}% fees</span>
-            {stats.earnings.net >= 100 && (
-              <button 
-                className="btn btn-primary btn-sm" 
-                style={{marginTop: '8px'}}
-                onClick={() => setActiveTab('payouts')}
-              >
-                💰 Withdraw Funds
-              </button>
+          <div className="museo-stat-content" style={{flex: 1}}>
+            <h3 style={{
+              fontSize: 'var(--museo-text-sm)',
+              color: 'var(--museo-text-secondary)',
+              fontWeight: 'var(--museo-font-medium)',
+              margin: '0 0 var(--museo-space-1) 0'
+            }}>Total Orders</h3>
+            <p style={{
+              fontSize: 'var(--museo-text-2xl)',
+              color: 'var(--museo-text-primary)',
+              fontWeight: 'var(--museo-font-bold)',
+              margin: 0
+            }}>{stats.totalOrders}</p>
+            {stats.pendingOrders > 0 && (
+              <span className="museo-tab__badge" style={{marginTop: 'var(--museo-space-1)'}}>
+                {stats.pendingOrders} pending
+              </span>
             )}
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon shipment-icon">
-            <ShipmentIcon size={28} color="#9c8668" />
+        <div className="museo-stat-card" style={{
+          minWidth: '250px',
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-4)',
+          border: '1px solid var(--museo-border)',
+          display: 'flex',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div className="museo-stat-icon" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: 'var(--museo-radius-md)',
+            background: 'var(--museo-info-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--museo-info)" strokeWidth="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
           </div>
-          <div className="stat-content">
-            <h3 className="stat-title">Pending Shipments</h3>
-            <p className="stat-value">{stats.pendingShipments}</p>
-            <button className="btn btn-outline btn-sm" onClick={() => navigate('/marketplace/orders')}>View All</button>
+          <div className="museo-stat-content" style={{flex: 1}}>
+            <h3 style={{
+              fontSize: 'var(--museo-text-sm)',
+              color: 'var(--museo-text-secondary)',
+              fontWeight: 'var(--museo-font-medium)',
+              margin: '0 0 var(--museo-space-1) 0'
+            }}>Products Listed</h3>
+            <p style={{
+              fontSize: 'var(--museo-text-2xl)',
+              color: 'var(--museo-text-primary)',
+              fontWeight: 'var(--museo-font-bold)',
+              margin: 0
+            }}>{stats.totalProducts}</p>
+            <span style={{
+              fontSize: 'var(--museo-text-xs)',
+              color: 'var(--museo-text-muted)'
+            }}>{stats.activeProducts} active</span>
+          </div>
+        </div>
+
+        <div className="museo-stat-card" style={{
+          minWidth: '250px',
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-4)',
+          border: '1px solid var(--museo-border)',
+          display: 'flex',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div className="museo-stat-icon" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: 'var(--museo-radius-md)',
+            background: 'var(--museo-success-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--museo-success)" strokeWidth="2">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div className="museo-stat-content" style={{flex: 1}}>
+            <h3 style={{
+              fontSize: 'var(--museo-text-sm)',
+              color: 'var(--museo-text-secondary)',
+              fontWeight: 'var(--museo-font-medium)',
+              margin: '0 0 var(--museo-space-1) 0'
+            }}>Net Earnings</h3>
+            <p style={{
+              fontSize: 'var(--museo-text-2xl)',
+              color: 'var(--museo-text-primary)',
+              fontWeight: 'var(--museo-font-bold)',
+              margin: 0
+            }}>₱{stats.earnings.net.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="museo-stat-card" style={{
+          minWidth: '250px',
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-4)',
+          border: '1px solid var(--museo-border)',
+          display: 'flex',
+          gap: 'var(--museo-space-3)'
+        }}>
+          <div className="museo-stat-icon" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: 'var(--museo-radius-md)',
+            background: 'var(--museo-warning-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--museo-warning)" strokeWidth="2">
+              <rect x="1" y="3" width="15" height="13"/>
+              <path d="M16 8h5l3 3v5h-2"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/>
+              <circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+          </div>
+          <div className="museo-stat-content" style={{flex: 1}}>
+            <h3 style={{
+              fontSize: 'var(--museo-text-sm)',
+              color: 'var(--museo-text-secondary)',
+              fontWeight: 'var(--museo-font-medium)',
+              margin: '0 0 var(--museo-space-1) 0'
+            }}>Pending Shipments</h3>
+            <p style={{
+              fontSize: 'var(--museo-text-2xl)',
+              color: 'var(--museo-text-primary)',
+              fontWeight: 'var(--museo-font-bold)',
+              margin: 0
+            }}>{stats.pendingShipments}</p>
+
           </div>
         </div>
       </div>
@@ -564,24 +760,103 @@ export default function SellerDashboard() {
       <div className="dashboard-content">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-        <div className="quick-actions">
-          <h3>Quick Actions</h3>
-          <div className="action-grid">
-            <button className="quick-action-btn" onClick={() => setActiveTab('products')}>
-              <ProductsIcon size={20} />
-              Manage Products
+        <div style={{
+          background: 'var(--museo-white)',
+          borderRadius: 'var(--museo-radius-lg)',
+          padding: 'var(--museo-space-6)',
+          marginBottom: 'var(--museo-space-6)'
+        }}>
+          <h3 className="museo-heading" style={{fontSize: 'var(--museo-text-xl)', marginBottom: 'var(--museo-space-4)'}}>Quick Actions</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: 'var(--museo-space-3)'
+          }}>
+            <button 
+              className="btn btn-ghost"
+              style={{
+                padding: 'var(--museo-space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)',
+                border: '1px solid var(--museo-border)',
+                background: 'var(--museo-white)',
+                borderRadius: 'var(--museo-radius-md)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-duration-base) var(--museo-ease-out)'
+              }}
+              onClick={() => setActiveTab('products')}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              </svg>
+              <span>Manage Products</span>
             </button>
-            <button className="quick-action-btn" onClick={() => setActiveTab('orders')}>
-              <OrdersIcon size={20} />
-              View Orders
+            <button 
+              className="btn btn-ghost"
+              style={{
+                padding: 'var(--museo-space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)',
+                border: '1px solid var(--museo-border)',
+                background: 'var(--museo-white)',
+                borderRadius: 'var(--museo-radius-md)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-duration-base) var(--museo-ease-out)'
+              }}
+              onClick={() => setActiveTab('orders')}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
+              <span>View Orders</span>
             </button>
-            <button className="quick-action-btn">
-              <SalesIcon size={20} />
-              Sales Report
+            <button 
+              className="btn btn-ghost"
+              style={{
+                padding: 'var(--museo-space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)',
+                border: '1px solid var(--museo-border)',
+                background: 'var(--museo-white)',
+                borderRadius: 'var(--museo-radius-md)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-duration-base) var(--museo-ease-out)'
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              <span>Sales Report</span>
             </button>
-            <button className="quick-action-btn">
-              <ShipmentIcon size={20} />
-              Shipping Labels
+            <button 
+              className="btn btn-ghost"
+              style={{
+                padding: 'var(--museo-space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)',
+                border: '1px solid var(--museo-border)',
+                background: 'var(--museo-white)',
+                borderRadius: 'var(--museo-radius-md)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-duration-base) var(--museo-ease-out)'
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
+                <path d="M9 22V12h6v10"/>
+              </svg>
+              <span>Shipping Labels</span>
             </button>
           </div>
         </div>
@@ -589,22 +864,48 @@ export default function SellerDashboard() {
 
         {/* Products Tab */}
         {activeTab === 'products' && (
-        <div className="products-section">
-          <div className="section-header">
-            <h2>Product Inventory</h2>
-            <div className="section-actions">
-              <button className="btn btn-outline btn-sm" onClick={handleBulkUpload}>
-                <UploadIcon size={18} />
-                Bulk Upload
-              </button>
-            </div>
+        <div className="museo-products-section">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 'var(--museo-space-4)'
+          }}>
+            <h2 className="museo-heading" style={{fontSize: 'var(--museo-text-2xl)'}}>Product Inventory</h2>
+            <button 
+              className="btn btn-ghost"
+              style={{
+                padding: 'var(--museo-space-2) var(--museo-space-4)',
+                fontSize: 'var(--museo-text-sm)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)'
+              }}
+              onClick={handleBulkUpload}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Bulk Upload
+            </button>
           </div>
 
           <div className="products-table-container">
             {loading ? (
-              <div className="loading-state">
-                <ProductsIcon size={48} color="#d4c9b8" />
-                <p>Loading your products...</p>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'var(--museo-space-8)',
+                color: 'var(--museo-text-secondary)'
+              }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--museo-accent)" strokeWidth="1.5">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                <p style={{marginTop: 'var(--museo-space-3)'}}>Loading your products...</p>
               </div>
             ) : products.length > 0 ? (
               <table className="products-table">
@@ -659,21 +960,34 @@ export default function SellerDashboard() {
                     <td>
                       <div className="action-buttons">
                         <button 
-                          className="btn-action view"
+                          className="btn btn-ghost"
+                          style={{
+                            padding: 'var(--museo-space-1)',
+                            minWidth: 'auto'
+                          }}
                           onClick={() => handleViewProduct(product)}
                           title="View"
                         >
                           <ViewIcon size={18} />
                         </button>
                         <button 
-                          className="btn-action edit"
+                          className="btn btn-ghost"
+                          style={{
+                            padding: 'var(--museo-space-1)',
+                            minWidth: 'auto'
+                          }}
                           onClick={() => handleEditProduct(product)}
                           title="Edit"
                         >
                           <EditIcon size={18} />
                         </button>
                         <button 
-                          className="btn-action delete"
+                          className="btn btn-ghost"
+                          style={{
+                            padding: 'var(--museo-space-1)',
+                            minWidth: 'auto',
+                            color: 'var(--museo-error)'
+                          }}
                           onClick={() => handleDeleteProduct(product)}
                           title="Delete"
                         >
@@ -686,10 +1000,34 @@ export default function SellerDashboard() {
                 </tbody>
               </table>
             ) : (
-              <div className="empty-state">
-                <ProductsIcon size={48} color="#d4c9b8" />
-                <p>No products listed yet</p>
-                <button className="btn btn-primary" onClick={handleAddProduct}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'var(--museo-space-8)',
+                textAlign: 'center'
+              }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--museo-accent)" strokeWidth="1.5">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                <p style={{
+                  fontSize: 'var(--museo-text-lg)',
+                  color: 'var(--museo-text-secondary)',
+                  marginTop: 'var(--museo-space-3)',
+                  marginBottom: 'var(--museo-space-4)'
+                }}>No products listed yet</p>
+                <button 
+                  className="btn btn-primary"
+                  style={{
+                    padding: 'var(--museo-space-2) var(--museo-space-4)',
+                    background: 'var(--museo-primary)',
+                    color: 'var(--museo-white)',
+                    border: 'none',
+                    borderRadius: 'var(--museo-radius-md)'
+                  }}
+                  onClick={handleAddProduct}
+                >
                   Add Your First Product
                 </button>
               </div>
@@ -700,33 +1038,46 @@ export default function SellerDashboard() {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && (
-        <div className="orders-section">
-          <div className="section-header">
-            <h2>Order Management</h2>
-            <div className="order-filters">
+        <div className="museo-orders-section">
+          <div style={{
+            marginBottom: 'var(--museo-space-6)'
+          }}>
+            <h2 className="museo-heading" style={{fontSize: 'var(--museo-text-2xl)', marginBottom: 'var(--museo-space-4)'}}>Order Management</h2>
+            <div className="museo-tabs museo-tabs--full">
               <button 
-                className={`filter-btn ${orderFilter === 'all' ? 'active' : ''}`}
+                className={`museo-tab ${orderFilter === 'all' ? 'museo-tab--active' : ''}`}
                 onClick={() => setOrderFilter('all')}
               >
-                All Orders ({orderStats.totalOrders})
+                All Orders
+                <span className="museo-tab__badge">{orderStats.totalOrders}</span>
               </button>
               <button 
-                className={`filter-btn ${orderFilter === 'paid' ? 'active' : ''}`}
+                className={`museo-tab ${orderFilter === 'paid' ? 'museo-tab--active' : ''}`}
                 onClick={() => setOrderFilter('paid')}
               >
-                To Ship ({orderStats.toShip})
+                To Ship
+                <span className="museo-tab__badge">{orderStats.toShip}</span>
               </button>
               <button 
-                className={`filter-btn ${orderFilter === 'shipped' ? 'active' : ''}`}
+                className={`museo-tab ${orderFilter === 'shipped' ? 'museo-tab--active' : ''}`}
                 onClick={() => setOrderFilter('shipped')}
               >
-                Shipping ({orderStats.shipping})
+                Shipping
+                <span className="museo-tab__badge">{orderStats.shipping}</span>
               </button>
               <button 
-                className={`filter-btn ${orderFilter === 'delivered' ? 'active' : ''}`}
+                className={`museo-tab ${orderFilter === 'delivered' ? 'museo-tab--active' : ''}`}
                 onClick={() => setOrderFilter('delivered')}
               >
-                Completed ({orderStats.completed})
+                Completed
+                <span className="museo-tab__badge">{orderStats.completed}</span>
+              </button>
+              <button 
+                className={`museo-tab ${orderFilter === 'cancelled' ? 'museo-tab--active' : ''}`}
+                onClick={() => setOrderFilter('cancelled')}
+              >
+                Cancelled
+                <span className="museo-tab__badge">{orderStats.cancelled}</span>
               </button>
             </div>
           </div>
@@ -739,58 +1090,181 @@ export default function SellerDashboard() {
               </div>
             ) : orders.length > 0 ? (
               orders.map(order => (
-                <div key={order.orderId} className="order-card">
-                  <div className="order-header">
-                    <div className="order-info">
-                      <span className="order-id">Order #{order.orderId.slice(0, 8)}</span>
-                      <span className={`order-status ${order.status}`}>
-                        {(order.status === 'pending' && order.paymentStatus === 'paid') ? 'To Ship' :
-                         order.status === 'processing' ? 'Processing' :
-                         order.status === 'shipped' ? 'Shipping' : 
-                         order.status === 'delivered' ? 'Completed' : 
-                         order.status.toUpperCase()}
-                      </span>
-                      <span className="order-date">
+                <div key={order.orderId} className="order-card" style={{
+                  background: 'var(--museo-white)',
+                  border: '1px solid var(--museo-border)',
+                  borderRadius: 'var(--museo-radius-md)',
+                  padding: 'var(--museo-space-4)',
+                  marginBottom: 'var(--museo-space-3)',
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  gap: 'var(--museo-space-4)'
+                }}>
+                  {/* Order Image */}
+                  <div style={{
+                    width: '100px',
+                    height: '100px',
+                    flexShrink: 0
+                  }}>
+                    {order.items && order.items[0] ? (
+                      <img 
+                        src={order.items[0].image || order.items[0].itemImage || 'https://via.placeholder.com/100'}
+                        alt={order.items[0].title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          borderRadius: 'var(--museo-radius-sm)'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'var(--museo-bg-secondary)',
+                        borderRadius: 'var(--museo-radius-sm)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--museo-text-muted)" strokeWidth="1.5">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Order Info */}
+                  <div style={{flex: 1, minWidth: 0}}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 'var(--museo-space-2)'
+                    }}>
+                      <div>
+                        <span style={{
+                          fontSize: 'var(--museo-text-sm)',
+                          color: 'var(--museo-text-secondary)',
+                          marginRight: 'var(--museo-space-3)'
+                        }}>Order #{order.orderId.slice(0, 8).toUpperCase()}</span>
+                        {(order.status === 'pending' && order.paymentStatus === 'paid') && (
+                          <span className="museo-badge museo-badge--warning museo-badge--interactive">TO SHIP</span>
+                        )}
+                        {order.status === 'processing' && (
+                          <span className="museo-badge museo-badge--info museo-badge--interactive">PROCESSING</span>
+                        )}
+                        {order.status === 'shipped' && (
+                          <span className="museo-badge museo-badge--info museo-badge--interactive">SHIPPING</span>
+                        )}
+                        {order.status === 'delivered' && (
+                          <span className="museo-badge museo-badge--success museo-badge--interactive">COMPLETED</span>
+                        )}
+                        {order.status === 'cancelled' && (
+                          <span className="museo-badge museo-badge--error museo-badge--interactive">CANCELLED</span>
+                        )}
+                      </div>
+                      <div style={{
+                        fontSize: 'var(--museo-text-lg)',
+                        fontWeight: 'var(--museo-font-bold)',
+                        color: 'var(--museo-text-primary)'
+                      }}>₱{order.totalAmount.toLocaleString()}</div>
+                    </div>
+
+                    <div style={{
+                      fontSize: 'var(--museo-text-base)',
+                      color: 'var(--museo-text-primary)',
+                      fontWeight: 'var(--museo-font-semibold)',
+                      marginBottom: 'var(--museo-space-1)'
+                    }}>
+                      {order.buyerName || 'Customer'}
+                    </div>
+                    
+                    <div style={{
+                      fontSize: 'var(--museo-text-sm)',
+                      color: 'var(--museo-text-secondary)',
+                      marginBottom: 'var(--museo-space-2)'
+                    }}>
+                      {order.items && order.items[0] && (
+                        <>
+                          {order.items[0].title}
+                          {order.items.length > 1 && ` + ${order.items.length - 1} more`}
+                        </>
+                      )}
+                      <span style={{margin: '0 var(--museo-space-2)'}}>•</span>
+                      Qty: {order.items?.reduce((sum, item) => sum + item.quantity, 0) || 1} × ₱{order.items?.[0]?.priceAtPurchase?.toLocaleString() || '0'}
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--museo-space-3)',
+                      fontSize: 'var(--museo-text-sm)',
+                      color: 'var(--museo-text-muted)'
+                    }}>
+                      <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
                         {new Date(order.paidAt || order.createdAt).toLocaleDateString()}
                       </span>
+                      {order.trackingNumber && (
+                        <>
+                          <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="1" y="3" width="15" height="13"/>
+                              <path d="M16 8h5l3 3v5h-2"/>
+                              <circle cx="5.5" cy="18.5" r="2.5"/>
+                              <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                            Tracking: {order.trackingNumber}
+                          </span>
+                          {order.status === 'delivered' && (
+                            <span style={{color: 'var(--museo-success)', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                              </svg>
+                              Completed
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
-                    <div className="order-total">₱{order.totalAmount.toLocaleString()}</div>
                   </div>
 
-                  <div className="order-items">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="order-item">
-                        <img 
-                          src={item.image || 'https://via.placeholder.com/60'} 
-                          alt={item.title}
-                        />
-                        <div className="item-details">
-                          <div className="item-title">{item.title}</div>
-                          <div className="item-info">
-                            Qty: {item.quantity} × ₱{item.priceAtPurchase.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {order.trackingNumber && (
-                    <div className="tracking-info">
-                      <strong>Tracking:</strong> {order.trackingNumber}
-                    </div>
-                  )}
-
-                  <div className="order-actions">
+                  {/* Order Actions */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--museo-space-2)',
+                    justifyContent: 'center',
+                    minWidth: '150px'
+                  }}>
                     {(order.status === 'pending' && order.paymentStatus === 'paid') && (
                       <>
                         <button 
-                          className="btn btn-secondary btn-sm"
+                          className="btn btn-secondary"
+                          style={{
+                            padding: 'var(--museo-space-2) var(--museo-space-3)',
+                            fontSize: 'var(--museo-text-sm)'
+                          }}
                           onClick={() => handleMarkAsProcessing(order)}
                         >
                           Mark as Processing
                         </button>
                         <button 
-                          className="btn btn-primary btn-sm"
+                          className="btn btn-primary"
+                          style={{
+                            padding: 'var(--museo-space-2) var(--museo-space-3)',
+                            fontSize: 'var(--museo-text-sm)',
+                            background: 'var(--museo-primary)',
+                            color: 'var(--museo-white)',
+                            border: 'none'
+                          }}
                           onClick={() => handleMarkAsShipped(order)}
                         >
                           Mark as Shipped
@@ -799,14 +1273,30 @@ export default function SellerDashboard() {
                     )}
                     {order.status === 'processing' && (
                       <button 
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-primary"
+                        style={{
+                          padding: 'var(--museo-space-2) var(--museo-space-3)',
+                          fontSize: 'var(--museo-text-sm)',
+                          background: 'var(--museo-primary)',
+                          color: 'var(--museo-white)',
+                          border: 'none'
+                        }}
                         onClick={() => handleMarkAsShipped(order)}
                       >
                         Mark as Shipped
                       </button>
                     )}
                     {order.status === 'shipped' && (
-                      <button className="btn btn-outline btn-sm" disabled>
+                      <button 
+                        className="btn btn-ghost"
+                        style={{
+                          padding: 'var(--museo-space-2) var(--museo-space-3)',
+                          fontSize: 'var(--museo-text-sm)',
+                          opacity: 0.6,
+                          cursor: 'not-allowed'
+                        }}
+                        disabled
+                      >
                         Waiting for Delivery
                       </button>
                     )}
@@ -828,28 +1318,91 @@ export default function SellerDashboard() {
 
         {/* Payouts Tab */}
         {activeTab === 'payouts' && (
-          <div className="payouts-section">
-            <div className="section-header">
-              <h2>💰 Payouts & Earnings</h2>
-              <p>Manage your earnings and withdraw funds</p>
+          <div>
+            <div style={{
+              marginBottom: 'var(--museo-space-6)'
+            }}>
+              <h2 className="museo-heading" style={{
+                fontSize: 'var(--museo-text-2xl)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--museo-space-2)'
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Payouts & Earnings
+              </h2>
+              <p style={{
+                color: 'var(--museo-text-secondary)',
+                marginTop: 'var(--museo-space-2)'
+              }}>Manage your earnings and withdraw funds</p>
             </div>
 
             {/* Balance Card */}
-            <div className="payout-balance-card">
-              <div className="balance-info">
-                <h3>Available Balance</h3>
-                <p className="balance-amount">₱{payoutBalance.available.toLocaleString()}</p>
+            <div style={{
+              background: 'var(--museo-white)',
+              borderRadius: 'var(--museo-radius-lg)',
+              padding: 'var(--museo-space-6)',
+              marginBottom: 'var(--museo-space-4)',
+              border: '1px solid var(--museo-border)',
+              boxShadow: 'var(--museo-shadow-sm)'
+            }}>
+              <div>
+                <h3 className="museo-heading" style={{
+                  fontSize: 'var(--museo-text-lg)',
+                  marginBottom: 'var(--museo-space-3)'
+                }}>Available Balance</h3>
+                <p style={{
+                  fontSize: 'var(--museo-text-3xl)',
+                  fontWeight: 'var(--museo-font-bold)',
+                  color: 'var(--museo-primary)',
+                  margin: 'var(--museo-space-2) 0'
+                }}>₱{payoutBalance.available.toLocaleString()}</p>
                 {payoutBalance.pending > 0 && (
-                  <p className="pending-amount">
-                    ⏳ Pending (Escrow): ₱{payoutBalance.pending.toLocaleString()}
+                  <p style={{
+                    fontSize: 'var(--museo-text-sm)',
+                    color: 'var(--museo-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--museo-space-1)',
+                    marginBottom: 'var(--museo-space-2)'
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    Pending (Escrow): ₱{payoutBalance.pending.toLocaleString()}
                   </p>
                 )}
-                <small>Minimum withdrawal: ₱{payoutBalance.minimumPayout}</small>
+                <small style={{
+                  display: 'block',
+                  color: 'var(--museo-text-secondary)',
+                  marginTop: 'var(--museo-space-2)'
+                }}>Minimum withdrawal: ₱{payoutBalance.minimumPayout}</small>
                 {!paymentMethod.method && (
-                  <small className="text-warning">⚠️ Set up payment method first</small>
+                  <small style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--museo-space-1)',
+                    color: 'var(--museo-warning)',
+                    marginTop: 'var(--museo-space-2)'
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Set up payment method first
+                  </small>
                 )}
               </div>
-              <div className="balance-actions">
+              <div style={{
+                marginTop: 'var(--museo-space-4)',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
                 {payoutBalance.canWithdraw && paymentMethod.method ? (
                   <button 
                     className="btn btn-primary btn-lg"
@@ -870,12 +1423,12 @@ export default function SellerDashboard() {
                         const result = await response.json();
                         
                         if (result.success) {
-                          alert(`✅ ${result.message}\n\nAmount: ₱${result.data.amount}\nReference: ${result.data.reference}\nMethod: ${result.data.paymentMethod}`);
+                          alert(`${result.message}\n\nAmount: ₱${result.data.amount}\nReference: ${result.data.reference}\nMethod: ${result.data.paymentMethod}`);
                           // Refresh balances
                           fetchPayoutBalance();
                           fetchStats();
                         } else {
-                          alert(`❌ ${result.error}`);
+                          alert(`Error: ${result.error}`);
                         }
                       } catch (error) {
                         alert('Error processing withdrawal: ' + error.message);
@@ -897,47 +1450,181 @@ export default function SellerDashboard() {
             </div>
 
             {/* Earnings Breakdown */}
-            <div className="earnings-breakdown">
-              <h3>Earnings Breakdown</h3>
-              <div className="breakdown-grid">
-                <div className="breakdown-item">
-                  <span className="breakdown-label">Gross Sales</span>
-                  <span className="breakdown-value">₱{stats.earnings.gross.toLocaleString()}</span>
+            <div style={{
+              background: 'var(--museo-white)',
+              borderRadius: 'var(--museo-radius-lg)',
+              padding: 'var(--museo-space-4)',
+              marginBottom: 'var(--museo-space-4)',
+              border: '1px solid var(--museo-border)'
+            }}>
+              <h3 className="museo-heading" style={{
+                fontSize: 'var(--museo-text-lg)',
+                marginBottom: 'var(--museo-space-3)'
+              }}>Earnings Breakdown</h3>
+              <div style={{
+                display: 'grid',
+                gap: 'var(--museo-space-3)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 'var(--museo-space-2) 0'
+                }}>
+                  <span style={{color: 'var(--museo-text-secondary)'}}>Gross Sales</span>
+                  <span style={{
+                    fontWeight: 'var(--museo-font-semibold)',
+                    color: 'var(--museo-text-primary)'
+                  }}>₱{stats.earnings.gross.toLocaleString()}</span>
                 </div>
-                <div className="breakdown-item">
-                  <span className="breakdown-label">Platform Fee (4%)</span>
-                  <span className="breakdown-value text-red">-₱{stats.earnings.platformFee.toLocaleString()}</span>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 'var(--museo-space-2) 0'
+                }}>
+                  <span style={{color: 'var(--museo-text-secondary)'}}>Platform Fee (4%)</span>
+                  <span style={{
+                    fontWeight: 'var(--museo-font-semibold)',
+                    color: 'var(--museo-error)'
+                  }}>-₱{stats.earnings.platformFee.toLocaleString()}</span>
                 </div>
-                <div className="breakdown-item total">
-                  <span className="breakdown-label">Net Earnings</span>
-                  <span className="breakdown-value">₱{stats.earnings.net.toLocaleString()}</span>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: 'var(--museo-space-2) 0',
+                  borderTop: '2px solid var(--museo-border)',
+                  paddingTop: 'var(--museo-space-3)'
+                }}>
+                  <span style={{
+                    fontWeight: 'var(--museo-font-semibold)',
+                    color: 'var(--museo-text-primary)'
+                  }}>Net Earnings</span>
+                  <span style={{
+                    fontWeight: 'var(--museo-font-bold)',
+                    fontSize: 'var(--museo-text-lg)',
+                    color: 'var(--museo-primary)'
+                  }}>₱{stats.earnings.net.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
             {/* Payout Info */}
-            <div className="payout-info-section">
-              <h3>How Payouts Work</h3>
-              <div className="info-grid">
-                <div className="info-card">
-                  <div className="info-icon">⏰</div>
-                  <h4>24-Hour Escrow</h4>
-                  <p>Funds are held for 24 hours after delivery for buyer protection</p>
+            <div style={{
+              background: 'var(--museo-white)',
+              borderRadius: 'var(--museo-radius-lg)',
+              padding: 'var(--museo-space-4)',
+              border: '1px solid var(--museo-border)'
+            }}>
+              <h3 className="museo-heading" style={{
+                fontSize: 'var(--museo-text-lg)',
+                marginBottom: 'var(--museo-space-3)'
+              }}>How Payouts Work</h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: 'var(--museo-space-3)'
+              }}>
+                <div style={{
+                  padding: 'var(--museo-space-3)',
+                  background: 'var(--museo-bg-secondary)',
+                  borderRadius: 'var(--museo-radius-md)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    marginBottom: 'var(--museo-space-2)',
+                    color: 'var(--museo-primary)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </div>
+                  <h4 style={{
+                    fontSize: 'var(--museo-text-base)',
+                    fontWeight: 'var(--museo-font-semibold)',
+                    marginBottom: 'var(--museo-space-1)'
+                  }}>24-Hour Escrow</h4>
+                  <p style={{
+                    fontSize: 'var(--museo-text-sm)',
+                    color: 'var(--museo-text-secondary)'
+                  }}>Funds are held for 24 hours after delivery for buyer protection</p>
                 </div>
-                <div className="info-card">
-                  <div className="info-icon">💳</div>
-                  <h4>GCash Payout</h4>
-                  <p>Receive money directly to your GCash account</p>
+                <div style={{
+                  padding: 'var(--museo-space-3)',
+                  background: 'var(--museo-bg-secondary)',
+                  borderRadius: 'var(--museo-radius-md)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    marginBottom: 'var(--museo-space-2)',
+                    color: 'var(--museo-primary)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                  </div>
+                  <h4 style={{
+                    fontSize: 'var(--museo-text-base)',
+                    fontWeight: 'var(--museo-font-semibold)',
+                    marginBottom: 'var(--museo-space-1)'
+                  }}>GCash Payout</h4>
+                  <p style={{
+                    fontSize: 'var(--museo-text-sm)',
+                    color: 'var(--museo-text-secondary)'
+                  }}>Receive money directly to your GCash account</p>
                 </div>
-                <div className="info-card">
-                  <div className="info-icon">📊</div>
-                  <h4>4% Platform Fee</h4>
-                  <p>Low fees to help artists earn more</p>
+                <div style={{
+                  padding: 'var(--museo-space-3)',
+                  background: 'var(--museo-bg-secondary)',
+                  borderRadius: 'var(--museo-radius-md)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    marginBottom: 'var(--museo-space-2)',
+                    color: 'var(--museo-primary)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="20" x2="18" y2="10"/>
+                      <line x1="12" y1="20" x2="12" y2="4"/>
+                      <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                  </div>
+                  <h4 style={{
+                    fontSize: 'var(--museo-text-base)',
+                    fontWeight: 'var(--museo-font-semibold)',
+                    marginBottom: 'var(--museo-space-1)'
+                  }}>4% Platform Fee</h4>
+                  <p style={{
+                    fontSize: 'var(--museo-text-sm)',
+                    color: 'var(--museo-text-secondary)'
+                  }}>Low fees to help artists earn more</p>
                 </div>
-                <div className="info-card">
-                  <div className="info-icon">⚡</div>
-                  <h4>Fast Processing</h4>
-                  <p>Withdrawals processed within minutes</p>
+                <div style={{
+                  padding: 'var(--museo-space-3)',
+                  background: 'var(--museo-bg-secondary)',
+                  borderRadius: 'var(--museo-radius-md)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    marginBottom: 'var(--museo-space-2)',
+                    color: 'var(--museo-primary)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                  </div>
+                  <h4 style={{
+                    fontSize: 'var(--museo-text-base)',
+                    fontWeight: 'var(--museo-font-semibold)',
+                    marginBottom: 'var(--museo-space-1)'
+                  }}>Fast Processing</h4>
+                  <p style={{
+                    fontSize: 'var(--museo-text-sm)',
+                    color: 'var(--museo-text-secondary)'
+                  }}>Withdrawals processed within minutes</p>
                 </div>
               </div>
             </div>
@@ -946,13 +1633,41 @@ export default function SellerDashboard() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="settings-section">
-            <div className="section-header">
-              <h2>Payment Settings</h2>
-              <p>Configure how you receive payouts</p>
+          <div>
+            <div style={{
+              marginBottom: 'var(--museo-space-4)'
+            }}>
+              <h2 className="museo-heading" style={{
+                fontSize: 'var(--museo-text-2xl)'
+              }}>Payment Settings</h2>
+              <p style={{
+                color: 'var(--museo-text-secondary)',
+                marginTop: 'var(--museo-space-1)'
+              }}>Configure how you receive payouts</p>
             </div>
-            <div className="empty-state">
-              <p>Payment settings coming soon</p>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'var(--museo-space-8)',
+              background: 'var(--museo-white)',
+              borderRadius: 'var(--museo-radius-lg)',
+              textAlign: 'center',
+              border: '1px solid var(--museo-border)'
+            }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{
+                color: 'var(--museo-text-muted)',
+                marginBottom: 'var(--museo-space-3)'
+              }}>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              <p style={{
+                fontSize: 'var(--museo-text-lg)',
+                color: 'var(--museo-text-secondary)'
+              }}>Payment settings coming soon</p>
             </div>
           </div>
         )}
@@ -989,7 +1704,12 @@ export default function SellerDashboard() {
               </div>
 
               <div className="tracking-tips">
-                <h4>📦 Shipping Tips:</h4>
+                <h4>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{verticalAlign: 'middle', marginRight: '6px'}}>
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  </svg>
+                  Shipping Tips:
+                </h4>
                 <ul>
                   <li>Pack items securely to prevent damage</li>
                   <li>Include invoice and packing slip</li>
@@ -1049,6 +1769,7 @@ export default function SellerDashboard() {
         onConfirm={confirmDeleteProduct}
         onCancel={cancelDelete}
       />
+      </div>
     </div>
   );
 }
