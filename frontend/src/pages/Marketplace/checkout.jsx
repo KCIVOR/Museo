@@ -236,7 +236,14 @@ export default function Checkout() {
       navigate('/marketplace/myorders');
     } catch (error) {
       console.error('Error starting payment:', error);
-      alert(error.message || 'Failed to start payment. Please try again.');
+      
+      // Specific handling for seller purchasing their own item
+      if (error.message?.includes('Sellers cannot purchase their own items') ||
+          error.message?.includes('cannot purchase their own')) {
+        setError('As a seller, you cannot purchase your own listed items.');
+      } else {
+        setError(error.message || 'Failed to start payment. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
     }

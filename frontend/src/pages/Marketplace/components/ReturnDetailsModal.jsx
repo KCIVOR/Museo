@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions, MuseoModalSection } from '../../../components/MuseoModal.jsx';
+import FullscreenImageViewer from '../../../components/FullscreenImageViewer';
 import '../../../styles/components/inputs.css';
 import '../../Marketplace/css/returns.css';
 
@@ -13,6 +14,10 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
   const [adminNotes, setAdminNotes] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [receivedCondition, setReceivedCondition] = useState('');
+  
+  // Fullscreen image viewer state
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (!open || !returnId) return;
@@ -142,11 +147,12 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
   );
 
   return (
-    <MuseoModal open={open} onClose={onClose} title="Return Details" size="lg">
-      <MuseoModalBody>
-        {loading ? (
-          <div>Loading...</div>
-        ) : data ? (
+    <>
+      <MuseoModal open={open} onClose={onClose} title="Return Details" size="lg">
+        <MuseoModalBody>
+          {loading ? (
+            <div>Loading...</div>
+          ) : data ? (
           <>
             <MuseoModalSection>
               <div className="museo-form-group">
@@ -168,32 +174,121 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
                 <div className="museo-label">Description</div>
                 <div>{data.description || '—'}</div>
               </div>
+              
+              {/* Evidence Images Section */}
+              {data.evidenceImages && data.evidenceImages.length > 0 && (
+                <div className="museo-form-group">
+                  <div className="museo-label">Evidence Images</div>
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '8px'}}>
+                    {data.evidenceImages.map((imageUrl, index) => (
+                      <div 
+                        key={index}
+                        style={{
+                          width: '120px',
+                          height: '120px',
+                          borderRadius: 'var(--museo-radius-sm)',
+                          overflow: 'hidden',
+                          border: '1px solid var(--museo-border)',
+                          position: 'relative'
+                        }}
+                      >
+                        <img 
+                          src={imageUrl} 
+                          alt={`Evidence ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setCurrentImageIndex(index);
+                            setShowFullscreen(true);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </MuseoModalSection>
 
             {/* Conversation */}
             <MuseoModalSection>
               <div className="museo-form-group">
-                <div className="museo-label">Conversation</div>
-                <div className="returns-messages">
-                  {(data.messages || []).map((m) => (
-                    <div key={m.messageId} className="returns-message">
-                      <div className="returns-message__meta">
-                        <span>{new Date(m.createdAt).toLocaleString()}</span>
-                        {m.isAdmin && <span className="museo-badge museo-badge--info">Admin</span>}
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 500, color: '#4b5563', marginBottom: '1rem' }}>Conversation</h3>
+                <div className="returns-messages" style={{ 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  marginBottom: '1rem',
+                  minHeight: '100px'
+                }}>
+                  {(data.messages || []).map((m) => {
+                    // Determine the sender name based on senderId
+                    let senderName = 'User';
+                    if (m.isAdmin) {
+                      senderName = 'Admin';
+                    } else if (m.senderId === data.buyerId) {
+                      senderName = data.buyer?.username || 'Buyer';
+                    } else if (data.sellerProfile && m.senderId === data.sellerProfile.userId) {
+                      senderName = data.sellerProfile?.shopName || 'Seller';
+                    }
+                    
+                    return (
+                      <div key={m.messageId} className="returns-message" style={{ marginBottom: '1rem' }}>
+                        <div className="returns-message__meta" style={{ 
+                          fontSize: '0.875rem', 
+                          color: '#6b7280', 
+                          marginBottom: '0.25rem', 
+                          display: 'flex',
+                          gap: '0.5rem'
+                        }}>
+                          <span>{new Date(m.createdAt).toLocaleString()}</span>
+                          <span style={{ 
+                            color: m.isAdmin ? '#9c7c3c' : '#4b5563', 
+                            fontWeight: 500 
+                          }}>
+                            {senderName}
+                          </span>
+                          {m.isAdmin && <span className="museo-badge museo-badge--info" style={{ marginLeft: '0.25rem' }}>Admin</span>}
+                        </div>
+                        <div className="returns-message__text" style={{ color: '#374151' }}>{m.message}</div>
                       </div>
-                      <div className="returns-message__text">{m.message}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!data.messages || data.messages.length === 0) && (
-                    <div className="museo-form-helper">No messages yet.</div>
+                    <div style={{ 
+                      padding: '1.5rem 0', 
+                      textAlign: 'center',
+                      color: '#9ca3af',
+                      fontStyle: 'italic'
+                    }}>No messages yet.</div>
                   )}
                 </div>
               </div>
 
               <div className="museo-form-group">
-                <textarea className="museo-textarea" placeholder="Write a message" value={message} onChange={(e)=>setMessage(e.target.value)} />
-                <div style={{display:'flex', justifyContent:'flex-end', marginTop: 8}}>
-                  <button className="btn btn-secondary btn-sm" onClick={sendMessage} disabled={actionLoading || !message.trim()}>Send</button>
+                <textarea 
+                  className="museo-textarea" 
+                  placeholder="Write a message" 
+                  value={message} 
+                  onChange={(e)=>setMessage(e.target.value)}
+                  style={{ 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    minHeight: '80px'
+                  }} 
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    onClick={sendMessage} 
+                    disabled={actionLoading || !message.trim()}
+                  >
+                    Send
+                  </button>
                 </div>
               </div>
             </MuseoModalSection>
@@ -206,8 +301,8 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
                   <textarea className="museo-textarea" value={sellerResponse} onChange={(e)=>setSellerResponse(e.target.value)} />
                 </div>
                 <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                  <button className="btn btn-danger" onClick={reject} disabled={actionLoading}>Reject</button>
-                  <button className="btn btn-success" onClick={approve} disabled={actionLoading}>Approve</button>
+                  <button className="btn btn-danger btn-sm" onClick={reject} disabled={actionLoading}>Reject</button>
+                  <button className="btn btn-success btn-sm" onClick={approve} disabled={actionLoading}>Approve</button>
                 </div>
               </MuseoModalSection>
             )}
@@ -216,7 +311,7 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
             {role === 'buyer' && data.status === 'rejected' && !data.resolvedAt && (
               <MuseoModalSection>
                 <div style={{display:'flex', justifyContent:'flex-end'}}>
-                  <button className="btn btn-primary" onClick={dispute} disabled={actionLoading}>Dispute Decision</button>
+                  <button className="btn btn-primary btn-sm" onClick={dispute} disabled={actionLoading}>Dispute Decision</button>
                 </div>
               </MuseoModalSection>
             )}
@@ -274,7 +369,7 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
 
                 <div style={{display:'flex', justifyContent:'flex-end', marginTop: '16px'}}>
                   <button 
-                    className="btn btn-primary" 
+                    className="btn btn-primary btn-sm" 
                     onClick={markShipped} 
                     disabled={actionLoading}
                   >
@@ -324,7 +419,7 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
                 
                 <div style={{display:'flex', justifyContent:'flex-end', marginTop: '16px'}}>
                   <button 
-                    className="btn btn-success" 
+                    className="btn btn-success btn-sm" 
                     onClick={markReceived} 
                     disabled={actionLoading}
                   >
@@ -366,8 +461,8 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
                   <small className="museo-form-helper">This will be recorded and visible to both buyer and seller.</small>
                 </div>
                 <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                  <button className="btn btn-danger" onClick={()=>resolveAs('reject')} disabled={actionLoading || !adminNotes.trim()}>Resolve as Reject</button>
-                  <button className="btn btn-success" onClick={()=>resolveAs('approve')} disabled={actionLoading || !adminNotes.trim()}>Resolve as Approve</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>resolveAs('reject')} disabled={actionLoading || !adminNotes.trim()}>Resolve as Reject</button>
+                  <button className="btn btn-success btn-sm" onClick={()=>resolveAs('approve')} disabled={actionLoading || !adminNotes.trim()}>Resolve as Approve</button>
                 </div>
               </MuseoModalSection>
             )}
@@ -379,8 +474,21 @@ export default function ReturnDetailsModal({ open, onClose, returnId, role = 'bu
         )}
       </MuseoModalBody>
       <MuseoModalActions>
-        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
       </MuseoModalActions>
-    </MuseoModal>
+      </MuseoModal>
+
+      {/* Fullscreen Image Viewer */}
+      {data && (
+        <FullscreenImageViewer
+          isOpen={showFullscreen}
+          onClose={() => setShowFullscreen(false)}
+          images={data.evidenceImages || []}
+          currentIndex={currentImageIndex}
+          onIndexChange={setCurrentImageIndex}
+          alt="Evidence Image"
+        />
+      )}
+    </>
   );
 }

@@ -1148,6 +1148,27 @@ export const buyNowOrder = async (req, res) => {
       return res.status(400).json({ success: false, error: `Only ${item.quantity} items available` });
     }
 
+    // Check if buyer is trying to buy their own item
+    if (item.userId === userId) {
+      return res.status(403).json({ success: false, error: 'Sellers cannot purchase their own items' });
+    }
+    
+    // Additional check using seller profile - check if the user has any seller profile that matches the item's seller profile
+    const { data: userSellerProfiles, error: sellerProfilesError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId);
+      
+    if (!sellerProfilesError && userSellerProfiles && userSellerProfiles.length > 0) {
+      const hasMatchingSellerProfile = userSellerProfiles.some(profile => 
+        profile.sellerProfileId === item.sellerProfileId
+      );
+      
+      if (hasMatchingSellerProfile) {
+        return res.status(403).json({ success: false, error: 'Sellers cannot purchase their own items' });
+      }
+    }
+
     const shipping = parseFloat(shippingFee) > 0 ? parseFloat(shippingFee) : 0;
     const subtotal = item.price * qty;
     const totalAmount = subtotal + shipping;
@@ -1776,10 +1797,62 @@ export const getOrderDetails = async (req, res) => {
         error: 'You do not have permission to view this order' 
       });
     }
+    
+    // Get marketplace item details for images and additional info
+    const itemIds = [...new Set(items.map(item => item.marketplaceItemId))];
+    let marketplaceItems = [];
+    
+    if (itemIds.length > 0) {
+      const { data: marketData, error: marketError } = await db
+        .from('marketplace_items')
+        .select('marketItemId, title, primary_image, images')
+        .in('marketItemId', itemIds);
+        
+      if (marketError) {
+        console.error('Error fetching marketplace items:', marketError);
+      } else {
+        marketplaceItems = marketData || [];
+      }
+    }
+    
+    // Create a map for quick lookup
+    const itemsMap = new Map(marketplaceItems.map(i => [i.marketItemId, i]));
+    
+    // Enhance items with images and ensure data integrity
+    const enhancedItems = items.map(item => {
+      const marketItem = itemsMap.get(item.marketplaceItemId);
+      // Ensure all price fields are proper numbers
+      const price = parseFloat(item.priceAtPurchase) || 0;
+      const quantity = parseInt(item.quantity) || 1;
+      
+      return {
+        ...item,
+        price: price,
+        quantity: quantity,
+        itemImage: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
+        itemTitle: marketItem?.title || item.title || "Product",
+        total: price * quantity
+      };
+    });
+
+    // Format shipping address if it's JSONB
+    let formattedShippingAddress = order.shippingAddress;
+    if (typeof formattedShippingAddress === 'string') {
+      try {
+        formattedShippingAddress = JSON.parse(formattedShippingAddress);
+      } catch (e) {
+        console.error('Error parsing shipping address:', e);
+        formattedShippingAddress = {};
+      }
+    }
+    
+    // Ensure totalAmount is a proper number
+    const totalAmount = parseFloat(order.totalAmount) || 0;
+    const paymentFee = parseFloat(order.paymentFee) || 0;
 
     // Group items by seller profile
     const itemsBySeller = {};
-    items.forEach(item => {
+    enhancedItems.forEach(item => {
       if (!itemsBySeller[item.sellerProfileId]) {
         itemsBySeller[item.sellerProfileId] = [];
       }
@@ -1790,9 +1863,12 @@ export const getOrderDetails = async (req, res) => {
       success: true, 
       data: {
         ...order,
-        items: items,
+        totalAmount: totalAmount,
+        paymentFee: paymentFee,
+        shippingAddress: formattedShippingAddress,
+        items: enhancedItems,
         itemsBySeller: itemsBySeller,
-        itemCount: items.length,
+        itemCount: enhancedItems.length,
         sellerCount: Object.keys(itemsBySeller).length
       }
     });

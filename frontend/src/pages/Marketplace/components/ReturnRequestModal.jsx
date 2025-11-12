@@ -59,8 +59,8 @@ export default function ReturnRequestModal({ open, onClose, order, onSubmitted }
         </MuseoModalSection>
       </MuseoModalBody>
       <MuseoModalActions>
-        <button className="btn btn-ghost" onClick={onClose} disabled={submitting}>Cancel</button>
-        <button className="btn btn-primary" onClick={submit} disabled={!isDelivered || submitting || !description.trim()}>
+        <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={submitting}>Cancel</button>
+        <button className="btn btn-primary btn-sm" onClick={submit} disabled={!isDelivered || submitting || !description.trim()}>
           {submitting ? 'Submitting...' : 'Submit Return'}
         </button>
       </MuseoModalActions>

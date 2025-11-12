@@ -1,8 +1,7 @@
 
 .returns-panel {
   background: var(--museo-white);
-  border: 1px solid var(--museo-border);
-  border-radius: var(--museo-radius-lg);
+  border: none;
   padding: var(--museo-space-4);
 }
 

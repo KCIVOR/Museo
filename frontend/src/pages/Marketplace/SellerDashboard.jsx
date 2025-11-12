@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
+import MuseoModal, { MuseoModalBody, MuseoModalActions, MuseoModalSection } from '../../components/MuseoModal.jsx';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
 import ConfirmModal from '../Shared/ConfirmModal';
@@ -453,7 +454,7 @@ export default function SellerDashboard() {
               <option value="monthly">Monthly</option>
             </select>
             <button 
-              className="btn-ghost btn-icon"
+              className="btn btn-ghost btn-sm"
               onClick={handleAddProduct}
             >
               +
@@ -770,7 +771,7 @@ export default function SellerDashboard() {
             gap: 'var(--museo-space-3)'
           }}>
             <button 
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-sm"
               style={{
                 padding: 'var(--museo-space-4)',
                 display: 'flex',
@@ -791,7 +792,7 @@ export default function SellerDashboard() {
               <span>Manage Products</span>
             </button>
             <button 
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-sm"
               style={{
                 padding: 'var(--museo-space-4)',
                 display: 'flex',
@@ -813,7 +814,7 @@ export default function SellerDashboard() {
               <span>View Orders</span>
             </button>
             <button 
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-sm"
               style={{
                 padding: 'var(--museo-space-4)',
                 display: 'flex',
@@ -835,7 +836,7 @@ export default function SellerDashboard() {
               <span>Sales Report</span>
             </button>
             <button 
-              className="btn btn-ghost"
+              className="btn btn-ghost btn-sm"
               style={{
                 padding: 'var(--museo-space-4)',
                 display: 'flex',
@@ -936,7 +937,7 @@ export default function SellerDashboard() {
                     <td>
                       <div className="action-buttons">
                         <button 
-                          className="btn btn-ghost"
+                          className="btn btn-ghost btn-sm"
                           style={{
                             padding: 'var(--museo-space-1)',
                             minWidth: 'auto'
@@ -947,7 +948,7 @@ export default function SellerDashboard() {
                           <ViewIcon size={18} />
                         </button>
                         <button 
-                          className="btn btn-ghost"
+                          className="btn btn-ghost btn-sm"
                           style={{
                             padding: 'var(--museo-space-1)',
                             minWidth: 'auto'
@@ -958,7 +959,7 @@ export default function SellerDashboard() {
                           <EditIcon size={18} />
                         </button>
                         <button 
-                          className="btn btn-ghost"
+                          className="btn btn-ghost btn-sm"
                           style={{
                             padding: 'var(--museo-space-1)',
                             minWidth: 'auto',
@@ -994,14 +995,7 @@ export default function SellerDashboard() {
                   marginBottom: 'var(--museo-space-4)'
                 }}>No products listed yet</p>
                 <button 
-                  className="btn btn-primary"
-                  style={{
-                    padding: 'var(--museo-space-2) var(--museo-space-4)',
-                    background: 'var(--museo-primary)',
-                    color: 'var(--museo-white)',
-                    border: 'none',
-                    borderRadius: 'var(--museo-radius-md)'
-                  }}
+                  className="btn btn-primary btn-sm"
                   onClick={handleAddProduct}
                 >
                   Add Your First Product
@@ -1223,24 +1217,13 @@ export default function SellerDashboard() {
                     {(order.status === 'pending' && order.paymentStatus === 'paid') && (
                       <>
                         <button 
-                          className="btn btn-secondary"
-                          style={{
-                            padding: 'var(--museo-space-2) var(--museo-space-3)',
-                            fontSize: 'var(--museo-text-sm)'
-                          }}
+                          className="btn btn-secondary btn-sm"
                           onClick={() => handleMarkAsProcessing(order)}
                         >
                           Mark as Processing
                         </button>
                         <button 
-                          className="btn btn-primary"
-                          style={{
-                            padding: 'var(--museo-space-2) var(--museo-space-3)',
-                            fontSize: 'var(--museo-text-sm)',
-                            background: 'var(--museo-primary)',
-                            color: 'var(--museo-white)',
-                            border: 'none'
-                          }}
+                          className="btn btn-primary btn-sm"
                           onClick={() => handleMarkAsShipped(order)}
                         >
                           Mark as Shipped
@@ -1249,14 +1232,7 @@ export default function SellerDashboard() {
                     )}
                     {order.status === 'processing' && (
                       <button 
-                        className="btn btn-primary"
-                        style={{
-                          padding: 'var(--museo-space-2) var(--museo-space-3)',
-                          fontSize: 'var(--museo-text-sm)',
-                          background: 'var(--museo-primary)',
-                          color: 'var(--museo-white)',
-                          border: 'none'
-                        }}
+                        className="btn btn-primary btn-sm"
                         onClick={() => handleMarkAsShipped(order)}
                       >
                         Mark as Shipped
@@ -1264,10 +1240,8 @@ export default function SellerDashboard() {
                     )}
                     {order.status === 'shipped' && (
                       <button 
-                        className="btn btn-ghost"
+                        className="btn btn-ghost btn-sm"
                         style={{
-                          padding: 'var(--museo-space-2) var(--museo-space-3)',
-                          fontSize: 'var(--museo-text-sm)',
                           opacity: 0.6,
                           cursor: 'not-allowed'
                         }}
@@ -1388,7 +1362,7 @@ export default function SellerDashboard() {
               }}>
                 {payoutBalance.canWithdraw && paymentMethod.method ? (
                   <button 
-                    className="btn btn-primary btn-lg"
+                    className="btn btn-primary btn-sm"
                     onClick={async () => {
                       const paymentMethodName = paymentMethod.method === 'gcash' ? 
                         `GCash (${paymentMethod.gcashNumber})` : 
@@ -1421,11 +1395,11 @@ export default function SellerDashboard() {
                     Withdraw Funds
                   </button>
                 ) : !paymentMethod.method ? (
-                  <button className="btn btn-secondary btn-lg" disabled>
+                  <button className="btn btn-secondary btn-sm" disabled>
                     Set Up Payment Method First
                   </button>
                 ) : (
-                  <button className="btn btn-secondary btn-lg" disabled>
+                  <button className="btn btn-secondary btn-sm" disabled>
                     Minimum ₱{payoutBalance.minimumPayout} Required
                   </button>
                 )}
@@ -1657,69 +1631,70 @@ export default function SellerDashboard() {
       </div>
 
       {/* Modals */}
-      {shippingModal && selectedOrder && (
-        <div className="modal-overlay" onClick={() => setShippingModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Add Tracking Information</h2>
-              <button className="modal-close" onClick={() => setShippingModal(false)}>×</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="order-summary">
-                <p><strong>Order ID:</strong> #{selectedOrder.orderId.slice(0, 8)}</p>
-                <p><strong>Total:</strong> ₱{selectedOrder.totalAmount.toLocaleString()}</p>
-                <p><strong>Items:</strong> {selectedOrder.items?.length || 0}</p>
+      <MuseoModal 
+        open={shippingModal && !!selectedOrder}
+        onClose={() => setShippingModal(false)}
+        title="Add Tracking Information"
+        size="md"
+      >
+        <MuseoModalBody>
+          <MuseoModalSection>
+            <div className="museo-form-group">
+              <div style={{marginBottom: 'var(--museo-space-4)'}}>
+                <div className="museo-label">Order Summary</div>
+                <div className="museo-card museo-card--compact" style={{padding: 'var(--museo-space-3)'}}>                
+                  <p style={{marginBottom: 'var(--museo-space-1)'}}><strong>Order ID:</strong> #{selectedOrder?.orderId.slice(0, 8)}</p>
+                  <p style={{marginBottom: 'var(--museo-space-1)'}}><strong>Total:</strong> ₱{selectedOrder?.totalAmount.toLocaleString()}</p>
+                  <p style={{margin: 0}}><strong>Items:</strong> {selectedOrder?.items?.length || 0}</p>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Tracking Number</label>
-                <input 
-                  type="text"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Enter tracking number (e.g., 420612345678)"
-                  className="form-control"
-                />
-                <small className="form-hint">
-                  Enter the tracking number provided by your courier service
-                </small>
-              </div>
-
-              <div className="tracking-tips">
-                <h4>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{verticalAlign: 'middle', marginRight: '6px'}}>
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  </svg>
-                  Shipping Tips:
-                </h4>
-                <ul>
-                  <li>Pack items securely to prevent damage</li>
-                  <li>Include invoice and packing slip</li>
-                  <li>Use tracking service for valuable items</li>
-                  <li>Update buyer with tracking information</li>
-                </ul>
+              <label className="museo-label">Tracking Number</label>
+              <input 
+                type="text"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Enter tracking number (e.g., 420612345678)"
+                className="museo-input"
+              />
+              <div className="museo-form-helper">
+                Enter the tracking number provided by your courier service
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setShippingModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary"
-                onClick={submitTracking}
-                disabled={!trackingNumber.trim()}
-              >
-                Confirm Shipment
-              </button>
+            <div className="museo-notice museo-notice--info" style={{marginTop: 'var(--museo-space-4)'}}>              
+              <div style={{marginBottom: 'var(--museo-space-2)', fontWeight: 'var(--museo-font-medium)'}}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{verticalAlign: 'middle', marginRight: '6px'}}>
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+                Shipping Tips
+              </div>
+              <ul style={{paddingLeft: 'var(--museo-space-5)', margin: '0'}}>
+                <li>Pack items securely to prevent damage</li>
+                <li>Include invoice and packing slip</li>
+                <li>Use tracking service for valuable items</li>
+                <li>Update buyer with tracking information</li>
+              </ul>
             </div>
-          </div>
-        </div>
-      )}
+          </MuseoModalSection>
+        </MuseoModalBody>
+        
+        <MuseoModalActions>
+          <button 
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShippingModal(false)}
+          >
+            Cancel
+          </button>
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={submitTracking}
+            disabled={!trackingNumber.trim()}
+          >
+            Confirm Shipment
+          </button>
+        </MuseoModalActions>
+      </MuseoModal>
 
       
       {/* Add Product Modal */}

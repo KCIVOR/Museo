@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReturnRequestModal from './components/ReturnRequestModal.jsx';
 import ReturnDetailsModal from './components/ReturnDetailsModal.jsx';
+import OrderDetailsModal from './components/OrderDetailsModal.jsx';
 import { getBuyerReturns } from '../../api/returns.js';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/main.css';
@@ -329,6 +330,11 @@ export default function MyOrders() {
   };
 
   const formatPrice = (price) => {
+    // Handle undefined, null, NaN, or non-numeric values
+    if (price === undefined || price === null || isNaN(price) || typeof price !== 'number') {
+      return '₱0.00';
+    }
+    
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP'
@@ -635,187 +641,19 @@ export default function MyOrders() {
       </div>
 
       {/* Order Details Modal */}
-      {showDetailsModal && selectedOrder && (
-        <div className="museo-modal-overlay" onClick={() => setShowDetailsModal(false)}>
-          <div className="museo-modal museo-modal--lg" onClick={(e) => e.stopPropagation()}>
-            <div className="museo-modal__header">
-              <h2 className="museo-modal__title">Order Details</h2>
-              <button 
-                className="museo-modal__close"
-                onClick={() => setShowDetailsModal(false)}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            <div className="museo-modal__body">
-              {/* Order Info */}
-              <div className="order-details-section">
-                <h3 className="section-title">Order Information</h3>
-                <div className="order-details-grid">
-                  <div className="detail-item">
-                    <span className="detail-label">Order ID:</span>
-                    <span className="detail-value">{selectedOrder.orderId}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Status:</span>
-                    <span className="detail-value">{getStatusBadge(selectedOrder)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Order Date:</span>
-                    <span className="detail-value">{formatDate(selectedOrder.createdAt)}</span>
-                  </div>
-                  {selectedOrder.paidAt && (
-                    <div className="detail-item">
-                      <span className="detail-label">Paid At:</span>
-                      <span className="detail-value">{formatDate(selectedOrder.paidAt)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Items */}
-              <div className="order-details-section">
-                <h3 className="section-title">Order Items</h3>
-                <div className="order-items-list">
-                  {selectedOrder.items?.map((item, index) => (
-                    <div key={index} className="order-item">
-                      <img 
-                        src={item.itemImage || '/assets/default-art.jpg'} 
-                        alt={item.itemTitle}
-                        className="order-item__image"
-                      />
-                      <div className="order-item__details">
-                        <h4>{item.itemTitle}</h4>
-                        <p>Quantity: {item.quantity}</p>
-                        <p className="order-item__price">{formatPrice(item.price)} each</p>
-                      </div>
-                      <div className="order-item__total">
-                        {formatPrice(item.price * item.quantity)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Shipping Address */}
-              {selectedOrder.shippingAddress && (
-                <div className="order-details-section">
-                  <h3 className="section-title">Shipping Address</h3>
-                  <div className="shipping-details">
-                    <p><strong>{selectedOrder.shippingAddress.fullName}</strong></p>
-                    <p>{selectedOrder.shippingAddress.phone}</p>
-                    <p>{selectedOrder.shippingAddress.street}</p>
-                    <p>{selectedOrder.shippingAddress.barangay}, {selectedOrder.shippingAddress.city}</p>
-                    <p>{selectedOrder.shippingAddress.province} {selectedOrder.shippingAddress.postalCode}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Tracking Information */}
-              {selectedOrder.trackingNumber && (
-                <div className="order-details-section">
-                  <h3 className="section-title">Tracking Information</h3>
-                  <div className="tracking-details">
-                    <div className="tracking-number-box">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="1" y="3" width="15" height="13"/>
-                        <path d="M16 8h5l3 3v5h-2"/>
-                        <circle cx="5.5" cy="18.5" r="2.5"/>
-                        <circle cx="18.5" cy="18.5" r="2.5"/>
-                      </svg>
-                      <div>
-                        <p className="tracking-label">Tracking Number</p>
-                        <p className="tracking-number">{selectedOrder.trackingNumber}</p>
-                      </div>
-                    </div>
-                    {selectedOrder.shippedAt && (
-                      <p className="tracking-date">
-                        Shipped on: {formatDate(selectedOrder.shippedAt)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Summary */}
-              <div className="order-details-section">
-                <h3 className="section-title">Payment Summary</h3>
-                <div className="payment-summary">
-                  <div className="summary-row">
-                    <span>Subtotal:</span>
-                    <span>{formatPrice(selectedOrder.totalAmount)}</span>
-                  </div>
-                  {selectedOrder.paymentFee > 0 && (
-                    <div className="summary-row">
-                      <span>Payment Fee:</span>
-                      <span>{formatPrice(selectedOrder.paymentFee)}</span>
-                    </div>
-                  )}
-                  <div className="summary-row summary-total">
-                    <span>Total:</span>
-                    <span>{formatPrice(selectedOrder.totalAmount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="museo-modal__footer">
-              <button 
-                className="btn-secondary"
-                onClick={() => setShowDetailsModal(false)}
-              >
-                Close
-              </button>
-              
-              {selectedOrder.paymentStatus === 'pending' && selectedOrder.status !== 'cancelled' && (
-                <button 
-                  className="btn-danger"
-                  onClick={() => handleCancelOrder(selectedOrder.orderId)}
-                >
-                  Cancel Order
-                </button>
-              )}
-              
-              {selectedOrder.status === 'shipped' && (
-                <button 
-                  className="btn-success"
-                  onClick={() => handleMarkAsDelivered(selectedOrder.orderId)}
-                >
-                  Mark as Received
-                </button>
-              )}
-
-              {/* Returns within details modal */}
-              {selectedOrder.status === 'delivered' && (
-                (() => {
-                  const existing = getReturnByOrder(selectedOrder.orderId);
-                  if (existing) {
-                    return (
-                      <button 
-                        className="btn-primary"
-                        onClick={() => { setShowDetailsModal(false); openReturnDetails(existing.returnId); }}
-                      >
-                        View Return
-                      </button>
-                    );
-                  }
-                  return (
-                    <button 
-                      className="btn-primary"
-                      onClick={() => { setShowDetailsModal(false); openReturnModal(selectedOrder); }}
-                    >
-                      Request Return
-                    </button>
-                  );
-                })()
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        order={selectedOrder}
+        onCancelOrder={handleCancelOrder}
+        onMarkAsDelivered={handleMarkAsDelivered}
+        getReturnByOrder={getReturnByOrder}
+        openReturnDetails={openReturnDetails}
+        openReturnModal={openReturnModal}
+        getStatusBadge={getStatusBadge}
+        formatDate={formatDate}
+        formatPrice={formatPrice}
+      />
 
       {/* Return Request Modal */}
       {showReturnModal && returnModalOrder && (
