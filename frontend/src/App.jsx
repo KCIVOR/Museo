@@ -24,8 +24,8 @@ import Search from "./pages/Shared/Search";
 import VisitMuseo from "./pages/Shared/VisitMuseo";
 import ManagePage from "./pages/Shared/ManagePage";
 import Register from "./pages/Auth/Register";
-import Checkout from "./pages/Marketplace/checkout"
 import SellerDashboard from "./pages/Marketplace/SellerDashboard"
+import Checkout from "./pages/Marketplace/checkout"
 import MyOrders from "./pages/Marketplace/MyOrders"
 import Settings from "./pages/Settings/Settings"
 

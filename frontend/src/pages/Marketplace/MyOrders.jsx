@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import ReturnRequestModal from './components/ReturnRequestModal.jsx';
+import ReturnDetailsModal from './components/ReturnDetailsModal.jsx';
+import { getBuyerReturns } from '../../api/returns.js';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/main.css';
 import './css/myorders.css';
@@ -11,13 +14,30 @@ export default function MyOrders() {
   
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all'); // all, pending, paid, shipped, delivered, cancelled
+  const [activeTab, setActiveTab] = useState('all'); // all, pending, paid, shipped, delivered, cancelled, refunded
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [buyerReturns, setBuyerReturns] = useState([]);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnModalOrder, setReturnModalOrder] = useState(null);
+  const [showReturnDetails, setShowReturnDetails] = useState(false);
+  const [selectedReturnId, setSelectedReturnId] = useState(null);
 
   // Fetch orders when component mounts
   useEffect(() => {
     fetchOrders();
+  }, []);
+
+  useEffect(() => {
+    // Load buyer returns for quick mapping
+    (async () => {
+      try {
+        const res = await getBuyerReturns();
+        setBuyerReturns(res.data || []);
+      } catch (e) {
+        console.warn('Failed to load buyer returns');
+      }
+    })();
   }, []);
 
   const fetchOrders = async () => {
@@ -39,6 +59,18 @@ export default function MyOrders() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getReturnByOrder = (orderId) => buyerReturns.find(r => r.orderId === orderId);
+  const openReturnModal = (order) => { setReturnModalOrder(order); setShowReturnModal(true); };
+  const openReturnDetails = (returnId) => { setSelectedReturnId(returnId); setShowReturnDetails(true); };
+  const onReturnSubmitted = async () => {
+    // Refresh returns and orders
+    try {
+      const res = await getBuyerReturns();
+      setBuyerReturns(res.data || []);
+    } catch {}
+    fetchOrders();
   };
 
   const handleViewDetails = async (orderId) => {
@@ -198,6 +230,10 @@ export default function MyOrders() {
       return orders.filter(order => order.status === 'cancelled');
     }
     
+    if (activeTab === 'refunded') {
+      return orders.filter(order => order.status === 'returned' || order.returnStatus === 'approved' || order.returnStatus === 'refunded');
+    }
+    
     return orders;
   };
 
@@ -211,6 +247,18 @@ export default function MyOrders() {
             <line x1="9" y1="9" x2="15" y2="15"/>
           </svg>
           Cancelled
+        </span>
+      );
+    }
+    
+    if (order.status === 'returned' || order.returnStatus === 'approved' || order.returnStatus === 'refunded') {
+      return (
+        <span className="museo-badge museo-badge--info museo-badge--interactive">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 14l-5-5 5-5"/>
+            <path d="M20 20v-7a4 4 0 0 0-4-4H5"/>
+          </svg>
+          Refunded
         </span>
       );
     }
@@ -364,6 +412,13 @@ export default function MyOrders() {
           >
             Cancelled
             <span className="museo-tab__badge">{orders.filter(o => o.status === 'cancelled').length}</span>
+          </button>
+          <button 
+            className={`museo-tab ${activeTab === 'refunded' ? 'museo-tab--active' : ''}`}
+            onClick={() => setActiveTab('refunded')}
+          >
+            Refunded
+            <span className="museo-tab__badge">{orders.filter(o => o.status === 'returned' || o.returnStatus === 'approved' || o.returnStatus === 'refunded').length}</span>
           </button>
         </div>
 
@@ -546,6 +601,30 @@ export default function MyOrders() {
                           Mark as Received
                         </button>
                       )}
+
+                      {order.status === 'delivered' && (
+                        (() => {
+                          const existing = getReturnByOrder(order.orderId);
+                          if (existing) {
+                            return (
+                              <button 
+                                className="btn btn-secondary btn-sm" 
+                                onClick={() => openReturnDetails(existing.returnId)}
+                              >
+                                View Return
+                              </button>
+                            );
+                          }
+                          return (
+                            <button 
+                              className="btn btn-primary btn-sm" 
+                              onClick={() => openReturnModal(order)}
+                            >
+                              Request Return
+                            </button>
+                          );
+                        })()
+                      )}
                     </div>
                   </div>
                 </div>
@@ -708,9 +787,54 @@ export default function MyOrders() {
                   Mark as Received
                 </button>
               )}
+
+              {/* Returns within details modal */}
+              {selectedOrder.status === 'delivered' && (
+                (() => {
+                  const existing = getReturnByOrder(selectedOrder.orderId);
+                  if (existing) {
+                    return (
+                      <button 
+                        className="btn-primary"
+                        onClick={() => { setShowDetailsModal(false); openReturnDetails(existing.returnId); }}
+                      >
+                        View Return
+                      </button>
+                    );
+                  }
+                  return (
+                    <button 
+                      className="btn-primary"
+                      onClick={() => { setShowDetailsModal(false); openReturnModal(selectedOrder); }}
+                    >
+                      Request Return
+                    </button>
+                  );
+                })()
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Return Request Modal */}
+      {showReturnModal && returnModalOrder && (
+        <ReturnRequestModal 
+          open={showReturnModal}
+          onClose={() => setShowReturnModal(false)}
+          order={returnModalOrder}
+          onSubmitted={onReturnSubmitted}
+        />
+      )}
+
+      {/* Return Details Modal */}
+      {showReturnDetails && selectedReturnId && (
+        <ReturnDetailsModal 
+          open={showReturnDetails}
+          onClose={() => { setShowReturnDetails(false); setSelectedReturnId(null); onReturnSubmitted(); }}
+          returnId={selectedReturnId}
+          role="buyer"
+        />
       )}
     </div>
   );

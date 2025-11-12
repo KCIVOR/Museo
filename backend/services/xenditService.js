@@ -51,7 +51,7 @@ export const createPaymentLink = async ({ amount, description, metadata = {} }) 
       
       // Success redirect (optional)
       success_redirect_url: metadata.successUrl || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/marketplace/myorders`,
-      failure_redirect_url: metadata.failureUrl || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/marketplace/cart`,
+      failure_redirect_url: metadata.failureUrl || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/marketplace`,
       
       // Payment methods to enable
       payment_methods: [
@@ -343,6 +343,109 @@ export const verifyWebhookSignature = (webhookData, signature) => {
 };
 
 /**
+ * Create a refund for a payment
+ * @param {Object} params - Refund parameters
+ * @param {string} params.paymentIntentId - Original payment/invoice ID
+ * @param {number} params.amount - Amount to refund
+ * @param {string} params.reason - Reason for refund
+ * @returns {Promise<Object>} Refund data
+ */
+export const createRefund = async ({ paymentIntentId, amount, reason }) => {
+  try {
+    console.log('🔄 Creating Xendit refund:', {
+      paymentIntentId,
+      amount,
+      reason
+    });
+
+    // Xendit refund API endpoint
+    const response = await fetch(`${XENDIT_API_URL}/refunds`, {
+      method: 'POST',
+      headers: {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        invoice_id: paymentIntentId,
+        amount: amount,
+        reason: reason || 'Return approved'
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Xendit Refund Error:', {
+        status: response.status,
+        error: data
+      });
+      
+      // Handle specific errors
+      if (data.error_code === 'INVOICE_NOT_FOUND') {
+        throw new Error('Payment not found. Cannot process refund.');
+      } else if (data.error_code === 'REFUND_AMOUNT_INVALID') {
+        throw new Error('Invalid refund amount.');
+      } else {
+        throw new Error(data.message || 'Failed to create refund');
+      }
+    }
+
+    console.log('✅ Xendit refund created:', {
+      refundId: data.id,
+      amount: data.amount,
+      status: data.status
+    });
+
+    return {
+      success: true,
+      id: data.id,
+      amount: data.amount,
+      status: data.status,
+      data: data
+    };
+
+  } catch (error) {
+    console.error('Error creating Xendit refund:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get refund status
+ * @param {string} refundId - Refund ID
+ * @returns {Promise<Object>} Refund status
+ */
+export const getRefundStatus = async (refundId) => {
+  try {
+    const response = await fetch(`${XENDIT_API_URL}/refunds/${refundId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Xendit API Error:', data);
+      throw new Error(data.message || 'Failed to get refund status');
+    }
+
+    return {
+      success: true,
+      status: data.status,
+      amount: data.amount,
+      data: data
+    };
+
+  } catch (error) {
+    console.error('Error getting refund status:', error);
+    throw error;
+  }
+};
+
+/**
  * Helper: Convert pesos to centavos (if needed)
  * Note: Xendit uses regular currency amounts, not centavos
  */
@@ -360,6 +463,8 @@ export default {
   cancelPaymentLink,
   processPaymentSuccess,
   verifyWebhookSignature,
+  createRefund,
+  getRefundStatus,
   toCentavos,
   toPesos
 };

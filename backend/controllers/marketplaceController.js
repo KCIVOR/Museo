@@ -1094,980 +1094,186 @@ export const deleteMarketplaceItem = async (req, res) => {
 };
 
 // ========================================
-// PHASE 1: CART SYSTEM
-// ========================================
-
-// 1. Get user's cart
-export const getCart = async (req, res) => {
-  try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-
-    // Get cart items with marketplace item details and seller profiles
-    const { data: cartItems, error } = await db
-      .from('cart_items')
-      .select(`
-        *,
-        marketplace_items (
-          marketItemId,
-          title,
-          description,
-          price,
-          images,
-          medium,
-          dimensions,
-          is_original,
-          quantity,
-          status,
-          userId,
-          sellerProfileId,
-          sellerProfiles (
-            sellerProfileId,
-            shopName,
-            city,
-            province
-          )
-        )
-      `)
-      .eq('userId', userId)
-      .order('added_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching cart:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
-    }
-
-    // Filter out items where marketplace_item is null (deleted items)
-    const validCartItems = cartItems.filter(item => item.marketplace_items !== null);
-
-    // Calculate total
-    const total = validCartItems.reduce((sum, item) => {
-      return sum + (item.marketplace_items.price * item.quantity);
-    }, 0);
-
-    res.json({ 
-      success: true, 
-      data: {
-        items: validCartItems,
-        total: total,
-        itemCount: validCartItems.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Error in getCart:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-};
-
-// 2. Add item to cart
-export const addToCart = async (req, res) => {
-  try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-
-    const { marketplace_item_id, quantity = 1 } = req.body;
-
-    // Check required fields
-    if (!marketplace_item_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Marketplace item ID is required' 
-      });
-    }
-
-    // Check quantity
-    const qty = parseInt(quantity);
-    if (qty < 1 || qty > 100) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Quantity must be between 1 and 100' 
-      });
-    }
-
-    // Check if item exists and is available
-    const { data: item, error: itemError } = await db
-      .from('marketplace_items')
-      .select('marketItemId, quantity, status, userId')
-      .eq('marketItemId', marketplace_item_id)
-      .single();
-
-    if (itemError || !item) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Item not found' 
-      });
-    }
-
-    if (item.status !== 'active') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Item is not available for purchase' 
-      });
-    }
-
-    // Check if user is trying to buy their own item
-    if (item.userId === userId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'You cannot add your own items to cart' 
-      });
-    }
-
-    // Check stock availability
-    if (quantity > item.quantity) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Only ${item.quantity} items available in stock` 
-      });
-    }
-    // Check if item already in cart
-    const { data: existingCartItem, error: checkError } = await db
-      .from('cart_items')
-      .select('*')
-      .eq('userId', userId)
-      .eq('marketItemId', marketplace_item_id)
-      .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 results
-
-    // Only return error if it's NOT a "no rows" error
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking cart:', checkError);
-      return res.status(500).json({ 
-        success: false, 
-        error: checkError.message 
-      });
-    }
-
-    if (existingCartItem) {
-      // Update existing cart item quantity
-      const newQuantity = existingCartItem.quantity + quantity;
-
-      // Check if new quantity exceeds stock
-      if (newQuantity > item.quantity) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Cannot add ${quantity} more. Only ${item.quantity - existingCartItem.quantity} items available` 
-        });
-      }
-
-      const { data: updatedItem, error: updateError } = await db
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('cartItemId', existingCartItem.cartItemId)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating cart:', updateError);
-        return res.status(500).json({ 
-          success: false, 
-          error: updateError.message 
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Cart updated',
-        data: updatedItem
-      });
-    }
-
-    // Add new item to cart
-    const { data: newCartItem, error: insertError } = await db
-      .from('cart_items')
-      .insert([{
-        userId: userId,
-        marketItemId: marketplace_item_id,
-        quantity: quantity
-      }])
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Error adding to cart:', insertError);
-      return res.status(500).json({ 
-        success: false, 
-        error: insertError.message 
-      });
-    }
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Item added to cart',
-      data: newCartItem
-    });
-
-  } catch (error) {
-    console.error('Error in addToCart:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-};
-
-// 3. Update cart item quantity
-export const updateCartQuantity = async (req, res) => {
-  try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-    const { itemId } = req.params;
-    const { quantity } = req.body;
-    
-    // Check quantity
-    const qty = parseInt(quantity);
-    if (qty < 1 || qty > 100) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Quantity must be between 1 and 100' 
-      });
-    }
-
-    // Get cart item
-    const { data: cartItem, error: cartError } = await db
-      .from('cart_items')
-      .select('*, marketplace_items(quantity, status)')
-      .eq('cartItemId', itemId)
-      .eq('userId', userId)
-      .single();
-
-    if (cartError || !cartItem) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Cart item not found' 
-      });
-    }
-
-    // Check if marketplace item still available
-    if (cartItem.marketplace_items.status !== 'active') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Item is no longer available' 
-      });
-    }
-
-    // Check stock
-    if (qty > cartItem.marketplace_items.quantity) {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Only ${cartItem.marketplace_items.quantity} items available` 
-      });
-    }
-
-    // Update quantity
-    const { data: updatedItem, error: updateError } = await db
-      .from('cart_items')
-      .update({ quantity: qty })
-      .eq('cartItemId', itemId)
-      .eq('userId', userId)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating quantity:', updateError);
-      return res.status(500).json({ 
-        success: false, 
-        error: updateError.message 
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Quantity updated',
-      data: updatedItem
-    });
-
-  } catch (error) {
-    console.error('Error in updateCartQuantity:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-};
-
-// 4. Remove item from cart
-export const removeFromCart = async (req, res) => {
-  try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-    const { itemId } = req.params;
-
-    // Delete cart item
-    const { error } = await db
-      .from('cart_items')
-      .delete()
-      .eq('cartItemId', itemId)
-      .eq('userId', userId);
-
-    if (error) {
-      console.error('Error removing from cart:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'Item removed from cart' 
-    });
-
-  } catch (error) {
-    console.error('Error in removeFromCart:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-};
-
-// 5. Clear entire cart
-export const clearCart = async (req, res) => {
-  try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-
-    // Delete all cart items for user
-    const { error } = await db
-      .from('cart_items')
-      .delete()
-      .eq('userId', userId);
-
-    if (error) {
-      console.error('Error clearing cart:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'Cart cleared' 
-    });
-
-  } catch (error) {
-    console.error('Error in clearCart:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
-  }
-};
-
-// ========================================
 // PHASE 2: ORDERS & CHECKOUT
 // ========================================
 
-// 1. Create order from cart
-export const createOrder = async (req, res) => {
+// Buy Now (single item, single seller)
+export const buyNowOrder = async (req, res) => {
   try {
-    // Check authentication
+    // Auth
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
+      return res.status(401).json({ success: false, error: 'Authentication required' });
     }
     const userId = req.user.id;
 
-    const { shipping_address, contact_info, payment_method } = req.body;
-
-    // Check required fields
-    if (!shipping_address || !contact_info || !payment_method) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Shipping address, contact info, and payment method are required' 
-      });
-    }
-
-    // Check shipping address - be flexible with field names
-    if (!shipping_address) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Shipping address is required' 
-      });
-    }
+    const { 
+      marketItemId, 
+      quantity = 1, 
+      shippingFee,
+      shippingMethod,
+      orderNotes,
+      shippingAddress,
+      contactInfo
+    } = req.body || {};
     
-    // Check for required address fields (flexible field names)
-    const addressErrors = [];
-    if (!shipping_address.street && !shipping_address.addressLine1 && !shipping_address.address) {
-      addressErrors.push('Street address is required');
+    if (!marketItemId) {
+      return res.status(400).json({ success: false, error: 'marketItemId is required' });
     }
-    if (!shipping_address.city && !shipping_address.cityMunicipalityName) {
-      addressErrors.push('City is required');
-    }
-    if (!shipping_address.province && !shipping_address.provinceName) {
-      addressErrors.push('Province is required');
-    }
-    if (!shipping_address.postal_code && !shipping_address.postalCode) {
-      addressErrors.push('Postal code is required');
-    }
-    
-    if (addressErrors.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Shipping address: ${addressErrors.join(', ')}`
-      });
+    const qty = parseInt(quantity) || 1;
+    if (qty < 1 || qty > 100) {
+      return res.status(400).json({ success: false, error: 'Quantity must be between 1 and 100' });
     }
 
-    // Check contact info
-    const contactErrors = [];
-    if (!contact_info.name || contact_info.name.trim().length < 2) {
-      contactErrors.push('Contact name must be at least 2 characters');
-    }
-    const emailValidation = validateEmail(contact_info.email);
-    if (!emailValidation.valid) {
-      contactErrors.push(`Contact ${emailValidation.error}`);
-    }
-    const phoneValidation = validatePhone(contact_info.phone);
-    if (!phoneValidation.valid) {
-      contactErrors.push(`Contact ${phoneValidation.error}`);
-    }
-    
-    if (contactErrors.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: contactErrors.join(', ')
-      });
+    // Fetch item and seller status
+    const { data: item, error: itemError } = await db
+      .from('marketplace_items')
+      .select(`
+        marketItemId, title, price, quantity, status, is_available, sellerProfileId, userId,
+        sellerProfiles ( sellerProfileId, isActive, isSuspended, shopName )
+      `)
+      .eq('marketItemId', marketItemId)
+      .single();
+
+    if (itemError || !item) {
+      return res.status(404).json({ success: false, error: 'Item not found' });
     }
 
-    // Check payment method
-    const validPaymentMethods = ['xendit', 'credit_card', 'debit_card', 'gcash', 'paymaya', 'bank_transfer', 'cod'];
-    if (!validPaymentMethods.includes(payment_method)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Invalid payment method. Valid methods: ${validPaymentMethods.join(', ')}`
-      });
+    if (item.status !== 'active' || !item.is_available) {
+      return res.status(400).json({ success: false, error: 'Item is no longer available' });
+    }
+    if (!item.sellerProfiles?.isActive || item.sellerProfiles?.isSuspended) {
+      return res.status(400).json({ success: false, error: 'Seller is inactive or suspended' });
+    }
+    if (item.quantity < qty) {
+      return res.status(400).json({ success: false, error: `Only ${item.quantity} items available` });
     }
 
-    // ===== PREVENT DUPLICATE ORDERS & RATE LIMITING =====
-    // Check if user already has a pending order (created in last 5 minutes)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    
-    const { data: existingPendingOrder, error: checkError } = await db
+    const shipping = parseFloat(shippingFee) > 0 ? parseFloat(shippingFee) : 0;
+    const subtotal = item.price * qty;
+    const totalAmount = subtotal + shipping;
+    // Platform fee (matches payout service rate of 4%)
+    const PLATFORM_FEE_RATE = 0.04;
+    const platformFee = parseFloat((totalAmount * PLATFORM_FEE_RATE).toFixed(2));
+    // orderNumber column is not present in DB; skipping generation
+
+    // Create order
+    const now = new Date().toISOString();
+    const newOrderRow = {
+      userId,
+      sellerProfileId: item.sellerProfileId,
+      status: 'pending',
+      paymentStatus: 'pending',
+      subtotal: subtotal,
+      platformFee: platformFee,
+      shippingCost: shipping,
+      totalAmount: totalAmount,
+      shippingMethod: shippingMethod || 'standard', // DB column name per schema screenshot
+      orderNotes: orderNotes || 'None',
+      shippingAddress: shippingAddress || {},
+      contactInfo: contactInfo || {},
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const { data: order, error: orderError } = await db
       .from('orders')
-      .select('orderId, createdAt, paymentReference')
-      .eq('userId', userId)
-      .eq('paymentStatus', 'pending')
-      .eq('status', 'pending')
-      .gt('createdAt', fiveMinutesAgo)
-      .order('createdAt', { ascending: false })
-      .limit(1)
+      .insert([newOrderRow])
+      .select()
       .single();
     
-    if (existingPendingOrder && !checkError) {
-      // User already has a recent pending order
-      const timeSinceCreation = Math.floor((Date.now() - new Date(existingPendingOrder.createdAt).getTime()) / 1000);
-      
-      return res.status(400).json({
-        success: false,
-        error: `You already have a pending order created ${timeSinceCreation} seconds ago. Please complete or cancel it first.`,
-        data: {
-          existingOrderId: existingPendingOrder.orderId,
-          createdAt: existingPendingOrder.createdAt,
-          paymentReference: existingPendingOrder.paymentReference
-        }
-      });
-    }
-    
-    // Additional rate limiting: Check total orders in last hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data: recentOrders, error: rateCheckError } = await db
-      .from('orders')
-      .select('orderId')
-      .eq('userId', userId)
-      .gt('createdAt', oneHourAgo);
-    
-    if (!rateCheckError && recentOrders && recentOrders.length >= 10) {
-      return res.status(429).json({
-        success: false,
-        error: 'Too many orders. Please wait before creating more orders.',
-        retryAfter: '1 hour',
-        orderCount: recentOrders.length
-      });
+    if (orderError || !order) {
+      return res.status(500).json({ success: false, error: orderError?.message || 'Failed to create order' });
     }
 
-    // Get cart items with seller profiles
-    const { data: cartItems, error: cartError } = await db
-      .from('cart_items')
-      .select(`
-        *,
-        marketplace_items (
-          marketItemId,
-          title,
-          price,
-          quantity,
-          status,
-          userId,
-          sellerProfileId,
-          sellerProfiles (
-            sellerProfileId,
-            shopName,
-            isActive,
-            isSuspended
-          )
-        )
-      `)
-      .eq('userId', userId);
-
-    if (cartError) {
-      console.error('Error fetching cart:', cartError);
-      return res.status(500).json({ 
-        success: false, 
-        error: cartError.message 
-      });
-    }
-
-    if (!cartItems || cartItems.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cart is empty' 
-      });
-    }
-
-    // ===== INVENTORY LOCKING: Validate and prepare inventory updates =====
-    const inventoryUpdates = [];
-    
-    for (const item of cartItems) {
-      if (!item.marketplace_items) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'One or more items no longer exist' 
-        });
-      }
-
-      // Check if seller is active
-      if (!item.marketplace_items.sellerProfiles || 
-          !item.marketplace_items.sellerProfiles.isActive || 
-          item.marketplace_items.sellerProfiles.isSuspended) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Seller for "${item.marketplace_items.title}" is no longer active` 
-        });
-      }
-
-      if (item.marketplace_items.status !== 'active') {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Item "${item.marketplace_items.title}" is no longer available` 
-        });
-      }
-
-      // CRITICAL: Re-fetch current inventory to prevent race conditions
-      const { data: currentItem, error: fetchError } = await db
-        .from('marketplace_items')
-        .select('marketItemId, title, quantity')
-        .eq('marketItemId', item.marketplace_items.marketItemId)
-        .single();
-      
-      if (fetchError || !currentItem) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Failed to verify stock for "${item.marketplace_items.title}"` 
-        });
-      }
-      
-      // Check real-time stock availability
-      if (item.quantity > currentItem.quantity) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Not enough stock for "${currentItem.title}". Only ${currentItem.quantity} available` 
-        });
-      }
-      
-      // Prepare inventory update
-      inventoryUpdates.push({
-        marketItemId: currentItem.marketItemId,
-        title: currentItem.title,
-        requestedQty: item.quantity,
-        currentQty: currentItem.quantity,
-        newQty: currentItem.quantity - item.quantity
-      });
-    }
-
-    // ===== NEW: GROUP ITEMS BY SELLER =====
-    const platformFeeRate = 0.04; // 4% platform fee (matches payout service)
-    const itemsBySeller = {};
-    
-    // Group cart items by seller and validate
-    cartItems.forEach(item => {
-      const sellerProfileId = item.marketplace_items.sellerProfileId;
-      const sellerProfile = item.marketplace_items.sellerProfiles;
-      
-      // Validate seller is active
-      if (!sellerProfile?.isActive || sellerProfile?.isSuspended) {
-        throw new Error(`Seller "${sellerProfile?.shopName || 'Unknown'}" is not available. Please remove from cart.`);
-      }
-      
-      if (!itemsBySeller[sellerProfileId]) {
-        itemsBySeller[sellerProfileId] = {
-          sellerProfileId: sellerProfileId,
-          shopName: sellerProfile.shopName,
-          items: [],
-          subtotal: 0
-        };
-      }
-      
-      const itemTotal = item.marketplace_items.price * item.quantity;
-      const marketplaceItemId = item.marketItemId || item.marketplace_items?.marketItemId;
-      
-      itemsBySeller[sellerProfileId].items.push({
+    // Create order item row
+    const { error: oiError } = await db
+      .from('order_items')
+      .insert([{ 
+        orderId: order.orderId, 
+        marketplaceItemId: item.marketItemId, 
+        sellerProfileId: item.sellerProfileId,
         userId: userId,
-        marketplaceItemId: marketplaceItemId,
-        sellerId: item.marketplace_items.userId,
-        sellerProfileId: sellerProfileId,
-        title: item.marketplace_items.title,
-        priceAtPurchase: item.marketplace_items.price,
-        quantity: item.quantity,
-        itemTotal: itemTotal,
-        platformFeeAmount: itemTotal * platformFeeRate,
-        artistEarnings: itemTotal - (itemTotal * platformFeeRate)
-      });
-      
-      itemsBySeller[sellerProfileId].subtotal += itemTotal;
-    });
-
-    // Calculate grand total across all sellers
-    const grandTotal = Object.values(itemsBySeller).reduce((sum, seller) => sum + seller.subtotal, 0);
-    const grandPlatformFee = grandTotal * platformFeeRate;
-    
-    // Generate ONE payment group ID for all orders
-    const { randomUUID } = await import('crypto');
-    const paymentGroupId = randomUUID();
-    
-    console.log(`🛒 Creating ${Object.keys(itemsBySeller).length} orders for payment group ${paymentGroupId}`);
-    
-    // ===== CREATE SEPARATE ORDER FOR EACH SELLER WITH ROLLBACK =====
-    const createdOrders = [];
-    const allOrderItems = [];
-    const rollbackOperations = []; // Track what needs to be rolled back
-    
-    try {
-      for (const [sellerProfileId, sellerData] of Object.entries(itemsBySeller)) {
-      const sellerSubtotal = sellerData.subtotal;
-      const sellerPlatformFee = sellerSubtotal * platformFeeRate;
-      
-      // Create order for this seller
-      const { data: sellerOrder, error: orderError } = await db
-        .from('orders')
-        .insert({
-          userId: userId,
-          sellerProfileId: sellerProfileId, // NEW: Link to seller
-          paymentGroupId: paymentGroupId,   // NEW: Link all orders together
-          subtotal: sellerSubtotal,
-          platformFee: sellerPlatformFee,
-          shippingCost: 0,
-          totalAmount: sellerSubtotal,
-          status: 'pending',
-          paymentStatus: 'pending',
-          shippingAddress: shipping_address,
-          contactInfo: contact_info,
-          paymentMethod: payment_method,
-          paymentProvider: 'xendit'
-        })
-        .select()
-        .single();
-
-        if (orderError) {
-          console.error(`Error creating order for seller ${sellerProfileId}:`, orderError);
-          throw new Error(`Failed to create order: ${orderError.message}`);
-        }
-        
-        // Track this order for rollback if needed
-        rollbackOperations.push({
-          type: 'order',
-          orderId: sellerOrder.orderId
-        });
-      
-      console.log(`✅ Created order ${sellerOrder.orderId} for seller ${sellerData.shopName} (₱${sellerSubtotal})`);
-      
-      // Add orderId to items for this seller
-      const orderItemsForSeller = sellerData.items.map(item => ({
-        ...item,
-        orderId: sellerOrder.orderId
-      }));
-      
-      // Create order_items for this seller
-      const { data: createdItems, error: itemsError } = await db
-        .from('order_items')
-        .insert(orderItemsForSeller)
-        .select();
-
-        if (itemsError) {
-          console.error('Error creating order items:', itemsError);
-          throw new Error(`Failed to create order items: ${itemsError.message}`);
-        }
-        
-        // Track order items for rollback
-        rollbackOperations.push({
-          type: 'order_items',
-          orderItemIds: createdItems.map(item => item.orderItemId)
-        });
-        
-        createdOrders.push({
-          ...sellerOrder,
-          shopName: sellerData.shopName,
-          itemCount: sellerData.items.length
-        });
-        allOrderItems.push(...createdItems);
-      }
-      
-      // ===== RESERVE INVENTORY (reduce quantities) WITH ATOMIC UPDATES =====
-      console.log('📦 Reserving inventory with atomic updates...');
-      for (const update of inventoryUpdates) {
-        // Use atomic update with conditional check
-        // This prevents race conditions by only updating if quantity hasn't changed
-        const { data: updatedItem, error: updateError } = await db
-          .from('marketplace_items')
-          .update({ 
-            quantity: update.newQty,
-            updated_at: new Date().toISOString()
-          })
-          .eq('marketItemId', update.marketItemId)
-          .eq('quantity', update.currentQty) // Only update if quantity matches what we expect
-          .select()
-          .single();
-        
-        if (updateError || !updatedItem) {
-          // Failed to update - someone else might have bought it
-          console.error(`❌ Failed to reserve inventory for ${update.title} - possible race condition`);
-          
-          // Check actual current quantity
-          const { data: currentItem } = await db
-            .from('marketplace_items')
-            .select('quantity')
-            .eq('marketItemId', update.marketItemId)
-            .single();
-          
-          const actualQty = currentItem?.quantity || 0;
-          
-          if (actualQty < update.requestedQty) {
-            throw new Error(`Not enough stock for "${update.title}". Only ${actualQty} available (someone else may have just purchased)`);
-          } else {
-            throw new Error(`Failed to reserve inventory for "${update.title}": ${updateError?.message || 'Unknown error'}`);
-          }
-        }
-        
-        // Mark this update as completed for rollback purposes
-        update.completed = true;
-        
-        console.log(`✅ Reserved inventory atomically: ${update.title} (${update.currentQty} → ${update.newQty})`);
-      }
-      
-      // ===== CLEAR CART AFTER SUCCESSFUL ORDER CREATION =====
-      console.log('🗑️ Clearing user cart...');
-      const { error: clearCartError } = await db
-        .from('cart_items')
-        .delete()
-        .eq('userId', userId);
-      
-      if (clearCartError) {
-        console.error('Error clearing cart:', clearCartError);
-        throw new Error(`Failed to clear cart: ${clearCartError.message}`);
-      }
-      
-      console.log('✅ Cart cleared successfully');
-      
-    } catch (error) {
-      // ===== ROLLBACK ON FAILURE =====
-      console.error('❌ Order creation failed, initiating rollback...', error);
-      
-      // Track which inventory updates were completed
-      const completedInventoryUpdates = inventoryUpdates.filter(update => update.completed);
-      
-      // Restore inventory FIRST (most critical)
-      if (completedInventoryUpdates.length > 0) {
-        console.log(`🔄 Restoring inventory for ${completedInventoryUpdates.length} items...`);
-        for (const update of completedInventoryUpdates) {
-          try {
-            await db
-              .from('marketplace_items')
-              .update({ 
-                quantity: update.currentQty, // Restore original quantity
-                updated_at: new Date().toISOString()
-              })
-              .eq('marketItemId', update.marketItemId);
-            console.log(`✅ Restored inventory: ${update.title} (${update.newQty} → ${update.currentQty})`);
-          } catch (restoreError) {
-            console.error(`❌ Failed to restore inventory for ${update.title}:`, restoreError);
-          }
-        }
-      }
-      
-      // Rollback database operations in reverse order
-      for (const operation of rollbackOperations.reverse()) {
-        try {
-          if (operation.type === 'order_items' && operation.orderItemIds) {
-            await db
-              .from('order_items')
-              .delete()
-              .in('orderItemId', operation.orderItemIds);
-            console.log(`🔄 Rolled back ${operation.orderItemIds.length} order items`);
-          } else if (operation.type === 'order' && operation.orderId) {
-            await db
-              .from('orders')
-              .delete()
-              .eq('orderId', operation.orderId);
-            console.log(`🔄 Rolled back order ${operation.orderId}`);
-          }
-        } catch (rollbackError) {
-          console.error(`❌ Rollback failed for ${operation.type}:`, rollbackError);
-        }
-      }
-      
-      // Restore inventory if it was already reduced
-      for (const update of inventoryUpdates) {
-        try {
-          const { error: restoreError } = await db
-            .from('marketplace_items')
-            .update({ 
-              quantity: update.currentQty,
-              updated_at: new Date().toISOString()
-            })
-            .eq('marketItemId', update.marketItemId);
-          
-          if (restoreError) {
-            console.error(`❌ Failed to restore inventory for ${update.title}:`, restoreError);
-          } else {
-            console.log(`🔄 Restored inventory: ${update.title} (${update.newQty} → ${update.currentQty})`);
-          }
-        } catch (restoreError) {
-          console.error(`❌ Failed to restore inventory:`, restoreError);
-        }
-      }
-      
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message || 'Order creation failed'
-      });
+        sellerId: item.userId,
+        title: item.title,
+        priceAtPurchase: item.price,
+        quantity: qty,
+        itemTotal: parseFloat((item.price * qty).toFixed(2)),
+        platformFeeAmount: parseFloat(((item.price * qty) * PLATFORM_FEE_RATE).toFixed(2)),
+        artistEarnings: parseFloat(((item.price * qty) - ((item.price * qty) * PLATFORM_FEE_RATE)).toFixed(2)),
+        createdAt: now
+      }]);
+    if (oiError) {
+      await db.from('orders').delete().eq('orderId', order.orderId);
+      return res.status(500).json({ success: false, error: oiError.message || 'Failed to create order item' });
     }
-    
-    // Use the first order for payment link (represents the whole payment group)
-    const mainOrder = createdOrders[0];
 
-    // Create Xendit invoice (payment link) for the TOTAL amount
+    // Reduce inventory
+    const newQty = item.quantity - qty;
+    const { error: invError } = await db
+      .from('marketplace_items')
+      .update({ quantity: newQty, is_available: newQty > 0 })
+      .eq('marketItemId', item.marketItemId);
+    if (invError) {
+      await db.from('order_items').delete().eq('orderId', order.orderId);
+      await db.from('orders').delete().eq('orderId', order.orderId);
+      return res.status(500).json({ success: false, error: invError.message || 'Failed to update inventory' });
+    }
+
+    // Create payment link
     let paymentLink;
     try {
-      console.log('📝 Creating Xendit payment link for ₱' + grandTotal);
       paymentLink = await xenditService.createPaymentLink({
-        amount: grandTotal, // Xendit uses regular amount, not centavos
-        description: `Museo Orders (${createdOrders.length} seller${createdOrders.length > 1 ? 's' : ''})`,
-        metadata: {
-          paymentGroupId: paymentGroupId,
-          userId: userId,
-          orderCount: createdOrders.length,
-          orderIds: createdOrders.map(o => o.orderId).join(','),
-          email: contact_info?.email || 'customer@museo.art',
-          customerInfo: {
-            given_names: contact_info?.name?.split(' ')[0] || 'Museo',
-            surname: contact_info?.name?.split(' ')[1] || 'Customer',
-            email: contact_info?.email || 'customer@museo.art',
-            mobile_number: contact_info?.phone || ''
-          }
+        amount: totalAmount,
+        description: `Order ${order.orderId}`,
+        metadata: { 
+          orderId: order.orderId, 
+          userId, 
+          sellerProfileId: item.sellerProfileId, 
+          shippingFee: shipping, 
+          shippingMethod: shippingMethod || 'standard',
+          customerInfo: contactInfo || {}
         }
       });
-      
-      console.log('✅ Xendit payment link created:', {
-        paymentLinkId: paymentLink.paymentLinkId,
-        checkoutUrl: paymentLink.checkoutUrl,
-        referenceNumber: paymentLink.referenceNumber
-      });
-
-      // Update ALL orders with payment link details
-      for (const order of createdOrders) {
-        const { error: updateError } = await db
-          .from('orders')
-          .update({
-            paymentLinkId: paymentLink.paymentLinkId,
-            paymentReference: paymentLink.referenceNumber
-          })
-          .eq('orderId', order.orderId);
-
-        if (updateError) {
-          console.error(`Error updating order ${order.orderId} with payment link:`, updateError);
-        }
-      }
-
-    } catch (paymentError) {
-      console.error('Error creating payment link:', paymentError);
-      // Don't fail the order creation, just log the error
+    } catch (plError) {
+      // Rollback on failure
+      await db
+        .from('marketplace_items')
+        .update({ quantity: item.quantity, is_available: true })
+        .eq('marketItemId', item.marketItemId);
+      await db.from('order_items').delete().eq('orderId', order.orderId);
+      await db.from('orders').delete().eq('orderId', order.orderId);
+      return res.status(502).json({ success: false, error: plError.message || 'Failed to create payment link' });
     }
 
-    // Inventory has been reserved, cart has been cleared
-    console.log('✅ Orders created with inventory reserved and cart cleared');
+    // Update order with payment details
+    await db
+      .from('orders')
+      .update({ 
+        paymentLinkId: paymentLink.paymentLinkId,
+        paymentReference: paymentLink.referenceNumber,
+        paymentProvider: 'xendit',
+        paymentMethodUsed: 'xendit_invoice',
+        updatedAt: new Date().toISOString()
+      })
+      .eq('orderId', order.orderId);
 
-    res.status(201).json({ 
-      success: true, 
-      message: `${createdOrders.length} order${createdOrders.length > 1 ? 's' : ''} created successfully. Please complete payment.`,
+    return res.status(201).json({
+      success: true,
+      message: 'Order created. Redirect to payment.',
       data: {
-        paymentGroupId: paymentGroupId,
-        orders: createdOrders,
-        orderItems: allOrderItems,
-        payment: paymentLink ? {
-          paymentUrl: paymentLink.checkoutUrl,
-          paymentLinkId: paymentLink.paymentLinkId,
-          referenceNumber: paymentLink.referenceNumber,
-          expiresAt: paymentLink.expiresAt
-        } : null,
-        summary: {
-          paymentGroupId: paymentGroupId,
-          orderCount: createdOrders.length,
-          sellerCount: Object.keys(itemsBySeller).length,
-          totalItems: allOrderItems.length,
-          subtotal: grandTotal,
-          platformFee: grandPlatformFee,
-          shippingCost: 0,
-          total: grandTotal
-        }
+        orderId: order.orderId,
+        checkoutUrl: paymentLink.checkoutUrl,
+        referenceNumber: paymentLink.referenceNumber,
+        amount: totalAmount
       }
     });
-
   } catch (error) {
-    console.error('Error in createOrder:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    console.error('Error in buyNowOrder:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to create order' });
   }
 };
+
+// 1. Create order from cart — removed by P2P migration. Use buyNowOrder instead.
 
 // 1.5. Check payment status manually (backup for webhook failures)
 export const checkPaymentStatus = async (req, res) => {
@@ -2332,7 +1538,7 @@ export const getSellerOrders = async (req, res) => {
       });
     }
     const userId = req.user.id;
-    const { status } = req.query; // Optional status filter
+    const { status, filter } = req.query; // Optional status/filter
 
     // Get seller's profile
     const { data: sellerProfile, error: profileError } = await db
@@ -2349,19 +1555,47 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
-    // NEW: Get orders directly for this seller (more efficient)
+    // Base query for stats (ALL paid orders regardless of tab)
+    const baseOrdersQuery = db
+      .from('orders')
+      .select('*')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .eq('paymentStatus', 'paid')
+      .order('createdAt', { ascending: false });
+
+    // Filtered query for the tab data (start from same base)
     let ordersQuery = db
       .from('orders')
       .select('*')
       .eq('sellerProfileId', sellerProfile.sellerProfileId)
-      .eq('paymentStatus', 'paid') // Only show paid orders
+      .eq('paymentStatus', 'paid') // Only show paid orders in listing
       .order('createdAt', { ascending: false });
     
-    // Apply status filter if provided
-    if (status) {
-      ordersQuery = ordersQuery.eq('status', status);
+    // Apply friendly status filters if provided
+    const statusParam = (filter || status || '').toString().toLowerCase();
+    if (statusParam && statusParam !== 'all') {
+      if (statusParam === 'toship' || statusParam === 'to_ship' || statusParam === 'to-ship' || statusParam === 'paid') {
+        ordersQuery = ordersQuery.in('status', ['pending', 'processing']);
+      } else if (statusParam === 'shipping') {
+        ordersQuery = ordersQuery.eq('status', 'shipped');
+      } else if (statusParam === 'completed' || statusParam === 'complete') {
+        ordersQuery = ordersQuery.eq('status', 'delivered');
+      } else if (statusParam === 'cancelled' || statusParam === 'canceled') {
+        ordersQuery = ordersQuery.eq('status', 'cancelled');
+      } else if (['pending', 'processing', 'shipped', 'delivered'].includes(statusParam)) {
+        ordersQuery = ordersQuery.eq('status', statusParam);
+      }
+      // Otherwise: unknown filter, do not apply extra condition
     }
     
+    // Fetch unfiltered list for stats
+    const { data: allOrdersForStats, error: baseOrdersError } = await baseOrdersQuery;
+    if (baseOrdersError) {
+      console.error('Error fetching base orders for stats:', baseOrdersError);
+      return res.status(500).json({ success: false, error: baseOrdersError.message });
+    }
+
+    // Fetch filtered list for current tab
     const { data: allOrders, error: ordersError } = await ordersQuery;
 
     if (ordersError) {
@@ -2372,38 +1606,33 @@ export const getSellerOrders = async (req, res) => {
       });
     }
 
-    if (!allOrders || allOrders.length === 0) {
-      return res.json({ 
-        success: true, 
-        data: [],
-        stats: {
-          totalOrders: 0,
-          toShip: 0,
-          shipping: 0,
-          completed: 0,
-          cancelled: 0
-        },
-        count: 0
-      });
+    // Compute order IDs for filtered result
+    const orderIds = (allOrders || []).map(o => o.orderId);
+    
+    // If no filtered orders, return empty list BUT keep global stats
+    if (!orderIds || orderIds.length === 0) {
+      const stats = {
+        totalOrders: allOrdersForStats.length,
+        toShip: allOrdersForStats.filter(o => ['pending', 'processing'].includes(o.status)).length,
+        shipping: allOrdersForStats.filter(o => o.status === 'shipped').length,
+        completed: allOrdersForStats.filter(o => o.status === 'delivered').length,
+        cancelled: allOrdersForStats.filter(o => o.status === 'cancelled').length
+      };
+      return res.json({ success: true, data: [], stats, count: 0 });
     }
 
-    // Get order items for these orders
-    const orderIds = allOrders.map(order => order.orderId);
+    // Fetch order items for filtered orders
     const { data: orderItems, error: itemsError } = await db
       .from('order_items')
-      .select('*')
-      .in('orderId', orderIds)
-      .eq('sellerProfileId', sellerProfile.sellerProfileId);
+      .select('orderItemId, orderId, marketplaceItemId, title, priceAtPurchase, quantity, sellerProfileId')
+      .in('orderId', orderIds);
 
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      return res.status(500).json({ 
-        success: false, 
-        error: ordersError.message 
-      });
+    if (itemsError) {
+      console.error('Error fetching order items:', itemsError);
+      return res.status(500).json({ success: false, error: itemsError.message });
     }
 
-    // Get marketplace item details
+    // Get marketplace item details for image/metadata
     const itemIds = [...new Set(orderItems.map(item => item.marketplaceItemId))];
     const { data: marketItems } = await db
       .from('marketplace_items')
@@ -2413,11 +1642,8 @@ export const getSellerOrders = async (req, res) => {
     // Create a map for quick lookup
     const itemsMap = new Map(marketItems?.map(i => [i.marketItemId, i]) || []);
 
-    // Filter by status if provided
-    let filteredOrders = allOrders;
-    if (status && status !== 'all') {
-      filteredOrders = allOrders.filter(o => o.status === status);
-    }
+    // Use the DB-filtered result set directly
+    const filteredOrders = allOrders;
 
     // Group items by order for better organization
     const groupedOrdersMap = new Map();
@@ -2464,13 +1690,13 @@ export const getSellerOrders = async (req, res) => {
     // Convert map to array
     const finalOrders = Array.from(groupedOrdersMap.values());
     
-    // Calculate statistics from ALL orders (not filtered)
+    // Calculate statistics from ALL paid orders (unfiltered)
     const stats = {
-      totalOrders: allOrders.length,
-      toShip: allOrders.filter(o => o.status === 'paid' || o.status === 'processing').length,
-      shipping: allOrders.filter(o => o.status === 'shipped').length,
-      completed: allOrders.filter(o => o.status === 'delivered').length,
-      cancelled: allOrders.filter(o => o.status === 'cancelled').length
+      totalOrders: allOrdersForStats.length,
+      toShip: allOrdersForStats.filter(o => ['pending', 'processing'].includes(o.status)).length,
+      shipping: allOrdersForStats.filter(o => o.status === 'shipped').length,
+      completed: allOrdersForStats.filter(o => o.status === 'delivered').length,
+      cancelled: allOrdersForStats.filter(o => o.status === 'cancelled').length
     };
 
     res.json({ 
@@ -3923,7 +3149,7 @@ export const getSellerStats = async (req, res) => {
         if (item.orders.status === 'pending') {
           pendingOrders++;
         }
-        if (item.orders.status === 'processing' || item.orders.status === 'paid') {
+        if (['pending', 'processing'].includes(item.orders.status)) {
           pendingShipments++;
         }
       });

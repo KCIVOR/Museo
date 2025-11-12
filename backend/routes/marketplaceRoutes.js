@@ -10,16 +10,11 @@ import {
   updateMarketplaceItem,
   deleteMarketplaceItem,
   createTestItems,
-  getCart,
-  addToCart,
-  updateCartQuantity,
-  removeFromCart,
-  clearCart,
-  createOrder,
   checkPaymentStatus,
   getBuyerOrders,
   getSellerOrders,
   getOrderDetails,
+  buyNowOrder,
   markOrderAsProcessing,
   markOrderAsShipped,
   markOrderAsDelivered,
@@ -82,31 +77,9 @@ router.put('/items/:id', requirePermission(['artist', 'admin']), upload.array('i
 // Delete marketplace item
 router.delete('/items/:id', requirePermission(['artist', 'admin']), deleteMarketplaceItem);
 
-// ========================================
-// PHASE 1: CART ROUTES
-// ========================================
 
-// Get user's cart
-router.get('/cart', getCart);
-
-// Add item to cart
-router.post('/cart/add', addToCart);
-
-// Update cart item quantity
-router.put('/cart/:itemId', updateCartQuantity);
-
-// Remove item from cart
-router.delete('/cart/:itemId', removeFromCart);
-
-// Clear entire cart
-router.delete('/cart/clear', clearCart);
-
-// ========================================
-// PHASE 2: ORDERS & CHECKOUT
-// ========================================
-
-// Create order from cart
-router.post('/orders/create', createOrder);
+// Buy Now (single item)
+router.post('/orders/buy-now', buyNowOrder);
 
 // Check payment status manually (backup for webhook failures)
 router.get('/orders/:orderId/check-payment', checkPaymentStatus);

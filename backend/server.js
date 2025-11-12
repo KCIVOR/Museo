@@ -18,7 +18,7 @@ import galleryRoutes from "./routes/galleryRoutes.js"
 import visitBookingRoutes from "./routes/visitBookingRoutes.js"
 import marketplaceRoutes from "./routes/marketplaceRoutes.js"
 import payoutRoutes from "./routes/payoutRoutes.js"
-
+import returnRoutes from "./routes/returnRoutes.js"
 import webhookRoutes from "./routes/webhookRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
@@ -97,6 +97,9 @@ app.use("/api/visit-bookings", visitBookingRoutes)
 
 // Marketplace routes
 app.use("/api/marketplace", authMiddleware, marketplaceRoutes)
+
+// Returns routes
+app.use("/api/returns", authMiddleware, returnRoutes)
 
 // Payout routes
 app.use("/api/payouts", authMiddleware, payoutRoutes)

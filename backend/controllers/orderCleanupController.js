@@ -37,10 +37,50 @@ export const cancelExpiredOrders = async () => {
     
     for (const order of expiredOrders) {
       try {
-        // Note: We don't need to restore inventory since we changed the logic
-        // to only reduce inventory AFTER payment confirmation
-        
-        // Update order status to cancelled
+        // Since we reserve inventory on order creation, restore inventory for expired orders
+        const { data: items, error: itemsError } = await db
+          .from('order_items')
+          .select('marketplaceItemId, quantity')
+          .eq('orderId', order.orderId);
+
+        if (itemsError) {
+          console.error(`Error fetching order items for ${order.orderId}:`, itemsError);
+        } else {
+          for (const item of items) {
+            try {
+              const { data: marketItem, error: miError } = await db
+                .from('marketplace_items')
+                .select('quantity')
+                .eq('marketItemId', item.marketplaceItemId)
+                .single();
+
+              if (miError) {
+                console.error(`Error reading marketplace item ${item.marketplaceItemId}:`, miError);
+                continue;
+              }
+
+              const newQty = (marketItem?.quantity || 0) + item.quantity;
+              const { error: updError } = await db
+                .from('marketplace_items')
+                .update({
+                  quantity: newQty,
+                  is_available: newQty > 0,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('marketItemId', item.marketplaceItemId);
+
+              if (updError) {
+                console.error(`Error restoring inventory for ${item.marketplaceItemId}:`, updError);
+              } else {
+                console.log(`📦 Restored ${item.quantity} units to item ${item.marketplaceItemId} (new qty: ${newQty})`);
+              }
+            } catch (invErr) {
+              console.error(`Unexpected error restoring inventory for order ${order.orderId}:`, invErr);
+            }
+          }
+        }
+
+        // Update order status to cancelled/expired
         const { error: updateError } = await db
           .from('orders')
           .update({

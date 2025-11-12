@@ -1,22 +1,24 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import AddressModal from "../../components/AddressModal";
 import "../../styles/main.css";
 import "./css/checkout.css";
 
 const API = import.meta.env.VITE_API_BASE;
+import { buyNow } from "../../api/orders";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData } = useUser();
   
-  // State management
-  const [cartItems, setCartItems] = useState([]);
+  // State management (single-item Buy Now)
+  const [cartItems, setCartItems] = useState([]); // will hold one item for Buy Now
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedShipping, setSelectedShipping] = useState("standard");
   // Payment method removed - Xendit handles this
-  const [orderNotes, setOrderNotes] = useState("");
+  const [orderNotes, setOrderNotes] = useState("None"); // Default to 'None' for NOT NULL constraint
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   
@@ -33,41 +35,28 @@ export default function Checkout() {
   });
   
   const [savedAddresses, setSavedAddresses] = useState([]);
-  
-  // Fetch cart from database
-  const fetchCart = async () => {
+
+  // Load selected Buy Now item (from router state)
+  const fetchSelectedItem = async (marketItemId, quantity) => {
     try {
-      const response = await fetch(`${API}/marketplace/cart`, {
-        credentials: 'include'
-      });
-
+      const response = await fetch(`${API}/marketplace/items/${marketItemId}`, { credentials: 'include' });
       const result = await response.json();
-
-      if (response.ok && result.success) {
-        if (!result.data.items || result.data.items.length === 0) {
-          navigate('/marketplace');
-          return;
-        }
-        
-        // Transform cart data to match component format
-        const transformedCart = result.data.items.map(item => ({
-          id: item.cartItemId,
-          cartItemId: item.cartItemId,
-          marketItemId: item.marketplace_items.marketItemId,
-          title: item.marketplace_items.title,
-          price: item.marketplace_items.price,
-          quantity: item.quantity,
-          image: item.marketplace_items.images?.[0] || '/assets/default-art.jpg',
-          artist: item.marketplace_items.sellerProfiles?.shopName || 'Unknown Shop',
-          sellerId: item.marketplace_items.userId,
-          sellerProfileId: item.marketplace_items.sellerProfileId
-        }));
-        setCartItems(transformedCart);
-      } else {
-        navigate('/marketplace');
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.error || 'Item not found');
       }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
+      const item = result.data;
+      setCartItems([{
+        id: marketItemId,
+        marketItemId: marketItemId,
+        title: item.title,
+        price: item.price,
+        quantity: Number(quantity) || 1,
+        image: item.images?.[0] || '/assets/default-art.jpg',
+        artist: item.sellerProfiles?.shopName || 'Unknown Shop',
+        sellerProfileId: item.sellerProfileId
+      }]);
+    } catch (err) {
+      console.error('Error loading item:', err);
       navigate('/marketplace');
     }
   };
@@ -98,15 +87,20 @@ export default function Checkout() {
     }
   };
 
-  // Load cart and addresses on mount
+  // Load selected item and addresses on mount
   useEffect(() => {
     if (!userData) {
       navigate('/login');
       return;
     }
     
-    // Fetch cart from database
-    fetchCart();
+    // Validate router state for Buy Now
+    const state = location.state || {};
+    if (!state.marketItemId) {
+      navigate('/marketplace');
+      return;
+    }
+    fetchSelectedItem(state.marketItemId, state.quantity || 1);
     
     // Fetch addresses from backend
     fetchAddresses();
@@ -187,71 +181,62 @@ export default function Checkout() {
       alert("Please select a delivery address");
       return;
     }
+    if (!cartItems.length) return;
     
     setIsProcessing(true);
-    
     try {
-      // Get selected address details
+      const item = cartItems[0];
+      const shippingFee = getShippingCost();
       const address = savedAddresses.find(addr => addr.userAddressId === selectedAddress);
       
-      // Prepare order data
+      if (!address) {
+        throw new Error('Selected address not found');
+      }
+      
+      // Get shipping method details
+      const shippingMethod = shippingOptions.find(opt => opt.id === selectedShipping);
+      
+      // Build order data with shipping and contact information
       const orderData = {
-        shipping_address: {
+        marketItemId: item.marketItemId,
+        quantity: item.quantity,
+        shippingFee,
+        shippingMethod: selectedShipping,
+        orderNotes,
+        shippingAddress: {
           fullName: address.fullName,
           phone: address.phoneNumber || address.phone,
-          street: address.addressLine1 || address.street,
-          barangay: address.barangayName || address.barangay,
-          city: address.cityMunicipalityName || address.city,
-          province: address.provinceName || address.province,
+          addressLine1: address.addressLine1 || address.street,
+          addressLine2: address.addressLine2 || '',
+          barangayName: address.barangayName || address.barangay,
+          cityMunicipalityName: address.cityMunicipalityName || address.city,
+          provinceName: address.provinceName || address.province,
           postalCode: address.postalCode,
           landmark: address.landmark || ''
         },
-        contact_info: {
+        contactInfo: {
           name: userData?.firstName + ' ' + userData?.lastName,
           email: userData?.email,
           phone: address.phoneNumber || address.phone
-        },
-        payment_method: 'xendit', // Xendit handles actual payment method selection
-        shipping_method: selectedShipping,
-        order_notes: orderNotes
+        }
       };
       
-      // Create order via API
-      const response = await fetch(`${API}/marketplace/orders/create`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
+      // Call the API with complete order information
+      const res = await buyNow(orderData);
+      const checkoutUrl = res?.data?.checkoutUrl || res?.checkoutUrl;
       
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create order');
+      if (!checkoutUrl) {
+        throw new Error('No checkout URL returned');
       }
       
-      if (result.success) {
-        // If payment link is provided, open in new tab
-        if (result.data.payment && result.data.payment.paymentUrl) {
-          // Open payment link in new tab
-          window.open(result.data.payment.paymentUrl, '_blank');
-          
-          // Show success message with order ID
-          alert(`Order created successfully! Order #${result.data.order.orderId}\n\nPlease complete payment in the new tab.`);
-          
-          // Navigate to orders page
-          navigate('/marketplace/myorders');
-        } else {
-          // For COD or other payment methods
-          alert(`Order placed successfully! Order #${result.data.order.orderId}`);
-          navigate('/marketplace/myorders');
-        }
-      }
+      // Open Xendit payment page in new tab
+      window.open(checkoutUrl, '_blank');
+      
+      // Navigate to orders page to monitor status
+      navigate('/marketplace/myorders');
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert(error.message || 'Failed to place order. Please try again.');
+      console.error('Error starting payment:', error);
+      alert(error.message || 'Failed to start payment. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -430,7 +415,7 @@ export default function Checkout() {
               <button 
                 className={`btn btn-primary btn-block ${isProcessing ? 'museo-btn--processing' : ''}`}
                 onClick={handlePlaceOrder}
-                disabled={isProcessing}
+                disabled={isProcessing || cartItems.length === 0}
               >
                 {isProcessing ? (
                   <>
@@ -438,7 +423,7 @@ export default function Checkout() {
                     Processing...
                   </>
                 ) : (
-                  'Place Order'
+                  'Pay Now'
                 )}
               </button>
             </div>

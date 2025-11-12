@@ -19,43 +19,11 @@ export default function Marketplace() {
   const [sortBy, setSortBy] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [showCart, setShowCart] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
 
-  // Fetch cart from database
-  const fetchCart = async () => {
-    try {
-      const response = await fetch(`${API}/marketplace/cart`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Transform cart data to match frontend format
-        const transformedCart = result.data.items.map(item => ({
-          cartItemId: item.cartItemId,
-          quantity: item.quantity,
-          marketItemId: item.marketplace_items.marketItemId,
-          title: item.marketplace_items.title,
-          description: item.marketplace_items.description,
-          price: item.marketplace_items.price,
-          primary_image: item.marketplace_items.images?.[0] || null,
-          medium: item.marketplace_items.medium,
-          dimensions: item.marketplace_items.dimensions,
-          sellerName: item.marketplace_items.sellerProfiles?.shopName || 'Unknown Shop',
-          stock: item.marketplace_items.quantity
-        }));
-        setCartItems(transformedCart);
-      }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-    }
-  };
+  // Cart removed by P2P migration
 
   // Fetch marketplace items from API
   const fetchMarketplaceItems = async () => {
@@ -198,110 +166,24 @@ export default function Marketplace() {
   ];
 
   const handleAddToCart = async (item, quantityToAdd = 1) => {
-    try {
-      const response = await fetch(`${API}/marketplace/cart/add`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          marketplace_item_id: item.marketItemId || item.id,
-          quantity: quantityToAdd
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to add item to cart');
+    // Buy Now -> go to checkout page with selected item & quantity
+    const qty = Number(quantityToAdd) > 0 ? Number(quantityToAdd) : 1;
+    navigate('/marketplace/checkout', {
+      state: {
+        marketItemId: item.marketItemId || item.id,
+        quantity: qty
       }
-
-      if (result.success) {
-        // Refresh cart from database
-        await fetchCart();
-        
-        // Show cart sidebar
-        setShowCart(true);
-        
-        alert('Item added to cart successfully!');
-      }
-    } catch (error) {
-      console.error('Error adding item to cart:', error);
-      alert(error.message || 'Failed to add item to cart. Please try again.');
-    }
+    });
   };
 
-  const handleRemoveFromCart = async (cartItemId) => {
-    try {
-      const response = await fetch(`${API}/marketplace/cart/${cartItemId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
+  // Cart removed by P2P migration
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to remove item from cart');
-      }
-
-      if (result.success) {
-        // Refresh cart from database
-        await fetchCart();
-        alert('Item removed from cart');
-      }
-    } catch (error) {
-      console.error('Error removing item from cart:', error);
-      alert(error.message || 'Failed to remove item. Please try again.');
-    }
-  };
-
-  const handleUpdateQuantity = async (cartItemId, newQuantity) => {
-    if (newQuantity <= 0) {
-      await handleRemoveFromCart(cartItemId);
-    } else {
-      try {
-        const response = await fetch(`${API}/marketplace/cart/${cartItemId}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ quantity: newQuantity })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to update cart');
-        }
-
-        if (result.success) {
-          // Refresh cart from database
-          await fetchCart();
-        }
-      } catch (error) {
-        console.error('Error updating cart:', error);
-        alert(error.message || 'Failed to update quantity. Please try again.');
-      }
-    }
-  };
-
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const getCartItemsCount = () => {
-    return cartItems.reduce((count, item) => count + item.quantity, 0);
-  };
+  // Cart removed by P2P migration
 
   // Effects
   useEffect(() => {
     fetchMarketplaceItems();
-    // Fetch cart from database when user is logged in
-    if (userData) {
-      fetchCart();
-    }
+    // Cart disabled by P2P migration
   }, [userData]);
 
   const handleProductClick = (item) => {
@@ -316,20 +198,7 @@ export default function Marketplace() {
 
   return (
     <div className="mp-page">
-      {/* Cart Button - Fixed Position */}
-      <button 
-        className="mp-cart-float-btn"
-        onClick={() => setShowCart(!showCart)}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M5 7h14l-1 10H6L5 7ZM5 7l-1-3h3m1 0h8m0 0h3l-1 3"/>
-          <circle cx="9" cy="20" r="1"/>
-          <circle cx="15" cy="20" r="1"/>
-        </svg>
-        {getCartItemsCount() > 0 && (
-          <span className="mp-cart-badge">{getCartItemsCount()}</span>
-        )}
-      </button>
+      {/* Cart UI removed by P2P migration */}
 
       {/* Main Content */}
       <div className="mp-content">
@@ -598,105 +467,7 @@ export default function Marketplace() {
           )}
         </div>
 
-        {/* Cart Sidebar */}
-        <aside className={`mp-cart ${showCart ? "mp-cart--open" : ""}`}>
-          <div className="mp-cart-header">
-            <h2 className="mp-cart-title">Shopping Cart</h2>
-            <button 
-              className="btn btn-ghost btn-icon"
-              onClick={() => setShowCart(false)}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-
-          <div className="mp-cart-items">
-            {cartItems.length === 0 ? (
-              <div className="mp-cart-empty">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                  <path d="M5 7h14l-1 10H6L5 7ZM5 7l-1-3h3m1 0h8m0 0h3l-1 3"/>
-                </svg>
-                <p>Your cart is empty</p>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => setShowCart(false)}
-                >
-                  Continue Shopping
-                </button>
-              </div>
-            ) : (
-              <>
-                {cartItems.map(item => (
-                  <div key={item.cartItemId} className="mp-cart-item">
-                    <img 
-                      src={item.primary_image || '/assets/default-art.jpg'} 
-                      alt={item.title}
-                      className="mp-cart-item-image"
-                      onError={(e) => {e.target.src = '/assets/default-art.jpg'}}
-                    />
-                    <div className="mp-cart-item-details">
-                      <h4 className="mp-cart-item-title">{item.title}</h4>
-                      <p className="mp-cart-item-artist">by {item.sellerName}</p>
-                      <div className="mp-cart-item-info">
-                        <span className="mp-cart-item-size">{item.dimensions || item.medium || 'Original'}</span>
-                      </div>
-                      <div className="mp-cart-item-price">${item.price.toFixed(2)}</div>
-                    </div>
-                    <div className="mp-cart-item-actions">
-                      <div className="mp-quantity">
-                        <button 
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
-                        >
-                          -
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button 
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => handleUpdateQuantity(item.cartItemId, item.quantity + 1)}
-                          disabled={item.quantity >= item.stock}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button 
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleRemoveFromCart(item.cartItemId)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-
-          {cartItems.length > 0 && (
-            <div className="mp-cart-footer">
-              <div className="mp-cart-total">
-                <span>Total:</span>
-                <span className="mp-cart-total-price">${getTotalPrice().toFixed(2)}</span>
-              </div>
-              <button 
-                className="btn btn-primary btn-block"
-                onClick={() => navigate('/marketplace/checkout')}
-              >
-                Proceed to Checkout
-              </button>
-              <button 
-                className="btn btn-secondary btn-block"
-                onClick={() => setShowCart(false)}
-              >
-                Continue Shopping
-              </button>
-            </div>
-          )}
-        </aside>
+        {/* Cart Sidebar removed by P2P migration */}
       </div>
 
       {/* Product Detail Modal */}
@@ -807,7 +578,7 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
               item.listingType === 'auction' ? onClick() : onAddToCart(item);
             }}
           >
-            {item.listingType === "auction" ? "Place Bid" : "Add to Cart"}
+            {item.listingType === "auction" ? "Place Bid" : "Buy Now"}
           </button>
         </div>
       </div>

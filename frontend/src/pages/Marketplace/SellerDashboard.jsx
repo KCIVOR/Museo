@@ -17,6 +17,7 @@ import {
   CalendarIcon,
   ShipmentIcon
 } from '../../styles/icons/DashboardIcons';
+import SellerReturnsTab from './SellerReturnsTab.jsx';
 import '../../styles/main.css';
 import './css/sellerDashboard.css';
 
@@ -402,12 +403,6 @@ export default function SellerDashboard() {
     navigate(`/marketplace/item/${product.marketItemId}`);
   };
 
-  // Handle bulk upload
-  const handleBulkUpload = () => {
-    // Implement bulk upload logic
-    alert('Bulk upload feature coming soon!');
-  };
-
   // Show loading or nothing while checking seller status
   if (!userData?.isSeller) {
     return (
@@ -445,16 +440,12 @@ export default function SellerDashboard() {
             alignItems: 'center'
           }}>
             <select 
-              className="museo-select"
+              className="museo-select museo-input--sm"
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
               style={{
-                padding: 'var(--museo-space-2) var(--museo-space-3)',
-                borderRadius: 'var(--museo-radius-md)',
-                border: '1px solid var(--museo-border)',
-                background: 'var(--museo-white)',
-                fontSize: 'var(--museo-text-sm)',
-                color: 'var(--museo-text-primary)'
+                minWidth: '120px',
+                width: 'auto'
               }}
             >
               <option value="daily">Daily</option>
@@ -462,14 +453,10 @@ export default function SellerDashboard() {
               <option value="monthly">Monthly</option>
             </select>
             <button 
-              className="btn btn-primary btn-sm"
+              className="btn-ghost btn-icon"
               onClick={handleAddProduct}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              Add Product
+              +
             </button>
           </div>
         </div>
@@ -510,6 +497,16 @@ export default function SellerDashboard() {
           {orderStats.toShip > 0 && (
             <span className="museo-tab__badge">{orderStats.toShip}</span>
           )}
+        </button>
+        <button 
+          className={`museo-tab ${activeTab === 'returns' ? 'museo-tab--active' : ''}`}
+          onClick={() => setActiveTab('returns')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '6px'}}>
+            <polyline points="8 3 4 7 8 11"/>
+            <path d="M4 7h9a4 4 0 1 1 0 8H6"/>
+          </svg>
+          Returns
         </button>
         <button 
           className={`museo-tab ${activeTab === 'payouts' ? 'museo-tab--active' : ''}`}
@@ -866,30 +863,9 @@ export default function SellerDashboard() {
         {activeTab === 'products' && (
         <div className="museo-products-section">
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
             marginBottom: 'var(--museo-space-4)'
           }}>
             <h2 className="museo-heading" style={{fontSize: 'var(--museo-text-2xl)'}}>Product Inventory</h2>
-            <button 
-              className="btn btn-ghost"
-              style={{
-                padding: 'var(--museo-space-2) var(--museo-space-4)',
-                fontSize: 'var(--museo-text-sm)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 'var(--museo-space-2)'
-              }}
-              onClick={handleBulkUpload}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Bulk Upload
-            </button>
           </div>
 
           <div className="products-table-container">
@@ -1314,6 +1290,13 @@ export default function SellerDashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {/* Returns Tab */}
+        {activeTab === 'returns' && (
+          <div className="museo-returns-section" style={{marginTop: 'var(--museo-space-6)'}}>
+            <SellerReturnsTab />
+          </div>
         )}
 
         {/* Payouts Tab */}

@@ -1154,3 +1154,12 @@
     width: 100%;
   }
 }
+
+/* ========================================
+   P2P MIGRATION OVERRIDES (cart removed)
+   ======================================== */
+.mp-cart,
+.mp-cart-float-btn,
+.mp-cart-badge {
+  display: none !important;
+}

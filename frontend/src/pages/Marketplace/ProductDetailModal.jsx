@@ -313,12 +313,6 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                   </div>
 
                   <div className="pdm-actions">
-                    <button className="pdm-btn-cart" onClick={handleAddToCart}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M5 7h14l-1 10H6L5 7ZM5 7l-1-3h3m1 0h8m0 0h3l-1 3"/>
-                      </svg>
-                      Add to Cart
-                    </button>
                     <button className="pdm-btn-buy" onClick={handleAddToCart}>
                       Buy Now
                     </button>
