@@ -652,9 +652,9 @@ const VisitMuseo = () => {
                 </svg>
               </div>
               <h3 className="vm-info-title">Opening Hours</h3>
-              <p className="vm-info-text">Tuesday - Sunday</p>
-              <p className="vm-info-text">9:00 AM - 5:00 PM</p>
-              <p className="vm-info-note">Closed on Mondays</p>
+              <p className="vm-info-text">Monday - Friday</p>
+              <p className="vm-info-text">9:00 AM - 4:00 PM</p>
+              <p className="vm-info-note">Closed on Weekends</p>
             </div>
 
             <div className="vm-info-card">
@@ -665,8 +665,8 @@ const VisitMuseo = () => {
                 </svg>
               </div>
               <h3 className="vm-info-title">Location</h3>
-              <p className="vm-info-text">Museo Cultural Center</p>
-              <p className="vm-info-text">123 Heritage Street</p>
+              <p className="vm-info-text">Old City Hall Building</p>
+              <p className="vm-info-text">ML Tagarao cor. Allarey St., Brgy. 5, Lucena City</p>
               <p className="vm-info-note">Free parking available</p>
             </div>
 
@@ -679,8 +679,8 @@ const VisitMuseo = () => {
               </div>
               <h3 className="vm-info-title">Admission</h3>
               <p className="vm-info-text">Students: Free</p>
-              <p className="vm-info-text">Adults: ₱50</p>
-              <p className="vm-info-note">Group discounts available</p>
+              <p className="vm-info-text">Adults: Free</p>
+              <p className="vm-info-note">Walk-in/Reserve</p>
             </div>
           </div>
         </div>
