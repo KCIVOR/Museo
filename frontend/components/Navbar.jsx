@@ -177,21 +177,21 @@ export default function Navbar({ role, userData }) {
       // 1. Call backend logout endpoint
       const res = await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
       if (!res.ok && res.status !== 204) {
-        console.error("❌ Navbar: Logout failed", res.status);
+        console.error("Navbar: Logout failed", res.status);
       } else {
         console.log('✅ Navbar: Backend logout successful');
       }
       
       // 2. Clear UserContext
-      console.log('🧹 Navbar: Clearing UserContext...');
+      console.log('Navbar: Clearing UserContext...');
       clearUserData();
-      console.log('✅ Navbar: UserContext cleared');
+      console.log('Navbar: UserContext cleared');
       
     } catch (e) {
-      console.error("❌ Navbar: Logout error", e);
+      console.error("Navbar: Logout error", e);
     } finally {
       setMenuOpen(false);
-      console.log('🚪 Navbar: Redirecting to login...');
+      console.log('Navbar: Redirecting to login...');
       navigate("/");
     }
   };
@@ -202,7 +202,7 @@ export default function Navbar({ role, userData }) {
         {/* Left: brand */}
         <div className="nav__left nav__brand">
           <Link to="/home">
-            <img className="nav__logo" src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/logo.png" alt="Museo" />
+            <img className="nav__logo" src="/Museo.png" alt="Museo" />
           </Link>
         </div>
 

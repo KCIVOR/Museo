@@ -5,6 +5,7 @@ import { useUser } from "../../contexts/UserContext";
 import "./css/home.css";
 import MuseoComposer from "./museoComposer";
 import PostModal from "./PostModal";
+import TextModal from "./textModal";
 import SetProfileModal from "../Profile/SetProfile";
 import InterestsSelection from "../Shared/InterestsSelection";
 import AnnouncementCard from "./AnnouncementCard.jsx";
@@ -159,6 +160,7 @@ export default function Home() {
 
   // Modal state
   const [activePost, setActivePost] = useState(null);
+  const [activeTextPost, setActiveTextPost] = useState(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -208,7 +210,16 @@ export default function Home() {
 
   const handlePopUp = (postId) => {
     const p = posts.find((p) => p.id === postId);
-    if (p) setActivePost(p);
+    if (p) {
+      // Check if post has images
+      if (p.images && p.images.length > 0 && p.images[0]) {
+        // Post has images - use PostModal
+        setActivePost(p);
+      } else {
+        // Post has no images - use TextModal
+        setActiveTextPost(p);
+      }
+    }
   }; // pop up para sa pinindot na post
 
   const toggleExpanded = (postId) => {
@@ -557,6 +568,10 @@ export default function Home() {
 
   const closeModal = () => {
     setActivePost(null);
+  };
+
+  const closeTextModal = () => {
+    setActiveTextPost(null);
   };
 
   // Menu functions
@@ -988,6 +1003,23 @@ export default function Home() {
             onReport={handleReport}
             role={role}
             totalComments={comments[activePost.id] || 0}
+          />
+        )}
+
+        {activeTextPost && (
+          <TextModal
+            post={activeTextPost}
+            onClose={closeTextModal}
+            onLike={handleLike}
+            onComment={handleComment}
+            likeCount={likes}
+            likedPosts={likedPosts}
+            currentUser={currentUser}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onReport={handleReport}
+            role={role}
+            totalComments={comments[activeTextPost.id] || 0}
           />
         )}
       </div>

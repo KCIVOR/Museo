@@ -233,19 +233,12 @@
   margin-bottom: 24px;
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.1;
-  text-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 2px 6px rgba(110, 74, 46, 0.4),
-    0 8px 24px rgba(44, 24, 16, 0.2);
   letter-spacing: -0.02em;
   position: relative;
 }
 
 .museo-hero-title-gradient {
-  background: linear-gradient(135deg, #f4f1ec 0%, #d4b48a 50%, #a67c52 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #f4f1ec;
   display: inline-block;
 }
 
@@ -300,7 +293,6 @@
   color: #f4f1ec;
   margin: 0 0 4px 0;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .museo-hero-artist-label {
@@ -334,12 +326,11 @@
   margin-bottom: 8px;
 }
 
-.museo-hero-stat-value {
+.museo-hero-stat-number {
   font-size: 1.8rem;
   font-weight: 700;
   color: #f4f1ec;
   margin-bottom: 4px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .museo-hero-stat-label {
@@ -834,7 +825,6 @@
   color: #f4f1ec;
   margin: 0 0 4px 0;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(44, 24, 16, 0.5);
   font-family: Georgia, serif;
 }
 
@@ -879,7 +869,6 @@
   font-weight: 700;
   color: #f4f1ec;
   margin-bottom: 4px;
-  text-shadow: 0 2px 4px rgba(44, 24, 16, 0.5);
 }
 
 /* Stat Label */

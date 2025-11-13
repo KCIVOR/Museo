@@ -31,7 +31,7 @@
 }
 
 .nav__logo { 
-  height: 42px; 
+  height: 70px; 
   width: auto; 
 }
 
@@ -88,7 +88,7 @@
     grid-template-columns: 120px 1fr 200px; 
   } 
   .nav__logo { 
-    height: 28px; 
+    height: 38px; 
   } 
 }
 

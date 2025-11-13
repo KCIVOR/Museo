@@ -152,10 +152,9 @@ const VisitMuseo = () => {
       {/* Museum Gallery Collage */}
       <section className="vm-gallery-section">
         <div className="vm-section-header">
-          <span className="vm-section-badge">Explore Our Spaces</span>
           <h2 className="vm-section-title">Discover Museo</h2>
           <p className="vm-section-subtitle">
-            A journey through art, culture, and history awaits you
+            Explore Our Spaces
           </p>
         </div>
 

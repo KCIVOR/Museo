@@ -67,7 +67,7 @@
   font-size: 5rem;
   font-weight: 900;
   margin: 0 0 1.5rem 0;
-  text-shadow: 0 4px 20px var(--museo-shadow);
+  color: #f4f1ec;
   letter-spacing: -0.03em;
   line-height: 1;
 }
@@ -77,7 +77,6 @@
   font-size: 1.5rem;
   font-weight: 400;
   margin: 0 0 3rem 0;
-  text-shadow: 0 2px 10px var(--museo-shadow);
   opacity: 0.95;
   max-width: 700px;
   margin-left: auto;
@@ -86,7 +85,7 @@
 
 .vm-hero-btn {
   background: var(--museo-accent);
-  color: var(--museo-white);
+  color: #6E4A2E;
   border: none;
   padding: 18px 48px;
   font-family: var(--museo-font-body);
@@ -101,9 +100,10 @@
 }
 
 .vm-hero-btn:hover {
+  color: #f4f1ec;
   background: var(--museo-accent-dark);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(212, 180, 138, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(212, 180, 138, 0.6);
 }
 
 /* ============================================
@@ -280,7 +280,7 @@
   font-weight: 800;
   text-align: center;
   margin: 0 0 60px 0;
-  text-shadow: 0 2px 8px var(--museo-shadow-light);
+  color: #f4f1ec;
 }
 
 .vm-why-grid {
@@ -322,6 +322,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 12px 0;
+  color: #f4f1ec;
 }
 
 .vm-why-card-text {
@@ -459,7 +460,7 @@
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--museo-accent);
+  color: #6E4A2E;
   margin-bottom: 16px;
 }
 

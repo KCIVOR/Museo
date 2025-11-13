@@ -362,7 +362,7 @@ button {
 /* Visit Museo Button */
 .nav-btn.nav-btn-visit {
   background: linear-gradient(135deg, var(--museo-accent) 0%, var(--museo-gold-dark) 100%);
-  color: var(--museo-primary);
+  color: var(--museo-white);
   border-color: var(--museo-accent);
   box-shadow: 0 2px 8px rgba(212, 180, 138, 0.3);
   padding: 0 var(--museo-space-4);
