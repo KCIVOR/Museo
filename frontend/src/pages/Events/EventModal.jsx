@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "../../contexts/UserContext";
 import ConfirmModal from "../Shared/ConfirmModal.jsx";
+import "./css/events.css";
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -20,9 +21,6 @@ export default function EventModal({ open, event, onClose }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null); // { userId, label }
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
-
-
-  // (removed leftover unused getParticipants helper)
 
   useEffect(() => {
     if (!open) return;
@@ -135,24 +133,24 @@ export default function EventModal({ open, event, onClose }) {
   }, [open, participantsOpen, event?.eventId, event?.id]);
 
   const joinEvent = async () => {
-    try{
-        setIsSubmitting(true);
-        const res = await fetch(`${API}/event/joinEvent`, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({eventId: event.eventId || event.id }),
-        });
-        if (!res.ok) {
-            throw new Error("Failed to join event");
-        }
-        const data = await res.json();
-        if (data.removed) setJoined(false);
-        if (data.joined) setJoined(true);
-    }catch(err){
-        console.error('joinEvent: unexpected error:', err);
-    }finally{
-        setIsSubmitting(false);
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(`${API}/event/joinEvent`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.eventId || event.id }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to join event");
+      }
+      const data = await res.json();
+      if (data.removed) setJoined(false);
+      if (data.joined) setJoined(true);
+    } catch (err) {
+      console.error('joinEvent: unexpected error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -172,8 +170,12 @@ export default function EventModal({ open, event, onClose }) {
   // Disable join if event already ended (fallback to start if no end)
   const isEventPast = (() => {
     try {
-      const t = new Date(event.end || event.start).getTime();
-    } catch { return false; }
+      const now = new Date();
+      const end = new Date(event.end || event.start);
+      return now >= end;
+    } catch {
+      return false;
+    }
   })();
 
   return (
@@ -192,7 +194,7 @@ export default function EventModal({ open, event, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
-        <button aria-label="Close" onClick={onClose} className="btn btn-icon btn-ghost event-modal__close">
+        <button aria-label="Close" onClick={onClose} className="event-modal__close">
           ✕
         </button>
 
@@ -205,12 +207,12 @@ export default function EventModal({ open, event, onClose }) {
           />
           <div className="event-modal__hero-overlay">
             <div className="event-modal__badges">
-              <span className="museo-badge museo-badge--primary">
-                🗓️ {fmt(event.start)}
+              <span className="museo-badge museo-badge--light">
+                <span style={{ marginRight: 'var(--museo-space-2)' }}>🗓️</span> {fmt(event.start)}
               </span>
               {event.venueName && (
-                <span className="museo-badge museo-badge--primary">
-                  📍 {event.venueName}
+                <span className="museo-badge museo-badge--light">
+                  <span style={{ marginRight: 'var(--museo-space-2)' }}>📍</span> {event.venueName}
                 </span>
               )}
             </div>
@@ -233,12 +235,12 @@ export default function EventModal({ open, event, onClose }) {
               {/* Main Description */}
               <section className="event-modal__section">
                 <h3 className="event-modal__section-title">
-                  ℹ️ About This Event
+                  About This Event
                 </h3>
                 <div className="event-modal__section-content">
                   <p>{event.lead || 'Join us for this exciting event!'}</p>
                   {event.description && (
-                    <p style={{ marginTop: '16px' }}>
+                    <p style={{ marginTop: 'var(--museo-space-4)' }}>
                       {event.description}
                     </p>
                   )}
@@ -249,7 +251,7 @@ export default function EventModal({ open, event, onClose }) {
               {event.activities?.length > 0 && (
                 <section className="event-modal__section">
                   <h3 className="event-modal__section-title">
-                    🎨 Activities
+                    Activities
                   </h3>
                   <div className="event-modal__activities">
                     {event.activities.map((a, i) => (
@@ -265,12 +267,12 @@ export default function EventModal({ open, event, onClose }) {
               {event.admission && (
                 <section className="event-modal__section">
                   <h3 className="event-modal__section-title">
-                    🎫️ Admission Details
+                    Admission Details
                   </h3>
                   <div className="event-modal__section-content">
                     <p>{event.admission}</p>
                     {event.admissionNote && (
-                      <p style={{ marginTop: '8px', fontSize: '14px', color: '#6b6b6b' }}>
+                      <p style={{ marginTop: 'var(--museo-space-2)', fontSize: 'var(--museo-text-sm)', color: 'var(--museo-text-muted)' }}>
                         {event.admissionNote}
                       </p>
                     )}
@@ -288,7 +290,7 @@ export default function EventModal({ open, event, onClose }) {
                   {event.venueName || 'Venue TBA'}
                 </p>
                 {event.venueAddress && (
-                  <p style={{ fontSize: '14px', color: '#6b6b6b', marginTop: '4px' }}>
+                  <p style={{ fontSize: 'var(--museo-text-sm)', color: 'var(--museo-text-muted)', marginTop: 'var(--museo-space-1)' }}>
                     {event.venueAddress}
                   </p>
                 )}
@@ -300,7 +302,7 @@ export default function EventModal({ open, event, onClose }) {
                 <p className="event-modal__info-value">
                   Starts: {fmt(event.start)}
                 </p>
-                <p className="event-modal__info-value" style={{ marginTop: '8px' }}>
+                <p className="event-modal__info-value" style={{ marginTop: 'var(--museo-space-2)' }}>
                   Ends: {fmt(event.end)}
                 </p>
               </div>
@@ -308,10 +310,11 @@ export default function EventModal({ open, event, onClose }) {
               {/* Action Buttons */}
               <div className="event-modal__actions">
                 <button 
-                  onClick={() => { if (!isEventPast) joinEvent(); }} 
+                  onClick={() => { if (!isEventPast) joinEvent(); }}
                   disabled={isSubmitting || isEventPast} 
                   title={isEventPast ? 'This event has already passed' : undefined}
-                  className={`btn ${joined ? 'btn-danger' : 'btn-primary'} btn-block`}
+                  className={`btn ${joined ? 'btn-outline-danger' : 'btn-primary'} btn-lg`}
+                  style={{ width: '100%' }}
                 >
                   {isEventPast
                     ? 'Event Ended'
@@ -321,7 +324,8 @@ export default function EventModal({ open, event, onClose }) {
                 {(role === 'admin' || role?.role === 'admin') && (
                   <button
                     onClick={() => setParticipantsOpen(true)}
-                    className="btn btn-secondary btn-block"
+                    className="btn btn-secondary btn-lg"
+                    style={{ width: '100%', marginTop: 'var(--museo-space-2)' }}
                   >
                     View Participants
                   </button>
@@ -366,9 +370,9 @@ export default function EventModal({ open, event, onClose }) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '40px',
-                  color: '#6e4a2e',
-                  fontSize: '16px'
+                  padding: 'var(--museo-space-6)',
+                  color: 'var(--museo-text-primary)',
+                  fontSize: 'var(--museo-text-base)'
                 }}>
                   Loading participants...
                 </div>
@@ -378,9 +382,9 @@ export default function EventModal({ open, event, onClose }) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '40px',
-                  color: '#dc2626',
-                  fontSize: '16px',
+                  padding: 'var(--museo-space-6)',
+                  color: 'var(--museo-error)',
+                  fontSize: 'var(--museo-text-base)',
                   textAlign: 'center'
                 }}>
                   {pError}
@@ -442,32 +446,32 @@ export default function EventModal({ open, event, onClose }) {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '60px 40px',
+                    padding: 'var(--museo-space-8) var(--museo-space-6)',
                     textAlign: 'center'
                   }}>
                     <div style={{
                       width: '64px',
                       height: '64px',
                       borderRadius: '50%',
-                      background: '#f0f0f0',
+                      background: 'var(--museo-bg-secondary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginBottom: '16px'
+                      marginBottom: 'var(--museo-space-4)'
                     }}>
-                      <span style={{ fontSize: '24px' }}>👥</span>
+                      <span style={{ fontSize: 'var(--museo-text-2xl)' }}>👥</span>
                     </div>
                     <div style={{
-                      color: '#2c1810',
-                      fontSize: '18px',
+                      color: 'var(--museo-text-primary)',
+                      fontSize: 'var(--museo-text-lg)',
                       fontWeight: '600',
-                      marginBottom: '8px'
+                      marginBottom: 'var(--museo-space-2)'
                     }}>
                       No Participants Yet
                     </div>
                     <div style={{
-                      color: '#6b6b6b',
-                      fontSize: '14px',
+                      color: 'var(--museo-text-secondary)',
+                      fontSize: 'var(--museo-text-sm)',
                       maxWidth: '300px',
                       lineHeight: '1.5'
                     }}>

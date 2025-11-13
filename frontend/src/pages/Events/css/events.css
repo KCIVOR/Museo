@@ -513,22 +513,14 @@
   font-style: italic;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-
-@media (max-width: 768px) {
-  .event__header {
-    margin-bottom: 20px;
+@media (max-width: 600px) {
+  .event-modal__participant {
+    grid-template-columns: 40px 1fr;
   }
   
-  .event__admin-actions {
-    margin-bottom: 24px;
+  .event-modal__participant-joined {
+    grid-column: span 2;
+    text-align: left;
+    margin-top: var(--museo-space-1);
   }
 }
-
-/* ========================================
-   EVENT MODAL - To be redesigned
-   ======================================== */
-
-/* EventModal will be redesigned from scratch - all styles removed */

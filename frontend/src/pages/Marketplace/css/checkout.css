@@ -47,6 +47,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--museo-space-5);
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh; /* optional, for vertical centering on full screen */
 }
 
 /* Enhanced Museo Card for Checkout */

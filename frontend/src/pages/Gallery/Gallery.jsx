@@ -6,7 +6,86 @@ import MuseoEmptyState from '../../components/MuseoEmptyState';
 import UploadArtModal from './UploadArtModal';
 import ArtworkModal from './ArtworkModal';
 import "./css/gallery.css";
+import { GalleryIcon } from '../../../components/icons';
 const API = import.meta.env.VITE_API_BASE;
+
+
+// SVG Icon Components
+function EyeIcon({ size = 24, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function HeartIcon({ size = 24, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/>
+    </svg>
+  );
+}
+
+function ChatIcon({ size = 24, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 15a4 4 0 01-4 4H7l-4 4V7a4 4 0 014-4h10a4 4 0 014 4z"/>
+    </svg>
+  );
+}
+
+function PaletteIcon({ size = 48, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 22c4.97 0 9-3.582 9-8 0-3.866-3.134-7-7-7H9a7 7 0 000 14h1c.552 0 1 .448 1 1 0 .552.448 1 1 1z"/>
+      <circle cx="7.5" cy="11" r="1"/>
+      <circle cx="10" cy="7.5" r="1"/>
+      <circle cx="14" cy="7.5" r="1"/>
+      <circle cx="16.5" cy="11" r="1"/>
+    </svg>
+  );
+}
+
+function TrophyIcon({ size = 16, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M8 21h8M12 17v4M7 4h10v3a5 5 0 01-10 0V4z"/>
+      <path d="M21 5a4 4 0 01-4 4V5h4zM3 5h4v4A4 4 0 013 5z"/>
+    </svg>
+  );
+}
+
+function MedalIcon({ size = 14, variant = 'gold', className }) {
+  const fills = { gold: '#ffd700', silver: '#c0c0c0', bronze: '#cd7f32' };
+  const fill = fills[variant] || fills.gold;
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} className={className}>
+      <circle cx="12" cy="8" r="6" fill={fill} />
+      <path d="M8 14l-3 7 7-4 7 4-3-7" fill={fill} opacity="0.8"/>
+      <circle cx="12" cy="8" r="3" fill="#fff" opacity="0.6"/>
+    </svg>
+  );
+}
+
+function FireIcon({ size = 14, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 2s4 4 4 7a4 4 0 01-8 0c0-3 4-7 4-7z"/>
+      <path d="M12 13a3 3 0 013 3 3 3 0 11-6 0 3 3 0 013-3z"/>
+    </svg>
+  );
+}
+
+function CloseIcon({ size = 14, color = 'currentColor', className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
 
 
 export default function Gallery() {
@@ -981,7 +1060,7 @@ export default function Gallery() {
                 {/* Enhanced Stats Section */}
                 <div className="museo-hero-stats-grid">
                   <div className="museo-hero-stat-card">
-                    <div className="museo-hero-stat-icon">👁️</div>
+                    <div className="museo-hero-stat-icon" aria-hidden="true"><EyeIcon size={24} /></div>
                     <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().views)}
                     </div>
@@ -990,7 +1069,7 @@ export default function Gallery() {
                     </div>
                   </div>
                   <div className="museo-hero-stat-card">
-                    <div className="museo-hero-stat-icon">❤️</div>
+                    <div className="museo-hero-stat-icon" aria-hidden="true"><HeartIcon size={24} /></div>
                     <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().likes)}
                     </div>
@@ -999,7 +1078,7 @@ export default function Gallery() {
                     </div>
                   </div>
                   <div className="museo-hero-stat-card">
-                    <div className="museo-hero-stat-icon">💬</div>
+                    <div className="museo-hero-stat-icon" aria-hidden="true"><ChatIcon size={24} /></div>
                     <div className="museo-hero-stat-number">
                       {formatNumber(getFeaturedArtworkStats().comments)}
                     </div>
@@ -1016,7 +1095,9 @@ export default function Gallery() {
               <div className="museo-hero-empty-bg"></div>
               
               <div className="museo-hero-empty-card">
-                <div className="museo-hero-empty-icon">🎨</div>
+                <div className="museo-hero-empty-icon">
+                  <PaletteIcon size={48} color="#f4f1ec" />
+                </div>
                 
                 <h2 className="museo-hero-empty-title">Awaiting Your Masterpiece</h2>
                 
@@ -1082,7 +1163,10 @@ export default function Gallery() {
                           onClick={() => openArtworkModal(topArts[1], 'TOP ARTS #2 (SILVER)')}
                         >
                           <div className="gallery__rank-badge gallery__rank-badge--silver">
-                            🥈 #2
+                            <span style={{display:'inline-flex',alignItems:'center',gap:'6px'}}>
+                              <MedalIcon variant="silver" size={14} />
+                              <span>#2</span>
+                            </span>
                           </div>
                           <img
                             src={Array.isArray(topArts[1].image) ? topArts[1].image[0] : topArts[1].image}
@@ -1105,7 +1189,10 @@ export default function Gallery() {
                           onClick={() => openArtworkModal(topArts[0], 'TOP ARTS #1 (GOLD CHAMPION)')}
                         >
                           <div className="gallery__champion-badge">
-                            🏆 TOP ART OF THE WEEK
+                            <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
+                              <TrophyIcon size={16} color="#ffd700" />
+                              <span>TOP ART OF THE WEEK</span>
+                            </span>
                           </div>
                           <img
                             src={Array.isArray(topArts[0].image) ? topArts[0].image[0] : topArts[0].image}
@@ -1119,7 +1206,10 @@ export default function Gallery() {
                             {topArts[0].artist}
                           </p>
                           <div className="gallery__views-badge">
-                            🔥 {formatNumber(artworkStats[topArts[0].id]?.views || 0)} views
+                            <span style={{display:'inline-flex',alignItems:'center',gap:'6px'}}>
+                              <FireIcon size={14} color="#ff4500" />
+                              <span>{formatNumber(artworkStats[topArts[0].id]?.views || 0)} views</span>
+                            </span>
                           </div>
                         </div>
                       )}
@@ -1131,7 +1221,10 @@ export default function Gallery() {
                           onClick={() => openArtworkModal(topArts[2], 'TOP ARTS #3 (BRONZE)')}
                         >
                           <div className="gallery__rank-badge gallery__rank-badge--bronze">
-                            🥉 #3
+                            <span style={{display:'inline-flex',alignItems:'center',gap:'6px'}}>
+                              <MedalIcon variant="bronze" size={14} />
+                              <span>#3</span>
+                            </span>
                           </div>
                           <img
                             src={Array.isArray(topArts[2].image) ? topArts[2].image[0] : topArts[2].image}
@@ -1338,7 +1431,9 @@ export default function Gallery() {
                             style={{ cursor: 'pointer' }}
                           >
                             {category}
-                            <span style={{ marginLeft: '6px', fontSize: '16px', opacity: 0.7 }}>×</span>
+                            <span style={{ marginLeft: '6px', opacity: 0.7, display: 'inline-flex' }} aria-hidden="true">
+                              <CloseIcon size={14} />
+                            </span>
                           </span>
                         ))}
                       </div>
@@ -1595,7 +1690,10 @@ export default function Gallery() {
                     fontSize: '14px',
                     textAlign: 'center'
                   }}>
-                    🎨 You've reached the end of the collection
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <PaletteIcon size={16} color="var(--museo-primary)" />
+                      <span>You've reached the end of the collection</span>
+                    </div>
                     {totalCount && (
                       <div style={{ marginTop: '4px', fontSize: '12px' }}>
                         Showing all {totalCount} artworks

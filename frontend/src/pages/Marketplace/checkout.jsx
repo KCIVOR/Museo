@@ -90,7 +90,7 @@ export default function Checkout() {
   // Load selected item and addresses on mount
   useEffect(() => {
     if (!userData) {
-      navigate('/login');
+      navigate('/');
       return;
     }
     
@@ -250,67 +250,66 @@ export default function Checkout() {
   };
   
   return (
-    <div className="museo-checkout-page">
-      <div className="museo-checkout-container">
-        <div className="museo-checkout-content">
+    <div className="checkout-page">
+      <div className="checkout-container">
+        <div className="checkout-content">
           {/* Left Column - Forms */}
-          <div className="museo-checkout-forms">
+          <div className="checkout-forms">
             {/* Delivery Address Section */}
-            <section className="museo-card museo-card--checkout">
-              <div className="museo-card__header museo-checkout-header">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <section className="checkout-section">
+              <div className="section-header">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
-                <h2 className="museo-checkout-title">Delivery Address</h2>
+                <h2 className="section-title">Delivery Address</h2>
               </div>
               
-              <div className="museo-card__body museo-address-options">
-                {savedAddresses.map(addr => (
-                  <div 
-                    key={addr.userAddressId}
-                    className={`museo-address-card ${selectedAddress === addr.userAddressId ? 'museo-address-card--selected' : ''}`}
-                    onClick={() => setSelectedAddress(addr.userAddressId)}
-                  >
-                    <div className="museo-address-radio">
-                      {selectedAddress === addr.userAddressId && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                      )}
+              <div className="address-options">
+                {savedAddresses.length > 0 ? (
+                  savedAddresses.map(addr => (
+                    <div 
+                      key={addr.userAddressId}
+                      className={`address-card ${selectedAddress === addr.userAddressId ? 'selected' : ''}`}
+                      onClick={() => setSelectedAddress(addr.userAddressId)}
+                    >
+                      <div className="address-radio">
+                        {selectedAddress === addr.userAddressId && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="address-details">
+                        <div className="address-name">
+                          {addr.fullName}
+                          {addr.isDefault && <span className="default-badge">Default</span>}
+                        </div>
+                        <div className="address-phone">{addr.phoneNumber}</div>
+                        <div className="address-text">
+                          {addr.addressLine1}
+                          {addr.addressLine2 && `, ${addr.addressLine2}`}
+                        </div>
+                        <div className="address-location">
+                          {addr.barangayName}, {addr.cityMunicipalityName}, {addr.provinceName} {addr.postalCode}
+                        </div>
+                        {addr.landmark && <div className="address-landmark">Near: {addr.landmark}</div>}
+                      </div>
                     </div>
-                    <div className="museo-address-details">
-                      <div className="museo-address-name">
-                        {addr.fullName}
-                        {addr.isDefault && <span className="museo-badge museo-badge--gold">Default</span>}
-                        {addr.addressType && <span className="museo-badge museo-badge--secondary">{addr.addressType}</span>}
-                      </div>
-                      <div className="museo-address-phone">{addr.phoneNumber}</div>
-                      <div className="museo-address-text">
-                        {addr.addressLine1}
-                        {addr.addressLine2 && `, ${addr.addressLine2}`}
-                      </div>
-                      <div className="museo-address-location">
-                        {addr.barangayName}, {addr.cityMunicipalityName}, 
-                        {addr.provinceName} {addr.postalCode}
-                      </div>
-                      {addr.landmark && <div className="museo-address-landmark">Near: {addr.landmark}</div>}
-                    </div>
-                    <button className="museo-address-edit btn btn-ghost btn-sm">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    No addresses saved yet. Please add an address to continue.
                   </div>
-                ))}
+                )}
                 
                 <button 
-                  className="btn btn-secondary btn-block"
+                  className="btn btn-secondary"
                   type="button"
                   onClick={() => setShowAddressModal(true)}
+                  style={{ width: '100%', marginTop: '16px' }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="12" y1="5" x2="12" y2="19"/>
                     <line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
@@ -320,117 +319,118 @@ export default function Checkout() {
             </section>
             
             {/* Shipping Options Section */}
-            <section className="museo-card museo-card--checkout">
-              <div className="museo-card__header museo-checkout-header">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <section className="checkout-section">
+              <div className="section-header">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="1" y="3" width="15" height="13"/>
                   <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
                   <circle cx="5.5" cy="18.5" r="2.5"/>
                   <circle cx="18.5" cy="18.5" r="2.5"/>
                 </svg>
-                <h2 className="museo-checkout-title">Shipping Method</h2>
+                <h2 className="section-title">Shipping Method</h2>
               </div>
               
-              <div className="museo-card__body museo-shipping-options">
+              <div className="shipping-options">
                 {shippingOptions.map(option => (
                   <div 
                     key={option.id}
-                    className={`museo-shipping-card ${selectedShipping === option.id ? 'museo-shipping-card--selected' : ''}`}
+                    className={`shipping-card ${selectedShipping === option.id ? 'selected' : ''}`}
                     onClick={() => setSelectedShipping(option.id)}
                   >
-                    <div className="museo-shipping-radio">
+                    <div className="shipping-radio">
                       {selectedShipping === option.id && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                         </svg>
                       )}
                     </div>
-                    <div className="museo-shipping-icon">{option.icon}</div>
-                    <div className="museo-shipping-details">
-                      <div className="museo-shipping-name">{option.name}</div>
-                      <div className="museo-shipping-desc">{option.description}</div>
+                    <div className="shipping-icon">{option.icon}</div>
+                    <div className="shipping-details">
+                      <div className="shipping-name">{option.name}</div>
+                      <div className="shipping-desc">{option.description}</div>
                     </div>
-                    <div className="museo-shipping-price">₱{option.price}</div>
+                    <div className="shipping-price">₱{option.price}</div>
                   </div>
                 ))}
               </div>
             </section>
             
             {/* Order Notes Section */}
-            <section className="museo-card museo-card--checkout">
-              <div className="museo-card__header museo-checkout-header">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <section className="checkout-section">
+              <div className="section-header">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                   <line x1="16" y1="13" x2="8" y2="13"/>
                   <line x1="16" y1="17" x2="8" y2="17"/>
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
-                <h2 className="museo-checkout-title">Order Notes (Optional)</h2>
+                <h2 className="section-title">Order Notes</h2>
               </div>
               
-              <div className="museo-card__body">
-                <textarea 
+              <textarea 
                 className="museo-textarea"
-                placeholder="Add any special instructions for your order..."
+                placeholder="Add any special instructions for your order (optional)..."
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                rows="4"
-                />
-              </div>
+                rows="3"
+              />
             </section>
           </div>
           
           {/* Right Column - Order Summary */}
-          <div className="museo-checkout-sidebar">
-            <div className="museo-card museo-card--summary">
-              <h2 className="museo-summary-title">Order Summary</h2>
+          <div className="checkout-sidebar">
+            <div className="order-summary">
+              <h2 className="summary-title">Order Summary</h2>
               
-              <div className="museo-summary-items">
-                {cartItems.map(item => (
-                  <div key={item.id} className="museo-summary-item">
+              <div className="summary-items">
+                {cartItems.length > 0 ? cartItems.map(item => (
+                  <div key={item.id} className="summary-item">
                     <img 
                       src={item.image} 
                       alt={item.title}
-                      className="museo-item-image"
+                      className="item-image"
                     />
-                    <div className="museo-item-details">
-                      <div className="museo-item-title">{item.title}</div>
-                      <div className="museo-item-artist">by {item.artist}</div>
-                      <div className="museo-item-quantity">Qty: {item.quantity}</div>
+                    <div className="item-details">
+                      <div className="item-title">{item.title}</div>
+                      <div className="item-artist">by {item.artist}</div>
+                      <div className="item-quantity">Qty: {item.quantity}</div>
                     </div>
-                    <div className="museo-item-price">₱{(item.price * item.quantity).toFixed(2)}</div>
+                    <div className="item-price">₱{(item.price * item.quantity).toFixed(2)}</div>
                   </div>
-                ))}
+                )) : (
+                  <div className="empty-state">Loading item details...</div>
+                )}
               </div>
               
-              <div className="museo-summary-totals">
-                <div className="museo-total-row">
+              <div className="summary-totals">
+                <div className="total-row">
                   <span>Subtotal</span>
                   <span>₱{getSubtotal().toFixed(2)}</span>
                 </div>
-                <div className="museo-total-row">
+                <div className="total-row">
                   <span>Shipping</span>
                   <span>₱{getShippingCost().toFixed(2)}</span>
                 </div>
-                <div className="museo-total-row museo-total-row--final">
+                <div className="total-row final">
                   <span>Total</span>
-                  <span className="museo-total-amount">₱{getTotal().toFixed(2)}</span>
+                  <span className="total-amount">₱{getTotal().toFixed(2)}</span>
                 </div>
               </div>
               
               <button 
-                className={`btn btn-primary btn-block ${isProcessing ? 'museo-btn--processing' : ''}`}
+                className={`btn btn-primary ${isProcessing ? 'processing' : ''}`}
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || cartItems.length === 0}
+                disabled={isProcessing || cartItems.length === 0 || !selectedAddress}
+                style={{ width: '100%' }}
               >
                 {isProcessing ? (
                   <>
-                    <div className="museo-spinner"></div>
+                    <span className="spinner"></span>
                     Processing...
                   </>
                 ) : (
-                  'Pay Now'
+                  'Place Order'
                 )}
               </button>
             </div>

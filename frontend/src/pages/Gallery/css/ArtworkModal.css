@@ -1,5 +1,5 @@
 /* ========================================
-   🎨 ARTWORK MODAL MODULE - Design System Compatible
+   ARTWORK MODAL MODULE - Design System Compatible
    
    ARCHITECTURE: Feature-specific module
    USED BY: ArtistArtworkModal, ArtworkModal, PostModal
@@ -69,13 +69,12 @@
 
 .artwork-modal-content {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
   height: 90vh;
   max-height: 800px;
 }
 
 /* ========================================
-   🖼️ IMAGE GALLERY SECTION
+   IMAGE GALLERY SECTION
    ======================================== */
 
 .artwork-modal-gallery {
@@ -235,7 +234,7 @@
 }
 
 /* ========================================
-   📝 DETAILS SECTION
+   DETAILS SECTION
    ======================================== */
 
 .artwork-modal-details {
@@ -442,7 +441,7 @@
 }
 
 /* ========================================
-   💬 COMMENTS SECTION
+   COMMENTS SECTION
    ======================================== */
 
 .artwork-comments {
@@ -591,7 +590,7 @@
 }
 
 /* ========================================
-   📱 RESPONSIVE DESIGN
+   RESPONSIVE DESIGN
    ======================================== */
 
 @media (max-width: 768px) {
@@ -695,7 +694,7 @@
 }
 
 /* ========================================
-   📱 RESPONSIVE LAYOUT FIXES
+   RESPONSIVE LAYOUT FIXES
    Prevent image overlap on smaller screens
    ======================================== */
 

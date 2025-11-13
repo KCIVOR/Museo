@@ -37,7 +37,7 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
   const suggestedMinBid = item?.startingPrice || item?.price || 1000;
 
   const handleAddToCart = () => {
-    onAddToCart({ ...item, quantity });
+    onAddToCart(item, quantity);
     onClose();
   };
 
