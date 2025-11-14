@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import { validateRequest } from "../middleware/validation.js";
 import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, deleteGalleryComment, updateGalleryComment, reportGalleryComment, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt } from "../controllers/galleryController.js";
 
 const router = express.Router();
@@ -49,13 +50,33 @@ const upload = multer({
 });
 
 // Get available art categories
-router.get('/getCategories', getCategories);
+router.get(
+  '/getCategories',
+  validateRequest(
+    { query: { page: { type: 'integer', default: 1, min: 1 }, limit: { type: 'integer', default: 15, min: 1, max: 100 } } },
+    { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
+  ),
+  getCategories
+);
 
 router.post('/maintenance', maintenanceRotation);
 
 
 // Get filtered artworks based on categories
-router.get('/artworks', getFilteredArtworks);
+router.get(
+  '/artworks',
+  validateRequest(
+    {
+      query: {
+        categories: { type: 'string', required: false, min: 1 },
+        page: { type: 'integer', default: 1, min: 1 },
+        limit: { type: 'integer', default: 20, min: 1, max: 100 }
+      }
+    },
+    { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
+  ),
+  getFilteredArtworks
+);
 
 router.get('/getArtPreference', getArtPreference);
 
@@ -63,36 +84,197 @@ router.get('/getArtPreference', getArtPreference);
 router.post('/upload', (req, res, next) => {
   console.log('Upload route hit!');
   next();
-}, upload.array('images', 5), uploadArtwork);
+}, upload.array('images', 5), validateRequest(
+  {
+    body: {
+      title: { type: 'string', required: true, min: 1, max: 200 },
+      description: { type: 'string', required: true, min: 1, max: 2000 },
+      medium: { type: 'string', required: true, min: 1, max: 200 },
+      categories: {
+        type: 'string',
+        required: true,
+        validate: (v) => {
+          try {
+            const arr = JSON.parse(v);
+            return (Array.isArray(arr) && arr.length > 0 && arr.every(x => typeof x === 'string' && x.trim().length > 0)) || 'categories must be a non-empty JSON array of strings';
+          } catch {
+            return 'categories must be a valid JSON array of strings';
+          }
+        }
+      },
+      applyWatermark: { type: 'boolean', required: false, default: true },
+      watermarkText: { type: 'string', required: false, min: 0, max: 120 }
+    }
+  },
+  { source: 'body', allowUnknown: false, stripUnknown: true, coerce: true }
+), uploadArtwork);
 
 // Gallery artwork likes/reactions
-router.post('/react', createGalleryReact);
-router.get('/react', getGalleryReact);
-router.post('/getReact', getGalleryReact); // Also accept POST for consistency
+router.post(
+  '/react',
+  validateRequest(
+    { body: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  createGalleryReact
+);
+router.get(
+  '/react',
+  validateRequest(
+    { query: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'query', allowUnknown: false, stripUnknown: true }
+  ),
+  getGalleryReact
+);
+router.post(
+  '/getReact',
+  validateRequest(
+    { body: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  getGalleryReact
+); // Also accept POST for consistency
 
 // Gallery artwork comments
-router.post('/comment', createGalleryComment);
-router.get('/comments', getGalleryComments);
-router.post('/getComments', getGalleryComments); // Also accept POST for consistency
-router.put('/updateComment/:commentId', updateGalleryComment);
-router.delete('/deleteComment/:commentId', deleteGalleryComment);
-router.post('/reportComment', reportGalleryComment);
+router.post(
+  '/comment',
+  validateRequest(
+    { body: { galleryArtId: { type: 'string', required: true, min: 1 }, content: { type: 'string', required: true, min: 1, max: 2000 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  createGalleryComment
+);
+router.get(
+  '/comments',
+  validateRequest(
+    { query: { galleryArtId: { type: 'string', required: true, min: 1 }, page: { type: 'integer', default: 1, min: 1 }, limit: { type: 'integer', default: 10, min: 1, max: 100 } } },
+    { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
+  ),
+  getGalleryComments
+);
+router.post(
+  '/getComments',
+  validateRequest(
+    {
+      body: { galleryArtId: { type: 'string', required: true, min: 1 } },
+      query: { page: { type: 'integer', default: 1, min: 1 }, limit: { type: 'integer', default: 10, min: 1, max: 100 } }
+    },
+    { source: ['body','query'], coerce: true, allowUnknown: false, stripUnknown: true }
+  ),
+  getGalleryComments
+); // Also accept POST for consistency
+router.put(
+  '/updateComment/:commentId',
+  validateRequest(
+    { params: { commentId: { type: 'string', required: true, min: 1 } }, body: { text: { type: 'string', required: true, min: 1, max: 2000 } } },
+    { source: ['params','body'], allowUnknown: false, stripUnknown: true }
+  ),
+  updateGalleryComment
+);
+router.delete(
+  '/deleteComment/:commentId',
+  validateRequest(
+    { params: { commentId: { type: 'string', required: true, min: 1 } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  deleteGalleryComment
+);
+router.post(
+  '/reportComment',
+  validateRequest(
+    { body: { commentId: { type: 'string', required: true, min: 1 }, reason: { type: 'string', required: true, min: 5, max: 400 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  reportGalleryComment
+);
 
 // Gallery artwork views
-router.post('/view', trackArtworkView);
-router.get('/views', getArtworkViews);
-router.post('/getViews', getArtworkViews); // Also accept POST for consistency
+router.post(
+  '/view',
+  validateRequest(
+    { body: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  trackArtworkView
+);
+router.get(
+  '/views',
+  validateRequest(
+    { query: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'query', allowUnknown: false, stripUnknown: true }
+  ),
+  getArtworkViews
+);
+router.post(
+  '/getViews',
+  validateRequest(
+    { body: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  getArtworkViews
+); // Also accept POST for consistency
 
 // Batch stats endpoint - get stats for multiple artworks in one call
-router.post('/batch-stats', getBatchArtworkStats);
+router.post(
+  '/batch-stats',
+  validateRequest(
+    { body: { artworkIds: { type: 'array', required: true, min: 1, items: { type: 'string', min: 1 } } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  getBatchArtworkStats
+);
 
 // Get current top arts of the week
 router.get('/top-arts-weekly', getCurrentTopArts);
 
-router.put('/artwork/:galleryArtId', upload.array('images', 5), updateGalleryArt);
+router.put(
+  '/artwork/:galleryArtId',
+  upload.array('images', 5),
+  validateRequest(
+    {
+      params: { galleryArtId: { type: 'string', required: true, min: 1 } },
+      body: {
+        title: { type: 'string', required: false, min: 0, max: 200 },
+        description: { type: 'string', required: false, min: 0, max: 2000 },
+        medium: { type: 'string', required: false, min: 0, max: 200 },
+        categories: {
+          required: false,
+          validate: (v) => {
+            if (v === undefined) return true;
+            try {
+              const arr = JSON.parse(v);
+              return (Array.isArray(arr) && arr.every(x => typeof x === 'string')) || 'categories must be a JSON array of strings';
+            } catch {
+              return 'categories must be a valid JSON array of strings';
+            }
+          }
+        },
+        existingImages: {
+          required: false,
+          validate: (v) => (v === undefined || typeof v === 'string' || (Array.isArray(v) && v.every(x => typeof x === 'string'))) || 'existingImages must be a string or an array of strings'
+        },
+        imagesToRemove: {
+          required: false,
+          validate: (v) => (v === undefined || typeof v === 'string' || (Array.isArray(v) && v.every(x => typeof x === 'string'))) || 'imagesToRemove must be a string or an array of strings'
+        },
+        applyWatermark: { type: 'boolean', required: false, default: false },
+        watermarkText: { type: 'string', required: false, min: 0, max: 120 }
+      }
+    },
+    { source: ['params','body'], allowUnknown: false, stripUnknown: true, coerce: true }
+  ),
+  updateGalleryArt
+);
 
 // Delete gallery artwork
-router.delete('/artwork/:galleryArtId', deleteGalleryArt);
+router.delete(
+  '/artwork/:galleryArtId',
+  validateRequest(
+    { params: { galleryArtId: { type: 'string', required: true, min: 1 } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  deleteGalleryArt
+);
 
 // Debug endpoint to check topArtsWeekly table
 router.get('/debug-top-arts', async (req, res) => {
