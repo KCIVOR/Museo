@@ -78,7 +78,7 @@ export default function Register() {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <img
-              src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/logo.png"
+              src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/Museo.png"
               alt="Museo Logo"
               style={{ height: '60px' }}
             />
