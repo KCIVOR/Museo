@@ -202,7 +202,7 @@ export default function Navbar({ role, userData }) {
         {/* Left: brand */}
         <div className="nav__left nav__brand">
           <Link to="/home">
-            <img className="nav__logo" src="/Museo.png" alt="Museo" />
+            <img className="nav__logo" src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/Museo.png" alt="Museo" />
           </Link>
         </div>
 
