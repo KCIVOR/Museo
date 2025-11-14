@@ -6,6 +6,37 @@
 
 /* Modal styles now use styles/components/modals.css */
 
+/* ===== EVENT HEADER ===== */
+
+.event__header {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  position: relative !important;
+  width: 100% !important;
+  margin-bottom: var(--museo-space-8) !important;
+}
+
+.event__header .museo-heading {
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+.event__add-button {
+  position: absolute !important;
+  right: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--museo-space-2) !important;
+  font-size: var(--museo-text-sm) !important;
+  font-weight: var(--museo-font-medium) !important;
+}
+
+.event__add-button svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ===== FORM STRUCTURE ===== */
 
 .museo-form-grid {

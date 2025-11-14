@@ -330,19 +330,19 @@ export default function Event() {
         {/* Header */}
         <div className="event__header">
           <h1 className="museo-heading">Events</h1>
-        </div>
-
-        {/* Admin Actions */}
-        {(role === 'admin' || role?.role === 'admin') && (
-          <div className="event__admin-actions">
+          {(role === 'admin' || role?.role === 'admin' || role === 'artist' || role?.role === 'artist') && (
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-primary btn-sm event__add-button"
               onClick={() => setShowPublish(true)}
             >
-              Publish Event
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Event
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Loading */}
         <MuseoLoadingBox 
