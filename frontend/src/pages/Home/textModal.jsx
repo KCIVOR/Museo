@@ -75,14 +75,14 @@ export default function TextModal({
         );
         if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
         const data = await res.json();
-        console.log('📦 Received comments:', data);
+        console.log('Received comments:', data);
         if (!abort) {
           setComments(data.comments || []);
           setCommentPage(1);
           setHasMoreComments(data.hasMore || false);
         }
       } catch (e) {
-        console.error('❌ Error loading comments:', e);
+        console.error('Error loading comments:', e);
         if (!abort) setCommentErr(e.message);
       } finally {
         if (!abort) setLoadingComments(false);
@@ -536,6 +536,12 @@ export default function TextModal({
                   <div className="description-content">
                     <p 
                       className="description-text"
+                      style={{
+                        fontSize: '1.1rem',
+                        lineHeight: '1.8',
+                        fontWeight: '400',
+                        letterSpacing: '0px'
+                      }}
                       dangerouslySetInnerHTML={{
                         __html: isDescriptionExpanded 
                           ? formatDescription(post.text || post.description)
@@ -546,6 +552,14 @@ export default function TextModal({
                       <button 
                         className="description-toggle"
                         onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        style={{
+                          fontSize: '1.2rem',
+                          fontWeight: '500',
+                          letterSpacing: '0.3px',
+                          color: 'var(--museo-text-muted)',
+                          textDecoration: 'underline',
+                          cursor: 'pointer'
+                        }}
                       >
                         {isDescriptionExpanded ? 'Show Less' : 'Show More'}
                       </button>
