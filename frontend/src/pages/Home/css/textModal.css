@@ -1,6 +1,6 @@
 /* Text Modal Specific Styles - Match PostModal exactly */
 .text-only-modal {
-  max-width: 600px !important;
+  max-width: 900px !important;
   width: 90vw;
 }
 
@@ -9,7 +9,7 @@
   display: grid !important;
   grid-template-columns: 1fr !important;
   height: 90vh !important;
-  max-height: 800px !important;
+  max-height: 1000px !important;
   padding: 0 !important;
 }
 
@@ -32,16 +32,18 @@
 
 .text-only-modal .description-content {
   background: rgba(255, 255, 255, 0.6);
-  padding: 20px;
+  padding: 30px;
   border-radius: 12px;
   border: 1px solid rgba(212, 180, 138, 0.2);
 }
 
 .text-only-modal .description-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 1.3rem;
+  line-height: 1.8;
   color: var(--museo-primary);
   margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .text-only-modal .artwork-actions {
@@ -151,7 +153,7 @@
 .text-only-modal .artwork-description,
 .text-only-modal .artwork-actions,
 .text-only-modal .artwork-comments {
-  max-width: 520px;
+  max-width: 100%;
   margin: 0 auto;
 }
 

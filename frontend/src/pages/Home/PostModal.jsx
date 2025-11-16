@@ -142,14 +142,14 @@ export default function PostModal({
         );
         if (!res.ok) throw new Error(`Failed to load comments (${res.status})`);
         const data = await res.json();
-        console.log('📦 Received comments:', data);
+        console.log('Received comments:', data);
         if (!abort) {
           setComments(data.comments || []);
           setCommentPage(1);
           setHasMoreComments(data.hasMore || false);
         }
       } catch (e) {
-        console.error('❌ Error loading comments:', e);
+        console.error('Error loading comments:', e);
         if (!abort) setCommentErr(e.message);
       } finally {
         if (!abort) setLoadingComments(false);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import MuseoModal, { MuseoModalBody, MuseoModalActions, MuseoModalSection } from '../../components/MuseoModal.jsx';
 import AddProductModal from './AddProductModal';
+import AddAuctionProductModal from './AddAuctionProductModal';
 import EditProductModal from './EditProductModal';
 import ConfirmModal from '../Shared/ConfirmModal';
 import { 
@@ -40,6 +41,7 @@ export default function SellerDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('weekly');
   const [products, setProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddAuctionModalOpen, setIsAddAuctionModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -335,6 +337,11 @@ export default function SellerDashboard() {
   const handleAddProduct = () => {
     setIsAddModalOpen(true);
   };
+
+  // Handle add auction product
+  const handleAddAuctionProduct = () => {
+    setIsAddAuctionModalOpen(true);
+  };
   
   // Handle edit product
   const handleEditProduct = (product) => {
@@ -453,12 +460,27 @@ export default function SellerDashboard() {
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
             </select>
-            <button 
-              className="btn btn-ghost btn-sm"
-              onClick={handleAddProduct}
+            <select 
+              className="museo-select museo-input--sm"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value === 'product') {
+                  handleAddProduct();
+                  e.target.value = '';
+                } else if (e.target.value === 'auction') {
+                  handleAddAuctionProduct();
+                  e.target.value = '';
+                }
+              }}
+              style={{
+                minWidth: '180px',
+                width: 'auto'
+              }}
             >
-              +
-            </button>
+              <option value="" disabled hidden>Add Item</option>
+              <option value="product">Add New Product</option>
+              <option value="auction">Add Auction Product</option>
+            </select>
           </div>
         </div>
 
@@ -1701,6 +1723,13 @@ export default function SellerDashboard() {
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleProductAdded}
+      />
+
+      {/* Add Auction Product Modal */}
+      <AddAuctionProductModal
+        isOpen={isAddAuctionModalOpen}
+        onClose={() => setIsAddAuctionModalOpen(false)}
         onSuccess={handleProductAdded}
       />
 

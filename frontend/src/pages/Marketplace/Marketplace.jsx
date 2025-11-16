@@ -6,6 +6,36 @@ import "./css/marketplace.css";
 
 const API = import.meta.env.VITE_API_BASE;
 
+// Hardcoded auction item for demo
+const HARDCODED_AUCTION = {
+  marketItemId: "auction-001",
+  id: "auction-001",
+  title: "The Mountains by Dhalia Ford",
+  description: "Captures a woman's intense gaze amid abstract strokes and earthy textures. Emotive brushwork and a moody palette create an intimate, contemplative atmosphere.",
+  listingType: "auction",
+  primary_image: "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
+  images: [
+    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
+    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
+    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
+  ],
+  medium: "Watercolor & Ink",
+  dimensions: "24 × 36 in (unframed)",
+  year_created: 2025,
+  startingPrice: 20000,
+  currentBid: 35000,
+  price: 35000,
+  endTime: new Date(Date.now() + 4 * 60 * 60 * 1000 + 50 * 60 * 1000).toISOString(), // 4h 50m from now
+  is_original: true,
+  is_featured: true,
+  seller: {
+    shopName: "Dhalia Ford",
+    profilePicture: "https://ui-avatars.com/api/?name=Dhalia+Ford&background=d4b48a&color=fff&size=32"
+  },
+  category: "painting",
+  categories: ["painting"]
+};
+
 export default function Marketplace() {
   const navigate = useNavigate();
   const { userData } = useUser();
@@ -15,7 +45,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [listingType, setListingType] = useState("all"); // all, buy-now, auction
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
   const [sortBy, setSortBy] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -23,7 +53,6 @@ export default function Marketplace() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
 
-  // Cart removed by P2P migration
 
   // Fetch marketplace items from API
   const fetchMarketplaceItems = async () => {
@@ -40,8 +69,16 @@ export default function Marketplace() {
 
       const result = await response.json();
       
-      // Get items from response
+      // Get items from response and add hardcoded auction
       let items = result.data || [];
+      
+      // Ensure all items have a listingType
+      items = items.map(item => ({
+        ...item,
+        listingType: item.listingType || 'buy-now'
+      }));
+      
+      items = [HARDCODED_AUCTION, ...items];
       
       // Apply client-side filters
       if (selectedCategory !== 'all') {
@@ -51,9 +88,14 @@ export default function Marketplace() {
         );
       }
       
-      if (listingType !== 'all') {
-        items = items.filter(item => item.listingType === listingType);
+      if (listingType === 'buy-now') {
+        // Only show buy-now items, exclude auctions
+        items = items.filter(item => item.listingType === 'buy-now');
+      } else if (listingType === 'auction') {
+        // Only show auction items
+        items = items.filter(item => item.listingType === 'auction');
       }
+      // If listingType === 'all', show everything (no filter)
       
       items = items.filter(item => 
         item.price >= priceRange.min && item.price <= priceRange.max
@@ -84,8 +126,7 @@ export default function Marketplace() {
     }
   };
 
-  // Category definitions (removed mock data)
-
+  // Category definitions 
 
   const categories = [
     { 
@@ -166,7 +207,7 @@ export default function Marketplace() {
   ];
 
   const handleAddToCart = async (item, quantityToAdd = 1) => {
-    // Buy Now -> go to checkout page with selected item & quantity
+    // Buy Now go to checkout page with selected item & quantity
     const qty = Number(quantityToAdd) > 0 ? Number(quantityToAdd) : 1;
     navigate('/marketplace/checkout', {
       state: {
@@ -175,10 +216,6 @@ export default function Marketplace() {
       }
     });
   };
-
-  // Cart removed by P2P migration
-
-  // Cart removed by P2P migration
 
   // Effects
   useEffect(() => {
@@ -519,21 +556,9 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
         />
 
         {/* Badges */}
-        {item.is_featured && (
-          <span className="mp-badge mp-badge--featured">Featured</span>
-        )}
         {item.originalPrice && item.listingType === "buy-now" && (
           <span className="mp-badge mp-badge--sale">
             {Math.round((1 - item.price / item.originalPrice) * 100)}% OFF
-          </span>
-        )}
-        {item.listingType === "auction" && (
-          <span className="mp-badge mp-badge--auction">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-              <circle cx="12" cy="8" r="7"/>
-              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-            </svg>
-            Auction
           </span>
         )}
       </div>

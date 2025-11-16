@@ -786,27 +786,7 @@ export default function Gallery() {
     // Then add non-preferred artworks to fill remaining space
     arrangedArtworks.push(...nonPreferredArtworks);
 
-
     return arrangedArtworks;
-  };
-
-  // Function to generate varied heights for masonry effect
-  const getArtworkHeight = (artwork, index) => {
-    // If artwork has a specific height, use it
-    if (artwork.height && artwork.height !== 300) {
-      return artwork.height;
-    }
-    
-    // Create varied heights for masonry effect (200-450px range)
-    const heightVariations = [220, 280, 320, 380, 240, 350, 300, 420, 260, 400];
-    
-    // Use artwork ID or index to ensure consistent heights for same artwork
-    const artworkId = artwork.id || artwork.galleryArtId || index;
-    const heightIndex = typeof artworkId === 'string' 
-      ? artworkId.length % heightVariations.length 
-      : artworkId % heightVariations.length;
-    
-    return heightVariations[heightIndex];
   };
 
   // Function to get all categories for an artwork
@@ -1490,10 +1470,6 @@ export default function Gallery() {
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
-                      style={{ 
-                        height: `${getArtworkHeight(artwork, index)}px !important`,
-                        objectFit: 'cover'
-                      }}
                     />
                     <div className="museo-artwork-placard">
                       <h3 className="museo-artwork-title">
@@ -1587,56 +1563,53 @@ export default function Gallery() {
             <>
               <div className="museo-gallery-masonry">
                 {filteredArtworks.map((artwork, index) => (
-              <div 
-                key={`artwork-${artwork?.id || index}-${index}`} 
-                className="museo-artwork-card"
-                data-artwork-id={artwork?.id}
-                style={{ 
-                  animationDelay: `${index * 0.02}s`,
-                  cursor: 'pointer'
-                }}
-                onClick={() => openArtworkModal(artwork, `GALLERY ARTWORK #${index + 1}`)}
-              >
-                <img 
-                  src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 
-                  alt={artwork.title}
-                  className="museo-artwork-image"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                  style={{ 
-                    height: `${getArtworkHeight(artwork, index)}px !important`,
-                    objectFit: 'cover'
-                  }}
-                />
-                <div className="museo-artwork-placard">
-                  <h3 className="museo-artwork-title">
-                    {artwork.title}
-                  </h3>
-                  <div className="museo-artwork-artist-info">
-                    {artwork.artistProfilePicture ? (
-                      <img 
-                        src={artwork.artistProfilePicture} 
-                        alt={artwork.artist}
-                        className="museo-artist-avatar"
-                      />
-                    ) : (
-                      <div className="museo-artist-avatar-placeholder">
-                        {artwork.artist?.charAt(0)?.toUpperCase() || 'A'}
+                  <div 
+                    key={`artwork-${artwork?.id || index}-${index}`} 
+                    className="museo-artwork-card"
+                    data-artwork-id={artwork?.id}
+                    style={{ 
+                      animationDelay: `${index * 0.02}s`,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => openArtworkModal(artwork, `GALLERY ARTWORK #${index + 1}`)}
+                  >
+                    <img 
+                      src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 
+                      alt={artwork.title}
+                      className="museo-artwork-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                      loading="lazy"
+                    />
+                    <div className="museo-artwork-placard">
+                      <h3 className="museo-artwork-title">
+                        {artwork.title}
+                      </h3>
+                      <div className="museo-artwork-artist-info">
+                        {artwork.artistProfilePicture ? (
+                          <img 
+                            src={artwork.artistProfilePicture} 
+                            alt={artwork.artist}
+                            className="museo-artist-avatar"
+                          />
+                        ) : (
+                          <div className="museo-artist-avatar-placeholder">
+                            {artwork.artist?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+                        )}
+                        <span className="museo-artwork-artist">
+                          {artwork.artist}
+                        </span>
                       </div>
-                    )}
-                    <span className="museo-artwork-artist">
-                      {artwork.artist}
-                    </span>
+                      <div className="museo-artwork-meta">
+                        <span className="museo-artwork-year">{artwork.year}</span>
+                        <span>•</span>
+                        <span>{getArtworkCategories(artwork).join(', ')}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="museo-artwork-meta">
-                    <span className="museo-artwork-year">{artwork.year}</span>
-                    <span>•</span>
-                    <span>{getArtworkCategories(artwork).join(', ')}</span>
-                  </div>
-                </div>
-              </div>
-              ))}
+                ))}
               </div>
               
               {/* Load More Indicator */}

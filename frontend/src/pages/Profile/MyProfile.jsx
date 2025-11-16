@@ -1,13 +1,11 @@
-// src/pages/MyProfile.jsx
 import "./css/MyProfile.css";
-// Using CSS classes from design-system.css
 import MuseoLoadingBox from "../../components/MuseoLoadingBox.jsx";
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import React, { useEffect, useState, useMemo } from "react";
 import { useUser } from "../../contexts/UserContext";
 import ArtGallery from "../Gallery/artGallery";
 import UploadArt from "./UploadArt";
-// Using CSS classes from design-system.css instead of components
+
 const API = import.meta.env.VITE_API_BASE;
 
 const FALLBACK_AVATAR =
@@ -491,7 +489,15 @@ export default function MyProfile() {
   const fetchArts = async () => {
     try{
       setLoadingArts(true);
-      const response = await fetch(`${API}/profile/getArts`, {
+      // Get the current user's ID from userData
+      const userId = userData?.userId || userData?.id;
+      if (!userId) {
+        console.warn("User ID not available for fetching arts");
+        setArts([]);
+        return;
+      }
+      
+      const response = await fetch(`${API}/artist/getArts/${userId}`, {
         method: "GET",
         credentials: "include",
       });
@@ -520,10 +526,10 @@ export default function MyProfile() {
 
   const handleCloseEdit = async () => {
     setOpenEdit(false);
-    console.log('👤 MyProfile: Edit modal closed, refreshing UserContext...');
+    console.log('MyProfile: Edit modal closed, refreshing UserContext...');
     // Refresh UserContext to get updated profile data
     await refreshUserData();
-    console.log('✅ MyProfile: UserContext refreshed');
+    console.log('MyProfile: UserContext refreshed');
     // Also refresh local profile data for display
     fetchProfile();
   };
