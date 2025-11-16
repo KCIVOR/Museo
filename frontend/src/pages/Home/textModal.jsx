@@ -534,14 +534,14 @@ export default function TextModal({
               {(post.text || post.description) && (
                 <div className="artwork-description">
                   <div className="description-content">
-                    <p 
-                      className="description-text"
-                      dangerouslySetInnerHTML={{
-                        __html: isDescriptionExpanded 
-                          ? formatDescription(post.text || post.description)
-                          : getTruncatedDescription(post.text || post.description)
-                      }}
-                    />
+                  <p
+                    className="description-text"
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {isDescriptionExpanded
+                      ? formatDescription(post.text || post.description)
+                      : getTruncatedDescription(post.text || post.description)}
+                  </p>
                     {(post.text || post.description).length > 150 && (
                       <button 
                         className="description-toggle"

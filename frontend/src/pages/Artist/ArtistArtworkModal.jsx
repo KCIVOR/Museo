@@ -559,7 +559,8 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   // Helper function to format description with proper line breaks
   const formatDescription = (text) => {
     if (!text) return '';
-    return text.replace(/\n/g, '<br />');
+    return text;
+
   };
 
   // Helper function to truncate description
@@ -807,14 +808,14 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
                 <div className="artwork-description">
                   <h3>Description</h3>
                   <div className="description-content">
-                    <p 
-                      className="description-text"
-                      dangerouslySetInnerHTML={{
-                        __html: isDescriptionExpanded 
-                          ? formatDescription(artwork.description)
-                          : getTruncatedDescription(artwork.description)
-                      }}
-                    />
+                  <p
+                    className="description-text"
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {isDescriptionExpanded
+                      ? formatDescription(artwork.description)
+                      : getTruncatedDescription(artwork.description)}
+                  </p>
                     {artwork.description.length > 150 && (
                       <button 
                         className="description-toggle"

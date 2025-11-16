@@ -343,5 +343,4 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
-
 //const isMatch = await bcrypt.compare(password, data.password); check password

@@ -26,7 +26,7 @@ const dbg = (...args) => {
  */
 export const validateRequest = (schema, options = {}) => {
   const {
-    sanitize = true,
+    sanitize = false,
     abortOnFirstError = false,
     allowUnknown = true,
     source = 'body', // 'body', 'query', 'params', or array of these

@@ -1480,7 +1480,7 @@ export const getBuyerOrders = async (req, res) => {
       });
     }
 
-    // Get order items for each order with marketplace item details for images
+    // Get order items per order and enrich using marketplace_items and auction_items
     const ordersWithItems = await Promise.all(
       orders.map(async (order) => {
         const { data: items } = await db
@@ -1488,29 +1488,71 @@ export const getBuyerOrders = async (req, res) => {
           .select('*')
           .eq('orderId', order.orderId);
 
-        // Get marketplace item details for images
-        const itemIds = [...new Set(items.map(item => item.marketplaceItemId))];
+        // Collect IDs for both listing types
+        const marketIds = [...new Set((items || []).map(i => i.marketplaceItemId).filter(Boolean))];
+        const auctionIds = [...new Set((items || []).map(i => i.auctionItemId).filter(Boolean))];
+
+        // Fetch metadata
         let marketItems = [];
-        
-        if (itemIds.length > 0) {
+        let auctionItems = [];
+        if (marketIds.length > 0) {
           const { data: marketData } = await db
             .from('marketplace_items')
-            .select('marketItemId, primary_image, images')
-            .in('marketItemId', itemIds);
+            .select('marketItemId, title, primary_image, images')
+            .in('marketItemId', marketIds);
           marketItems = marketData || [];
         }
-        
-        // Create a map for quick lookup
-        const itemsMap = new Map(marketItems?.map(i => [i.marketItemId, i]) || []);
-        
-        // Add image data to order items
-        const itemsWithImages = items.map(item => {
-          const marketItem = itemsMap.get(item.marketplaceItemId);
+        if (auctionIds.length > 0) {
+          const { data: auctionData } = await db
+            .from('auction_items')
+            .select('auctionItemId, title, primary_image, images')
+            .in('auctionItemId', auctionIds);
+          auctionItems = auctionData || [];
+        }
+
+        // Build lookup maps
+        const marketMap = new Map((marketItems || []).map(i => [i.marketItemId, i]));
+        const auctionMap = new Map((auctionItems || []).map(i => [i.auctionItemId, i]));
+
+        // Robust image helpers
+        const extractImg = (v) => {
+          if (!v) return null;
+          if (typeof v === 'string') {
+            const s = v.trim();
+            if (s.startsWith('{') || s.startsWith('[')) {
+              try { return extractImg(JSON.parse(s)); } catch (_) { return s; }
+            }
+            return s;
+          }
+          if (typeof v === 'object') return v.url || v.path || v.src || null;
+          return null;
+        };
+        const pickImage = (meta) => {
+          if (!meta) return null;
+          const fromPrimary = extractImg(meta.primary_image);
+          if (fromPrimary) return fromPrimary;
+          const imgs = meta.images;
+          if (Array.isArray(imgs)) {
+            for (const im of imgs) { const out = extractImg(im); if (out) return out; }
+          } else if (imgs && typeof imgs === 'object') {
+            const out = extractImg(imgs); if (out) return out;
+          }
+          return null;
+        };
+
+        // Decorate items
+        const itemsWithImages = (items || []).map(item => {
+          const isAuction = !!item.auctionItemId;
+          const m = isAuction ? null : marketMap.get(item.marketplaceItemId);
+          const a = isAuction ? auctionMap.get(item.auctionItemId) : null;
+          const image = isAuction ? pickImage(a) : pickImage(m);
+          const title = item.title || m?.title || a?.title;
           return {
             ...item,
-            image: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
-            itemImage: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
-            itemTitle: item.title // Ensure itemTitle is set
+            isAuction,
+            image,
+            itemImage: image,
+            itemTitle: title
           };
         });
 
@@ -1645,7 +1687,7 @@ export const getSellerOrders = async (req, res) => {
     // Fetch order items for filtered orders
     const { data: orderItems, error: itemsError } = await db
       .from('order_items')
-      .select('orderItemId, orderId, marketplaceItemId, title, priceAtPurchase, quantity, sellerProfileId')
+      .select('orderItemId, orderId, marketplaceItemId, auctionItemId, title, priceAtPurchase, quantity, sellerProfileId')
       .in('orderId', orderIds);
 
     if (itemsError) {
@@ -1653,15 +1695,50 @@ export const getSellerOrders = async (req, res) => {
       return res.status(500).json({ success: false, error: itemsError.message });
     }
 
-    // Get marketplace item details for image/metadata
-    const itemIds = [...new Set(orderItems.map(item => item.marketplaceItemId))];
-    const { data: marketItems } = await db
-      .from('marketplace_items')
-      .select('marketItemId, title, primary_image, medium, dimensions')
-      .in('marketItemId', itemIds);
+    // Get metadata for both marketplace and auction items
+    const marketIds = [...new Set((orderItems || []).map(it => it.marketplaceItemId).filter(Boolean))];
+    const auctionIds = [...new Set((orderItems || []).map(it => it.auctionItemId).filter(Boolean))];
+    const { data: marketItems } = marketIds.length > 0
+      ? await db.from('marketplace_items')
+          .select('marketItemId, title, primary_image, images, medium, dimensions')
+          .in('marketItemId', marketIds)
+      : { data: [] };
+    const { data: auctionItems } = auctionIds.length > 0
+      ? await db.from('auction_items')
+          .select('auctionItemId, title, primary_image, images, medium, dimensions')
+          .in('auctionItemId', auctionIds)
+      : { data: [] };
+    
 
-    // Create a map for quick lookup
-    const itemsMap = new Map(marketItems?.map(i => [i.marketItemId, i]) || []);
+    // Create maps for quick lookup
+    const marketMap = new Map((marketItems || []).map(i => [i.marketItemId, i]));
+    const auctionMap = new Map((auctionItems || []).map(i => [i.auctionItemId, i]));
+
+    // Robust image helpers
+    const extractImg = (v) => {
+      if (!v) return null;
+      if (typeof v === 'string') {
+        const s = v.trim();
+        if (s.startsWith('{') || s.startsWith('[')) {
+          try { return extractImg(JSON.parse(s)); } catch (_) { return s; }
+        }
+        return s;
+      }
+      if (typeof v === 'object') return v.url || v.path || v.src || null;
+      return null;
+    };
+    const pickImage = (meta) => {
+      if (!meta) return null;
+      const fromPrimary = extractImg(meta.primary_image);
+      if (fromPrimary) return fromPrimary;
+      const imgs = meta.images;
+      if (Array.isArray(imgs)) {
+        for (const im of imgs) { const out = extractImg(im); if (out) return out; }
+      } else if (imgs && typeof imgs === 'object') {
+        const out = extractImg(imgs); if (out) return out;
+      }
+      return null;
+    };
 
     // Use the DB-filtered result set directly
     const filteredOrders = allOrders;
@@ -1690,17 +1767,22 @@ export const getSellerOrders = async (req, res) => {
     // Add items to their respective orders
     orderItems.forEach(item => {
       if (groupedOrdersMap.has(item.orderId)) {
-        const marketItem = itemsMap.get(item.marketplaceItemId);
-        
-        // Use stored title from order_items first (preserved even if item deleted)
-        // Fall back to marketplace item data if available
+        const isAuction = !!item.auctionItemId;
+        const m = isAuction ? null : marketMap.get(item.marketplaceItemId);
+        const a = isAuction ? auctionMap.get(item.auctionItemId) : null;
+        const image = isAuction ? pickImage(a) : pickImage(m);
+        const title = item.title || m?.title || a?.title || 'Unknown Item';
+        const medium = m?.medium || a?.medium;
+        const dimensions = m?.dimensions || a?.dimensions;
         groupedOrdersMap.get(item.orderId).items.push({
           orderItemId: item.orderItemId,
           marketplaceItemId: item.marketplaceItemId,
-          title: item.title || marketItem?.title || 'Unknown Item',
-          image: marketItem?.primary_image,
-          medium: marketItem?.medium,
-          dimensions: marketItem?.dimensions,
+          auctionItemId: item.auctionItemId,
+          isAuction,
+          title,
+          image,
+          medium,
+          dimensions,
           quantity: item.quantity,
           priceAtPurchase: item.priceAtPurchase,
           subtotal: item.priceAtPurchase * item.quantity
@@ -1798,39 +1880,81 @@ export const getOrderDetails = async (req, res) => {
       });
     }
     
-    // Get marketplace item details for images and additional info
-    const itemIds = [...new Set(items.map(item => item.marketplaceItemId))];
+    // Get metadata for both marketplace and auction items
+    const marketIds = [...new Set(items.map(item => item.marketplaceItemId).filter(Boolean))];
+    const auctionIds = [...new Set(items.map(item => item.auctionItemId).filter(Boolean))];
     let marketplaceItems = [];
-    
-    if (itemIds.length > 0) {
+    let auctionItems = [];
+    if (marketIds.length > 0) {
       const { data: marketData, error: marketError } = await db
         .from('marketplace_items')
         .select('marketItemId, title, primary_image, images')
-        .in('marketItemId', itemIds);
-        
+        .in('marketItemId', marketIds);
       if (marketError) {
         console.error('Error fetching marketplace items:', marketError);
       } else {
         marketplaceItems = marketData || [];
       }
     }
+    if (auctionIds.length > 0) {
+      const { data: auctionData, error: auctionError } = await db
+        .from('auction_items')
+        .select('auctionItemId, title, primary_image, images')
+        .in('auctionItemId', auctionIds);
+      if (auctionError) {
+        console.error('Error fetching auction items:', auctionError);
+      } else {
+        auctionItems = auctionData || [];
+      }
+    }
     
-    // Create a map for quick lookup
-    const itemsMap = new Map(marketplaceItems.map(i => [i.marketItemId, i]));
+    // Create maps for quick lookup
+    const marketMap = new Map((marketplaceItems || []).map(i => [i.marketItemId, i]));
+    const auctionMap = new Map((auctionItems || []).map(i => [i.auctionItemId, i]));
+    
+    // Robust image helpers
+    const extractImg = (v) => {
+      if (!v) return null;
+      if (typeof v === 'string') {
+        const s = v.trim();
+        if (s.startsWith('{') || s.startsWith('[')) {
+          try { return extractImg(JSON.parse(s)); } catch (_) { return s; }
+        }
+        return s;
+      }
+      if (typeof v === 'object') return v.url || v.path || v.src || null;
+      return null;
+    };
+    const pickImage = (meta) => {
+      if (!meta) return null;
+      const fromPrimary = extractImg(meta.primary_image);
+      if (fromPrimary) return fromPrimary;
+      const imgs = meta.images;
+      if (Array.isArray(imgs)) {
+        for (const im of imgs) { const out = extractImg(im); if (out) return out; }
+      } else if (imgs && typeof imgs === 'object') {
+        const out = extractImg(imgs); if (out) return out;
+      }
+      return null;
+    };
     
     // Enhance items with images and ensure data integrity
     const enhancedItems = items.map(item => {
-      const marketItem = itemsMap.get(item.marketplaceItemId);
+      const isAuction = !!item.auctionItemId;
+      const m = isAuction ? null : marketMap.get(item.marketplaceItemId);
+      const a = isAuction ? auctionMap.get(item.auctionItemId) : null;
       // Ensure all price fields are proper numbers
       const price = parseFloat(item.priceAtPurchase) || 0;
       const quantity = parseInt(item.quantity) || 1;
-      
+      const image = isAuction ? pickImage(a) : pickImage(m);
+      const title = item.title || m?.title || a?.title || 'Product';
       return {
         ...item,
+        isAuction,
         price: price,
         quantity: quantity,
-        itemImage: marketItem?.primary_image || (marketItem?.images && marketItem.images[0]) || null,
-        itemTitle: marketItem?.title || item.title || "Product",
+        itemImage: image,
+        itemTitle: title,
         total: price * quantity
       };
     });

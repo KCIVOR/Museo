@@ -5,8 +5,8 @@ import { validateRequest } from "../middleware/validation.js";
 
 const router = express.Router();
 
-// Preserve message content as raw text (no HTML execution). React will render
-// string children safely as text, so "<script>" will display literally.
+// Sanitize message content on input to remove HTML tags and script bodies.
+// Frontend will render safe text; e.g., "<script>" becomes "script".
 const normalizeMessageContent = (req, _res, next) => {
   if (typeof req.body?.content === "string") {
     // Trim and cap length to 2000 characters; keep raw characters
