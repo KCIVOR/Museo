@@ -57,9 +57,6 @@ export default function SellerDashboard() {
   const [sellerAuctions, setSellerAuctions] = useState([]);
   const [sellerAuctionsLoading, setSellerAuctionsLoading] = useState(false);
   const [auctionStatusFilter, setAuctionStatusFilter] = useState('');
-  const [quickAuctionOpen, setQuickAuctionOpen] = useState(false);
-  const [selectedAuctionItem, setSelectedAuctionItem] = useState(null);
-  const [qa, setQa] = useState({ startPrice: '', reservePrice: '', minIncrement: 0, startAt: '', endAt: '' });
   
   // Orders management state
   const [orders, setOrders] = useState([]);
@@ -178,12 +175,6 @@ export default function SellerDashboard() {
     } finally {
       setSellerAuctionsLoading(false);
     }
-  };
-
-  const openQuickAuction = (item) => {
-    setSelectedAuctionItem(item);
-    setQa({ startPrice: '', reservePrice: '', minIncrement: 0, startAt: '', endAt: '' });
-    setQuickAuctionOpen(true);
   };
 
   const activateAuctionNow = async (auctionId) => {
@@ -1122,9 +1113,6 @@ export default function SellerDashboard() {
 
               {auctionsTab === 'items' && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--museo-space-3)' }}>
-                    <button className="btn btn-primary btn-sm" onClick={handleAddAuctionProduct}>Add Auction Item</button>
-                  </div>
                   {auctionItemsLoading ? (
                     <div className="loading-state"><p>Loading auction items...</p></div>
                   ) : auctionItems.length > 0 ? (
@@ -1145,7 +1133,7 @@ export default function SellerDashboard() {
                             <td className="product-name"><div className="product-title" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div></td>
                             <td className="product-medium">{item.medium || 'N/A'}</td>
                             <td className="product-dimensions">{item.dimensions || 'N/A'}</td>
-                            <td><div className="action-buttons"><button className="btn btn-ghost btn-sm" onClick={() => openQuickAuction(item)}>Create Auction</button></div></td>
+                            
                           </tr>
                         ))}
                       </tbody>
@@ -1911,68 +1899,6 @@ export default function SellerDashboard() {
         onClose={() => setIsAddAuctionModalOpen(false)}
         onSuccess={handleProductAdded}
       />
-
-      {/* Quick Create Auction Modal */}
-      <MuseoModal
-        open={quickAuctionOpen}
-        onClose={() => setQuickAuctionOpen(false)}
-        title={selectedAuctionItem ? `Create Auction: ${selectedAuctionItem.title}` : 'Create Auction'}
-        size="md"
-      >
-        <MuseoModalBody>
-          <div className="museo-form-group">
-            <label className="museo-label museo-label--required">Starting Price (₱)</label>
-            <input type="number" className="museo-input" value={qa.startPrice} onChange={(e) => setQa({ ...qa, startPrice: e.target.value })} min="0" step="0.01" />
-          </div>
-          <div className="museo-form-group">
-            <label className="museo-label">Reserve Price (₱)</label>
-            <input type="number" className="museo-input" value={qa.reservePrice} onChange={(e) => setQa({ ...qa, reservePrice: e.target.value })} min="0" step="0.01" />
-          </div>
-          <div className="museo-form-group">
-            <label className="museo-label">Minimum Increment (₱)</label>
-            <input type="number" className="museo-input" value={qa.minIncrement} onChange={(e) => setQa({ ...qa, minIncrement: e.target.value })} min="0" step="0.01" />
-          </div>
-          <div className="form-row">
-            <div className="museo-form-group" style={{ flex: 1 }}>
-              <label className="museo-label museo-label--required">Start Time</label>
-              <input type="datetime-local" className="museo-input" value={qa.startAt} onChange={(e) => setQa({ ...qa, startAt: e.target.value })} />
-            </div>
-            <div className="museo-form-group" style={{ flex: 1 }}>
-              <label className="museo-label museo-label--required">End Time</label>
-              <input type="datetime-local" className="museo-input" value={qa.endAt} onChange={(e) => setQa({ ...qa, endAt: e.target.value })} />
-            </div>
-          </div>
-        </MuseoModalBody>
-        <MuseoModalActions>
-          <button className="btn btn-ghost btn-sm" onClick={() => setQuickAuctionOpen(false)}>Cancel</button>
-          <button className="btn btn-primary btn-sm" onClick={async () => {
-            if (!qa.startPrice || !qa.endAt || !selectedAuctionItem) return alert('Please set Start Price and End Time');
-            try {
-              const payload = {
-                auctionItemId: selectedAuctionItem.auctionItemId,
-                startPrice: parseFloat(qa.startPrice),
-                reservePrice: qa.reservePrice ? parseFloat(qa.reservePrice) : null,
-                minIncrement: qa.minIncrement ? parseFloat(qa.minIncrement) : 0,
-                startAt: qa.startAt ? new Date(qa.startAt).toISOString() : new Date().toISOString(),
-                endAt: new Date(qa.endAt).toISOString(),
-              };
-              const response = await fetch(`${API}/auctions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(payload)
-              });
-              const result = await response.json();
-              if (!result.success) throw new Error(result.error || 'Failed to create auction');
-              setQuickAuctionOpen(false);
-              fetchSellerAuctions(auctionStatusFilter);
-              alert('Auction created successfully');
-            } catch (error) {
-              alert(error.message || 'Failed to create auction');
-            }
-          }} disabled={!qa.startPrice || !qa.endAt}>Create Auction</button>
-        </MuseoModalActions>
-      </MuseoModal>
 
       {/* Edit Product Modal */}
       <EditProductModal
