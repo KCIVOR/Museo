@@ -1,44 +1,16 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import ProductDetailModal from "./ProductDetailModal";
+import ProductAuctionModal from "./ProductAuctionModal";
 import "./css/marketplace.css";
 
 const API = import.meta.env.VITE_API_BASE;
 
-// Hardcoded auction item for demo
-const HARDCODED_AUCTION = {
-  marketItemId: "auction-001",
-  id: "auction-001",
-  title: "The Mountains by Dhalia Ford",
-  description: "Captures a woman's intense gaze amid abstract strokes and earthy textures. Emotive brushwork and a moody palette create an intimate, contemplative atmosphere.",
-  listingType: "auction",
-  primary_image: "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
-  images: [
-    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
-    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
-    "https://img.freepik.com/free-vector/pastel-coloured-hand-drawn-doodle-pattern-design_1048-19887.jpg?semt=ais_hybrid&w=740&q=80",
-  ],
-  medium: "Watercolor & Ink",
-  dimensions: "24 × 36 in (unframed)",
-  year_created: 2025,
-  startingPrice: 20000,
-  currentBid: 35000,
-  price: 35000,
-  endTime: new Date(Date.now() + 4 * 60 * 60 * 1000 + 50 * 60 * 1000).toISOString(), // 4h 50m from now
-  is_original: true,
-  is_featured: true,
-  seller: {
-    shopName: "Dhalia Ford",
-    profilePicture: "https://ui-avatars.com/api/?name=Dhalia+Ford&background=d4b48a&color=fff&size=32"
-  },
-  category: "painting",
-  categories: ["painting"]
-};
-
 export default function Marketplace() {
   const navigate = useNavigate();
   const { userData } = useUser();
+  const { productId: routeProductId } = useParams();
   
   // State management
   const [marketplaceItems, setMarketplaceItems] = useState([]);
@@ -52,6 +24,8 @@ export default function Marketplace() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showAuctionModal, setShowAuctionModal] = useState(false);
+  const hasOpenedProductRef = useRef(false);
 
 
   // Fetch marketplace items from API
@@ -77,8 +51,102 @@ export default function Marketplace() {
         ...item,
         listingType: item.listingType || 'buy-now'
       }));
-      
-      items = [HARDCODED_AUCTION, ...items];
+
+      // Fetch active auctions and normalize to marketplace card shape
+      let auctionsNormalized = [];
+      try {
+        console.log('🔄 Fetching active auctions...');
+        const aRes = await fetch(`${API}/auctions?status=active&limit=100`, { method: 'GET', credentials: 'include' });
+        if (aRes.ok) {
+          const aJson = await aRes.json();
+          console.log('📦 Raw auctions response:', aJson);
+          
+          const aList = Array.isArray(aJson?.data)
+            ? aJson.data
+            : Array.isArray(aJson?.auctions)
+              ? aJson.auctions
+              : Array.isArray(aJson)
+                ? aJson
+                : [];
+
+          console.log(`📊 Found ${aList.length} auctions to normalize`);
+
+          auctionsNormalized = aList.map((a, idx) => {
+            console.log(`🎨 Raw auction data ${idx}:`, {
+              auctionId: a.auctionId,
+              startAt: a.startAt,
+              endAt: a.endAt,
+              startPrice: a.startPrice,
+              minIncrement: a.minIncrement,
+              status: a.status,
+              singleBidOnly: a.singleBidOnly,
+              allowBidUpdates: a.allowBidUpdates,
+              created_at: a.created_at,
+              updated_at: a.updated_at,
+              fullAuction: a
+            });
+            console.log(`🎨 Normalizing auction ${idx}:`, a);
+            
+            // auction_items is an object, not an array
+            const aItem = a.auction_items;
+            
+            const title = aItem?.title || a.title || 'Untitled';
+            const primary = aItem?.primary_image || a.primary_image;
+            const imgs = Array.isArray(aItem?.images) ? aItem.images : [];
+            const sellerData = aItem?.seller;
+            const seller = sellerData ? { 
+              shopName: sellerData.shopName || 'Unknown Artist',
+              profilePicture: `https://ui-avatars.com/api/?name=${sellerData.shopName || 'Artist'}&background=d4b48a&color=fff&size=32`
+            } : { shopName: 'Unknown Artist' };
+            const categories = aItem?.categories || [];
+            const current = a.currentBid ?? a.highestBid ?? null;
+            const startPrice = a.startPrice ?? a.startingPrice ?? 0;
+            const end = a.endAt ?? a.endTime;
+            const price = (current ?? startPrice ?? 0);
+            
+            const normalized = {
+              id: a.auctionId || a.id,
+              marketItemId: a.auctionId || a.id,
+              title,
+              description: aItem?.description || a.description || '',
+              primary_image: primary,
+              images: imgs,
+              medium: aItem?.medium,
+              dimensions: aItem?.dimensions,
+              year_created: aItem?.year_created,
+              is_original: aItem?.is_original,
+              is_featured: aItem?.is_featured,
+              seller,
+              categories,
+              listingType: 'auction',
+              // Keep existing fields for backward compatibility
+              startingPrice: startPrice,
+              endTime: end,
+              currentBid: current,
+              price,
+              // Add DB-aligned fields for modal usage
+              startAt: a.startAt ?? a.start_time ?? a.startsAt ?? null,
+              endAt: end,
+              startPrice: startPrice,
+              minIncrement: a.minIncrement ?? a.min_increment ?? null,
+              singleBidOnly: a.singleBidOnly ?? a.single_bid_only ?? false,
+              allowBidUpdates: a.allowBidUpdates ?? a.allow_bid_updates ?? false
+            };
+            
+            console.log(`✅ Normalized auction ${idx}:`, normalized);
+            return normalized;
+          });
+          
+          console.log(`✅ Successfully normalized ${auctionsNormalized.length} auctions`);
+        } else {
+          console.warn('⚠️ Auctions fetch response not OK:', aRes.status);
+        }
+      } catch (e) {
+        console.error('❌ Failed to load auctions', e);
+      }
+
+      // Combine auctions with regular items
+      items = [...auctionsNormalized, ...items];
       
       // Apply client-side filters
       if (selectedCategory !== 'all') {
@@ -217,6 +285,83 @@ export default function Marketplace() {
     });
   };
 
+  const openProduct = (product) => {
+    // Derive if this is an auction even when listingType is absent
+    const isAuction = (product?.listingType === 'auction')
+      || product?.isAuction
+      || typeof product?.currentBid === 'number'
+      || typeof product?.startingPrice === 'number'
+      || !!product?.endTime || !!product?.endAt;
+
+    const normalized = {
+      ...product,
+      listingType: isAuction ? 'auction' : (product?.listingType || 'buy-now')
+    };
+
+    setSelectedProduct(normalized);
+    if (normalized.listingType === 'auction') {
+      setShowAuctionModal(true);
+    } else {
+      setShowProductModal(true);
+    }
+  };
+
+  // Close modal(s) and return to /marketplace when opened via deep link
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setShowProductModal(false);
+    setShowAuctionModal(false);
+    if (routeProductId) {
+      navigate('/marketplace', { replace: true });
+    }
+  };
+
+  // When navigated to /marketplace/product/:productId, fetch that product and open the modal
+  useEffect(() => {
+    const openByRoute = async () => {
+      if (!routeProductId) {
+        hasOpenedProductRef.current = false;
+        return;
+      }
+      
+      // If we already opened this product, don't do it again
+      if (hasOpenedProductRef.current) return;
+      
+      try {
+        // Try find in current list first
+        const found = marketplaceItems.find(p => (p.marketItemId || p.id) == routeProductId);
+        if (found) { 
+          openProduct(found);
+          hasOpenedProductRef.current = true;
+          return;
+        }
+        
+        // If not found in list, fetch the specific product
+        if (marketplaceItems.length > 0) {
+          const res = await fetch(`${API}/marketplace/items/${routeProductId}`, { 
+            credentials: 'include',
+            method: 'GET'
+          });
+          if (!res.ok) throw new Error('Product not found');
+          const result = await res.json();
+          const product = result.data || result;
+          if (product) { 
+            // Ensure auction detection on deep link too
+            openProduct(product);
+            hasOpenedProductRef.current = true;
+            return;
+          }
+          throw new Error('Product not found');
+        }
+      } catch (e) {
+        console.error(e);
+        // If failed, navigate back to marketplace
+        navigate('/marketplace', { replace: true });
+      }
+    };
+    openByRoute();
+  }, [routeProductId, marketplaceItems.length > 0]);
+
   // Effects
   useEffect(() => {
     fetchMarketplaceItems();
@@ -224,8 +369,7 @@ export default function Marketplace() {
   }, [userData]);
 
   const handleProductClick = (item) => {
-    setSelectedProduct(item);
-    setShowProductModal(true);
+    navigate(`/marketplace/product/${item.marketItemId || item.id}`);
   };
 
   const handlePlaceBid = (item, bidAmount) => {
@@ -507,12 +651,20 @@ export default function Marketplace() {
         {/* Cart Sidebar removed by P2P migration */}
       </div>
 
-      {/* Product Detail Modal */}
+      {/* Product Detail Modal (Buy-Now) */}
       <ProductDetailModal
-        isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
-        item={selectedProduct}
+        isOpen={showProductModal && selectedProduct?.listingType !== 'auction'}
+        onClose={closeProductModal}
+        item={selectedProduct?.listingType !== 'auction' ? selectedProduct : null}
         onAddToCart={handleAddToCart}
+        onPlaceBid={handlePlaceBid}
+      />
+
+      {/* Product Auction Modal */}
+      <ProductAuctionModal
+        isOpen={showAuctionModal && selectedProduct?.listingType === 'auction'}
+        onClose={closeProductModal}
+        item={selectedProduct?.listingType === 'auction' ? selectedProduct : null}
         onPlaceBid={handlePlaceBid}
       />
     </div>
@@ -570,7 +722,7 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
           <span className="mp-card-year">{item.year_created || new Date().getFullYear()}</span>
         </div>
         
-        <h3 className="mp-card-title">{item.title}</h3>
+        <h3 className="mp-card-title" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</h3>
         <p className="mp-card-artist">by {item.seller?.shopName || 'Unknown Artist'}</p>
         
         <div className="mp-card-details">

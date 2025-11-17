@@ -48,6 +48,18 @@ export default function SellerDashboard() {
   const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
+
+  // Auctions state
+  const [productView, setProductView] = useState('inventory');
+  const [auctionsTab, setAuctionsTab] = useState('items');
+  const [auctionItems, setAuctionItems] = useState([]);
+  const [auctionItemsLoading, setAuctionItemsLoading] = useState(false);
+  const [sellerAuctions, setSellerAuctions] = useState([]);
+  const [sellerAuctionsLoading, setSellerAuctionsLoading] = useState(false);
+  const [auctionStatusFilter, setAuctionStatusFilter] = useState('');
+  const [quickAuctionOpen, setQuickAuctionOpen] = useState(false);
+  const [selectedAuctionItem, setSelectedAuctionItem] = useState(null);
+  const [qa, setQa] = useState({ startPrice: '', reservePrice: '', minIncrement: 0, startAt: '', endAt: '' });
   
   // Orders management state
   const [orders, setOrders] = useState([]);
@@ -132,6 +144,57 @@ export default function SellerDashboard() {
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch auction items owned by seller
+  const fetchAuctionItems = async () => {
+    try {
+      setAuctionItemsLoading(true);
+      const response = await fetch(`${API}/auctions/items/my-items`, { credentials: 'include' });
+      const result = await response.json();
+      if (result.success) setAuctionItems(result.data || []);
+      else setAuctionItems([]);
+    } catch (error) {
+      console.error('Error fetching auction items:', error);
+      setAuctionItems([]);
+    } finally {
+      setAuctionItemsLoading(false);
+    }
+  };
+
+  // Fetch seller auctions
+  const fetchSellerAuctions = async (status = '') => {
+    try {
+      setSellerAuctionsLoading(true);
+      const url = status ? `${API}/auctions/seller/my-auctions?status=${encodeURIComponent(status)}` : `${API}/auctions/seller/my-auctions`;
+      const response = await fetch(url, { credentials: 'include' });
+      const result = await response.json();
+      if (result.success) setSellerAuctions(result.data || []);
+      else setSellerAuctions([]);
+    } catch (error) {
+      console.error('Error fetching seller auctions:', error);
+      setSellerAuctions([]);
+    } finally {
+      setSellerAuctionsLoading(false);
+    }
+  };
+
+  const openQuickAuction = (item) => {
+    setSelectedAuctionItem(item);
+    setQa({ startPrice: '', reservePrice: '', minIncrement: 0, startAt: '', endAt: '' });
+    setQuickAuctionOpen(true);
+  };
+
+  const activateAuctionNow = async (auctionId) => {
+    try {
+      const response = await fetch(`${API}/auctions/${auctionId}/activate-now`, { method: 'PUT', credentials: 'include' });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Failed to activate auction');
+      fetchSellerAuctions(auctionStatusFilter);
+      alert('Auction activated');
+    } catch (error) {
+      alert(error.message || 'Failed to activate auction');
     }
   };
 
@@ -330,8 +393,17 @@ export default function SellerDashboard() {
       if (activeTab === 'orders') {
         fetchOrders(orderFilter === 'all' ? null : orderFilter);
       }
+
+      // Fetch auctions data when on My Products > Auctions
+      if (activeTab === 'products' && productView === 'auctions') {
+        if (auctionsTab === 'items') {
+          fetchAuctionItems();
+        } else if (auctionsTab === 'auctions') {
+          fetchSellerAuctions(auctionStatusFilter);
+        }
+      }
     }
-  }, [userData, selectedPeriod, activeTab, orderFilter]);
+  }, [userData, selectedPeriod, activeTab, orderFilter, productView, auctionsTab, auctionStatusFilter]);
 
   // Handle add new product
   const handleAddProduct = () => {
@@ -888,9 +960,23 @@ export default function SellerDashboard() {
           <div style={{
             marginBottom: 'var(--museo-space-4)'
           }}>
-            <h2 className="museo-heading" style={{fontSize: 'var(--museo-text-2xl)'}}>Product Inventory</h2>
+            <div className="museo-tabs museo-tabs--full">
+              <button 
+                className={`museo-tab ${productView === 'inventory' ? 'museo-tab--active' : ''}`}
+                onClick={() => setProductView('inventory')}
+              >
+                Product Inventory
+              </button>
+              <button 
+                className={`museo-tab ${productView === 'auctions' ? 'museo-tab--active' : ''}`}
+                onClick={() => setProductView('auctions')}
+              >
+                Auctions
+              </button>
+            </div>
           </div>
-
+          
+          {productView === 'inventory' && (
           <div className="products-table-container">
             {loading ? (
               <div style={{
@@ -933,7 +1019,7 @@ export default function SellerDashboard() {
                     </td>
                     <td className="product-name">
                       <div>
-                        <div className="product-title">{product.title}</div>
+                        <div className="product-title" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</div>
                         {product.is_original && <span className="badge-original">Original</span>}
                         {product.is_framed && <span className="badge-framed">Framed</span>}
                       </div>
@@ -1025,6 +1111,99 @@ export default function SellerDashboard() {
               </div>
             )}
           </div>
+          )}
+
+          {productView === 'auctions' && (
+            <div>
+              <div className="museo-tabs museo-tabs--full" style={{ marginBottom: 'var(--museo-space-3)' }}>
+                <button className={`museo-tab ${auctionsTab === 'items' ? 'museo-tab--active' : ''}`} onClick={() => setAuctionsTab('items')}>Auction Items</button>
+                <button className={`museo-tab ${auctionsTab === 'auctions' ? 'museo-tab--active' : ''}`} onClick={() => setAuctionsTab('auctions')}>My Auctions</button>
+              </div>
+
+              {auctionsTab === 'items' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--museo-space-3)' }}>
+                    <button className="btn btn-primary btn-sm" onClick={handleAddAuctionProduct}>Add Auction Item</button>
+                  </div>
+                  {auctionItemsLoading ? (
+                    <div className="loading-state"><p>Loading auction items...</p></div>
+                  ) : auctionItems.length > 0 ? (
+                    <table className="products-table">
+                      <thead>
+                        <tr>
+                          <th>Image</th>
+                          <th>Title</th>
+                          <th>Medium</th>
+                          <th>Dimensions</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auctionItems.map(item => (
+                          <tr key={item.auctionItemId}>
+                            <td><img src={item.primary_image || 'https://via.placeholder.com/50'} alt={item.title} className="product-thumbnail" /></td>
+                            <td className="product-name"><div className="product-title" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div></td>
+                            <td className="product-medium">{item.medium || 'N/A'}</td>
+                            <td className="product-dimensions">{item.dimensions || 'N/A'}</td>
+                            <td><div className="action-buttons"><button className="btn btn-ghost btn-sm" onClick={() => openQuickAuction(item)}>Create Auction</button></div></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="empty-state"><p>No auction items yet</p></div>
+                  )}
+                </div>
+              )}
+
+              {auctionsTab === 'auctions' && (
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', marginBottom: 'var(--museo-space-3)' }}>
+                    <select className="museo-select museo-input--sm" value={auctionStatusFilter} onChange={(e) => setAuctionStatusFilter(e.target.value)}>
+                      <option value="">All</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="active">Active</option>
+                      <option value="ended">Ended</option>
+                    </select>
+                    <button className="btn btn-ghost btn-sm" onClick={() => fetchSellerAuctions(auctionStatusFilter)}>Refresh</button>
+                  </div>
+
+                  {sellerAuctionsLoading ? (
+                    <div className="loading-state"><p>Loading auctions...</p></div>
+                  ) : sellerAuctions.length > 0 ? (
+                    <table className="products-table">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th>Start Price</th>
+                          <th>Min Inc.</th>
+                          <th>Start</th>
+                          <th>End</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sellerAuctions.map(a => (
+                          <tr key={a.auctionId}>
+                            <td className="product-name"><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><img src={a.auction_items?.primary_image || 'https://via.placeholder.com/50'} alt={a.auction_items?.title} className="product-thumbnail" /><div className="product-title" style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.auction_items?.title || 'Untitled'}</div></div></td>
+                            <td>₱{Number(a.startPrice || 0).toLocaleString()}</td>
+                            <td>₱{Number(a.minIncrement || 0).toLocaleString()}</td>
+                            <td>{new Date(a.startAt).toLocaleString()}</td>
+                            <td>{new Date(a.endAt).toLocaleString()}</td>
+                            <td><span className={`status-badge ${a.status}`}>{a.status}</span></td>
+                            <td>{a.status === 'scheduled' && <button className="btn btn-primary btn-sm" onClick={() => activateAuctionNow(a.auctionId)}>Activate Now</button>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="empty-state"><p>No auctions found</p></div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         )}
 
@@ -1732,6 +1911,68 @@ export default function SellerDashboard() {
         onClose={() => setIsAddAuctionModalOpen(false)}
         onSuccess={handleProductAdded}
       />
+
+      {/* Quick Create Auction Modal */}
+      <MuseoModal
+        open={quickAuctionOpen}
+        onClose={() => setQuickAuctionOpen(false)}
+        title={selectedAuctionItem ? `Create Auction: ${selectedAuctionItem.title}` : 'Create Auction'}
+        size="md"
+      >
+        <MuseoModalBody>
+          <div className="museo-form-group">
+            <label className="museo-label museo-label--required">Starting Price (₱)</label>
+            <input type="number" className="museo-input" value={qa.startPrice} onChange={(e) => setQa({ ...qa, startPrice: e.target.value })} min="0" step="0.01" />
+          </div>
+          <div className="museo-form-group">
+            <label className="museo-label">Reserve Price (₱)</label>
+            <input type="number" className="museo-input" value={qa.reservePrice} onChange={(e) => setQa({ ...qa, reservePrice: e.target.value })} min="0" step="0.01" />
+          </div>
+          <div className="museo-form-group">
+            <label className="museo-label">Minimum Increment (₱)</label>
+            <input type="number" className="museo-input" value={qa.minIncrement} onChange={(e) => setQa({ ...qa, minIncrement: e.target.value })} min="0" step="0.01" />
+          </div>
+          <div className="form-row">
+            <div className="museo-form-group" style={{ flex: 1 }}>
+              <label className="museo-label museo-label--required">Start Time</label>
+              <input type="datetime-local" className="museo-input" value={qa.startAt} onChange={(e) => setQa({ ...qa, startAt: e.target.value })} />
+            </div>
+            <div className="museo-form-group" style={{ flex: 1 }}>
+              <label className="museo-label museo-label--required">End Time</label>
+              <input type="datetime-local" className="museo-input" value={qa.endAt} onChange={(e) => setQa({ ...qa, endAt: e.target.value })} />
+            </div>
+          </div>
+        </MuseoModalBody>
+        <MuseoModalActions>
+          <button className="btn btn-ghost btn-sm" onClick={() => setQuickAuctionOpen(false)}>Cancel</button>
+          <button className="btn btn-primary btn-sm" onClick={async () => {
+            if (!qa.startPrice || !qa.endAt || !selectedAuctionItem) return alert('Please set Start Price and End Time');
+            try {
+              const payload = {
+                auctionItemId: selectedAuctionItem.auctionItemId,
+                startPrice: parseFloat(qa.startPrice),
+                reservePrice: qa.reservePrice ? parseFloat(qa.reservePrice) : null,
+                minIncrement: qa.minIncrement ? parseFloat(qa.minIncrement) : 0,
+                startAt: qa.startAt ? new Date(qa.startAt).toISOString() : new Date().toISOString(),
+                endAt: new Date(qa.endAt).toISOString(),
+              };
+              const response = await fetch(`${API}/auctions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+              });
+              const result = await response.json();
+              if (!result.success) throw new Error(result.error || 'Failed to create auction');
+              setQuickAuctionOpen(false);
+              fetchSellerAuctions(auctionStatusFilter);
+              alert('Auction created successfully');
+            } catch (error) {
+              alert(error.message || 'Failed to create auction');
+            }
+          }} disabled={!qa.startPrice || !qa.endAt}>Create Auction</button>
+        </MuseoModalActions>
+      </MuseoModal>
 
       {/* Edit Product Modal */}
       <EditProductModal

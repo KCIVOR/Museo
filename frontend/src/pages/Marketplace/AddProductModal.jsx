@@ -518,7 +518,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
           <MuseoModalActions>
             <button 
               type="button" 
-              className="btn btn-secondary"
+              className="btn btn-sm btn-secondary"
               onClick={handleClose}
               disabled={isSubmitting}
             >
@@ -526,7 +526,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </button>
             <button 
               type="submit" 
-              className="btn btn-primary"
+              className="btn btn-sm btn-primary"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Adding Product...' : 'Add Product'}

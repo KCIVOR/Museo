@@ -224,9 +224,10 @@
   flex: 1;
   padding: 24px 32px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  overflow-x: hidden;
+  display: block; /* Changed from flex to block for proper flow */
+  min-width: 0;
+  position: relative;
 }
 
 /* Title Section */

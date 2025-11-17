@@ -1606,7 +1606,7 @@ const generateWeeklyTopArts = async () => {
     console.log(`📅 Calculating top arts for week: ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
 
     // Check if top arts already exist for this week
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('topArtsWeekly')
       .select('topArtsWeeklyId')
       .eq('weekStartDate', weekStart.toISOString())
@@ -1618,7 +1618,7 @@ const generateWeeklyTopArts = async () => {
     }
 
     // Get ALL artworks (same as your logic)
-    const { data: artworks, error: artworksError } = await supabase
+    const { data: artworks, error: artworksError } = await db
       .from('galleryart')
       .select(`
         galleryArtId,
@@ -1643,7 +1643,7 @@ const generateWeeklyTopArts = async () => {
 
     // Get recent winners (4-week cooldown)
     const fourWeeksAgo = new Date(weekStart.getTime() - 4 * 7 * 24 * 60 * 60 * 1000); // 4 weeks * 7 days * 24 hours * 60 minutes * 60 seconds * 1000ms
-    const { data: recentWinners } = await supabase
+    const { data: recentWinners } = await db
       .from('topArtsWeekly')
       .select('galleryArtId')
       .gte('weekStartDate', fourWeeksAgo.toISOString());
@@ -1656,7 +1656,7 @@ const generateWeeklyTopArts = async () => {
     // Calculate engagement scores for all eligible artworks (same logic as your featured art system)
     const scoredArtworks = await Promise.all(
       eligibleArtworks.map(async (artwork) => {
-        const engagementScore = await calculateEngagementScore(artwork, supabase);
+        const engagementScore = await calculateEngagementScore(artwork, db);
         return {
           ...artwork,
           engagementScore
@@ -1694,7 +1694,7 @@ const generateWeeklyTopArts = async () => {
 
 
     // Insert top arts into topArtsWeekly table
-    const { data: insertedArts, error: insertError } = await supabase
+    const { data: insertedArts, error: insertError } = await db
       .from('topArtsWeekly')
       .insert(topArtsData);
 

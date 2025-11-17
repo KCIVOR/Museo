@@ -62,6 +62,9 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// ⚠️ Removed global multer.any() to avoid double-parsing multipart/form-data.
+// Each route now declares its own multer middleware with appropriate field configs.
+
 // ✅ 4. Static files
 app.use("/uploads", express.static("uploads"));
 

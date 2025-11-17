@@ -54,6 +54,96 @@ export const getAuctionDetails = async (req, res) => {
   }
 };
 
+// GET /api/auctions/seller/my-auctions?status=
+export const getSellerAuctions = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Resolve seller profile
+    const { data: sellerProfile, error: spErr } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (spErr || !sellerProfile) {
+      return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    const { status } = req.query || {};
+    let query = db
+      .from('auctions')
+      .select('*, auction_items(*)')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .order('startAt', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return res.json({ success: true, data: data || [] });
+  } catch (error) {
+    console.error('Error fetching seller auctions:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/:auctionId/activate-now
+export const activateAuctionNow = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    // Resolve seller profile
+    const { data: sellerProfile, error: spErr } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (spErr || !sellerProfile) {
+      return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Load auction
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+    if (auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to modify this auction' });
+    }
+
+    // Validate timing and status
+    const now = new Date();
+    if (new Date(auction.endAt) <= now) {
+      return res.status(400).json({ success: false, error: 'Auction already ended' });
+    }
+    if (auction.status === 'active') {
+      return res.status(400).json({ success: false, error: 'Auction already active' });
+    }
+
+    // Activate immediately
+    const { data: updated, error: uErr } = await db
+      .from('auctions')
+      .update({ status: 'active', startAt: now.toISOString() })
+      .eq('auctionId', auctionId)
+      .select('*')
+      .single();
+    if (uErr) throw new Error(uErr.message);
+
+    return res.json({ success: true, message: 'Auction activated', data: updated });
+  } catch (error) {
+    console.error('Error activating auction:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
 // GET /api/auctions/:auctionId/my-bid
 export const getMyBid = async (req, res) => {
   try {
@@ -203,18 +293,63 @@ export const listAuctions = async (req, res) => {
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
+    console.log('📋 listAuctions - Query params:', { status, page, limit, offset });
+
     let query = db
       .from('auctions')
-      .select('*')
+      .select(`
+        auctionId,
+        sellerProfileId,
+        auctionItemId,
+        startPrice,
+        minIncrement,
+        startAt,
+        endAt,
+        status,
+        singleBidOnly,
+        allowBidUpdates,
+        created_at,
+        updated_at,
+        auction_items (
+          auctionItemId,
+          title,
+          description,
+          primary_image,
+          images,
+          medium,
+          dimensions,
+          year_created,
+          weight_kg,
+          is_original,
+          is_framed,
+          condition,
+          categories,
+          tags,
+          seller:sellerProfiles (
+            sellerProfileId,
+            shopName,
+            shopDescription,
+            fullName,
+            email
+          )
+        )
+      `)
       .order('endAt', { ascending: true })
       .range(offset, offset + parseInt(limit) - 1);
 
     if (status) {
+      console.log('🔍 Filtering by status:', status);
       query = query.eq('status', status);
     }
 
     const { data, error } = await query;
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('❌ Database error:', error.message);
+      throw new Error(error.message);
+    }
+
+    console.log(`✅ listAuctions - Found ${data?.length || 0} auctions`);
+    console.log('📦 Sample auction data:', JSON.stringify(data?.[0], null, 2));
 
     res.json({
       success: true,
@@ -222,7 +357,7 @@ export const listAuctions = async (req, res) => {
       pagination: { page: parseInt(page), limit: parseInt(limit) }
     });
   } catch (error) {
-    console.error('Error listing auctions:', error);
+    console.error('❌ Error listing auctions:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -244,11 +379,10 @@ export const createAuctionItem = async (req, res) => {
       return res.status(403).json({ success: false, error: 'Must be an active seller' });
     }
 
+    // Extract and validate FormData fields
     const {
       title,
       description,
-      images,
-      primary_image,
       medium,
       dimensions,
       year_created,
@@ -260,22 +394,103 @@ export const createAuctionItem = async (req, res) => {
       tags
     } = req.body;
 
+    // Handle image uploads to Supabase storage
+    let imageUrls = [];
+    let primaryImageUrl = null;
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
+          const fileName = `${Date.now()}-${safeName}`;
+          const filePath = `auctions/${userId}/${fileName}`;
+
+          const { data, error } = await db.storage
+            .from("uploads")
+            .upload(filePath, file.buffer, {
+              contentType: file.mimetype,
+              upsert: false,
+            });
+
+          if (error) {
+            console.error(`Error uploading ${file.originalname}:`, error);
+            continue;
+          }
+
+          const { data: publicUrlData } = db.storage
+            .from("uploads")
+            .getPublicUrl(data.path);
+
+          if (publicUrlData?.publicUrl) {
+            imageUrls.push(publicUrlData.publicUrl);
+          }
+        } catch (uploadError) {
+          console.error(`Upload error for ${file.originalname}:`, uploadError);
+          continue;
+        }
+      }
+
+      // First image becomes primary
+      if (imageUrls.length > 0) {
+        primaryImageUrl = imageUrls[0];
+      }
+    }
+
+    // Validate required fields
+    if (!title || title.trim().length < 3) {
+      return res.status(400).json({ success: false, error: 'Title must be at least 3 characters' });
+    }
+    if (!medium) {
+      return res.status(400).json({ success: false, error: 'Medium is required' });
+    }
+    if (!dimensions) {
+      return res.status(400).json({ success: false, error: 'Dimensions are required' });
+    }
+
+    // Parse JSON strings from FormData
+    let parsedCategories = [];
+    let parsedTags = [];
+    try {
+      if (categories && typeof categories === 'string') {
+        parsedCategories = JSON.parse(categories);
+      } else if (Array.isArray(categories)) {
+        parsedCategories = categories;
+      }
+      if (tags && typeof tags === 'string') {
+        parsedTags = JSON.parse(tags);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      }
+    } catch (parseErr) {
+      console.error('Error parsing categories/tags:', parseErr);
+      return res.status(400).json({ success: false, error: 'Invalid categories or tags format' });
+    }
+
+    if (parsedCategories.length === 0) {
+      return res.status(400).json({ success: false, error: 'At least one category is required' });
+    }
+
+    if (imageUrls.length === 0) {
+      return res.status(400).json({ success: false, error: 'At least one image is required' });
+    }
+
+    // Build auction item object
     const auctionItem = {
       userId,
       sellerProfileId: sellerProfile.sellerProfileId,
-      title,
-      description,
-      images,
-      primary_image,
-      medium,
-      dimensions,
-      year_created,
-      weight_kg,
-      is_original,
-      is_framed,
-      condition,
-      categories,
-      tags
+      title: title.trim(),
+      description: description || null,
+      images: imageUrls,
+      primary_image: primaryImageUrl,
+      medium: medium.trim(),
+      dimensions: dimensions.trim(),
+      year_created: year_created ? parseInt(year_created) : null,
+      weight_kg: weight_kg ? parseFloat(weight_kg) : null,
+      is_original: is_original === 'true' || is_original === true,
+      is_framed: is_framed === 'true' || is_framed === true,
+      condition: condition || 'excellent',
+      categories: parsedCategories,
+      tags: parsedTags
     };
 
     const { data, error } = await db
@@ -356,11 +571,232 @@ export const createAuction = async (req, res) => {
   }
 };
 
+// GET /api/auctions/items/my-items - Get user's auction items (seller only)
+export const getUserAuctionItems = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Verify seller profile
+    const { data: sellerProfile, error: spErr } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (spErr || !sellerProfile) {
+      return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Fetch user's auction items with all details
+    const { data: items, error: err } = await db
+      .from('auction_items')
+      .select('*')
+      .eq('userId', userId)
+      .order('created_at', { ascending: false });
+
+    if (err) throw new Error(err.message);
+
+    res.json({
+      success: true,
+      data: items || []
+    });
+  } catch (error) {
+    console.error('Error fetching user auction items:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// DELETE /api/auctions/items/:auctionItemId - Delete auction item (seller only)
+export const deleteAuctionItem = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionItemId } = req.params;
+    
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionItemId) return res.status(400).json({ success: false, error: 'Item ID required' });
+
+    // Verify seller profile
+    const { data: sellerProfile, error: spErr } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (spErr || !sellerProfile) {
+      return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Verify ownership
+    const { data: item, error: itemErr } = await db
+      .from('auction_items')
+      .select('auctionItemId, userId, images')
+      .eq('auctionItemId', auctionItemId)
+      .single();
+    
+    if (itemErr || !item) {
+      return res.status(404).json({ success: false, error: 'Item not found' });
+    }
+
+    if (item.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete this item' });
+    }
+
+    // Check if item is already used in an auction
+    const { data: auction, error: auctionErr } = await db
+      .from('auctions')
+      .select('auctionId')
+      .eq('auctionItemId', auctionItemId)
+      .single();
+    
+    if (auction) {
+      return res.status(400).json({ success: false, error: 'Cannot delete item that is already in an auction' });
+    }
+
+    // Delete images from storage
+    if (item.images && Array.isArray(item.images)) {
+      for (const imageUrl of item.images) {
+        try {
+          let filePath = '';
+          if (imageUrl.includes('/storage/v1/object/public/uploads/')) {
+            filePath = imageUrl.split('/storage/v1/object/public/uploads/')[1];
+          }
+          if (filePath) {
+            await db.storage.from('uploads').remove([filePath]);
+          }
+        } catch (storageErr) {
+          console.error('Error deleting image:', storageErr);
+        }
+      }
+    }
+
+    // Delete item from database
+    const { error: deleteErr } = await db
+      .from('auction_items')
+      .delete()
+      .eq('auctionItemId', auctionItemId);
+
+    if (deleteErr) throw new Error(deleteErr.message);
+
+    res.json({
+      success: true,
+      message: 'Auction item deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting auction item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/items/:auctionItemId - Update auction item (seller only)
+export const updateAuctionItem = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionItemId } = req.params;
+    
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionItemId) return res.status(400).json({ success: false, error: 'Item ID required' });
+
+    // Verify seller profile
+    const { data: sellerProfile, error: spErr } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (spErr || !sellerProfile) {
+      return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Verify ownership
+    const { data: item, error: itemErr } = await db
+      .from('auction_items')
+      .select('*')
+      .eq('auctionItemId', auctionItemId)
+      .single();
+    
+    if (itemErr || !item) {
+      return res.status(404).json({ success: false, error: 'Item not found' });
+    }
+
+    if (item.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to update this item' });
+    }
+
+    // Extract updateable fields
+    const {
+      title,
+      description,
+      medium,
+      dimensions,
+      year_created,
+      weight_kg,
+      is_original,
+      is_framed,
+      condition,
+      categories,
+      tags
+    } = req.body;
+
+    // Build update object
+    const updateData = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description || null;
+    if (medium !== undefined) updateData.medium = medium.trim();
+    if (dimensions !== undefined) updateData.dimensions = dimensions.trim();
+    if (year_created !== undefined) updateData.year_created = year_created ? parseInt(year_created) : null;
+    if (weight_kg !== undefined) updateData.weight_kg = weight_kg ? parseFloat(weight_kg) : null;
+    if (is_original !== undefined) updateData.is_original = is_original === 'true' || is_original === true;
+    if (is_framed !== undefined) updateData.is_framed = is_framed === 'true' || is_framed === true;
+    if (condition !== undefined) updateData.condition = condition;
+    if (categories !== undefined) {
+      try {
+        updateData.categories = typeof categories === 'string' ? JSON.parse(categories) : categories;
+      } catch (e) {
+        return res.status(400).json({ success: false, error: 'Invalid categories format' });
+      }
+    }
+    if (tags !== undefined) {
+      try {
+        updateData.tags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      } catch (e) {
+        return res.status(400).json({ success: false, error: 'Invalid tags format' });
+      }
+    }
+
+    updateData.updated_at = new Date().toISOString();
+
+    // Update item
+    const { data: updatedItem, error: updateErr } = await db
+      .from('auction_items')
+      .update(updateData)
+      .eq('auctionItemId', auctionItemId)
+      .select()
+      .single();
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    res.json({
+      success: true,
+      message: 'Auction item updated successfully',
+      data: updatedItem
+    });
+  } catch (error) {
+    console.error('Error updating auction item:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export default {
   getAuctionDetails,
   getMyBid,
   placeBid,
   listAuctions,
   createAuctionItem,
-  createAuction
+  createAuction,
+  getUserAuctionItems,
+  deleteAuctionItem,
+  updateAuctionItem,
+  getSellerAuctions,
+  activateAuctionNow
 };

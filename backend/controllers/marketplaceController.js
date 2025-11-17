@@ -15,6 +15,17 @@ const sanitizeInput = (text) => {
     .trim();
 };
 
+// Normalize various truthy/falsey representations to boolean
+const toBool = (v) => {
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (["true","1","yes","y","on"].includes(s)) return true;
+    if (["false","0","no","n","off"].includes(s)) return false;
+  }
+  return Boolean(v);
+};
+
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
@@ -358,18 +369,21 @@ export const createMarketplaceItem = async (req, res) => {
       dimensions: sanitizedDimensions,
       year_created: year_created ? parseInt(year_created) : null,
       weight_kg: weight_kg ? parseFloat(weight_kg) : null,
-      is_original: is_original === 'true',
-      is_framed: is_framed === 'true',
+      is_original: toBool(is_original),
+      is_framed: toBool(is_framed),
       condition: condition || 'excellent',
       quantity: parsedQuantity,
-      is_available: is_available === 'true',
-      is_featured: is_featured === 'true',
+      // Default to available when not explicitly provided and quantity > 0
+      is_available: (is_available !== undefined) ? toBool(is_available) : parsedQuantity > 0,
+      is_featured: toBool(is_featured),
       status: status || 'active',
       categories,
       tags,
       images: imageUrls,
       primary_image: primaryImageUrl
     };
+
+    console.log(newItem)
 
     // Insert marketplace item with sanitized values
     const { data, error } = await db
@@ -719,10 +733,10 @@ export const updateMarketplaceItem = async (req, res) => {
     }
     
     // Boolean fields
-    if (req.body.is_original !== undefined) updateData.is_original = req.body.is_original === 'true';
-    if (req.body.is_framed !== undefined) updateData.is_framed = req.body.is_framed === 'true';
-    if (req.body.is_available !== undefined) updateData.is_available = req.body.is_available === 'true';
-    if (req.body.is_featured !== undefined) updateData.is_featured = req.body.is_featured === 'true';
+    if (req.body.is_original !== undefined) updateData.is_original = toBool(req.body.is_original);
+    if (req.body.is_framed !== undefined) updateData.is_framed = toBool(req.body.is_framed);
+    if (req.body.is_available !== undefined) updateData.is_available = toBool(req.body.is_available);
+    if (req.body.is_featured !== undefined) updateData.is_featured = toBool(req.body.is_featured);
     
     // Other fields
     if (req.body.condition) updateData.condition = req.body.condition;

@@ -73,6 +73,7 @@ export default function App() {
           <Route path="/topArts" element={<TopArts />} /> 
           <Route path="/Search" element={<Search/>}/>
           <Route path="/visit-museo" element={<VisitMuseo />} />
+          <Route path="/marketplace/product/:productId" element={<Marketplace />} />
           <Route path="/marketplace/checkout" element={<Checkout />} />
           <Route path="/marketplace/seller-dashboard" element={<SellerDashboard />} />
           <Route path="/settings" element={<Settings />} />

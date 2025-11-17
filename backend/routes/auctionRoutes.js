@@ -10,10 +10,101 @@ import {
   placeBid,
   listAuctions,
   createAuctionItem,
-  createAuction
+  createAuction,
+  getUserAuctionItems,
+  deleteAuctionItem,
+  updateAuctionItem,
+  getSellerAuctions,
+  activateAuctionNow
 } from '../controllers/auctionController.js';
 
 const router = express.Router();
+
+// ⚠️ IMPORTANT: Routes with specific paths MUST come BEFORE parameterized routes
+// Otherwise /:auctionId will match /items before the /items route
+
+// GET /api/auctions/items/my-items - Get user's auction items (seller only)
+router.get(
+  '/items/my-items',
+  requirePermission(['artist', 'admin']),
+  getUserAuctionItems
+);
+
+// GET /api/auctions/seller/my-auctions - seller-scoped list
+router.get(
+  '/seller/my-auctions',
+  requirePermission(['artist', 'admin']),
+  validateRequest(
+    { query: { status: { type: 'string', required: false, min: 1, max: 50 } } },
+    { source: 'query', allowUnknown: true, stripUnknown: true }
+  ),
+  getSellerAuctions
+);
+
+// POST /api/auctions/items - Create auction item (seller only)
+router.post(
+  '/items',
+  requirePermission(['artist', 'admin']),
+  // NOTE: No validation middleware for FormData - handled in controller
+  createAuctionItem
+);
+
+// PUT /api/auctions/items/:auctionItemId - Update auction item (seller only)
+router.put(
+  '/items/:auctionItemId',
+  requirePermission(['artist', 'admin']),
+  validateRequest(
+    {
+      params: { auctionItemId: { type: 'string', required: true, min: 1 } },
+      body: {
+        title: { type: 'string', required: false, min: 3, max: 200 },
+        description: { type: 'string', required: false, min: 0, max: 5000 },
+        medium: { type: 'string', required: false, max: 100 },
+        dimensions: { type: 'string', required: false, max: 100 },
+        year_created: { type: 'integer', required: false },
+        weight_kg: { type: 'number', required: false },
+        is_original: { type: 'boolean', required: false },
+        is_framed: { type: 'boolean', required: false },
+        condition: { type: 'string', required: false, max: 50 },
+        categories: { type: 'array', required: false },
+        tags: { type: 'array', required: false }
+      }
+    },
+    { source: ['params', 'body'], allowUnknown: false, stripUnknown: true, coerce: true }
+  ),
+  updateAuctionItem
+);
+
+// DELETE /api/auctions/items/:auctionItemId - Delete auction item (seller only)
+router.delete(
+  '/items/:auctionItemId',
+  requirePermission(['artist', 'admin']),
+  validateRequest(
+    { params: { auctionItemId: { type: 'string', required: true, min: 1 } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  deleteAuctionItem
+);
+
+// POST /api/auctions - Create auction (seller only)
+router.post(
+  '/',
+  requirePermission(['artist', 'admin']),
+  validateRequest(
+    {
+      body: {
+        auctionItemId: { type: 'string', required: true, min: 1 },
+        startPrice: { type: 'number', required: true, min: 0.01 },
+        reservePrice: { type: 'number', required: false, min: 0.01 },
+        minIncrement: { type: 'number', required: false, default: 0, min: 0 },
+        startAt: { type: 'string', required: true },
+        endAt: { type: 'string', required: true }
+      }
+    },
+    { source: 'body', allowUnknown: false, stripUnknown: true, coerce: true }
+  ),
+  createAuction
+);
 
 // GET /api/auctions - List all auctions (public)
 router.get(
@@ -41,6 +132,16 @@ router.get(
   getAuctionDetails
 );
 
+// PUT /api/auctions/:auctionId/activate-now - activate scheduled auction now (seller only)
+router.put(
+  '/:auctionId/activate-now',
+  requirePermission(['artist', 'admin']),
+  validateRequest(
+    { params: { auctionId: { type: 'string', required: true, min: 1 } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  activateAuctionNow
+);
 // GET /api/auctions/:auctionId/my-bid - Get user's bid (auth required)
 router.get(
   '/:auctionId/my-bid',
@@ -66,53 +167,6 @@ router.post(
     { source: ['params', 'body'], allowUnknown: false, stripUnknown: true, coerce: true }
   ),
   placeBid
-);
-
-// POST /api/auctions/items - Create auction item (seller only)
-router.post(
-  '/items',
-  requirePermission(['artist', 'admin']),
-  validateRequest(
-    {
-      body: {
-        title: { type: 'string', required: true, min: 3, max: 200 },
-        description: { type: 'string', required: false, min: 0, max: 5000 },
-        images: { type: 'array', required: false },
-        primary_image: { type: 'string', required: false },
-        medium: { type: 'string', required: false, max: 100 },
-        dimensions: { type: 'string', required: false, max: 100 },
-        year_created: { type: 'integer', required: false },
-        weight_kg: { type: 'number', required: false },
-        is_original: { type: 'boolean', required: false },
-        is_framed: { type: 'boolean', required: false },
-        condition: { type: 'string', required: false, max: 50 },
-        categories: { type: 'array', required: false },
-        tags: { type: 'array', required: false }
-      }
-    },
-    { source: 'body', allowUnknown: false, stripUnknown: true, coerce: true }
-  ),
-  createAuctionItem
-);
-
-// POST /api/auctions - Create auction (seller only)
-router.post(
-  '/',
-  requirePermission(['artist', 'admin']),
-  validateRequest(
-    {
-      body: {
-        auctionItemId: { type: 'string', required: true, min: 1 },
-        startPrice: { type: 'number', required: true, min: 0.01 },
-        reservePrice: { type: 'number', required: false, min: 0.01 },
-        minIncrement: { type: 'number', required: false, default: 0, min: 0 },
-        startAt: { type: 'string', required: true },
-        endAt: { type: 'string', required: true }
-      }
-    },
-    { source: 'body', allowUnknown: false, stripUnknown: true, coerce: true }
-  ),
-  createAuction
 );
 
 export default router;
