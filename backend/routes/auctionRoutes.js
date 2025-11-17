@@ -1,7 +1,5 @@
-// backend/routes/auctionRoutes.js
-// Blind auction REST endpoints
-
 import express from 'express';
+import multer from 'multer';
 import { validateRequest } from '../middleware/validation.js';
 import { requirePermission } from '../middleware/permission.js';
 import {
@@ -20,8 +18,26 @@ import {
 
 const router = express.Router();
 
-// ⚠️ IMPORTANT: Routes with specific paths MUST come BEFORE parameterized routes
-// Otherwise /:auctionId will match /items before the /items route
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 5 // Maximum 5 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow JPG and PNG files
+    if (file.mimetype === 'image/jpeg' || 
+        file.mimetype === 'image/jpg' || 
+        file.mimetype === 'image/png') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPG and PNG files are allowed'), false);
+    }
+  }
+});
+
 
 // GET /api/auctions/items/my-items - Get user's auction items (seller only)
 router.get(
@@ -45,6 +61,7 @@ router.get(
 router.post(
   '/items',
   requirePermission(['artist', 'admin']),
+  upload.array('images', 5),
   // NOTE: No validation middleware for FormData - handled in controller
   createAuctionItem
 );

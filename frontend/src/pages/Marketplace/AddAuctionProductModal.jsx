@@ -546,34 +546,30 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
                   </select>
                 </div>
 
-                <div className="form-row">
-                  <div className="museo-form-group">
-                    <label className="museo-checkbox-label">
-                      <input
-                        type="checkbox"
-                        id="is_original"
-                        name="is_original"
-                        checked={formData.is_original}
-                        onChange={handleInputChange}
-                        className="museo-checkbox"
-                      />
-                      <span>Original Artwork</span>
-                    </label>
-                  </div>
+                <div className="form-row checkbox-row">
+                  <label className="museo-checkbox-label">
+                    <input
+                      type="checkbox"
+                      id="is_original"
+                      name="is_original"
+                      checked={formData.is_original}
+                      onChange={handleInputChange}
+                      className="museo-checkbox"
+                    />
+                    <span>Original Artwork</span>
+                  </label>
 
-                  <div className="museo-form-group">
-                    <label className="museo-checkbox-label">
-                      <input
-                        type="checkbox"
-                        id="is_framed"
-                        name="is_framed"
-                        checked={formData.is_framed}
-                        onChange={handleInputChange}
-                        className="museo-checkbox"
-                      />
-                      <span>Framed</span>
-                    </label>
-                  </div>
+                  <label className="museo-checkbox-label">
+                    <input
+                      type="checkbox"
+                      id="is_framed"
+                      name="is_framed"
+                      checked={formData.is_framed}
+                      onChange={handleInputChange}
+                      className="museo-checkbox"
+                    />
+                    <span>Framed</span>
+                  </label>
                 </div>
               </div>
 

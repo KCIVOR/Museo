@@ -717,12 +717,12 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
 
       {/* Card Content */}
       <div className="mp-card-content">
+        <h3 className="mp-card-title" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</h3>
+        
         <div className="mp-card-meta">
           <span className="mp-card-category">{item.medium || 'Mixed Media'}</span>
           <span className="mp-card-year">{item.year_created || new Date().getFullYear()}</span>
         </div>
-        
-        <h3 className="mp-card-title" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</h3>
         <p className="mp-card-artist">by {item.seller?.shopName || 'Unknown Artist'}</p>
         
         <div className="mp-card-details">
