@@ -157,10 +157,6 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                   <span className="pdm-info-value">{item.year_created}</span>
                 </div>
               )}
-              <div className="pdm-info-item">
-                <span className="pdm-info-label">Authenticity</span>
-                <span className="pdm-info-value">{item.is_original ? 'Original' : 'Print'}</span>
-              </div>
             </div>
           </div>
 
@@ -191,7 +187,6 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
               <button className={`pdm-tab ${selectedTab === 'details' ? 'active' : ''}`} onClick={() => setSelectedTab('details')}>Details</button>
               <button className={`pdm-tab ${selectedTab === 'auction-info' ? 'active' : ''}`} onClick={() => setSelectedTab('auction-info')}>Auction Info</button>
               <button className={`pdm-tab ${selectedTab === 'shipping' ? 'active' : ''}`} onClick={() => setSelectedTab('shipping')}>Shipping</button>
-              <button className={`pdm-tab ${selectedTab === 'auth' ? 'active' : ''}`} onClick={() => setSelectedTab('auth')}>Authenticity</button>
             </div>
 
             <div className="pdm-tab-content">
@@ -276,19 +271,6 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                   <div className="pdm-ship-option">
                     <strong>International</strong>
                     <span>Worldwide delivery available</span>
-                  </div>
-                </div>
-              )}
-
-              {selectedTab === 'auth' && (
-                <div className="pdm-shipping-info">
-                  <div className="pdm-ship-option">
-                    <strong>Signed</strong>
-                    <span>Hand-signed by the artist</span>
-                  </div>
-                  <div className="pdm-ship-option">
-                    <strong>Certificate</strong>
-                    <span>Certificate of Authenticity included</span>
                   </div>
                 </div>
               )}
