@@ -1,6 +1,3 @@
-// backend/routes/auctionRoutes.js
-// Blind auction REST endpoints
-
 import express from 'express';
 import multer from 'multer';
 import { validateRequest } from '../middleware/validation.js';

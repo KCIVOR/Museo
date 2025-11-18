@@ -29,6 +29,16 @@
   gap: var(--museo-space-4);
 }
 
+.form-row.checkbox-row {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--museo-space-6);
+  grid-template-columns: unset !important;
+  justify-content: flex-start;
+  width: auto;
+}
+
 /* Form Groups */
 .museo-form-group {
   display: flex;
@@ -86,6 +96,21 @@
 .checkbox-group {
   flex-direction: row;
   align-items: center;
+}
+
+.museo-checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--museo-space-2);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--museo-text-primary);
+  white-space: nowrap;
+}
+
+.form-row.checkbox-row .museo-checkbox-label {
+  flex-direction: row !important;
 }
 
 .checkbox-label {
