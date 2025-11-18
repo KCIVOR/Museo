@@ -1455,7 +1455,7 @@ export default function Gallery() {
                 {section.artworks.map((artwork, index) => (
                   <div 
                     key={artwork?.id || `section-artwork-${index}`} 
-                    className="museo-artwork-card"
+                    className="museo-event-card"
                     data-artwork-id={artwork?.id}
                     style={{ 
                       animationDelay: `${index * 0.02}s`,
@@ -1466,15 +1466,16 @@ export default function Gallery() {
                     <img 
                       src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 
                       alt={artwork.title}
-                      className="museo-artwork-image"
+                      className="museo-event-image"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
                     />
-                    <div className="museo-artwork-placard">
-                      <h3 className="museo-artwork-title">
+                    <div className="museo-event-content">
+                      <h3 className="museo-title">
                         {artwork.title}
                       </h3>
+                      
                       <div className="museo-artwork-artist-info">
                         {artwork.artistProfilePicture ? (
                           <img 
@@ -1491,11 +1492,10 @@ export default function Gallery() {
                           {artwork.artist}
                         </span>
                       </div>
-                      <div className="museo-artwork-meta">
-                        <span className="museo-artwork-year">{artwork.year}</span>
-                        <span>•</span>
-                        <span>{getArtworkCategories(artwork).join(', ')}</span>
-                      </div>
+                      
+                      <p className="museo-desc">
+                        {getArtworkCategories(artwork).join(', ')}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -1565,7 +1565,7 @@ export default function Gallery() {
                 {filteredArtworks.map((artwork, index) => (
                   <div 
                     key={`artwork-${artwork?.id || index}-${index}`} 
-                    className="museo-artwork-card"
+                    className="museo-event-card"
                     data-artwork-id={artwork?.id}
                     style={{ 
                       animationDelay: `${index * 0.02}s`,
@@ -1576,16 +1576,18 @@ export default function Gallery() {
                     <img 
                       src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 
                       alt={artwork.title}
-                      className="museo-artwork-image"
+                      className="museo-event-image"
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
                       loading="lazy"
                     />
-                    <div className="museo-artwork-placard">
-                      <h3 className="museo-artwork-title">
+                    
+                    <div className="museo-event-content">
+                      <h3 className="museo-title">
                         {artwork.title}
                       </h3>
+                      
                       <div className="museo-artwork-artist-info">
                         {artwork.artistProfilePicture ? (
                           <img 
@@ -1602,11 +1604,10 @@ export default function Gallery() {
                           {artwork.artist}
                         </span>
                       </div>
-                      <div className="museo-artwork-meta">
-                        <span className="museo-artwork-year">{artwork.year}</span>
-                        <span>•</span>
-                        <span>{getArtworkCategories(artwork).join(', ')}</span>
-                      </div>
+                      
+                      <p className="museo-desc">
+                        {getArtworkCategories(artwork).join(', ')}
+                      </p>
                     </div>
                   </div>
                 ))}

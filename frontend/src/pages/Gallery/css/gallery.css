@@ -410,174 +410,52 @@
   z-index: 1;
 }
 
-/* Artwork card - Museum frame style */
-.museo-artwork-card {
-  background: #fff;
-  border: 8px solid var(--museo-bg-primary);
-  box-shadow: 
-    0 0 0 1px var(--museo-accent),
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  animation: fadeInUp 0.6s ease-out;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+/* Gallery uses museo-event-card classes from cards.css for consistency */
 
-.museo-artwork-card::before {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  right: 4px;
-  bottom: 4px;
-  border: 1px solid rgba(212, 180, 138, 0.3);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.museo-artwork-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 
-    0 0 0 1px var(--museo-accent),
-    0 20px 60px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-/* Artwork image - Fixed height for uniform cards */
-.museo-artwork-image {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
-}
-
-.museo-artwork-card:hover .museo-artwork-image {
-  transform: scale(1.05);
-}
-
-/* Museum placard */
-.museo-artwork-placard {
-  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, #ffffff 100%);
-  padding: 1.5rem;
-  border-top: 1px solid rgba(212, 180, 138, 0.2);
-  position: relative;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.museo-artwork-placard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 1rem;
-  right: 1rem;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--museo-accent), transparent);
-}
-
-.museo-artwork-title {
-  font-family: var(--museo-font-display);
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--museo-primary);
-  margin: 0 0 0.5rem 0;
-  line-height: 1.3;
-}
-
-.museo-artwork-category-item {
-  font-size: 14px;
-  color: #6b4226;
-  margin-bottom: 4px;
-}
-
+/* Artwork artist info styling for event cards */
 .museo-artwork-artist-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 0.5rem;
+  gap: 12px;
+  margin: 12px 0;
+  font-size: 0.95rem;
 }
 
 .museo-artist-avatar {
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid rgba(139, 111, 71, 0.3);
-  transition: all 0.3s ease;
-}
-
-.museo-artist-avatar:hover {
-  border-color: #8b6f47;
-  transform: scale(1.05);
+  border: 2px solid rgba(212, 180, 138, 0.3);
+  flex-shrink: 0;
 }
 
 .museo-artist-avatar-placeholder {
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #8b6f47 0%, #a0825d 100%);
-  color: #f4f1ec;
+  background: linear-gradient(135deg, #d4b48a 0%, #8b6f47 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 0.7rem;
-  border: 1.5px solid rgba(139, 111, 71, 0.3);
-  transition: all 0.3s ease;
-}
-
-.museo-artist-avatar-placeholder:hover {
-  border-color: #8b6f47;
-  transform: scale(1.05);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #f4f1ec;
+  border: 2px solid rgba(212, 180, 138, 0.3);
+  flex-shrink: 0;
 }
 
 .museo-artwork-artist {
-  font-size: 1rem;
-  color: #8b6f47;
+  font-size: 0.95rem;
+  color: var(--museo-text-primary);
   margin: 0;
-  font-style: italic;
+  font-weight: 600;
 }
 
 .museo-artwork-meta {
   font-size: 0.85rem;
-  color: #a0825d;
+  color: var(--museo-text-muted);
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.museo-artwork-year {
-  background: rgba(212, 180, 138, 0.2);
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-/* Corner ornaments */
-.museo-artwork-card::after {
-  content: '';
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, var(--museo-accent) 0%, transparent 70%);
-  border-radius: 50%;
-  opacity: 0.6;
-}
-
-/* Actions hover animation for event cards */
-.museo-artwork-card:hover .museo-actions {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
-  pointer-events: auto !important;
 }
 
 /* Gallery stats */
