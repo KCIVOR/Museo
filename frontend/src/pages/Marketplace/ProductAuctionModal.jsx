@@ -1,18 +1,34 @@
 import { useState, useEffect } from "react";
 import "../../styles/components/productModal.css";
+import AddressPickerModal from "../../components/AddressPickerModal.jsx";
+import FullscreenImageViewer from "../../components/FullscreenImageViewer";
 
 export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showFullscreen, setShowFullscreen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
   const [showBidSuccess, setShowBidSuccess] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("details");
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-  // Images from API (primary_image + images[])
-  const images = item ? [
-    item.primary_image,
-    ...(Array.isArray(item.images) ? item.images : [])
-  ].filter(Boolean) : [];
+  const [placingBid, setPlacingBid] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [userAddresses, setUserAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [selectedTab, setSelectedTab] = useState("details")
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [nowTs, setNowTs] = useState(Date.now());
+  // Images from API (primary_image + images[]) with de-duplication
+  const images = item ? (() => {
+    const arr = [
+      item.primary_image,
+      ...(Array.isArray(item.images) ? item.images : [])
+    ].filter(Boolean);
+    const seen = new Set();
+    return arr.filter((src) => {
+      if (seen.has(src)) return false;
+      seen.add(src);
+      return true;
+    });
+  })() : [];
 
   useEffect(() => {
     if (isOpen) {
@@ -23,8 +39,16 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       setShowBidSuccess(false);
       setSelectedTab("details");
       setIsDescriptionExpanded(false);
+      fetchAddress()
       return () => { document.body.style.overflow = prev; };
     }
+  }, [isOpen]);
+
+  // Tick clock to re-evaluate start/end gating while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
   }, [isOpen]);
 
   // Auction-only fields with robust fallbacks (DB and legacy)
@@ -61,16 +85,101 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
 
   if (!isOpen || !item) return null;
 
-  const handlePlaceBid = () => {
+  // Time-based gating for bidding
+  const beforeStart = startsAt ? nowTs < new Date(startsAt).getTime() : false;
+  const afterEnd = endsAt ? nowTs >= new Date(endsAt).getTime() : false;
+  const isPaused = item?.status === 'paused';
+  const timeDisabled = beforeStart || afterEnd || isPaused;
+
+  // Live timer label
+  const formatDuration = (ms) => {
+    if (!Number.isFinite(ms) || ms <= 0) return '0s';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const parts = [];
+    if (d) parts.push(`${d}d`);
+    if (h || d) parts.push(`${h}h`);
+    if (m || h || d) parts.push(`${m}m`);
+    parts.push(`${s}s`);
+    return parts.join(' ');
+  };
+
+  const startMs = startsAt ? new Date(startsAt).getTime() : null;
+  const endMs = endsAt ? new Date(endsAt).getTime() : null;
+  let timerLabel = '';
+  if (beforeStart && startMs) {
+    timerLabel = `Starts in ${formatDuration(startMs - nowTs)}`;
+  } else if (afterEnd && endMs) {
+    timerLabel = `Ended ${formatDuration(nowTs - endMs)} ago`;
+  } else if (isPaused && endMs) {
+    timerLabel = `Paused — Ends in ${formatDuration(endMs - nowTs)}`;
+  } else if (endMs) {
+    timerLabel = `Ends in ${formatDuration(endMs - nowTs)}`;
+  }
+
+  const handlePlaceBid = async () => {
     const bid = parseFloat(bidAmount);
-    if (!isNaN(bid) && bid >= startPriceVal) {
+    // Require user to pick an address first
+    if (!selectedAddressId) {
+      setErrorMsg('Please select a shipping address on the Shipping tab before placing a bid.');
+      setSelectedTab('shipping');
+      return;
+    }
+    if (isNaN(bid) || bid < startPriceVal) return;
+    setErrorMsg('');
+    setPlacingBid(true);
+    try {
+      const result = await (onPlaceBid?.(item, bid, selectedAddressId));
+      if (result === false || (result && result.success === false)) {
+        const msg = result?.error || 'Failed to place bid';
+        setErrorMsg(msg);
+        return;
+      }
       setShowBidSuccess(true);
       setTimeout(() => {
-        try { onPlaceBid?.(item, bid); } catch (e) {}
         onClose?.();
-      }, 1500);
+      }, 1200);
+    } catch (e) {
+      setErrorMsg(e?.message || 'Failed to place bid');
+    } finally {
+      setPlacingBid(false);
     }
   };
+
+  const fetchAddress = async () => {
+    try {
+      const API = import.meta.env.VITE_API_BASE;
+      const res = await fetch(`${API}/marketplace/addresses`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+  
+      // Handle non-OK HTTP codes
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error('fetchAddress: HTTP error', res.status, text);
+        setUserAddresses([]);
+        setSelectedAddressId('');
+        return [];
+      }
+  
+      const json = await res.json().catch(() => ({}));
+      const addresses = Array.isArray(json?.data) ? json.data : [];
+      console.log('fetchAddress: loaded addresses', addresses);
+      setUserAddresses(addresses);
+      // Preserve current selection if it still exists; clear if removed
+      setSelectedAddressId(prev => (prev && addresses.some(a => a.userAddressId === prev) ? prev : ''));
+      return addresses;
+    } catch (error) {
+      console.error('fetchAddress: unexpected error:', error);
+      setUserAddresses([]);
+      setSelectedAddressId('');
+      return [];
+    }
+  };
+
 
   // Truncate description to fit available space
   const MAX_DESCRIPTION_LENGTH = 300;
@@ -79,8 +188,12 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
   const displayDescription = isDescriptionExpanded 
     ? description 
     : description.substring(0, MAX_DESCRIPTION_LENGTH);
+  
+  // Currently selected address object (if any)
+  const selectedAddress = userAddresses.find(a => a.userAddressId === selectedAddressId);
 
   return (
+    <>
     <div className="pdm-overlay" onClick={onClose}>
       <div className="pdm-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -104,6 +217,8 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                 src={images[selectedImageIndex] || 'https://via.placeholder.com/600'} 
                 alt={item.title}
                 className="pdm-image"
+                onClick={() => setShowFullscreen(true)}
+                style={{ cursor: 'zoom-in' }}
               />
               {images.length > 1 && (
                 <>
@@ -260,6 +375,39 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
 
               {selectedTab === 'shipping' && (
                 <div className="pdm-shipping-info">
+                  <div className="pdm-ship-option" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>Shipping Address</strong>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      type="button"
+                      onClick={() => setShowAddressPicker(true)}
+                    >
+                      Manage Addresses
+                    </button>
+                  </div>
+                  {userAddresses.length === 0 ? (
+                    <div className="pdm-ship-option">
+                      <span>No saved addresses found.</span>
+                    </div>
+                  ) : !selectedAddress ? (
+                    <div className="pdm-ship-option">
+                      <span>No address selected. Click Manage Addresses to choose one.</span>
+                    </div>
+                  ) : (
+                    <div className="museo-card is-selected">
+                      <div className="museo-card__body">
+                        <div className="museo-address-content">
+                          <div className="museo-address-name">{selectedAddress.fullName} {selectedAddress.isDefault ? '(Default)' : ''}</div>
+                          <div className="museo-address-line">{selectedAddress.addressLine1}{selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''}</div>
+                          <div className="museo-address-line">{selectedAddress.barangayName}, {selectedAddress.cityMunicipalityName}, {selectedAddress.provinceName}, {selectedAddress.regionName} {selectedAddress.postalCode}</div>
+                          <div className="museo-address-phone">{selectedAddress.phoneNumber}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <hr style={{ margin: '12px 0', borderColor: 'var(--museo-border)' }} />
+
                   <div className="pdm-ship-option">
                     <strong>Standard Shipping</strong>
                     <span>3-7 business days, insured</span>
@@ -298,6 +446,12 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                       <span className="pdm-stat-value">{new Date(endsAt).toLocaleString()}</span>
                     </div>
                   )}
+                  {(startsAt || endsAt) && timerLabel && (
+                    <div className="pdm-auction-stat">
+                      <span className="pdm-stat-label">Time</span>
+                      <span className="pdm-stat-value">{timerLabel}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pdm-bid-form">
@@ -318,13 +472,42 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                       Bid placed successfully!
                     </div>
                   ) : (
-                    <button 
-                      className="btn btn-sm btn-primary"
-                      onClick={handlePlaceBid}
-                      disabled={!bidAmount || parseFloat(bidAmount) < startPriceVal}
-                    >
-                      Place Sealed Bid
-                    </button>
+                    <>
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={handlePlaceBid}
+                        disabled={
+                          placingBid ||
+                          !bidAmount ||
+                          parseFloat(bidAmount) < startPriceVal ||
+                          !selectedAddressId ||
+                          timeDisabled
+                        }
+                      >
+                        {placingBid ? 'Placing…' : 'Place Sealed Bid'}
+                      </button>
+                      {timeDisabled && (
+                        <div style={{ color: 'var(--museo-text-muted)', fontSize: '12px', marginTop: '6px' }}>
+                          {beforeStart
+                            ? `Bidding opens at ${new Date(startsAt).toLocaleString()}`
+                            : afterEnd
+                              ? `Auction ended at ${new Date(endsAt).toLocaleString()}`
+                              : isPaused
+                                ? `Auction is paused. Ends at ${new Date(endsAt).toLocaleString()}`
+                                : ''}
+                        </div>
+                      )}
+                      {!selectedAddressId && userAddresses.length > 0 && (
+                        <div style={{ color: 'var(--museo-text-muted)', fontSize: '12px' }}>
+                          Select a shipping address in the Shipping tab to enable bidding.
+                        </div>
+                      )}
+                      {errorMsg && (
+                        <div style={{ color: 'var(--museo-error)', fontSize: '12px' }}>
+                          {errorMsg}
+                        </div>
+                      )}
+                    </>
                   )}
                   <p className="pdm-bid-note">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -346,5 +529,31 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
         </div>
       </div>
     </div>
+
+    {/* Fullscreen viewer for gallery */}
+    <FullscreenImageViewer
+      isOpen={showFullscreen}
+      onClose={() => setShowFullscreen(false)}
+      images={images}
+      currentIndex={selectedImageIndex}
+      onIndexChange={setSelectedImageIndex}
+      alt={item?.title || 'Artwork'}
+    />
+
+    {showAddressPicker && (
+      <AddressPickerModal
+        isOpen={showAddressPicker}
+        onClose={() => setShowAddressPicker(false)}
+        initialSelectedId={selectedAddressId}
+        onSelect={(sel) => {
+          const id = typeof sel === 'string' ? sel : sel?.userAddressId;
+          if (id) setSelectedAddressId(id);
+          setShowAddressPicker(false);
+          // Refresh address list to reflect any add/edit/delete operations
+          fetchAddress();
+        }}
+      />
+    )}
+    </>
   );
 }

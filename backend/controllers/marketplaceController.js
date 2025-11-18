@@ -44,15 +44,20 @@ const validatePhone = (phone) => {
 };
 
 const validateAddress = (address) => {
-  const required = ['street', 'barangay', 'city', 'province', 'postal_code'];
+  // Allow either postal_code (snake) or postalCode (camel)
+  const required = ['street', 'barangay', 'city', 'province'];
   const missing = required.filter(field => !address[field] || address[field].toString().trim() === '');
-  
+  const postal = address.postal_code ?? address.postalCode;
+
   if (missing.length > 0) {
     return { valid: false, errors: [`Missing address fields: ${missing.join(', ')}`] };
   }
-  
+  if (!postal || postal.toString().trim() === '') {
+    return { valid: false, errors: ['Missing address fields: postalCode'] };
+  }
+
   // Validate postal code format (4 digits for Philippines)
-  const postalCode = address.postal_code.toString();
+  const postalCode = postal.toString();
   if (!/^\d{4}$/.test(postalCode)) {
     return { valid: false, errors: ['Postal code must be 4 digits'] };
   }

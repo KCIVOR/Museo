@@ -8,7 +8,7 @@ import '../styles/components/address-form.css';
 
 const API = import.meta.env.VITE_API_BASE;
 
-export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
+export default function AddressModal({ isOpen, onClose, onAddressSaved, address, nested = false }) {
   const { userData } = useUser();
   
   // Form data
@@ -38,7 +38,7 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
     
     // Additional Details
     postalCode: '',
-    addressType: 'Home', // Changed to match backend enum: 'Home', 'Work', 'Other'
+    addressType: 'home',
     isDefault: false,
     deliveryInstructions: ''
   });
@@ -68,6 +68,34 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
       }
     }
   }, [isOpen, userData]);
+  
+  // Prefill when editing an existing address
+  useEffect(() => {
+    if (isOpen && address) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: address.fullName || '',
+        email: address.email || '',
+        phoneNumber: address.phoneNumber || '',
+        alternatePhone: address.alternatePhone || '',
+        addressLine1: address.addressLine1 || '',
+        addressLine2: address.addressLine2 || '',
+        landmark: address.landmark || '',
+        regionCode: address.regionCode || '',
+        provinceCode: address.provinceCode || '',
+        cityMunicipalityCode: address.cityMunicipalityCode || '',
+        barangayCode: address.barangayCode || '',
+        regionName: address.regionName || '',
+        provinceName: address.provinceName || '',
+        cityMunicipalityName: address.cityMunicipalityName || '',
+        barangayName: address.barangayName || '',
+        postalCode: address.postalCode || '',
+        addressType: address.addressType ? String(address.addressType).toLowerCase() : prev.addressType,
+        isDefault: Boolean(address.isDefault),
+        deliveryInstructions: address.deliveryInstructions || ''
+      }));
+    }
+  }, [isOpen, address]);
   
   // Fetch Regions from PSGC API
   const fetchRegions = async () => {
@@ -246,17 +274,25 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
       const selectedCity = citiesMunicipalities.find(c => c.code === formData.cityMunicipalityCode);
       const selectedBarangay = barangays.find(b => b.code === formData.barangayCode);
       
+      // Normalize phones: remove spaces, dashes, parentheses; keep digits/+ only
+      const normalizePhone = (v) => (v || '').replace(/[^\d+]/g, '');
+
       const addressData = {
         ...formData,
+        fullName: (formData.fullName || '').trim(),
+        email: (formData.email || '').trim(),
+        phoneNumber: normalizePhone(formData.phoneNumber),
+        alternatePhone: normalizePhone(formData.alternatePhone),
         regionName: selectedRegion?.name || '',
         provinceName: selectedProvince?.name || '',
         cityMunicipalityName: selectedCity?.name || '',
         barangayName: selectedBarangay?.name || ''
       };
       
-      // Save to backend API
-      const response = await fetch(`${API}/marketplace/addresses`, {
-        method: 'POST',
+      // Save to backend API (create or update)
+      const isEditing = Boolean(address?.userAddressId);
+      const response = await fetch(isEditing ? `${API}/marketplace/addresses/${address.userAddressId}` : `${API}/marketplace/addresses`, {
+        method: isEditing ? 'PUT' : 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
@@ -266,8 +302,19 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
       
       const result = await response.json();
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to save address');
+      if (!response.ok || result?.success === false) {
+        // Extract validation errors if provided
+        const details = Array.isArray(result?.details) ? result.details : [];
+        if (details.length) {
+          const nextErrors = {};
+          for (const d of details) {
+            if (d?.field && d?.message) nextErrors[d.field] = d.message;
+          }
+          setErrors(nextErrors);
+          const firstMsg = details[0]?.message || 'Failed to save address';
+          throw new Error(firstMsg);
+        }
+        throw new Error(result?.message || result?.error || 'Failed to save address');
       }
       
       if (result.success) {
@@ -286,7 +333,7 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
         resetForm();
         onClose();
         
-        alert('Address saved successfully!');
+        alert(isEditing ? 'Address updated successfully!' : 'Address saved successfully!');
       }
       
     } catch (error) {
@@ -316,7 +363,7 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
       cityMunicipalityName: '',
       barangayName: '',
       postalCode: '',
-      addressType: 'Home',
+      addressType: 'home',
       isDefault: false,
       deliveryInstructions: ''
     });
@@ -333,9 +380,10 @@ export default function AddressModal({ isOpen, onClose, onAddressSaved }) {
     <MuseoModal
       open={isOpen}
       onClose={handleClose}
-      title="Add New Address"
-      subtitle="Enter your delivery address details"
+      title={address ? 'Edit Address' : 'Add New Address'}
+      subtitle={address ? 'Update your delivery address details' : 'Enter your delivery address details'}
       size="lg"
+      nested={nested}
     >
       <MuseoModalBody>
         <form onSubmit={handleSubmit} style={{ display: 'block' }}>

@@ -4,6 +4,7 @@
 
 import db from '../database/db.js';
 import auctionService from '../services/auctionService.js';
+import * as xenditService from '../services/xenditService.js';
 
 const PAYMENT_WINDOW_HOURS = Number(process.env.AUCTION_PAYMENT_WINDOW_HOURS || 24);
 
@@ -38,7 +39,16 @@ export const getAuctionDetails = async (req, res) => {
 
     // Only show participant count to seller or admin (not to bidders - blind auction principle)
     const isSeller = auction.sellerProfileId && userId === auction.sellerProfileId;
-    const isAdmin = req.user?.role === 'admin';
+    // Fetch role from profile table (do not trust auth metadata)
+    let isAdmin = false;
+    if (userId) {
+      const { data: profile } = await db
+        .from('profile')
+        .select('role')
+        .eq('userId', userId)
+        .single();
+      isAdmin = profile?.role === 'admin';
+    }
     const showParticipantCount = isSeller || isAdmin;
 
     res.json({
@@ -51,6 +61,537 @@ export const getAuctionDetails = async (req, res) => {
   } catch (error) {
     console.error('Error fetching auction:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/:auctionId/cancel - Cancel an auction
+// Rules:
+// - Admin can cancel if not ended/settled/cancelled
+// - Seller can cancel if owns the auction and status is scheduled or paused, or active with NO bids
+export const cancelAuction = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionId } = req.params;
+    const reason = (req.body?.reason || '').toString().slice(0, 500);
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    // Resolve role
+    const { data: profile } = await db.from('profile').select('role').eq('userId', userId).single();
+    const isAdmin = profile?.role === 'admin';
+
+    // Load auction
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+
+    // Ownership check for sellers
+    if (!isAdmin) {
+      const { data: sellerProfile, error: spErr } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      if (spErr || !sellerProfile) {
+        return res.status(403).json({ success: false, error: 'Must be an active seller' });
+      }
+      if (auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+        return res.status(403).json({ success: false, error: 'Not authorized to cancel this auction' });
+      }
+    }
+
+    // Disallow cancellation after finalization states
+    if (['ended', 'settled', 'cancelled'].includes(auction.status)) {
+      return res.status(400).json({ success: false, error: `Cannot cancel an auction that is ${auction.status}` });
+    }
+
+    // If seller (not admin), enforce bid rules
+    if (!isAdmin) {
+      // Sellers can cancel scheduled or paused
+      const allowedForSeller = auction.status === 'scheduled' || auction.status === 'paused';
+      let hasBids = false;
+      if (auction.status === 'active') {
+        const { data: anyBid } = await db
+          .from('auction_bids')
+          .select('bidId')
+          .eq('auctionId', auction.auctionId)
+          .eq('isWithdrawn', false)
+          .limit(1);
+        hasBids = Array.isArray(anyBid) && anyBid.length > 0;
+      }
+      if (!(allowedForSeller || (auction.status === 'active' && !hasBids))) {
+        return res.status(403).json({ success: false, error: 'Auctions with bids can only be cancelled by an admin' });
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: updated, error: uErr } = await db
+      .from('auctions')
+      .update({
+        status: 'cancelled',
+        cancelledAt: nowIso,
+        cancelledBy: userId,
+        cancelReason: reason || null,
+        updated_at: nowIso
+      })
+      .eq('auctionId', auctionId)
+      .select('*')
+      .single();
+    if (uErr) throw new Error(uErr.message);
+
+    return res.json({ success: true, message: 'Auction cancelled', data: updated });
+  } catch (error) {
+    console.error('Error cancelling auction:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/:auctionId/resume - Resume a paused auction (seller/admin)
+export const resumeAuction = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    // Resolve seller profile and admin
+    const { data: profile } = await db.from('profile').select('role').eq('userId', userId).single();
+    const isAdmin = profile?.role === 'admin';
+    let sellerProfile = null;
+    if (!isAdmin) {
+      const resp = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      sellerProfile = resp?.data;
+      if (!sellerProfile) return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Load auction
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+    if (!isAdmin && auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to modify this auction' });
+    }
+
+    const now = new Date();
+    if (now >= new Date(auction.endAt)) {
+      return res.status(400).json({ success: false, error: 'Auction already ended' });
+    }
+    if (auction.status !== 'paused') {
+      return res.status(400).json({ success: false, error: 'Only paused auctions can be resumed' });
+    }
+
+    const { data: updated, error: upErr } = await db
+      .from('auctions')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .eq('auctionId', auctionId)
+      .select('*')
+      .single();
+    if (upErr) throw new Error(upErr.message);
+
+    return res.json({ success: true, message: 'Auction resumed', data: updated });
+  } catch (error) {
+    console.error('Error resuming auction:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/:auctionId/pause - Temporarily pause an active auction (seller/admin)
+export const pauseAuction = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    // Resolve seller profile and admin
+    const { data: profile } = await db.from('profile').select('role').eq('userId', userId).single();
+    const isAdmin = profile?.role === 'admin';
+    let sellerProfile = null;
+    if (!isAdmin) {
+      const resp = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      sellerProfile = resp?.data;
+      if (!sellerProfile) return res.status(403).json({ success: false, error: 'Must be an active seller' });
+    }
+
+    // Load auction
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+    if (!isAdmin && auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to modify this auction' });
+    }
+
+    const now = new Date();
+    if (now >= new Date(auction.endAt)) {
+      return res.status(400).json({ success: false, error: 'Auction already ended' });
+    }
+    if (auction.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Only active auctions can be paused' });
+    }
+
+    const { data: updated, error: upErr } = await db
+      .from('auctions')
+      .update({ status: 'paused', updated_at: new Date().toISOString() })
+      .eq('auctionId', auctionId)
+      .select('*')
+      .single();
+    if (upErr) throw new Error(upErr.message);
+
+    return res.json({ success: true, message: 'Auction paused', data: updated });
+  } catch (error) {
+    console.error('Error pausing auction:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// GET /api/auctions/:auctionId/bids - Bid history (seller/admin only)
+export const getAuctionBids = async (req, res) => {
+  try {
+    const { auctionId } = req.params;
+    const userId = req.user?.id;
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Resolve role to check admin
+    const { data: profile } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    const isAdmin = profile?.role === 'admin';
+
+    // Load auction and verify ownership for sellers
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('auctionId, sellerProfileId, status')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+
+    if (!isAdmin) {
+      const { data: sellerProfile, error: spErr } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      if (spErr || !sellerProfile) {
+        return res.status(403).json({ success: false, error: 'Must be an active seller' });
+      }
+      if (auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+        return res.status(403).json({ success: false, error: 'Not authorized to view bids for this auction' });
+      }
+    }
+
+    // Fetch bids (exclude withdrawn) and enrich with bidder details from profile
+    const { data: bids, error: bErr } = await db
+      .from('auction_bids')
+      .select('bidId, amount, created_at, bidderUserId')
+      .eq('auctionId', auctionId)
+      .eq('isWithdrawn', false)
+      .order('created_at', { ascending: false });
+    if (bErr) throw new Error(bErr.message);
+
+    const list = bids || [];
+    const uniqueUserIds = [...new Set(list.map(b => b.bidderUserId).filter(Boolean))];
+    let profilesMap = {};
+    if (uniqueUserIds.length > 0) {
+      const { data: profiles } = await db
+        .from('profile')
+        .select('userId, firstName, lastName, profilePicture')
+        .in('userId', uniqueUserIds);
+      profilesMap = Array.isArray(profiles)
+        ? Object.fromEntries(
+            profiles.map(p => [
+              p.userId,
+              { firstName: p.firstName, lastName: p.lastName, profilePicture: p.profilePicture }
+            ])
+          )
+        : {};
+    }
+
+    const enriched = list.map(b => ({
+      bidId: b.bidId,
+      amount: b.amount,
+      created_at: b.created_at,
+      bidderUserId: b.bidderUserId,
+      bidder: profilesMap[b.bidderUserId] || { firstName: 'Anonymous', lastName: '', profilePicture: null }
+    }));
+
+    return res.json({ success: true, data: enriched });
+  } catch (error) {
+    console.error('Error fetching auction bids:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// PUT /api/auctions/:auctionId - Update auction scheduling/pricing
+export const updateAuction = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { auctionId } = req.params;
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    // Resolve application role from profile table (not auth metadata)
+    const { data: profile, error: pErr } = await db
+      .from('profile')
+      .select('role')
+      .eq('userId', userId)
+      .single();
+    if (pErr || !profile) {
+      return res.status(403).json({ success: false, error: 'User role not found' });
+    }
+    const isAdmin = profile.role === 'admin';
+
+    // Load auction
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+
+    // If not admin, verify ownership via sellerProfiles
+    if (!isAdmin) {
+      const { data: sellerProfile, error: spErr } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      if (spErr || !sellerProfile) {
+        return res.status(403).json({ success: false, error: 'Must be an active seller' });
+      }
+      if (auction.sellerProfileId !== sellerProfile.sellerProfileId) {
+        return res.status(403).json({ success: false, error: 'Not authorized to update this auction' });
+      }
+    }
+
+    // Disallow edits to cancelled auctions (for all roles)
+    if (auction.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'Cancelled auctions cannot be edited.' });
+    }
+
+    const now = new Date();
+    // Enforce guard for non-admins: allow only if auction not ended AND there are no bids yet
+    if (!isAdmin) {
+      if (now >= new Date(auction.endAt)) {
+        return res.status(400).json({ success: false, error: 'Auction already ended; finished auctions cannot be edited.' });
+      }
+      const { data: anyBid } = await db
+        .from('auction_bids')
+        .select('bidId')
+        .eq('auctionId', auctionId)
+        .eq('isWithdrawn', false)
+        .limit(1);
+      const hasAnyBid = Array.isArray(anyBid) && anyBid.length > 0;
+      if (hasAnyBid) {
+        return res.status(400).json({ success: false, error: 'Auction already has bids; scheduling/pricing cannot be edited.' });
+      }
+    }
+
+    // Allowed fields
+    const { startPrice, reservePrice, minIncrement, startAt, endAt } = req.body || {};
+    const updateData = {};
+
+    if (startPrice !== undefined) {
+      const v = Number(startPrice);
+      if (!Number.isFinite(v) || v <= 0) return res.status(400).json({ success: false, error: 'startPrice must be > 0' });
+      updateData.startPrice = v;
+    }
+    if (reservePrice !== undefined) {
+      const v = Number(reservePrice);
+      if (!Number.isFinite(v) || v < 0) return res.status(400).json({ success: false, error: 'reservePrice must be >= 0' });
+      updateData.reservePrice = v;
+    }
+    if (minIncrement !== undefined) {
+      const v = Number(minIncrement);
+      if (!Number.isFinite(v) || v < 0) return res.status(400).json({ success: false, error: 'minIncrement must be >= 0' });
+      updateData.minIncrement = v;
+    }
+    if (startAt !== undefined) {
+      const d = new Date(startAt);
+      if (isNaN(d.getTime())) return res.status(400).json({ success: false, error: 'Invalid startAt' });
+      updateData.startAt = d.toISOString();
+    }
+    if (endAt !== undefined) {
+      const d = new Date(endAt);
+      if (isNaN(d.getTime())) return res.status(400).json({ success: false, error: 'Invalid endAt' });
+      updateData.endAt = d.toISOString();
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ success: false, error: 'No valid fields to update' });
+    }
+
+    // Combined time validation
+    const finalStart = updateData.startAt || auction.startAt;
+    const finalEnd = updateData.endAt || auction.endAt;
+    if (new Date(finalEnd) <= new Date(finalStart)) {
+      return res.status(400).json({ success: false, error: 'endAt must be after startAt' });
+    }
+
+    // Prevent sellers from setting startAt in the past (use activate-now instead)
+    if (!isAdmin) {
+      if (updateData.startAt && new Date(updateData.startAt) <= now) {
+        return res.status(400).json({ success: false, error: 'startAt must be in the future; use activate-now to start immediately.' });
+      }
+    }
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { data: updated, error: uErr } = await db
+      .from('auctions')
+      .update(updateData)
+      .eq('auctionId', auctionId)
+      .select('*')
+      .single();
+    if (uErr) throw new Error(uErr.message);
+
+    return res.json({ success: true, message: 'Auction updated', data: updated });
+  } catch (error) {
+    console.error('Error updating auction:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// POST /api/auctions/:auctionId/force-expire (admin only)
+// Force-expire the current winner's settlement: cancel invoice/order and roll over to next bidder immediately
+export const forceExpireAndRollover = async (req, res) => {
+  try {
+    const { auctionId } = req.params;
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    const now = new Date();
+
+    // Load auction with current winner and settlement
+    const { data: auction, error: aErr } = await db
+      .from('auctions')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .single();
+    if (aErr || !auction) return res.status(404).json({ success: false, error: 'Auction not found' });
+
+    if (!auction.winnerUserId) {
+      return res.status(400).json({ success: false, error: 'No winner is assigned to this auction' });
+    }
+
+    // Cancel existing settlement order/invoice if present and unpaid
+    let cancelledOrderId = null;
+    if (auction.settlementOrderId) {
+      const { data: order } = await db
+        .from('orders')
+        .select('*')
+        .eq('orderId', auction.settlementOrderId)
+        .single();
+
+      if (order) {
+        if (order.paymentStatus === 'paid') {
+          return res.status(400).json({ success: false, error: 'Settlement order already paid. Cannot force-expire.' });
+        }
+        // Try to expire Xendit invoice
+        try {
+          if (order.paymentLinkId) {
+            await xenditService.cancelPaymentLink(order.paymentLinkId);
+          }
+        } catch (e) {
+          console.warn('Failed to cancel Xendit invoice (continuing):', e?.message || e);
+        }
+
+        // Mark order as cancelled/expired
+        await db
+          .from('orders')
+          .update({
+            status: 'cancelled',
+            paymentStatus: 'expired',
+            cancelledAt: now.toISOString(),
+            updatedAt: now.toISOString()
+          })
+          .eq('orderId', order.orderId);
+        cancelledOrderId = order.orderId;
+      }
+    }
+
+    // Find next highest bidder (excluding current winner)
+    const { data: bids } = await db
+      .from('auction_bids')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .eq('isWithdrawn', false);
+    const { ranking } = auctionService.computeWinners(bids || []);
+    const nextWinner = ranking.find(r => r.bidderUserId !== auction.winnerUserId);
+
+    if (!nextWinner) {
+      // No other bidders — mark as ended
+      await db
+        .from('auctions')
+        .update({ status: 'ended', updated_at: now.toISOString() })
+        .eq('auctionId', auctionId);
+      return res.json({ success: true, message: 'No next bidder. Auction marked as ended.', data: { cancelledOrderId } });
+    }
+
+    // Compute new payment due and assign new winner
+    const dueAt = new Date(now);
+    dueAt.setHours(dueAt.getHours() + PAYMENT_WINDOW_HOURS);
+
+    const { data: nextBid } = await db
+      .from('auction_bids')
+      .select('*')
+      .eq('bidderUserId', nextWinner.bidderUserId)
+      .eq('auctionId', auctionId)
+      .order('amount', { ascending: false })
+      .limit(1)
+      .single();
+
+    await db
+      .from('auctions')
+      .update({
+        winnerUserId: nextWinner.bidderUserId,
+        winningBidId: nextBid?.bidId || nextWinner.bidId,
+        paymentDueAt: dueAt.toISOString(),
+        updated_at: now.toISOString(),
+        status: 'ended'
+      })
+      .eq('auctionId', auctionId);
+
+    // Immediately settle for the new winner (creates order + invoice)
+    const { order, paymentLink } = await auctionService.settleAuction(auctionId);
+
+    return res.json({
+      success: true,
+      message: 'Current winner expired and rolled over to next bidder',
+      data: {
+        cancelledOrderId,
+        newOrderId: order.orderId,
+        paymentReference: order.paymentReference,
+        paymentLinkId: order.paymentLinkId,
+        checkoutUrl: paymentLink?.checkoutUrl
+      }
+    });
+  } catch (error) {
+    console.error('Error in forceExpireAndRollover:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -185,16 +726,18 @@ export const placeBid = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid bid amount' });
     }
 
-    // Validate userAddressId if provided
-    if (userAddressId) {
-      const { data: addr, error: addrErr } = await db
-        .from('user_addresses')
-        .select('userAddressId')
-        .eq('userAddressId', userAddressId)
-        .single();
-      if (addrErr || !addr) {
-        return res.status(400).json({ success: false, error: 'Invalid shipping address' });
-      }
+    // Require and validate userAddressId ownership
+    if (!userAddressId) {
+      return res.status(400).json({ success: false, error: 'Shipping address is required' });
+    }
+    const { data: addr, error: addrErr } = await db
+      .from('user_addresses')
+      .select('userAddressId, userId')
+      .eq('userAddressId', userAddressId)
+      .eq('userId', userId)
+      .single();
+    if (addrErr || !addr) {
+      return res.status(400).json({ success: false, error: 'Invalid shipping address' });
     }
 
     // ✅ IDEMPOTENCY CHECK - DB QUERY IN CONTROLLER
@@ -225,7 +768,13 @@ export const placeBid = async (req, res) => {
       throw new Error('Bidding window is closed');
     }
 
-    // VALIDATION 2: Auction must be 'active'
+    // VALIDATION 2: Auction must be 'active' and not paused/cancelled
+    if (auction.status === 'cancelled') {
+      throw new Error('Auction has been cancelled');
+    }
+    if (auction.status === 'paused') {
+      throw new Error('Auction is paused');
+    }
     if (auction.status !== 'active') {
       throw new Error('Auction is not active');
     }
@@ -266,7 +815,7 @@ export const placeBid = async (req, res) => {
     // ✅ INSERT BID - DB QUERY IN CONTROLLER
     const bidData = { auctionId, bidderUserId: userId, amount };
     if (idempotencyKey) bidData.idempotencyKey = idempotencyKey;
-    if (userAddressId) bidData.userAddressId = userAddressId;
+    bidData.userAddressId = userAddressId;
 
     const { data: bid, error } = await db
       .from('auction_bids')
@@ -282,7 +831,9 @@ export const placeBid = async (req, res) => {
     });
   } catch (error) {
     console.error('Error placing bid:', error);
-    const statusCode = error.message.includes('closed') || error.message.includes('not active') ? 400 : 500;
+    const msg = (error?.message || '').toLowerCase();
+    const badRequest = ['closed', 'not active', 'paused', 'cancelled'].some(t => msg.includes(t));
+    const statusCode = badRequest ? 400 : 500;
     res.status(statusCode).json({ success: false, error: error.message });
   }
 };
@@ -798,5 +1349,7 @@ export default {
   deleteAuctionItem,
   updateAuctionItem,
   getSellerAuctions,
-  activateAuctionNow
+  activateAuctionNow,
+  forceExpireAndRollover,
+  updateAuction
 };

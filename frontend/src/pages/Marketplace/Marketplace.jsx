@@ -107,6 +107,7 @@ export default function Marketplace() {
             const normalized = {
               id: a.auctionId || a.id,
               marketItemId: a.auctionId || a.id,
+              auctionId: a.auctionId || a.id,
               title,
               description: aItem?.description || a.description || '',
               primary_image: primary,
@@ -372,9 +373,34 @@ export default function Marketplace() {
     navigate(`/marketplace/product/${item.marketItemId || item.id}`);
   };
 
-  const handlePlaceBid = (item, bidAmount) => {
-    console.log(`Placing blind bid of $${bidAmount} on ${item.title}`);
-    alert(`Your sealed bid of $${bidAmount} has been placed successfully!\n\nYou will be notified when the auction ends.`);
+  const handlePlaceBid = async (item, bidAmount, userAddressId) => {
+    try {
+      const auctionId = item?.auctionId || item?.id || item?.marketItemId;
+      if (!auctionId) return { success: false, error: 'Missing auction ID' };
+
+      // Auth guard: require logged-in user to bid
+      if (!userData?.id) return { success: false, error: 'Please log in to place a bid.' };
+
+      const idempotencyKey = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+        ? globalThis.crypto.randomUUID()
+        : `bid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      const res = await fetch(`${API}/auctions/${auctionId}/bids`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: Number(bidAmount), userAddressId, idempotencyKey })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) {
+        return { success: false, error: json?.error || `Failed to place bid (HTTP ${res.status})` };
+      }
+
+      // Optionally update local state (e.g., refresh auctions) — skipping for now
+      return { success: true, data: json?.data };
+    } catch (e) {
+      return { success: false, error: e?.message || 'Failed to place bid' };
+    }
   };
 
   return (

@@ -3,6 +3,7 @@
 
 import db from '../database/db.js';
 import auctionService from '../services/auctionService.js';
+import * as xenditService from '../services/xenditService.js';
 
 const PAYMENT_WINDOW_HOURS = Number(process.env.AUCTION_PAYMENT_WINDOW_HOURS || 24);
 
@@ -53,7 +54,7 @@ export async function closeEndedAuctions() {
     const { data: toClose, error } = await db
       .from('auctions')
       .select('*')
-      .eq('status', 'active')
+      .in('status', ['active', 'paused'])
       .lte('endAt', now);
 
     if (error) throw new Error(error.message);
@@ -64,9 +65,19 @@ export async function closeEndedAuctions() {
 
     for (const auction of toClose) {
       try {
+        const wasPaused = auction.status === 'paused';
         const { auction: updated, winner } = await auctionService.closeAuction(auction.auctionId);
         if (winner) {
           console.log(`✅ Closed auction ${auction.auctionId}, winner: ${winner.userId}, amount: ₱${winner.amount}`);
+          // If it was paused, immediately settle so it ends up as 'settled' in the same cycle
+          if (wasPaused) {
+            try {
+              await auctionService.settleAuction(auction.auctionId);
+              console.log(`💳 Settled paused auction ${auction.auctionId} immediately after close`);
+            } catch (settleErr) {
+              console.error(`Error settling paused auction ${auction.auctionId}:`, settleErr);
+            }
+          }
         } else {
           console.log(`✅ Closed auction ${auction.auctionId}, no winner (reserve not met or no bids)`);
         }
@@ -158,7 +169,8 @@ export async function rolloverUnpaidWinners() {
           .eq('isWithdrawn', false);
 
         const { ranking } = auctionService.computeWinners(bids || []);
-        const nextWinner = ranking.find(r => r.userId !== auction.winnerUserId);
+        // ranking entries are bid objects; use bidderUserId to compare
+        const nextWinner = ranking.find(r => r.bidderUserId !== auction.winnerUserId);
 
         if (!nextWinner) {
           console.log(`⚠️ No next bidder for auction ${auction.auctionId}, marking unsold`);
@@ -167,6 +179,16 @@ export async function rolloverUnpaidWinners() {
             .update({ status: 'ended', updated_at: now })
             .eq('auctionId', auction.auctionId);
           continue;
+        }
+
+        // Expire the existing Xendit invoice if any to prevent late payments
+        try {
+          if (order.paymentLinkId) {
+            await xenditService.cancelPaymentLink(order.paymentLinkId);
+          }
+        } catch (e) {
+          console.warn(`⚠️ Failed to cancel Xendit invoice ${order.paymentLinkId} for order ${order.orderId}:`, e?.message || e);
+          // Continue with local cancellation regardless
         }
 
         // Cancel current order
@@ -182,7 +204,7 @@ export async function rolloverUnpaidWinners() {
         const { data: nextBid } = await db
           .from('auction_bids')
           .select('*')
-          .eq('bidderUserId', nextWinner.userId)
+          .eq('bidderUserId', nextWinner.bidderUserId)
           .eq('auctionId', auction.auctionId)
           .order('amount', { ascending: false })
           .limit(1)
@@ -191,7 +213,7 @@ export async function rolloverUnpaidWinners() {
         await db
           .from('auctions')
           .update({
-            winnerUserId: nextWinner.userId,
+            winnerUserId: nextWinner.bidderUserId,
             winningBidId: nextBid?.bidId || nextWinner.bidId,
             paymentDueAt: dueAt.toISOString(),
             updated_at: now

@@ -5,7 +5,9 @@ import MuseoModal, { MuseoModalBody, MuseoModalActions, MuseoModalSection } from
 import AddProductModal from './AddProductModal';
 import AddAuctionProductModal from './AddAuctionProductModal';
 import EditProductModal from './EditProductModal';
+import EditAuctionModal from './EditAuctionModal';
 import ConfirmModal from '../Shared/ConfirmModal';
+import ViewBidsModal from './components/ViewBidsModal.jsx';
 import { 
   SalesIcon, 
   OrdersIcon, 
@@ -22,8 +24,42 @@ import {
 import SellerReturnsTab from './SellerReturnsTab.jsx';
 import '../../styles/main.css';
 import './css/sellerDashboard.css';
+import '../../styles/components/dropdowns.css';
 
 const API = import.meta.env.VITE_API_BASE;
+
+// Currency + time helpers
+const formatPhp = (n) => {
+  const num = Number(n || 0);
+  return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(num);
+};
+
+const formatCountdown = (nowTs, startAt, endAt) => {
+  const now = new Date(nowTs);
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  if (now < start) {
+    const ms = start - now;
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return { label: `Starts in ${d}d ${h}h ${m}m ${s}s`, state: 'scheduled' };
+  }
+  if (now >= start && now < end) {
+    const ms = end - now;
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return { label: `Ends in ${d}d ${h}h ${m}m ${s}s`, state: 'active' };
+  }
+  const ms = now - end;
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return { label: `Ended ${d}d ${h}h ${m}m ago`, state: 'ended' };
+};
 
 export default function SellerDashboard() {
   const navigate = useNavigate();
@@ -57,6 +93,15 @@ export default function SellerDashboard() {
   const [sellerAuctions, setSellerAuctions] = useState([]);
   const [sellerAuctionsLoading, setSellerAuctionsLoading] = useState(false);
   const [auctionStatusFilter, setAuctionStatusFilter] = useState('');
+  const [isEditAuctionModalOpen, setIsEditAuctionModalOpen] = useState(false);
+  const [selectedAuction, setSelectedAuction] = useState(null);
+  const [nowTs, setNowTs] = useState(Date.now());
+  const [participantsByAuction, setParticipantsByAuction] = useState({});
+  const [viewBidsOpen, setViewBidsOpen] = useState(false);
+  const [viewBidsAuction, setViewBidsAuction] = useState(null);
+  // Actions modal state (replaces dropdown)
+  const [actionsModalOpen, setActionsModalOpen] = useState(false);
+  const [actionsAuction, setActionsAuction] = useState(null);
   
   // Orders management state
   const [orders, setOrders] = useState([]);
@@ -187,6 +232,122 @@ export default function SellerDashboard() {
     } catch (error) {
       alert(error.message || 'Failed to activate auction');
     }
+  };
+
+  const handleEditAuction = (auction) => {
+    setSelectedAuction(auction);
+    setIsEditAuctionModalOpen(true);
+  };
+
+  const handleAuctionSaved = async () => {
+    setIsEditAuctionModalOpen(false);
+    setSelectedAuction(null);
+    await fetchSellerAuctions(auctionStatusFilter);
+    alert('Auction updated');
+  };
+
+  // Live countdown ticker when Auctions tab visible
+  useEffect(() => {
+    if (activeTab === 'products' && productView === 'auctions' && auctionsTab === 'auctions') {
+      const id = setInterval(() => setNowTs(Date.now()), 1000);
+      return () => clearInterval(id);
+    }
+  }, [activeTab, productView, auctionsTab]);
+
+  // Load participants count per auction (seller can see it via GET /auctions/:id)
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!sellerAuctions || sellerAuctions.length === 0) return;
+      const entries = await Promise.all(
+        sellerAuctions.map(async (a) => {
+          try {
+            const res = await fetch(`${API}/auctions/${a.auctionId}`, { credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            const count = data?.data?.participantsCount ?? null;
+            return [a.auctionId, count];
+          } catch {
+            return [a.auctionId, null];
+          }
+        })
+      );
+      if (!cancelled) {
+        const map = Object.fromEntries(entries);
+        setParticipantsByAuction(map);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [sellerAuctions]);
+
+  // Auction actions (backend may not support yet; show friendly error)
+  const pauseAuction = async (auctionId) => {
+    try {
+      const res = await fetch(`${API}/auctions/${auctionId}/pause`, { method: 'PUT', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || 'Pause endpoint not available');
+      fetchSellerAuctions(auctionStatusFilter);
+      alert('Auction paused');
+    } catch (e) {
+      alert(e.message || 'Failed to pause auction');
+    }
+  };
+
+  // Resume a paused auction
+  const resumeAuction = async (auctionId) => {
+    try {
+      const res = await fetch(`${API}/auctions/${auctionId}/resume`, { method: 'PUT', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || 'Resume endpoint not available');
+      fetchSellerAuctions(auctionStatusFilter);
+      alert('Auction resumed');
+    } catch (e) {
+      alert(e.message || 'Failed to resume auction');
+    }
+  };
+
+  const cancelAuction = async (auctionId) => {
+    if (!confirm('Cancel this auction? This action cannot be undone.')) return;
+    try {
+      const res = await fetch(`${API}/auctions/${auctionId}/cancel`, { method: 'PUT', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || 'Cancel endpoint not available');
+      fetchSellerAuctions(auctionStatusFilter);
+      alert('Auction cancelled');
+    } catch (e) {
+      alert(e.message || 'Failed to cancel auction');
+    }
+  };
+
+  const extendAuction = async (auctionId, minutes = 5) => {
+    try {
+      const res = await fetch(`${API}/auctions/${auctionId}/extend?minutes=${minutes}`, { method: 'PUT', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) throw new Error(data.error || 'Extend endpoint not available');
+      fetchSellerAuctions(auctionStatusFilter);
+      alert(`Auction extended by ${minutes} minutes`);
+    } catch (e) {
+      alert(e.message || 'Failed to extend auction');
+    }
+  };
+
+  const openViewBids = (auction) => {
+    setViewBidsAuction(auction);
+    setViewBidsOpen(true);
+  };
+  const closeViewBids = () => {
+    setViewBidsOpen(false);
+    setViewBidsAuction(null);
+  };
+
+  // Helper to open/close actions modal
+  const openActionsModal = (auction) => {
+    setActionsAuction(auction);
+    setActionsModalOpen(true);
+  };
+  const closeActionsModal = () => {
+    setActionsModalOpen(false);
+    setActionsAuction(null);
   };
 
   // Fetch actual payout balance from payout system
@@ -471,7 +632,7 @@ export default function SellerDashboard() {
 
   // Handle view product
   const handleViewProduct = (product) => {
-    navigate(`/marketplace/item/${product.marketItemId}`);
+    navigate(`/marketplace/product/${product.marketItemId}`);
   };
 
   // Show loading or nothing while checking seller status
@@ -1017,7 +1178,7 @@ export default function SellerDashboard() {
                     </td>
                     <td className="product-medium">{product.medium || 'N/A'}</td>
                     <td className="product-dimensions">{product.dimensions || 'N/A'}</td>
-                    <td className="product-price">${product.price?.toLocaleString() || '0'}</td>
+                    <td className="product-price">{formatPhp(product.price || 0)}</td>
                     <td className="product-stock">
                       <span className={product.quantity < 3 ? 'low-stock' : ''}>
                         {product.quantity || 0}
@@ -1163,10 +1324,8 @@ export default function SellerDashboard() {
                       <thead>
                         <tr>
                           <th>Item</th>
-                          <th>Start Price</th>
-                          <th>Min Inc.</th>
-                          <th>Start</th>
-                          <th>End</th>
+                          <th>Time</th>
+                          <th>Participants</th>
                           <th>Status</th>
                           <th>Actions</th>
                         </tr>
@@ -1175,12 +1334,16 @@ export default function SellerDashboard() {
                         {sellerAuctions.map(a => (
                           <tr key={a.auctionId}>
                             <td className="product-name"><div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><img src={a.auction_items?.primary_image || 'https://via.placeholder.com/50'} alt={a.auction_items?.title} className="product-thumbnail" /><div className="product-title" style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.auction_items?.title || 'Untitled'}</div></div></td>
-                            <td>₱{Number(a.startPrice || 0).toLocaleString()}</td>
-                            <td>₱{Number(a.minIncrement || 0).toLocaleString()}</td>
-                            <td>{new Date(a.startAt).toLocaleString()}</td>
-                            <td>{new Date(a.endAt).toLocaleString()}</td>
+                            <td>
+                              {(() => { const c = formatCountdown(nowTs, a.startAt, a.endAt); return <span className={`museo-badge museo-badge--interactive`}>{c.label}</span>; })()}
+                            </td>
+                            <td>{participantsByAuction[a.auctionId] ?? '—'}</td>
                             <td><span className={`status-badge ${a.status}`}>{a.status}</span></td>
-                            <td>{a.status === 'scheduled' && <button className="btn btn-primary btn-sm" onClick={() => activateAuctionNow(a.auctionId)}>Activate Now</button>}</td>
+                            <td>
+                              <button className="btn btn-secondary btn-sm" onClick={() => openActionsModal(a)}>
+                                Actions
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1885,7 +2048,78 @@ export default function SellerDashboard() {
         </MuseoModalActions>
       </MuseoModal>
 
-      
+      {/* View Bids / Results Modal */}
+      {viewBidsOpen && (
+        <ViewBidsModal
+          open={viewBidsOpen}
+          onClose={closeViewBids}
+          auctionId={viewBidsAuction?.auctionId}
+          title={viewBidsAuction?.auction_items?.title || 'Auction'}
+        />
+      )}
+
+      {/* Auction Actions Modal */}
+      {actionsModalOpen && (
+        <MuseoModal open={actionsModalOpen} onClose={closeActionsModal} title={actionsAuction?.auction_items?.title ? `Actions — ${actionsAuction.auction_items.title}` : 'Auction Actions'} size="lg">
+          <MuseoModalBody>
+            <MuseoModalSection>
+              <div style={{ color: 'var(--museo-text-secondary)', marginBottom: 'var(--museo-space-3)' }}>Choose an action for this auction</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--museo-space-3)' }}>
+                {(() => {
+                  const a = actionsAuction || {};
+                  const items = [];
+                  const status = (a && a.status) ? String(a.status).toLowerCase().trim() : '';
+                  // Allow edit unless cancelled
+                  if (status !== 'cancelled') {
+                    items.push({ key: 'edit', title: 'Edit Auction', desc: 'Update schedule and pricing', onClick: () => handleEditAuction(a) });
+                  }
+                  if (status === 'scheduled') {
+                    items.push({ key: 'activate', title: 'Activate Now', desc: 'Start the auction immediately', onClick: () => activateAuctionNow(a.auctionId) });
+                  }
+                  if (status === 'active') {
+                    items.push(
+                      { key: 'view-bids', title: 'View Bids', desc: 'See bid history', onClick: () => openViewBids(a) },
+                      { key: 'pause', title: 'Pause', desc: 'Temporarily stop new bids', onClick: () => pauseAuction(a.auctionId) },
+                      { key: 'cancel', title: 'Cancel Auction', desc: 'Permanently cancel', danger: true, onClick: () => cancelAuction(a.auctionId) }
+                    );
+                  }
+                  if (status === 'paused') {
+                    items.push(
+                      { key: 'view-bids', title: 'View Bids', desc: 'See bid history', onClick: () => openViewBids(a) },
+                      { key: 'resume', title: 'Resume Auction', desc: 'Continue accepting bids', onClick: () => resumeAuction(a.auctionId) },
+                      { key: 'cancel', title: 'Cancel Auction', desc: 'Permanently cancel', danger: true, onClick: () => cancelAuction(a.auctionId) }
+                    );
+                  }
+                  if (status === 'ended') {
+                    items.push({ key: 'results', title: 'View Results', desc: 'Winning bid and ranking', onClick: () => openViewBids(a) });
+                  }
+                  if (status === 'settled') {
+                    items.push({ key: 'results', title: 'View Results', desc: 'Winning bid and ranking', onClick: () => openViewBids(a) });
+                  }
+                  if (status === 'cancelled') {
+                    items.push({ key: 'view-bids', title: 'View Bids', desc: 'See bid history', onClick: () => openViewBids(a) });
+                  }
+                  // Fallback: if no actions matched (unexpected status casing/whitespace), show generic actions
+                  if (items.length === 0) {
+                    items.push({ key: 'view-bids', title: 'View Bids', desc: 'See bid history', onClick: () => openViewBids(a) });
+                  }
+                  return items.map(it => (
+                    <button key={it.key} className="museo-card" onClick={() => { it.onClick(); closeActionsModal(); }}
+                      style={{ textAlign: 'left', padding: 'var(--museo-space-5)', border: '1px solid var(--museo-border)', borderRadius: 'var(--museo-radius-lg)', background: 'var(--museo-white)', boxShadow: '0 2px 6px var(--museo-shadow-light)', cursor: 'pointer' }}>
+                      <div style={{ fontWeight: 700, color: it.danger ? 'var(--museo-error)' : 'var(--museo-text-primary)', marginBottom: 4 }}>{it.title}</div>
+                      <div className="museo-form-helper">{it.desc}</div>
+                    </button>
+                  ));
+                })()}
+              </div>
+            </MuseoModalSection>
+          </MuseoModalBody>
+          <MuseoModalActions>
+            <button className="btn btn-ghost btn-sm" onClick={closeActionsModal}>Close</button>
+          </MuseoModalActions>
+        </MuseoModal>
+      )}
+
       {/* Add Product Modal */}
       <AddProductModal
         isOpen={isAddModalOpen}
@@ -1899,6 +2133,16 @@ export default function SellerDashboard() {
         onClose={() => setIsAddAuctionModalOpen(false)}
         onSuccess={handleProductAdded}
       />
+
+      {/* Edit Auction Modal */}
+      {selectedAuction && (
+        <EditAuctionModal
+          isOpen={isEditAuctionModalOpen}
+          onClose={() => { setIsEditAuctionModalOpen(false); setSelectedAuction(null); }}
+          auction={selectedAuction}
+          onSaved={handleAuctionSaved}
+        />
+      )}
 
       {/* Edit Product Modal */}
       <EditProductModal

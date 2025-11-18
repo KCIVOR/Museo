@@ -373,6 +373,99 @@
   color: var(--museo-text-muted);
 }
 
+/* Address List (Shipping tab) */
+.pdm-address-list {
+  display: grid;
+  gap: 10px;
+}
+
+/* Use Museo card layout inside shipping address list */
+.pdm-address-list .museo-card__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pdm-address-list input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--museo-primary);
+  transform: scale(1.1);
+}
+
+.pdm-address-list .museo-card.is-selected {
+  border-color: var(--museo-primary);
+  background: var(--museo-bg-secondary);
+  box-shadow: var(--museo-shadow-lg);
+  transform: translateY(-2px);
+}
+
+.museo-address-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.museo-address-name {
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+.museo-address-line,
+.museo-address-phone {
+  color: var(--museo-text-secondary);
+  font-size: 13px;
+}
+
+.pdm-address-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--museo-border);
+  border-radius: 8px;
+  background: var(--museo-white);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.pdm-address-item:hover {
+  border-color: var(--museo-accent);
+  background: var(--museo-bg-hover);
+}
+
+.pdm-address-item input[type="radio"] {
+  margin-top: 4px;
+  accent-color: var(--museo-primary);
+  transform: scale(1.1);
+}
+
+.pdm-address-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--museo-text-secondary);
+}
+
+/* Highlight selected address card */
+.pdm-address-item:has(input[type="radio"]:checked) {
+  border-color: var(--museo-primary);
+  background: var(--museo-bg-secondary);
+  box-shadow: 0 2px 8px var(--museo-shadow-light);
+}
+
+/* Fallback highlight when using a selected class from React */
+.pdm-address-item.pdm-address-item--selected {
+  border-color: var(--museo-primary);
+  background: var(--museo-bg-secondary);
+  box-shadow: 0 2px 8px var(--museo-shadow-light);
+}
+
+/* Accessibility: focus ring on keyboard focus */
+.pdm-address-item:has(input[type="radio"]:focus-visible) {
+  outline: 2px solid var(--museo-primary);
+  outline-offset: 2px;
+}
+
 .pdm-rules h4 {
   font-size: 16px;
   color: var(--museo-text-primary);

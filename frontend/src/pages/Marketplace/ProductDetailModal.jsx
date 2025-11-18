@@ -1,18 +1,30 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/components/productModal.css";
+import FullscreenImageViewer from "../../components/FullscreenImageViewer";
 
 export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart, onPlaceBid }) {
+  const navigate = useNavigate();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showFullscreen, setShowFullscreen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [bidAmount, setBidAmount] = useState("");
   const [showBidSuccess, setShowBidSuccess] = useState(false);
   const [selectedTab, setSelectedTab] = useState("details");
 
-  // Handle images from API (primary_image + images array)
-  const images = item ? [
-    item.primary_image,
-    ...(Array.isArray(item.images) ? item.images : [])
-  ].filter(Boolean) : [];
+  // Handle images from API (primary_image + images array) with de-duplication
+  const images = item ? (() => {
+    const arr = [
+      item.primary_image,
+      ...(Array.isArray(item.images) ? item.images : [])
+    ].filter(Boolean);
+    const seen = new Set();
+    return arr.filter((src) => {
+      if (seen.has(src)) return false;
+      seen.add(src);
+      return true;
+    });
+  })() : [];
 
   useEffect(() => {
     if (isOpen) {
@@ -37,8 +49,14 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
   const suggestedMinBid = item?.startingPrice || item?.price || 1000;
 
   const handleAddToCart = () => {
-    onAddToCart(item, quantity);
-    onClose();
+    // Navigate directly to checkout with this item and selected quantity
+    const qty = Number(quantity) > 0 ? Number(quantity) : 1;
+    navigate('/marketplace/checkout', {
+      state: {
+        marketItemId: item.marketItemId || item.id,
+        quantity: qty
+      }
+    });
   };
 
   const handlePlaceBid = () => {
@@ -60,6 +78,16 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
           <div className="pdm-breadcrumb">
             Marketplace / {item.categories?.[0] || item.medium || 'Artwork'} / {item.title}
           </div>
+
+    {/* Fullscreen viewer for gallery */}
+    <FullscreenImageViewer
+      isOpen={showFullscreen}
+      onClose={() => setShowFullscreen(false)}
+      images={images}
+      currentIndex={selectedImageIndex}
+      onIndexChange={setSelectedImageIndex}
+      alt={item?.title || 'Artwork'}
+    />
           <button className="pdm-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -76,6 +104,8 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                 src={images[selectedImageIndex]} 
                 alt={item.title}
                 className="pdm-image"
+                onClick={() => setShowFullscreen(true)}
+                style={{ cursor: 'zoom-in' }}
               />
               {images.length > 1 && (
                 <>
