@@ -134,6 +134,24 @@ const handlePaymentPaid = async (webhookData) => {
       console.log(`✅ Order ${order.orderId} payment status updated (₱${order.totalAmount})`);
     }
 
+    // Flip auctions to SOLD when their settlement order is paid
+    // Only apply to auction orders and guard on current auction status = 'settled'
+    const paidAuctionOrders = orders.filter(o => o.is_auction && o.auctionId && o.orderId);
+    const paidOrderIds = [...new Set(paidAuctionOrders.map(o => o.orderId))];
+    if (paidOrderIds.length > 0) {
+      const nowIso = new Date().toISOString();
+      const { error: upAErr } = await db
+        .from('auctions')
+        .update({ status: 'sold', paymentDueAt: null, updated_at: nowIso })
+        .in('settlementOrderId', paidOrderIds)
+        .eq('status', 'settled');
+      if (upAErr) {
+        console.error('❌ Error marking auctions as sold:', upAErr);
+      } else {
+        console.log(`🏁 Marked auctions as SOLD for settlementOrderId in:`, paidOrderIds);
+      }
+    }
+
     // NOTE: Inventory is already reduced during order creation
     // We no longer need to update inventory here to prevent double-reduction
     console.log('📦 Inventory was already reserved during order creation');

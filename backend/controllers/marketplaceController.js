@@ -1361,8 +1361,19 @@ export const checkPaymentStatus = async (req, res) => {
       });
     }
 
-    // If already paid, return success
+    // If already paid, flip auction to SOLD if applicable, then return success
     if (order.paymentStatus === 'paid') {
+      if (order.is_auction && order.auctionId) {
+        const nowIso = new Date().toISOString();
+        const { error: upAErr } = await db
+          .from('auctions')
+          .update({ status: 'sold', paymentDueAt: null, updated_at: nowIso })
+          .eq('settlementOrderId', order.orderId)
+          .eq('status', 'settled');
+        if (upAErr) {
+          console.warn('⚠️ Failed to mark auction as SOLD on manual check (already paid):', upAErr);
+        }
+      }
       return res.json({ 
         success: true, 
         message: 'Payment already confirmed',
@@ -1417,6 +1428,19 @@ export const checkPaymentStatus = async (req, res) => {
           }
 
           console.log(`✅ Order ${orderId} status updated to paid via manual check`);
+
+          // If this is an auction order, mark the auction as SOLD (mirror webhook behavior)
+          if (order.is_auction && order.auctionId) {
+            const nowIso = new Date().toISOString();
+            const { error: upAErr } = await db
+              .from('auctions')
+              .update({ status: 'sold', paymentDueAt: null, updated_at: nowIso })
+              .eq('settlementOrderId', orderId)
+              .eq('status', 'settled');
+            if (upAErr) {
+              console.warn('⚠️ Failed to mark auction as SOLD on manual check:', upAErr);
+            }
+          }
 
           return res.json({ 
             success: true, 

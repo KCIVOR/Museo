@@ -38,16 +38,25 @@ export const getAuctionDetails = async (req, res) => {
     const participantsCount = bids ? new Set(bids.map(b => b.bidderUserId)).size : 0;
 
     // Only show participant count to seller or admin (not to bidders - blind auction principle)
-    const isSeller = auction.sellerProfileId && userId === auction.sellerProfileId;
-    // Fetch role from profile table (do not trust auth metadata)
+    let isSeller = false;
     let isAdmin = false;
     if (userId) {
+      // Resolve role from profile table (do not trust auth metadata)
       const { data: profile } = await db
         .from('profile')
         .select('role')
         .eq('userId', userId)
         .single();
       isAdmin = profile?.role === 'admin';
+
+      // Resolve seller profile for this user and compare sellerProfileIds
+      const { data: sellerProfile } = await db
+        .from('sellerProfiles')
+        .select('sellerProfileId')
+        .eq('userId', userId)
+        .eq('isActive', true)
+        .single();
+      isSeller = !!(sellerProfile && auction.sellerProfileId && sellerProfile.sellerProfileId === auction.sellerProfileId);
     }
     const showParticipantCount = isSeller || isAdmin;
 
@@ -533,42 +542,40 @@ export const forceExpireAndRollover = async (req, res) => {
       }
     }
 
-    // Find next highest bidder (excluding current winner)
-    const { data: bids } = await db
-      .from('auction_bids')
-      .select('*')
-      .eq('auctionId', auctionId)
-      .eq('isWithdrawn', false);
-    const { ranking } = auctionService.computeWinners(bids || []);
-    const nextWinner = ranking.find(r => r.bidderUserId !== auction.winnerUserId);
+    // Find next highest bidder via shared helper (excludes current and any prior non-paid winners)
+    const next = await auctionService.getNextWinnerForAuction(auctionId, auction.winnerUserId);
+    console.log('[auction][force-expire] Next winner:', next ? { auctionId, userId: next.winnerUserId, amount: Number(next.amount) } : { auctionId, userId: null });
 
-    if (!nextWinner) {
-      // No other bidders — mark as ended
+    const reserve = Number(auction.reservePrice || 0);
+    if (!next || Number(next.amount) < reserve) {
+      // No eligible next bidder or reserve not met — end auction UNSOLD and clear winner fields
       await db
         .from('auctions')
-        .update({ status: 'ended', updated_at: now.toISOString() })
+        .update({
+          status: 'ended',
+          winnerUserId: null,
+          winningBidId: null,
+          settlementOrderId: null,
+          paymentDueAt: null,
+          updated_at: now.toISOString()
+        })
         .eq('auctionId', auctionId);
-      return res.json({ success: true, message: 'No next bidder. Auction marked as ended.', data: { cancelledOrderId } });
+      return res.json({
+        success: true,
+        message: !next ? 'No next bidder. Auction marked as ended.' : 'Next bidder below reserve. Auction marked as ended.',
+        data: { cancelledOrderId }
+      });
     }
 
     // Compute new payment due and assign new winner
     const dueAt = new Date(now);
     dueAt.setHours(dueAt.getHours() + PAYMENT_WINDOW_HOURS);
 
-    const { data: nextBid } = await db
-      .from('auction_bids')
-      .select('*')
-      .eq('bidderUserId', nextWinner.bidderUserId)
-      .eq('auctionId', auctionId)
-      .order('amount', { ascending: false })
-      .limit(1)
-      .single();
-
     await db
       .from('auctions')
       .update({
-        winnerUserId: nextWinner.bidderUserId,
-        winningBidId: nextBid?.bidId || nextWinner.bidId,
+        winnerUserId: next.winnerUserId,
+        winningBidId: next.winningBidId,
         paymentDueAt: dueAt.toISOString(),
         updated_at: now.toISOString(),
         status: 'ended'

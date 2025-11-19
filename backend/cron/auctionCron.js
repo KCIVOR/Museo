@@ -161,22 +161,38 @@ export async function rolloverUnpaidWinners() {
           continue;
         }
 
-        // Unpaid - rollover to next highest
-        const { data: bids } = await db
-          .from('auction_bids')
-          .select('*')
-          .eq('auctionId', auction.auctionId)
-          .eq('isWithdrawn', false);
+        // Unpaid - find next highest distinct bidder via shared helper
+        const next = await auctionService.getNextWinnerForAuction(auction.auctionId, auction.winnerUserId);
+        console.log('[auction][cron] Next winner:', next ? { auctionId: auction.auctionId, userId: next.winnerUserId, amount: Number(next.amount) } : { auctionId: auction.auctionId, userId: null });
 
-        const { ranking } = auctionService.computeWinners(bids || []);
-        // ranking entries are bid objects; use bidderUserId to compare
-        const nextWinner = ranking.find(r => r.bidderUserId !== auction.winnerUserId);
+        const reserve = Number(auction.reservePrice || 0);
+        if (!next || Number(next.amount) < reserve) {
+          console.log(`⚠️ No eligible next bidder (reserve not met) for auction ${auction.auctionId}, cancelling current order and marking unsold`);
+          // Best-effort cancel invoice
+          try {
+            if (order.paymentLinkId) {
+              await xenditService.cancelPaymentLink(order.paymentLinkId);
+            }
+          } catch (e) {
+            console.warn(`⚠️ Failed to cancel Xendit invoice ${order.paymentLinkId} for order ${order.orderId}:`, e?.message || e);
+          }
+          // Cancel current order locally
+          await db
+            .from('orders')
+            .update({ status: 'cancelled', paymentStatus: 'expired', cancelledAt: now })
+            .eq('orderId', order.orderId);
 
-        if (!nextWinner) {
-          console.log(`⚠️ No next bidder for auction ${auction.auctionId}, marking unsold`);
+          // End auction UNSOLD and clear winner fields to avoid future settlements
           await db
             .from('auctions')
-            .update({ status: 'ended', updated_at: now })
+            .update({
+              status: 'ended',
+              winnerUserId: null,
+              winningBidId: null,
+              settlementOrderId: null,
+              paymentDueAt: null,
+              updated_at: now
+            })
             .eq('auctionId', auction.auctionId);
           continue;
         }
@@ -201,20 +217,11 @@ export async function rolloverUnpaidWinners() {
         const dueAt = new Date(now);
         dueAt.setHours(dueAt.getHours() + PAYMENT_WINDOW_HOURS);
 
-        const { data: nextBid } = await db
-          .from('auction_bids')
-          .select('*')
-          .eq('bidderUserId', nextWinner.bidderUserId)
-          .eq('auctionId', auction.auctionId)
-          .order('amount', { ascending: false })
-          .limit(1)
-          .single();
-
         await db
           .from('auctions')
           .update({
-            winnerUserId: nextWinner.bidderUserId,
-            winningBidId: nextBid?.bidId || nextWinner.bidId,
+            winnerUserId: next.winnerUserId,
+            winningBidId: next.winningBidId,
             paymentDueAt: dueAt.toISOString(),
             updated_at: now
           })
@@ -222,6 +229,7 @@ export async function rolloverUnpaidWinners() {
 
         // Settle for new winner
         const { order: newOrder } = await auctionService.settleAuction(auction.auctionId);
+        console.log('[auction][cron] Created new order for winner', { orderId: newOrder?.orderId, userId: newOrder?.userId });
         console.log(`✅ Rolled over auction ${auction.auctionId} to new winner, new order: ${newOrder.orderId}`);
       } catch (err) {
         console.error(`Error rolling over auction ${auction.auctionId}:`, err);

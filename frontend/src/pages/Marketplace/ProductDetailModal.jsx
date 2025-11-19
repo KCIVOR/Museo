@@ -242,7 +242,7 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                   <ul>
                     <li>All bids are sealed and hidden from other participants</li>
                     <li>The highest bid wins when the auction ends</li>
-                    <li>Minimum bid increment: $50</li>
+                    <li>Minimum bid increment: ₱50</li>
                     <li>You'll be notified within 24 hours if you win</li>
                     <li>Payment must be completed within 48 hours of winning</li>
                   </ul>
@@ -257,7 +257,7 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                   <div className="pdm-auction-info">
                     <div className="pdm-auction-stat">
                       <span className="pdm-stat-label">Suggested Bid</span>
-                      <span className="pdm-stat-value">${suggestedMinBid}+</span>
+                      <span className="pdm-stat-value">₱{suggestedMinBid}+</span>
                     </div>
                     <div className="pdm-auction-stat">
                       <span className="pdm-stat-label">Participants</span>
@@ -272,7 +272,7 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                   <div className="pdm-bid-form">
                     <label className="pdm-bid-label">Your Sealed Bid</label>
                     <div className="pdm-bid-input-group">
-                      <span className="pdm-currency">$</span>
+                      <span className="pdm-currency">₱</span>
                       <input
                         type="number"
                         className="pdm-bid-input"
@@ -310,9 +310,9 @@ export default function ProductDetailModal({ isOpen, onClose, item, onAddToCart,
                 <div className="pdm-buy">
                   <div className="pdm-price-section">
                     {item.originalPrice && (
-                      <span className="pdm-price-original">${item.originalPrice}</span>
+                      <span className="pdm-price-original">₱{item.originalPrice}</span>
                     )}
-                    <span className="pdm-price-current">${item.price}</span>
+                    <span className="pdm-price-current">₱{item.price}</span>
                     {item.originalPrice && (
                       <span className="pdm-price-discount">
                         {Math.round((1 - item.price / item.originalPrice) * 100)}% OFF

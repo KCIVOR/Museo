@@ -761,15 +761,15 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
             {item.listingType === "auction" ? (
               <>
                 <span className="mp-card-bid-label">Current Bid</span>
-                <span className="mp-card-price-current">${item.currentBid || item.startingPrice}</span>
+                <span className="mp-card-price-current">₱{item.currentBid ? item.currentBid : item.startingPrice}</span>
                 <span className="mp-card-time-left">{getTimeRemaining(item.endTime)}</span>
               </>
             ) : (
               <>
                 {item.originalPrice && (
-                  <span className="mp-card-price-old">${item.originalPrice}</span>
+                  <span className="mp-card-price-old">₱{item.originalPrice}</span>
                 )}
-                <span className="mp-card-price-current">${item.price}</span>
+                <span className="mp-card-price-current">₱{item.price}</span>
               </>
             )}
           </div>
@@ -787,5 +787,5 @@ const MarketplaceCard = ({ item, onAddToCart, onClick }) => {
       </div>
     </article>
   );
-}
+};
 

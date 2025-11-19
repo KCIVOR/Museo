@@ -319,18 +319,6 @@ export default function SellerDashboard() {
     }
   };
 
-  const extendAuction = async (auctionId, minutes = 5) => {
-    try {
-      const res = await fetch(`${API}/auctions/${auctionId}/extend?minutes=${minutes}`, { method: 'PUT', credentials: 'include' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) throw new Error(data.error || 'Extend endpoint not available');
-      fetchSellerAuctions(auctionStatusFilter);
-      alert(`Auction extended by ${minutes} minutes`);
-    } catch (e) {
-      alert(e.message || 'Failed to extend auction');
-    }
-  };
-
   const openViewBids = (auction) => {
     setViewBidsAuction(auction);
     setViewBidsOpen(true);

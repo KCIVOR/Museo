@@ -11,20 +11,74 @@ export function computeWinners(bids) {
   if (!bids || bids.length === 0) {
     return { winner: null, ranking: [] };
   }
-
   // Group bids by bidder, get highest bid per bidder
   const bidsByUser = {};
   bids.forEach(bid => {
-    if (!bidsByUser[bid.bidderUserId] || bid.amount > bidsByUser[bid.bidderUserId].amount) {
+    const existing = bidsByUser[bid.bidderUserId];
+    if (!existing) {
+      bidsByUser[bid.bidderUserId] = bid;
+      return;
+    }
+    const nextAmt = Number(bid.amount);
+    const currAmt = Number(existing.amount);
+    // Keep the higher amount; if equal, keep the earliest bid by created_at
+    if (
+      nextAmt > currAmt ||
+      (nextAmt === currAmt && new Date(bid.created_at) < new Date(existing.created_at))
+    ) {
       bidsByUser[bid.bidderUserId] = bid;
     }
   });
 
-  // Sort by amount descending
-  const ranking = Object.values(bidsByUser).sort((a, b) => b.amount - a.amount);
+  // Debug logging removed to keep function side-effect free
+
+  // Sort by amount desc, tie-break by earliest created_at asc
+  const ranking = Object.values(bidsByUser).sort((a, b) => {
+    const diff = Number(b.amount) - Number(a.amount);
+    if (diff !== 0) return diff;
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+  // Debug logging removed
   const winner = ranking[0] || null;
 
   return { winner, ranking };
+}
+
+// Find the next eligible winner for an auction, excluding current winner and any user
+// who already has a non-paid order for this auction.
+export async function getNextWinnerForAuction(auctionId, currentWinnerUserId) {
+  // Build exclusion set from orders (any status except 'paid')
+  const exclude = new Set();
+  if (currentWinnerUserId) exclude.add(currentWinnerUserId);
+
+  const { data: priorOrders } = await db
+    .from('orders')
+    .select('userId, paymentStatus')
+    .eq('auctionId', auctionId);
+
+  if (Array.isArray(priorOrders)) {
+    priorOrders.forEach(o => {
+      const ps = (o?.paymentStatus || '').toLowerCase();
+      if (ps !== 'paid' && o?.userId) exclude.add(o.userId);
+    });
+  }
+
+  // Load bids and compute per-user highest ranking
+  const { data: bids } = await db
+    .from('auction_bids')
+    .select('*')
+    .eq('auctionId', auctionId)
+    .eq('isWithdrawn', false);
+
+  const { ranking } = computeWinners(bids || []);
+  const next = ranking.find(r => !exclude.has(r.bidderUserId));
+
+  if (!next) return null;
+  return {
+    winnerUserId: next.bidderUserId,
+    winningBidId: next.bidId,
+    amount: Number(next.amount)
+  };
 }
 
 // CLOSE AUCTION: Determine winner
@@ -273,5 +327,6 @@ export default {
   computeWinners,
   closeAuction,
   settleAuction,
-  createAuctionPaymentLink
+  createAuctionPaymentLink,
+  getNextWinnerForAuction
 };
