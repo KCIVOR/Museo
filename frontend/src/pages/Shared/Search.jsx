@@ -1,110 +1,305 @@
 // src/pages/Search.jsx
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import ProductDetailModal from "../Marketplace/ProductDetailModal";
+import ArtworkModal from "../Gallery/ArtworkModal";
+import EventModal from "../Events/EventModal";
 import "./css/search.css";
 
-// Example data (keep or replace with real results)
-const MOCK = [
-  { id: "p1", title: "Sunset Curve", author: "L. Serra", tag: "Landscape", src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop" },
-  { id: "p2", title: "Green Forest", author: "G. Fring", tag: "Nature", src: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg" },
-  { id: "p3", title: "Morning Fields", author: "Mina Cole", tag: "Landscape", src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop" },
-  { id: "p4", title: "Dunes", author: "R. Vega", tag: "Abstract", src: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg" },
-  { id: "p5", title: "River Mist", author: "P. Chen", tag: "Nature", src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop" },
-  { id: "p2q", title: "Green Forest", author: "G. Fring", tag: "Nature", src: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg" },
-  { id: "p3q", title: "Morning Fields", author: "Mina Cole", tag: "Landscape", src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop" },
-  { id: "p4q", title: "Dunes", author: "R. Vega", tag: "Abstract", src: "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/images%20(6).jpg" },
-  
-];
+const API = import.meta.env.VITE_API_BASE;
 
 export default function Search() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(() => params.get("q") || "");
-  const [tag, setTag] = useState(() => params.get("tag") || "");
+  const [tab, setTab] = useState(() => params.get("tab") || "all");
+  const [loading, setLoading] = useState(false);
+  const [artists, setArtists] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [events, setEvents] = useState([]);
+  
+  // Modal states
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedArtwork, setSelectedArtwork] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
+  // Update URL params
   useEffect(() => {
     const next = new URLSearchParams(params);
     if (q) next.set("q", q); else next.delete("q");
-    if (tag) next.set("tag", tag); else next.delete("tag");
+    if (tab !== "all") next.set("tab", tab); else next.delete("tab");
     setParams(next, { replace: true });
-  }, [q, tag]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const results = useMemo(() => {
-    const ql = q.trim().toLowerCase();
-    return MOCK.filter(it => {
-      const okQ = !ql || it.title.toLowerCase().includes(ql) || it.author.toLowerCase().includes(ql);
-      const okTag = !tag || it.tag.toLowerCase() === tag.toLowerCase();
-      return okQ && okTag;
-    });
-  }, [q, tag]);
+  // Fetch search results
+  useEffect(() => {
+    if (!q.trim()) {
+      setArtists([]);
+      setProducts([]);
+      setEvents([]);
+      return;
+    }
+
+    const fetchResults = async () => {
+      setLoading(true);
+      try {
+        const ql = q.trim();
+
+        // Always fetch all categories to show counts in tabs
+        // Search products (from marketplace)
+        try {
+          const res = await fetch(`${API}/marketplace/items`, {
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const allProducts = Array.isArray(data?.data) ? data.data : [];
+            const filtered = allProducts.filter(product => 
+              product.title?.toLowerCase().includes(ql.toLowerCase()) ||
+              product.description?.toLowerCase().includes(ql.toLowerCase()) ||
+              product.category?.toLowerCase().includes(ql.toLowerCase()) ||
+              product.seller?.shopName?.toLowerCase().includes(ql.toLowerCase())
+            );
+            setProducts(filtered);
+          }
+        } catch (e) {
+          console.error("Error searching products:", e);
+          setProducts([]);
+        }
+
+        // Search events
+        try {
+          const res = await fetch(`${API}/event/getEvents?page=1&limit=50`, {
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const allEvents = Array.isArray(data?.data) ? data.data : [];
+            const filtered = allEvents.filter(event => 
+              event.title?.toLowerCase().includes(ql.toLowerCase()) ||
+              event.details?.toLowerCase().includes(ql.toLowerCase()) ||
+              event.venueName?.toLowerCase().includes(ql.toLowerCase())
+            );
+            setEvents(filtered);
+          }
+        } catch (e) {
+          console.error("Error searching events:", e);
+          setEvents([]);
+        }
+
+        // Search artists - fetch from artist page
+        try {
+          const res = await fetch(`${API}/artist/getArtist`, {
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const allArtists = Array.isArray(data?.artists) ? data.artists : [];
+            const filtered = allArtists.filter(artist => 
+              artist.name?.toLowerCase().includes(ql.toLowerCase()) ||
+              artist.displayName?.toLowerCase().includes(ql.toLowerCase()) ||
+              artist.username?.toLowerCase().includes(ql.toLowerCase()) ||
+              artist.bio?.toLowerCase().includes(ql.toLowerCase())
+            );
+            setArtists(filtered);
+          }
+        } catch (e) {
+          console.error("Error searching artists:", e);
+          setArtists([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, [q, tab]);
+
+  const totalResults = artists.length + products.length + events.length;
 
   return (
     <div className="searchPage">
-      {/* Wrapper matches GalleryAll’s .ga width and padding */}
       <div className="searchWrap">
         {/* Hero */}
         <section className="searchHero">
           <div className="sHero__bg" />
           <div className="sHero__overlay" />
           <div className="sHero__content">
-            <h1 className="sHero__title">Search artworks</h1>
-            <p className="sHero__subtitle">Discover pieces by title, artist, or tag.</p>
+            <h1 className="sHero__title">Search Museo</h1>
+            <p className="sHero__subtitle">Discover artists, products, and events</p>
             <div className="sHero__controls">
               <input
                 className="sField"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by title or artist…"
+                placeholder="Search artists, products, events…"
                 aria-label="Search"
               />
-              <select
-                className="sSelect"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                aria-label="Filter by tag"
-              >
-                <option value="">All tags</option>
-                <option value="Landscape">Landscape</option>
-                <option value="Nature">Nature</option>
-                <option value="Abstract">Abstract</option>
-              </select>
             </div>
           </div>
         </section>
 
-        {/* Summary */}
-        <div className="sSummary">
-          <div className="sSummary__left">
-            <span className="sCount">{results.length}</span>
-            <span className="sLabel">results</span>
-            {q && <span className="sQuery">for “{q}”</span>}
-            {tag && <span className="sQuery"> • tag: {tag}</span>}
-          </div>
-          {(q || tag) && (
-            <button className="sClear" onClick={() => { setQ(""); setTag(""); }}>
-              Clear
+        {/* Tabs */}
+        {q && (
+          <div className="sTabs">
+            <button
+              className={`sTab ${tab === "all" ? "sTab--active" : ""}`}
+              onClick={() => setTab("all")}
+            >
+              All ({totalResults})
             </button>
-          )}
-        </div>
+            <button
+              className={`sTab ${tab === "artists" ? "sTab--active" : ""}`}
+              onClick={() => setTab("artists")}
+            >
+              Artists ({artists.length})
+            </button>
+            <button
+              className={`sTab ${tab === "products" ? "sTab--active" : ""}`}
+              onClick={() => setTab("products")}
+            >
+              Products ({products.length})
+            </button>
+            <button
+              className={`sTab ${tab === "events" ? "sTab--active" : ""}`}
+              onClick={() => setTab("events")}
+            >
+              Events ({events.length})
+            </button>
+          </div>
+        )}
 
-        {/* Grid */}
-        <div className="sGrid">
-          {results.map((it) => (
-            <Link key={it.id} to={`/detail/${it.id}`} className="sCard">
-              <div className="sThumb">
-                <img src={it.src} alt={it.title} loading="lazy" />
-              </div>
-              <div className="sMeta">
-                <div className="sTitle">{it.title}</div>
-                <div className="sAuthor">{it.author}</div>
-                <div className="sTag">{it.tag}</div>
-              </div>
-            </Link>
-          ))}
-          {results.length === 0 && (
-            <div className="sEmpty">No results found.</div>
-          )}
-        </div>
+        {/* Summary */}
+        {q && (
+          <div className="sSummary">
+            <div className="sSummary__left">
+              <span className="sCount">{totalResults}</span>
+              <span className="sLabel">results for "{q}"</span>
+            </div>
+            {q && (
+              <button className="sClear" onClick={() => setQ("")}>
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && <div className="sLoading">Searching…</div>}
+
+        {/* Results Grid */}
+        {!loading && q && (
+          <div className="sGrid">
+            {/* Artists */}
+            {(tab === "all" || tab === "artists") && artists.length > 0 && (
+              <>
+                {tab === "all" && <h2 className="sSection__title">Artists</h2>}
+                {artists.map((artist) => (
+                  <div 
+                    key={artist.id || artist.username} 
+                    className="sCard sCard--artist"
+                    onClick={() => navigate(`/artist/${artist.username || artist.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="sThumb">
+                      <img src={artist.hero || artist.avatar || "https://via.placeholder.com/200"} alt={artist.name} loading="lazy" />
+                    </div>
+                    <div className="sMeta">
+                      <div className="sTitle">{artist.name || artist.displayName}</div>
+                      <div className="sAuthor">{artist.username || "Artist"}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Products */}
+            {(tab === "all" || tab === "products") && products.length > 0 && (
+              <>
+                {tab === "all" && <h2 className="sSection__title">Products</h2>}
+                {products.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="sCard sCard--product"
+                    onClick={() => setSelectedProduct(product)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="sThumb">
+                      <img src={product.image || product.primary_image || "https://via.placeholder.com/200"} alt={product.title} loading="lazy" />
+                    </div>
+                    <div className="sMeta">
+                      <div className="sTitle">{product.title}</div>
+                      <div className="sAuthor">{product.seller?.shopName || "Unknown Seller"}</div>
+                      <div className="sPrice">${product.price || "N/A"}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Events */}
+            {(tab === "all" || tab === "events") && events.length > 0 && (
+              <>
+                {tab === "all" && <h2 className="sSection__title">Events</h2>}
+                {events.map((event) => (
+                  <div 
+                    key={event.id} 
+                    className="sCard sCard--event"
+                    onClick={() => setSelectedEvent({
+                      eventId: event.eventId || event.id,
+                      slug: event.eventId || event.id || event.title,
+                      title: event.title,
+                      hero: event.image,
+                      lead: event.details,
+                      activities: Array.isArray(event.activities) ? event.activities : (event.activities ? [event.activities] : []),
+                      admission: event.admission,
+                      admissionNote: event.admissionNote,
+                      venueName: event.venueName,
+                      venueAddress: event.venueAddress,
+                      start: event.startsAt,
+                      end: event.endsAt,
+                    })}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="sThumb">
+                      <img src={event.image || "https://via.placeholder.com/200"} alt={event.title} loading="lazy" />
+                    </div>
+                    <div className="sMeta">
+                      <div className="sTitle">{event.title}</div>
+                      <div className="sAuthor">{event.venueName}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {totalResults === 0 && (
+              <div className="sEmpty">No results found for "{q}"</div>
+            )}
+          </div>
+        )}
+
+        {!q && (
+          <div className="sEmpty">Start typing to search…</div>
+        )}
       </div>
+
+      {/* Modals */}
+      <ProductDetailModal 
+        isOpen={!!selectedProduct}
+        item={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={() => setSelectedProduct(null)}
+        onPlaceBid={() => setSelectedProduct(null)}
+      />
+
+      {selectedEvent && (
+        <EventModal 
+          open={!!selectedEvent} 
+          event={selectedEvent} 
+          onClose={() => setSelectedEvent(null)} 
+        />
+      )}
     </div>
   );
 }

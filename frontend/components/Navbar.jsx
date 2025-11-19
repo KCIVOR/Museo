@@ -243,20 +243,6 @@ export default function Navbar({ role, userData }) {
             <span>Visit Museo</span>
           </button>
 
-          {/* Coins */}
-          <button 
-            className="nav-btn nav-btn-coin" 
-            type="button"
-            onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v12"/>
-              <path d="M6 12h12"/>
-            </svg>
-            <span className="count">5042</span>
-          </button>
-
           {/* Notifications */}
           <div className="nav__notif-wrap">
             <button
@@ -363,18 +349,6 @@ export default function Navbar({ role, userData }) {
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
                   <span>{userData?.fullName || userData?.username || "My Profile"}</span>
-                </button>
-                
-                <button 
-                  className="dropdown-item"
-                  role="menuitem" 
-                  onClick={() => { setTopupOpen(true); setMenuOpen(false); }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                  </svg>
-                  <span>Top‑Up</span>
                 </button>
                 
                 {String(role).trim() === "user" ? (

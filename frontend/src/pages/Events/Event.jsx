@@ -473,18 +473,15 @@ export default function Event() {
                       return trimmed + "...";
                     })()}
                   </p>
-                  <div 
-                    className="museo-actions" 
-                    onClick={(ev) => ev.stopPropagation()}
-                  >
-                    <button className="btn btn-primary btn-sm" onClick={() => openEvent(e)}>View More</button>
-                    {(role === 'admin' || role?.role === 'admin') && (
-                      <>
-                        <button className="btn btn-secondary btn-sm" onClick={() => openEdit(e)}>Edit</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => askDelete(e)}>Delete</button>
-                      </>
-                    )}
-                  </div>
+                  {(role === 'admin' || role?.role === 'admin') && (
+                    <div 
+                      className="museo-actions" 
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(e)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => askDelete(e)}>Delete</button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

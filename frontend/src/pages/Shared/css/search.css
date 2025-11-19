@@ -83,16 +83,68 @@
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid #e6e6ea;
-  background: #fff;
+  background: #F8F4F1;
   color: #111;
+}
+.sField::placeholder {
+  color: #999;
 }
 .sSelect {
   height: 36px;
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid #e6e6ea;
-  background: #fff;
+  background: #F8F4F1;
   color: #111;
+}
+
+/* Tabs */
+.sTabs {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0 12px 0;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+}
+
+.sTab {
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--museo-text-muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sTab:hover {
+  color: var(--museo-text-primary);
+}
+
+.sTab--active {
+  color: var(--museo-primary);
+  border-bottom-color: var(--museo-accent);
+}
+
+/* Loading state */
+.sLoading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--museo-text-muted);
+  font-size: 14px;
+}
+
+/* Section titles */
+.sSection__title {
+  grid-column: 1 / -1;
+  margin: 20px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--museo-text-primary);
 }
 
 /* Summary */
@@ -109,22 +161,43 @@
 .sLabel { color: var(--museo-text-muted); font-weight: 700; }
 .sQuery { color: var(--museo-text-secondary); }
 
+/* Clear button */
+.sClear {
+  background: transparent;
+  border: none;
+  color: var(--museo-accent);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.sClear:hover {
+  background: rgba(212, 180, 138, 0.1);
+  color: var(--museo-gold-dark);
+}
+
 /* Grid */
 .sGrid {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 0 12px;     /* match side spacing with GalleryAll cards */
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 .sCard {
   display: grid;
-  background: #fff;
+  background: #F8F4F1;
   border: 1px solid rgba(0,0,0,.06);
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   color: inherit;
   text-decoration: none;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+}
+.sCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .sThumb {
   aspect-ratio: 16 / 10;
@@ -137,12 +210,13 @@
 }
 .sMeta {
   display: grid;
-  gap: 2px;
-  padding: 10px 12px 12px;
+  gap: 4px;
+  padding: 12px 14px 14px;
 }
 .sTitle { font-weight: 800; color: var(--museo-text-primary); }
 .sAuthor { font-size: 13px; color: var(--museo-text-secondary); }
 .sTag { font-size: 12px; color: var(--museo-text-muted); font-weight: 700; }
+.sPrice { font-size: 14px; color: var(--museo-accent); font-weight: 700; margin-top: 4px; }
 
 .sEmpty {
   grid-column: 1 / -1;

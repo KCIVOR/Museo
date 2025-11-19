@@ -400,7 +400,8 @@
   height: 200px;
   background-size: cover;
   background-position: center;
-  border-radius: 16px 16px 0 0;
+  border-radius: 0;
+  margin: -24px -24px 0 -24px;
 }
 
 /* Cover overlay for text readability */
@@ -408,7 +409,7 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%);
-  border-radius: 16px 16px 0 0;
+  border-radius: 0;
 }
 
 /* Role badge */
