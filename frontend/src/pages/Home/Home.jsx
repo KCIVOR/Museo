@@ -1,6 +1,6 @@
 // src/pages/home.jsx
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import "./css/home.css";
 import MuseoComposer from "./museoComposer";
@@ -129,6 +129,8 @@ function normalizePosts(payload) {
 
 export default function Home() {
   const { userData, refreshUserData } = useUser();
+  const navigate = useNavigate();
+  const { postId: routePostId } = useParams();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -174,6 +176,7 @@ export default function Home() {
 
   // Expanded posts state
   const [expandedPosts, setExpandedPosts] = useState({});
+  const hasOpenedPostRef = useRef(false);
 
   // Advanced image load handler with CORS/canvas safety
   const onImageLoad = (idx, e) => {
@@ -206,6 +209,22 @@ export default function Home() {
       console.warn("Failed to get average color:", err);
     }
   }; 
+
+  // Video metadata handler to set ratio/fit like images
+  const onVideoLoaded = (idx, e) => {
+    const vid = e.target;
+    const ar = (vid.videoWidth || 1) / (vid.videoHeight || 1);
+
+    let rClass = "ratio-1-1";
+    if (ar >= 1.6) rClass = "ratio-191-1";
+    else if (ar <= 0.9) rClass = "ratio-4-5";
+    setRatioClass((s) => ({ ...s, [idx]: rClass }));
+
+    const box = vid.parentElement.getBoundingClientRect();
+    const small = (vid.videoWidth || 0) < box.width || (vid.videoHeight || 0) < box.height;
+    const useContain = small || ar < 0.9 || ar > 2.2;
+    setFit((s) => ({ ...s, [idx]: useContain ? "contain" : "cover" }));
+  };
 
 
   const handlePopUp = (postId) => {
@@ -568,10 +587,12 @@ export default function Home() {
 
   const closeModal = () => {
     setActivePost(null);
+    if (routePostId) navigate('/Home', { replace: true });
   };
 
   const closeTextModal = () => {
     setActiveTextPost(null);
+    if (routePostId) navigate('/Home', { replace: true });
   };
 
   // Menu functions
@@ -688,6 +709,53 @@ export default function Home() {
     }
   }, [openMenus]);
 
+  // Deep link: open modal when on /Home/:postId
+  useEffect(() => {
+    const openByRoute = async () => {
+      if (!routePostId) {
+        hasOpenedPostRef.current = false;
+        return;
+      }
+      if (hasOpenedPostRef.current) return;
+
+      try {
+        const found = posts.find(p => String(p.id) === String(routePostId));
+        if (found) {
+          if (found.images && found.images.length > 0 && found.images[0]) {
+            setActivePost(found);
+          } else {
+            setActiveTextPost(found);
+          }
+          hasOpenedPostRef.current = true;
+          return;
+        }
+
+        // If list already has content but not found, fetch larger page to locate
+        if (posts.length > 0) {
+          const res = await fetch(`${API}/homepage/getPost?page=1&limit=100`, { credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch posts');
+          const data = await res.json();
+          const normalized = normalizePosts(data);
+          const byId = normalized.find(p => String(p.id) === String(routePostId));
+          if (byId) {
+            if (byId.images && byId.images.length > 0 && byId.images[0]) {
+              setActivePost(byId);
+            } else {
+              setActiveTextPost(byId);
+            }
+            hasOpenedPostRef.current = true;
+            return;
+          }
+          throw new Error('Post not found');
+        }
+      } catch (e) {
+        console.error(e);
+        navigate('/Home', { replace: true });
+      }
+    };
+    openByRoute();
+  }, [routePostId, posts.length > 0]);
+
   return (
     <div className="page">
       <div className="feed">
@@ -751,7 +819,7 @@ export default function Home() {
               onClick={() => {
                 // Close any open menus when clicking on post
                 setOpenMenus({});
-                handlePopUp(item.id);
+                navigate(`/Home/${item.id}`);
               }}
             >
               <div className="cardHeader">
@@ -908,27 +976,36 @@ export default function Home() {
                 </div>
               )}
 
-              {item.image && (
-                <div
-                  className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
-                  style={{ background: bg[idx] || "#f2f4f7" }}
-                >
-                  {/* Handle both single image (string) and multiple images (array) */}
-                  <img
-                    src={Array.isArray(item.image) ? item.image[0] : item.image}
-                    alt="Post content"
-                    className={`postImage ${
-                      fit[idx] === "contain" ? "postImage--contain" : "postImage--cover"
-                    }`}
-                    crossOrigin="anonymous"
-                    onLoad={(e) => onImageLoad(idx, e)}
-                    onError={(e) => {
-                      // Hide broken content image to keep layout clean
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                </div>
-              )}
+              {item.image && (() => {
+                const primary = Array.isArray(item.image) ? item.image[0] : item.image;
+                const isVideo = typeof primary === 'string' && /\.mp4(\?.*)?$/i.test(primary);
+                return (
+                  <div
+                    className={`imageBox ${ratioClass[idx] || "ratio-1-1"}`}
+                    style={{ background: bg[idx] || "#f2f4f7" }}
+                  >
+                    {isVideo ? (
+                      <video
+                        src={primary}
+                        className={`postVideo ${fit[idx] === 'contain' ? 'postVideo--contain' : 'postVideo--cover'}`}
+                        controls
+                        preload="metadata"
+                        onLoadedMetadata={(e) => onVideoLoaded(idx, e)}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <img
+                        src={primary}
+                        alt="Post content"
+                        className={`postImage ${fit[idx] === 'contain' ? 'postImage--contain' : 'postImage--cover'}`}
+                        crossOrigin="anonymous"
+                        onLoad={(e) => onImageLoad(idx, e)}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Elegant Action Bar */}
               {/* Like and Stats */}
@@ -954,7 +1031,7 @@ export default function Home() {
                 {/* Comment Button - Social Actions */}
                 <button 
                   className="btn-social comment"
-                  onClick={() => handlePopUp(item.id)}
+                  onClick={() => navigate(`/Home/${item.id}`)}
                   aria-label="View comments"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">

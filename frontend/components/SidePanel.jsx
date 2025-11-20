@@ -15,18 +15,19 @@ export default function SidePanel({ role }) {
           <li><NavLink to="/requests" className="side__link side__link--pill"><span className="side__icon"><RequestIcon className="w-5 h-5" /></span> Manage</NavLink></li>
         )}
       </ul>
-
-      <div className="side__heading">You Might Know</div>
-      <ul className="side__people">
-        {["Aria Bennett","Ron Iverson Roguel","James Morgan McGill","Mike Ehrmantraut","Gustavo Fring"].map(name => (
-          <li key={name}>
-            <a className="side__person">
-              <img className="side__avatar" src={`https://i.pravatar.cc/40?u=${encodeURIComponent(name)}`} alt="" />
-              <span>{name}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
     </nav>
   );
 }
+/*
+<div className="side__heading">You Might Know</div>
+<ul className="side__people">
+  {["Aria Bennett","Ron Iverson Roguel","James Morgan McGill","Mike Ehrmantraut","Gustavo Fring"].map(name => (
+    <li key={name}>
+      <a className="side__person">
+        <img className="side__avatar" src={`https://i.pravatar.cc/40?u=${encodeURIComponent(name)}`} alt="" />
+        <span>{name}</span>
+      </a>
+    </li>
+  ))}
+</ul>
+*/

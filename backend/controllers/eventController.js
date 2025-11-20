@@ -1,5 +1,6 @@
 import db from '../database/db.js';
 import { cache } from '../utils/cache.js';
+import { sendEventAnnouncement, notifyEventEnded as notifyEventEndedService } from '../services/announcementService.js';
 
 export const getEvents = async (req, res) => {
   try {
@@ -287,6 +288,25 @@ export const createEvent = async (req, res) => {
       console.warn("[event] io not available to emit notification")
     }
 
+    // Fire-and-forget: SendGrid announcement broadcast (non-blocking)
+    try {
+      const eventForEmail = {
+        eventId: data?.eventId,
+        title: data?.title,
+        details: data?.details,
+        startsAt: data?.startsAt,
+        venueName: data?.venueName,
+        image: data?.image || null,
+      };
+      setImmediate(() => {
+        sendEventAnnouncement({ event: eventForEmail })
+          .then(r => console.log('[event][sendgrid] broadcast:', r))
+          .catch(e => console.warn('[event][sendgrid] broadcast failed:', e?.message || e));
+      });
+    } catch (e) {
+      console.warn('[event][sendgrid] scheduling failed:', e?.message || e);
+    }
+
     // Create an announcement post entry linked to this event
     // This should not block event creation in case of a minor failure
     try {
@@ -502,6 +522,20 @@ export const joinEvent = async (req, res) => {
     return res.status(500).json({ error: 'Unexpected server error', details: String(err?.message || err) });
   }
 }
+
+// POST /api/event/notifyEventEnded
+// Body: { eventId: string }
+export const notifyEventEndedController = async (req, res) => {
+  try {
+    const eventId = req.body?.eventId;
+    if (!eventId) return res.status(400).json({ error: 'Missing eventId' });
+    const result = await notifyEventEndedService({ eventId });
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('notifyEventEndedController: unexpected error:', err);
+    return res.status(500).json({ error: 'Unexpected server error' });
+  }
+};
 
 export const isJoined = async (req, res) => {
   try {

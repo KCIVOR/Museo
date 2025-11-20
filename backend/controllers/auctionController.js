@@ -769,6 +769,18 @@ export const placeBid = async (req, res) => {
       .single();
     if (aerr || !auction) throw new Error('Auction not found');
 
+    // VALIDATION: Prevent seller from bidding on their own auction
+    // Resolve current user's active seller profile and compare to auction's sellerProfileId
+    const { data: mySellerProfile } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .eq('isActive', true)
+      .single();
+    if (mySellerProfile && auction.sellerProfileId && mySellerProfile.sellerProfileId === auction.sellerProfileId) {
+      return res.status(403).json({ success: false, error: 'Sellers cannot bid on their own auctions' });
+    }
+
     // VALIDATION 1: Bidding window open
     const now = new Date();
     if (!(new Date(auction.startAt) <= now && now < new Date(auction.endAt))) {

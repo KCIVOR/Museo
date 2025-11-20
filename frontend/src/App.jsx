@@ -7,7 +7,6 @@ import Gallery from "./pages/Gallery/Gallery";
 import Event from "./pages/Events/Event";
 import Artist from "./pages/Artist/Artist";
 import ArtistDetail from "./pages/Artist/artistProfile";
-import Artwork from "./pages/Gallery/artwork";
 import MarketplaceItem from "./pages/Marketplace/marketPlaceItem";
 import GalleryAll from "./pages/Gallery/galleryAll";
 import Layout from "../components/Layout";
@@ -56,13 +55,14 @@ export default function App() {
         {/* Default app layout */}
         <Route element={<Layout />}>
           <Route path="/Home" element={<Home />} />
+          <Route path="/Home/:postId" element={<Home />} />
           <Route path="/Marketplace" element={<Marketplace />} />
           <Route path="/Event" element={<Event />} />
           <Route path="/event/:eventId" element={<Event />} />
           <Route path="/Gallery" element={<Gallery />} />
           <Route path="/Artist" element={<Artist />} />
           <Route path="/Artist/:id" element={<ArtistDetail />} />
-          <Route path="/Gallery/:id" element={<Artwork />} />
+          <Route path="/Gallery/:id" element={<Gallery />} />
           <Route path="/Marketplace/:id" element={<MarketplaceItem />} />
           <Route path="/Gallery/category" element={<GalleryAll />} />
           <Route path="/MyProfile" element={<MyProfile />} />

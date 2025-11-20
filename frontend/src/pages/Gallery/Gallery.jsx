@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from '../../contexts/UserContext';
 import MuseoLoadingBox from '../../components/MuseoLoadingBox';
 import MuseoEmptyState from '../../components/MuseoEmptyState';
@@ -94,6 +94,8 @@ export default function Gallery() {
   const role = userData?.role || null;
   
   const navigate = useNavigate();
+  const { id: routeArtId } = useParams();
+  const location = useLocation();
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [viewMode, setViewMode] = useState('masonry'); // masonry, grid, list
   const [categories, setCategories] = useState([]);
@@ -116,6 +118,8 @@ export default function Gallery() {
   const [topArtsWeekly, setTopArtsWeekly] = useState([]); // New state for weekly top arts
   const [isLoadingTopArts, setIsLoadingTopArts] = useState(true);
   const hasLoadedTopArts = useRef(false); // Track if we've already loaded top arts
+  const [isRecomputingTopArts, setIsRecomputingTopArts] = useState(false);
+  const hasOpenedArtRef = useRef(false); // Track if we've opened deep-linked artwork
   // Get featured artworks for rotation (limit to 6 for better UX)
   const featuredArtworks = artworks.filter(art => art.featured === true).slice(0, 6);
   const hasFeaturedArtworks = featuredArtworks.length > 0;
@@ -152,7 +156,6 @@ export default function Gallery() {
           name: 'All', 
           count: data.totalCount || 0 
         };
-        
         setCategories([allCategory, ...data.categories]);
         setError(null);
       } else {
@@ -261,6 +264,46 @@ export default function Gallery() {
       setIsLoadingMore(false);
     }
   };
+
+  // Deep link: open modal when on /Gallery/:id (mirrors Events behavior)
+  useEffect(() => {
+    const openByRoute = async () => {
+      if (!routeArtId) {
+        hasOpenedArtRef.current = false;
+        return;
+      }
+      if (hasOpenedArtRef.current) return;
+
+      try {
+        // Try to find in current list first
+        const found = artworks.find(a => (a.id || a.galleryArtId) == routeArtId);
+        if (found) {
+          openArtworkModal(found, 'ROUTE');
+          hasOpenedArtRef.current = true;
+          return;
+        }
+
+        // If list is already loaded, fetch a bigger batch to locate the artwork
+        if (artworks.length > 0) {
+          const res = await fetch(`${API}/gallery/artworks?limit=100&categories=all`, { method: 'GET', credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch artworks');
+          const data = await res.json();
+          const list = Array.isArray(data?.artworks) ? data.artworks : [];
+          const byId = list.find(a => (a.id || a.galleryArtId) == routeArtId);
+          if (byId) {
+            openArtworkModal(byId, 'ROUTE');
+            hasOpenedArtRef.current = true;
+            return;
+          }
+          throw new Error('Artwork not found');
+        }
+      } catch (e) {
+        console.error(e);
+        navigate('/Gallery', { replace: true });
+      }
+    };
+    openByRoute();
+  }, [routeArtId, artworks.length > 0]);
 
   // Fetch stats for multiple artworks using batch endpoint
   const fetchArtworkStats = async (artworkIds) => {
@@ -439,6 +482,24 @@ export default function Gallery() {
       setTopArtsWeekly([]);
     } finally {
       setIsLoadingTopArts(false);
+    }
+  };
+
+  // Admin-only: Manually recompute weekly Top Arts via backend trigger
+  const triggerTopArtsManually = async () => {
+    try {
+      setIsRecomputingTopArts(true);
+      // Prefer POST, fall back to GET if needed
+      let res = await fetch(`${API}/gallery/trigger-top-arts`, { method: 'POST', credentials: 'include' });
+      if (!res.ok) {
+        res = await fetch(`${API}/gallery/trigger-top-arts`, { method: 'GET', credentials: 'include' });
+      }
+      // Refresh current week's list regardless of trigger result
+      await fetchTopArtsWeekly();
+    } catch (e) {
+      console.error('Failed to trigger top arts recomputation:', e);
+    } finally {
+      setIsRecomputingTopArts(false);
     }
   };
 
@@ -858,6 +919,10 @@ export default function Gallery() {
   const closeArtworkModal = () => {
     setIsArtworkModalOpen(false);
     setSelectedArtwork(null);
+    // If opened via deep link, navigate back to list
+    if (routeArtId) {
+      navigate('/Gallery', { replace: true });
+    }
   };
 
   // Handle artwork upload
@@ -933,7 +998,7 @@ export default function Gallery() {
               <div className="museo-hero-artwork">
                 <div 
                   className="museo-hero-artwork-frame"
-                  onClick={() => openArtworkModal(featuredArtwork, 'FEATURED ARTWORK FRAME')}
+                  onClick={() => navigate(`/Gallery/${featuredArtwork.id || featuredArtwork.galleryArtId || featuredArtwork.artId}`)}
                   onMouseOver={(e) => {
                     const container = e.currentTarget;
                     const badge = container.parentElement.querySelector('.featured-badge');
@@ -1099,6 +1164,18 @@ export default function Gallery() {
 
       <div className="museo-page museo-page--gallery">
         <div className="museo-feed">
+          {role === 'admin' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <button
+                className={`btn btn-secondary btn-sm ${isRecomputingTopArts ? 'loading disabled' : ''}`}
+                disabled={isRecomputingTopArts}
+                onClick={triggerTopArtsManually}
+                title="Recompute Top Arts of the Week now"
+              >
+                {isRecomputingTopArts ? 'Recomputing…' : 'Recompute Top Arts'}
+              </button>
+            </div>
+          )}
           
           {/* Top Arts of the Week - New API-based system */}
           {!isLoadingTopArts && topArtsWeekly.length > 0 && (
@@ -1140,7 +1217,7 @@ export default function Gallery() {
                       {topArts[1] && (
                         <div 
                           className="gallery__podium-card gallery__podium-card--second"
-                          onClick={() => openArtworkModal(topArts[1], 'TOP ARTS #2 (SILVER)')}
+                          onClick={() => navigate(`/Gallery/${topArts[1].id || topArts[1].galleryArtId || topArts[1].artId}`)}
                         >
                           <div className="gallery__rank-badge gallery__rank-badge--silver">
                             <span style={{display:'inline-flex',alignItems:'center',gap:'6px'}}>
@@ -1166,7 +1243,7 @@ export default function Gallery() {
                       {topArts[0] && (
                         <div 
                           className="gallery__podium-card gallery__podium-card--first"
-                          onClick={() => openArtworkModal(topArts[0], 'TOP ARTS #1 (GOLD CHAMPION)')}
+                          onClick={() => navigate(`/Gallery/${topArts[0].id || topArts[0].galleryArtId || topArts[0].artId}`)}
                         >
                           <div className="gallery__champion-badge">
                             <span style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
@@ -1198,7 +1275,7 @@ export default function Gallery() {
                       {topArts[2] && (
                         <div 
                           className="gallery__podium-card gallery__podium-card--third"
-                          onClick={() => openArtworkModal(topArts[2], 'TOP ARTS #3 (BRONZE)')}
+                          onClick={() => navigate(`/Gallery/${topArts[2].id || topArts[2].galleryArtId || topArts[2].artId}`)}
                         >
                           <div className="gallery__rank-badge gallery__rank-badge--bronze">
                             <span style={{display:'inline-flex',alignItems:'center',gap:'6px'}}>
@@ -1237,7 +1314,7 @@ export default function Gallery() {
                               <div
                                 key={artwork.id}
                                 className="gallery__notable-card"
-                                onClick={() => openArtworkModal(artwork, `NOTABLE MENTION #${index + 4}`)}
+                                onClick={() => navigate(`/Gallery/${artwork.id || artwork.galleryArtId || artwork.artId}`)}
                               >
                                 <div className="gallery__notable-img-wrapper">
                                   <img
@@ -1461,7 +1538,7 @@ export default function Gallery() {
                       animationDelay: `${index * 0.02}s`,
                       cursor: 'pointer'
                     }}
-                    onClick={() => openArtworkModal(artwork, `RECENTLY ADDED #${index + 1}`)}
+                    onClick={() => navigate(`/Gallery/${artwork.id || artwork.galleryArtId || artwork.artId}`)}
                   >
                     <img 
                       src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 
@@ -1571,7 +1648,7 @@ export default function Gallery() {
                       animationDelay: `${index * 0.02}s`,
                       cursor: 'pointer'
                     }}
-                    onClick={() => openArtworkModal(artwork, `GALLERY ARTWORK #${index + 1}`)}
+                    onClick={() => navigate(`/Gallery/${artwork.id || artwork.galleryArtId || artwork.artId}`)}
                   >
                     <img 
                       src={Array.isArray(artwork.image) ? artwork.image[0] : artwork.image} 

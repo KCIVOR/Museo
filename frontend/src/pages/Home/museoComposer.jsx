@@ -72,10 +72,20 @@ export default function MuseoComposer({
   const pickFiles = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*,video/*";
+      // Allow images and MP4 only
+    input.accept = "image/*,video/mp4";
     input.multiple = true;
     input.onchange = () => {
+      const MAX_MB = 50; // match server multer limit
       const sel = Array.from(input.files || [])
+        .filter(f => f && (f.type.startsWith('image/') || f.type === 'video/mp4'))
+        .filter(f => {
+          const ok = f.size <= MAX_MB * 1024 * 1024;
+          if (!ok) {
+            console.warn(`Skipped ${f.name}: exceeds ${MAX_MB}MB`);
+          }
+          return ok;
+        })
         .slice(0, 4)
         .map((f) => ({
           file: f,
@@ -283,7 +293,7 @@ export default function MuseoComposer({
               <circle cx="9" cy="9" r="2"/>
               <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
             </svg>
-            Attach image
+            Attach image/video
           </button>
           
           <button 

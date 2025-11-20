@@ -21,11 +21,13 @@ import payoutRoutes from "./routes/payoutRoutes.js"
 import returnRoutes from "./routes/returnRoutes.js"
 import webhookRoutes from "./routes/webhookRoutes.js"
 import auctionRoutes from "./routes/auctionRoutes.js"
+import searchRoutes from "./routes/searchRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { cancelExpiredOrders } from './controllers/orderCleanupController.js';
 import payoutService from './services/payoutService.js';
 import { runAuctionCron } from './cron/auctionCron.js';
+import { checkAndNotifyEndedEvents } from './services/announcementService.js';
 import { authMiddleware } from "./middleware/auth.js";
 import { Server } from "socket.io"
 import http, { request } from "http";
@@ -114,6 +116,9 @@ app.use("/api/webhooks", webhookRoutes)
 
 // Auction routes
 app.use("/api/auctions", authMiddleware, auctionRoutes)
+
+// Unified search (public or protected as needed)
+app.use("/api/search", authMiddleware, searchRoutes)
 
 
 // Create HTTP + Socket.IO
@@ -250,6 +255,20 @@ server.listen(PORT, () => {
     }
   });
 
+  // Event-ended notifications - Every 10 minutes (Philippine Time)
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      const res = await checkAndNotifyEndedEvents();
+      console.log('✉️ Event-ended notify:', res);
+    } catch (error) {
+      console.error('❌ Event-ended notify cron failed:', error);
+    }
+  }, {
+    timezone: 'Asia/Manila'
+  });
+
+  // Email queue processor - Every minute
+
   console.log('📅 Cron jobs scheduled:');
   console.log('   🌅 Featured artwork maintenance: Daily at 12:00 AM (PH Time)');
   console.log('   🔄 Artwork rotation & re-featuring: Daily at midnight (PH Time)');
@@ -257,5 +276,6 @@ server.listen(PORT, () => {
   console.log('   🏆 Top Arts generation: Every Sunday 11:59 PM (PH Time)');
   console.log('   💰 Payout processing: Daily at 9:00 AM (PH Time)');
   console.log('   🏛️ Auction lifecycle: Every 5 minutes');
+  console.log('   ✉️ Event-ended notifications: Every 10 minutes (PH Time)');
   
 });

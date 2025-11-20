@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { validateRequest } from "../middleware/validation.js";
-import { getEvents,getEventById, createEvent, updateEvent, deleteEvent, joinEvent, isJoined, myEvents, eventParticipants, removeParticipant } from "../controllers/eventController.js";
+import { getEvents,getEventById, createEvent, updateEvent, deleteEvent, joinEvent, isJoined, myEvents, eventParticipants, removeParticipant, notifyEventEndedController } from "../controllers/eventController.js";
 
 
 const router = express.Router();
@@ -87,6 +87,16 @@ router.post(
     { source: "body", allowUnknown: false, stripUnknown: true }
   ),
   removeParticipant
+);
+
+// Manually trigger event-ended notifications for a specific event
+router.post(
+  "/notifyEventEnded",
+  validateRequest(
+    { body: { eventId: { type: "string", required: true, min: 1 } } },
+    { source: "body", allowUnknown: false, stripUnknown: true }
+  ),
+  notifyEventEndedController
 );
 
 router.get(

@@ -639,7 +639,7 @@ export default function MyProfile() {
                   {arts.length}
                 </div>
                 <div className="mp__stat-label">
-                  {role === 'artist' ? 'Artworks' : 'Favorites'}
+                  {role === 'artist' ? 'Artworks' : 'Artworks'}
                 </div>
               </div>
               <div className="mp__stat-item">

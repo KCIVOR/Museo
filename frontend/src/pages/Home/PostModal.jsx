@@ -407,7 +407,8 @@ export default function PostModal({
     return formatDescription(text.substring(0, truncateAt).trim());
   };
 
-  const images = post.images || [post.image];
+  const media = (post.images && Array.isArray(post.images)) ? post.images : (post.image ? [post.image] : []);
+  const isVideoUrl = (url) => typeof url === 'string' && /\.mp4(\?.*)?$/i.test(url);
   
   if (!post) return null;
 
@@ -530,24 +531,33 @@ export default function PostModal({
         </div>
 
         <div className="artwork-modal-content">
-          {/* Left Side - Image Gallery */}
+          {/* Left Side - Media Gallery (images or mp4) */}
           <div className="artwork-modal-gallery">
-            <div className={`artwork-main-image ${images.length === 1 ? 'single-image' : ''} ${!showThumbnails ? 'thumbnails-hidden' : ''}`}>
-              <img 
-                src={images[currentIndex]} 
-                alt={post.text || "Post"}
-                className="artwork-image"
-                onClick={() => setShowFullscreen(true)}
-                style={{ cursor: 'pointer' }}
-              />
+            <div className={`artwork-main-image ${media.length === 1 ? 'single-image' : ''} ${!showThumbnails ? 'thumbnails-hidden' : ''}`}>
+              {isVideoUrl(media[currentIndex]) ? (
+                <video 
+                  src={media[currentIndex]}
+                  className="artwork-image"
+                  controls
+                  style={{ cursor: 'default' }}
+                />
+              ) : (
+                <img 
+                  src={media[currentIndex]} 
+                  alt={post.text || "Post"}
+                  className="artwork-image"
+                  onClick={() => setShowFullscreen(true)}
+                  style={{ cursor: 'pointer' }}
+                />
+              )}
               
               {/* Image Navigation */}
-              {images.length > 1 && (
+              {media.length > 1 && (
                 <>
                   <button 
                     className="artwork-nav-btn artwork-nav-prev"
                     onClick={() => setCurrentIndex(prev => 
-                      prev === 0 ? images.length - 1 : prev - 1
+                      prev === 0 ? media.length - 1 : prev - 1
                     )}
                   >
                     ‹
@@ -555,7 +565,7 @@ export default function PostModal({
                   <button 
                     className="artwork-nav-btn artwork-nav-next"
                     onClick={() => setCurrentIndex(prev => 
-                      prev === images.length - 1 ? 0 : prev + 1
+                      prev === media.length - 1 ? 0 : prev + 1
                     )}
                   >
                     ›
@@ -574,16 +584,27 @@ export default function PostModal({
             </div>
 
             {/* Thumbnail Strip */}
-            {images.length > 1 && showThumbnails && (
-              <div className={`artwork-thumbnails ${images.length === 1 ? 'single-image' : ''} ${!showThumbnails ? 'hidden' : ''}`}>
-                {images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`${post.text || 'Post'} ${index + 1}`}
-                    className={`artwork-thumbnail ${index === currentIndex ? 'active' : ''}`}
-                    onClick={() => setCurrentIndex(index)}
-                  />
+            {media.length > 1 && showThumbnails && (
+              <div className={`artwork-thumbnails ${media.length === 1 ? 'single-image' : ''} ${!showThumbnails ? 'hidden' : ''}`}>
+                {media.map((m, index) => (
+                  isVideoUrl(m) ? (
+                    <div
+                      key={index}
+                      className={`artwork-thumbnail ${index === currentIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentIndex(index)}
+                      style={{ display:'flex',alignItems:'center',justifyContent:'center', fontWeight:700, color:'#fff', background:'rgba(0,0,0,0.35)' }}
+                    >
+                      ▶
+                    </div>
+                  ) : (
+                    <img
+                      key={index}
+                      src={m}
+                      alt={`${post.text || 'Post'} ${index + 1}`}
+                      className={`artwork-thumbnail ${index === currentIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentIndex(index)}
+                    />
+                  )
                 ))}
               </div>
             )}
@@ -912,7 +933,7 @@ export default function PostModal({
         <FullscreenImageViewer
           isOpen={showFullscreen}
           onClose={() => setShowFullscreen(false)}
-          images={images}
+          images={media}
           currentIndex={currentIndex}
           onIndexChange={setCurrentIndex}
           alt={post.text || "Post"}
