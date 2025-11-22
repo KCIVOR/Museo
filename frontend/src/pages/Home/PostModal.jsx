@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import FullscreenImageViewer from "../../components/FullscreenImageViewer";
+import ConfirmModal from "../Shared/ConfirmModal";
+import AlertModal from "../Shared/AlertModal";
 import "../Gallery/css/ArtworkModal.css";
 
 const API = import.meta.env.VITE_API_BASE;
@@ -49,6 +51,11 @@ export default function PostModal({
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [openMenus, setOpenMenus] = useState({}); // Track which post menus are open
+  
+  // Modal states
+  const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [reportAlert, setReportAlert] = useState({ show: false, message: '' });
 
   const FALLBACK_AVATAR = import.meta.env.FALLBACKPHOTO_URL || "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/fallbackphoto.png";
 
@@ -238,42 +245,49 @@ export default function PostModal({
     setEditingCommentText("");
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Delete this comment?')) return;
+  const handleDeleteComment = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteCommentConfirm(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
     
     try {
-      const res = await fetch(`${API}/homepage/deleteComment/${commentId}`, {
+      const res = await fetch(`${API}/homepage/deleteComment/${commentToDelete}`, {
         method: 'DELETE',
         credentials: 'include'
       });
       
       if (res.ok) {
-        setComments(prev => prev.filter(c => c.id !== commentId));
+        setComments(prev => prev.filter(c => c.id !== commentToDelete));
         setOpenCommentMenus({});
       }
     } catch (error) {
       console.error('Failed to delete comment:', error);
+    } finally {
+      setShowDeleteCommentConfirm(false);
+      setCommentToDelete(null);
     }
   };
 
   const handleReportComment = async (commentId) => {
-    const reason = window.prompt('Why are you reporting this comment?');
-    if (!reason) return;
-    
+    // For now, show success alert. In future, you can add a report form modal
     try {
       const res = await fetch(`${API}/homepage/reportComment`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commentId, reason })
+        body: JSON.stringify({ commentId, reason: 'Reported by user' })
       });
       
       if (res.ok) {
-        alert('Comment reported successfully');
+        setReportAlert({ show: true, message: 'Comment reported successfully' });
         setOpenCommentMenus({});
       }
     } catch (error) {
       console.error('Failed to report comment:', error);
+      setReportAlert({ show: true, message: 'Failed to report comment' });
     }
   };
 
@@ -937,6 +951,29 @@ export default function PostModal({
           currentIndex={currentIndex}
           onIndexChange={setCurrentIndex}
           alt={post.text || "Post"}
+        />
+
+        {/* Delete Comment Confirmation Modal */}
+        <ConfirmModal
+          open={showDeleteCommentConfirm}
+          title="Delete Comment"
+          message="Are you sure you want to delete this comment? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDeleteComment}
+          onCancel={() => {
+            setShowDeleteCommentConfirm(false);
+            setCommentToDelete(null);
+          }}
+        />
+
+        {/* Report Alert Modal */}
+        <AlertModal
+          open={reportAlert.show}
+          title="Report Submitted"
+          message={reportAlert.message}
+          okText="OK"
+          onOk={() => setReportAlert({ show: false, message: '' })}
         />
       </div>
     </div>

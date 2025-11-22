@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
+import MuseoLoadingPage from "../components/MuseoLoadingPage";
 const API = import.meta.env.VITE_API_BASE;
 
 const ProtectedRoutes = () => {
@@ -13,6 +14,7 @@ const ProtectedRoutes = () => {
   // Get refreshUserData from UserContext but don't use its state
   const { refreshUserData } = useUser();
   const hasRefreshed = useRef(false); // Track if we've refreshed for this SESSION (not per route)
+  const hasCompletedInitialCheck = useRef(false); // Track if we've finished the very first auth check
 
   // DON'T reset hasRefreshed when location changes
   // This way, UserContext is only populated ONCE per session, not on every route change
@@ -94,6 +96,11 @@ const ProtectedRoutes = () => {
         setProfileStatus(null);
       } finally {
         setIsLoading(false);
+        // Mark that we have completed the first check; subsequent path changes
+        // should not block rendering with a full-screen loading page.
+        if (!hasCompletedInitialCheck.current) {
+          hasCompletedInitialCheck.current = true;
+        }
       }
     };
 
@@ -102,18 +109,8 @@ const ProtectedRoutes = () => {
   }, [location.pathname]); // Only re-run when pathname changes, not when refreshUserData changes
 
   // 1) Block until checks complete to avoid rendering child routes early
-  if (isLoading) return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      fontSize: '18px',
-      color: 'var(--museo-text-secondary)'
-    }}>
-      Loading...
-    </div>
-  );
+  // Show the full-screen loading page ONLY on the very first auth check.
+  if (isLoading && !hasCompletedInitialCheck.current) return <MuseoLoadingPage />;
 
   // 2) Unauthenticated => login
   if (isAuthenticated === false) {

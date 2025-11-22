@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
 import CategorySelector from '../../components/modal-features/CategorySelector';
+import AlertModal from '../Shared/AlertModal';
 import './css/UploadArtModal.css';
 
 const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
@@ -16,6 +17,7 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
   const [watermarkText, setWatermarkText] = useState("");
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successAlert, setSuccessAlert] = useState({ show: false, title: '', message: '' });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -92,6 +94,13 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
 
       await onSubmit(submitData);
       
+      // Show success alert
+      setSuccessAlert({
+        show: true,
+        title: 'Artwork Uploaded Successfully',
+        message: `"${formData.title}" has been added to your gallery. It's now visible to the Museo community!`
+      });
+      
       // Reset form
       setFormData({
         title: '',
@@ -100,8 +109,6 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
       });
       setCategories([]);
       setImages([]);
-      setErrors({});
-      onClose();
     } catch (error) {
       setErrors({ submit: 'Failed to upload artwork. Please try again.' });
     } finally {
@@ -245,6 +252,18 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
           </MuseoModalActions>
         </form>
       </MuseoModalBody>
+
+      {/* Success Alert Modal */}
+      <AlertModal
+        open={successAlert.show}
+        title={successAlert.title}
+        message={successAlert.message}
+        okText="OK"
+        onOk={() => {
+          setSuccessAlert({ show: false, title: '', message: '' });
+          onClose();
+        }}
+      />
     </MuseoModal>
   );
 };

@@ -1,0 +1,43 @@
+graph TB
+    subgraph Client["📱 CLIENT DEPLOYMENT"]
+        Web["🌐 Web Browser<br/>Vite React App<br/>localhost:5173"]
+        Mobile["📲 Mobile App<br/>Expo/React Native<br/>iOS & Android"]
+    end
+
+    subgraph CDN["☁️ CDN / HOSTING"]
+        Netlify["Netlify<br/>Frontend Hosting<br/>museo-frontend.netlify.app"]
+    end
+
+    subgraph Backend["🖥️ BACKEND DEPLOYMENT"]
+        Server["Node.js/Express Server<br/>Render.com<br/>museo-backend.onrender.com"]
+    end
+
+    subgraph Database["💾 DATABASE & STORAGE"]
+        PG["PostgreSQL<br/>Supabase Cloud<br/>ddkkbtijqrgpitncxylx"]
+        Storage["Supabase Storage<br/>Images & Files"]
+    end
+
+    subgraph Cache["⚡ CACHE & SESSIONS"]
+        Redis["Redis<br/>Upstash<br/>Session Storage"]
+    end
+
+    subgraph External["🔗 EXTERNAL SERVICES"]
+        Xendit["Xendit<br/>Payment Gateway"]
+        SendGrid["SendGrid<br/>Email Service"]
+    end
+
+    Web -->|HTTPS| Netlify
+    Mobile -->|HTTPS| Backend
+    Netlify -->|API Calls| Backend
+    Backend -->|SQL| Database
+    Backend -->|Read/Write| Storage
+    Backend -->|Cache| Cache
+    Backend -->|Payment| Xendit
+    Backend -->|Email| SendGrid
+
+    style Client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style CDN fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    style Backend fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Database fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style Cache fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    style External fill:#fff9c4,stroke:#f57f17,stroke-width:2px

@@ -389,6 +389,19 @@ export default function Gallery() {
     }
   };
 
+  // Update a single artwork in state after edit
+  const handleArtworkEditedLocal = (updatedArtwork) => {
+    if (!updatedArtwork?.id) return;
+    setArtworks(prev => prev.map(a => (String(a.id) === String(updatedArtwork.id) ? { ...a, ...updatedArtwork } : a)));
+  };
+
+  // Remove a single artwork from state after delete
+  const handleArtworkDeletedLocal = (artworkId) => {
+    if (!artworkId) return;
+    const idStr = String(artworkId);
+    setArtworks(prev => prev.filter(a => String(a.id) !== idStr));
+  };
+
   // Fetch weekly top arts from the new API
   const fetchTopArtsWeekly = async () => {
     try {
@@ -1164,7 +1177,7 @@ export default function Gallery() {
 
       <div className="museo-page museo-page--gallery">
         <div className="museo-feed">
-          {/*role === 'admin' && (
+          {role === 'admin' && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
               <button
                 className={`btn btn-secondary btn-sm ${isRecomputingTopArts ? 'loading disabled' : ''}`}
@@ -1175,7 +1188,7 @@ export default function Gallery() {
                 {isRecomputingTopArts ? 'Recomputing…' : 'Recompute Top Arts'}
               </button>
             </div>
-          )*/}
+          )}
       
           {/* Top Arts of the Week - New API-based system */}
           {!isLoadingTopArts && topArtsWeekly.length > 0 && (
@@ -1793,6 +1806,8 @@ export default function Gallery() {
         isOpen={isArtworkModalOpen}
         onClose={closeArtworkModal}
         onStatsUpdate={triggerStatsUpdate}
+        onArtworkEdited={handleArtworkEditedLocal}
+        onArtworkDeleted={handleArtworkDeletedLocal}
       />
     </div>
   );

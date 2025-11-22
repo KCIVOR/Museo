@@ -10,7 +10,10 @@ import {
   withdrawBalance,
   getPayoutHistory,
   updatePaymentInfo,
-  getPaymentInfo
+  getPaymentInfo,
+  getPayoutMethods,
+  setDefaultPayoutMethod,
+  deletePayoutMethod
 } from '../controllers/payoutController.js';
 
 const router = express.Router();
@@ -42,6 +45,29 @@ router.get(
     { source: 'query', allowUnknown: false, stripUnknown: true, coerce: true }
   ),
   getPayoutHistory
+);
+
+// List payout methods (non-deleted)
+router.get('/methods', getPayoutMethods);
+
+// Set default payout method
+router.post(
+  '/methods/:id/default',
+  validateRequest(
+    { params: { id: { type: 'string', required: true, min: 10 } } },
+    { source: 'params', allowUnknown: false, stripUnknown: true }
+  ),
+  setDefaultPayoutMethod
+);
+
+// Delete payout method (soft delete)
+router.delete(
+  '/methods/:id',
+  validateRequest(
+    { params: { id: { type: 'string', required: true, min: 10 } } },
+    { source: 'params', allowUnknown: false, stripUnknown: true }
+  ),
+  deletePayoutMethod
 );
 
 // Payment information management

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
+import ConfirmModal from '../Shared/ConfirmModal.jsx';
 import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
 import EditAuctionItemModal from './EditAuctionItemModal';
 import './css/addProductModal.css';
@@ -46,6 +47,9 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [auctionItemId, setAuctionItemId] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Delete confirm modal state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const fetchExistingItems = async () => {
     setLoadingItems(true);
@@ -81,10 +85,17 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
     setStep(2);
   };
 
-  const handleDeleteItem = async (itemId, e) => {
-    e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+  const openDeleteConfirm = (itemId, e) => {
+    e?.stopPropagation();
+    setDeleteTargetId(itemId);
+    setDeleteConfirmOpen(true);
+  };
 
+  const performDeleteItem = async () => {
+    const itemId = deleteTargetId;
+    setDeleteConfirmOpen(false);
+    setDeleteTargetId(null);
+    if (!itemId) return;
     try {
       const response = await fetch(`${API}/auctions/items/${itemId}`, {
         method: 'DELETE',
@@ -385,7 +396,7 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
                         <button
                           type="button"
                           className="btn btn-sm btn-danger"
-                          onClick={(e) => handleDeleteItem(item.auctionItemId, e)}
+                          onClick={(e) => openDeleteConfirm(item.auctionItemId, e)}
                           title="Delete item"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -767,6 +778,17 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
         onSuccess={handleEditSuccess}
       />
     )}
+
+    {/* Delete Confirmation Modal */}
+    <ConfirmModal
+      open={deleteConfirmOpen}
+      title="Delete Item"
+      message="Are you sure you want to delete this item?"
+      confirmText="Delete"
+      cancelText="Cancel"
+      onConfirm={performDeleteItem}
+      onCancel={() => { setDeleteConfirmOpen(false); setDeleteTargetId(null); }}
+    />
     </>
   );
 };

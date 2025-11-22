@@ -98,12 +98,14 @@ class PayoutService {
         readyDate.setDate(readyDate.getDate() + 1);
       }
 
-      // Get seller's payment method from profile
+      // Get seller's payment method from new table (preferred) or legacy profile
       const { data: sellerProfile } = await db
         .from('sellerProfiles')
         .select('paymentMethod')
         .eq('sellerProfileId', order.sellerProfileId)
         .single();
+      const defaultPm = await this.getDefaultPayoutMethodRow(order.sellerProfileId);
+      const payoutMethod = defaultPm?.method || sellerProfile?.paymentMethod || null;
 
       // Create payout record
       console.log(`Creating payout for order ${orderId}:`, {
@@ -126,7 +128,7 @@ class PayoutService {
           status: 'pending',
           payoutType: 'standard',
           readyDate: readyDate.toISOString(),
-          payoutMethod: sellerProfile?.paymentMethod || null,
+          payoutMethod: payoutMethod,
           notes: safetyChecks.notes
         })
         .select()
@@ -230,6 +232,29 @@ class PayoutService {
         });
     } catch (error) {
       console.error('Error logging safety check:', error);
+    }
+  }
+
+  /**
+   * Get default payout method from new table (fallback handled by callers)
+   */
+  async getDefaultPayoutMethodRow(sellerProfileId) {
+    try {
+      const { data, error } = await db
+        .from('sellerPayoutMethods')
+        .select('*')
+        .eq('sellerProfileId', sellerProfileId)
+        .eq('isDefault', true)
+        .neq('status', 'deleted')
+        .limit(1);
+      if (error) {
+        console.error('getDefaultPayoutMethodRow error:', error);
+        return null;
+      }
+      return Array.isArray(data) ? data[0] : data;
+    } catch (e) {
+      console.error('getDefaultPayoutMethodRow fatal:', e);
+      return null;
     }
   }
 
@@ -369,7 +394,7 @@ class PayoutService {
           .in('payoutId', payoutIds);
       }
 
-      // Get seller's payment info
+      // Get seller's payment info (legacy fields for fallback)
       const { data: sellerProfile, error: profileError } = await db
         .from('sellerProfiles')
         .select('paymentMethod, bankAccountName, bankAccountNumber, bankName, gcashNumber, mayaNumber')
@@ -380,7 +405,11 @@ class PayoutService {
         throw new Error('Seller profile not found');
       }
 
-      if (!sellerProfile.paymentMethod) {
+      // Prefer default payout method from new table
+      const defaultPm = await this.getDefaultPayoutMethodRow(sellerProfileId);
+      const method = defaultPm?.method || sellerProfile.paymentMethod;
+
+      if (!method) {
         throw new Error('Please set up your payment method first');
       }
 
@@ -429,7 +458,7 @@ class PayoutService {
           status: 'COMPLETED'
         };
         
-        console.log(`🎮 DEMO: Simulated payout of ₱${totalAmount} to ${sellerProfile.paymentMethod}`);
+        console.log(`🎮 DEMO: Simulated payout of ₱${totalAmount} to ${method}`);
         
       } else {
         // PRODUCTION MODE - Real payout via Xendit
@@ -440,11 +469,15 @@ class PayoutService {
           .single();
 
         payoutResult = await payoutGatewayService.processPayout({
-          paymentMethod: sellerProfile.paymentMethod,
+          paymentMethod: method,
           amount: totalAmount,
           sellerInfo: {
             ...sellerProfile,
-            shopName: sellerData?.shopName || 'Artist'
+            shopName: sellerData?.shopName || 'Artist',
+            phoneE164: defaultPm?.phoneE164 || null,
+            bankName: defaultPm?.bankName || sellerProfile.bankName,
+            bankAccountName: defaultPm?.bankAccountName || sellerProfile.bankAccountName,
+            bankAccountNumber: defaultPm?.bankAccountNumber || sellerProfile.bankAccountNumber
           },
           payoutId: reference
         });
@@ -465,8 +498,8 @@ class PayoutService {
           paidDate: new Date().toISOString(),
           payoutReference: finalReference,
           notes: PAYOUT_MODE === 'demo' 
-            ? `DEMO: Simulated payout via ${sellerProfile.paymentMethod}`
-            : `Automated payout via ${sellerProfile.paymentMethod}`,
+            ? `DEMO: Simulated payout via ${method}`
+            : `Automated payout via ${method}`,
           updatedAt: new Date().toISOString()
         })
         .in('payoutId', payoutIds);
@@ -476,14 +509,14 @@ class PayoutService {
       }
 
       const modeIcon = PAYOUT_MODE === 'demo' ? '🎮' : '✅';
-      console.log(`${modeIcon} Withdrawal processed: ₱${totalAmount} to ${sellerProfile.paymentMethod} (Ref: ${finalReference})`);
+      console.log(`${modeIcon} Withdrawal processed: ₱${totalAmount} to ${method} (Ref: ${finalReference})`);
 
       return {
         success: true,
         amount: totalAmount,
         payoutCount: readyPayouts.length,
         reference: finalReference,
-        paymentMethod: sellerProfile.paymentMethod,
+        paymentMethod: method,
         gatewayStatus: payoutResult.status,
         mode: PAYOUT_MODE
       };
@@ -499,14 +532,17 @@ class PayoutService {
    */
   async requestInstantPayout(sellerProfileId) {
     try {
-      // Get seller's payment info
+      // Get seller's payment info (legacy) and new default
       const { data: sellerProfile } = await db
         .from('sellerProfiles')
         .select('paymentMethod')
         .eq('sellerProfileId', sellerProfileId)
         .single();
 
-      if (!sellerProfile?.paymentMethod) {
+      const defaultPm = await this.getDefaultPayoutMethodRow(sellerProfileId);
+      const method = defaultPm?.method || sellerProfile?.paymentMethod;
+
+      if (!method) {
         throw new Error('Please set up your payment method first');
       }
 
@@ -564,14 +600,20 @@ class PayoutService {
           status: 'COMPLETED'
         };
         
-        console.log(`🎮 DEMO: Simulated instant payout of ₱${finalAmount} to ${fullSellerProfile.paymentMethod} (fee: ₱${instantFee})`);
+        console.log(`🎮 DEMO: Simulated instant payout of ₱${finalAmount} to ${method} (fee: ₱${instantFee})`);
         
       } else {
         // PRODUCTION MODE - Real instant payout via Xendit
         payoutResult = await payoutGatewayService.processPayout({
-          paymentMethod: fullSellerProfile.paymentMethod,
+          paymentMethod: method,
           amount: finalAmount, // Send final amount after instant fee
-          sellerInfo: fullSellerProfile,
+          sellerInfo: {
+            ...fullSellerProfile,
+            phoneE164: defaultPm?.phoneE164 || null,
+            bankName: defaultPm?.bankName || fullSellerProfile.bankName,
+            bankAccountName: defaultPm?.bankAccountName || fullSellerProfile.bankAccountName,
+            bankAccountNumber: defaultPm?.bankAccountNumber || fullSellerProfile.bankAccountNumber
+          },
           payoutId: reference
         });
 
@@ -593,8 +635,8 @@ class PayoutService {
           paidDate: new Date().toISOString(),
           payoutReference: finalReference,
           notes: PAYOUT_MODE === 'demo'
-            ? `DEMO: Simulated instant payout via ${fullSellerProfile.paymentMethod}`
-            : `Instant payout via ${fullSellerProfile.paymentMethod}`,
+            ? `DEMO: Simulated instant payout via ${method}`
+            : `Instant payout via ${method}`,
           updatedAt: new Date().toISOString()
         })
         .in('payoutId', payoutIds);
@@ -604,7 +646,7 @@ class PayoutService {
       }
 
       const modeIcon = PAYOUT_MODE === 'demo' ? '🎮' : '✅';
-      console.log(`${modeIcon} Instant payout: ₱${finalAmount} to ${fullSellerProfile.paymentMethod} (fee: ₱${instantFee}, Ref: ${finalReference})`);
+      console.log(`${modeIcon} Instant payout: ₱${finalAmount} to ${method} (fee: ₱${instantFee}, Ref: ${finalReference})`);
 
       return {
         success: true,
@@ -612,7 +654,7 @@ class PayoutService {
         instantFee: instantFee,
         grossAmount: grossAmount,
         reference: finalReference,
-        paymentMethod: fullSellerProfile.paymentMethod,
+        paymentMethod: method,
         gatewayStatus: payoutResult.status,
         mode: PAYOUT_MODE
       };

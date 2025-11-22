@@ -10,6 +10,7 @@ import SetProfileModal from "../Profile/SetProfile";
 import InterestsSelection from "../Shared/InterestsSelection";
 import AnnouncementCard from "./AnnouncementCard.jsx";
 import ConfirmModal from "../Shared/ConfirmModal";
+import AlertModal from "../Shared/AlertModal";
 import EditPostModal from "./EditPostModal";
 const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
@@ -167,6 +168,7 @@ export default function Home() {
   const [postToDelete, setPostToDelete] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [reportAlert, setReportAlert] = useState({ show: false, message: '' });
 
   // profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -582,7 +584,10 @@ export default function Home() {
   const handleNewPost = (newPostData) => {
     // Reset page and reload posts
     setCurrentPage(1);
-    window.location.reload();
+    // Refetch first page instead of reloading the whole app
+    fetchPosts(1, false);
+    // Optionally prepend the new post optimistically
+    // if (newPostData?.id) setPosts(prev => [newPostData, ...prev]);
   };
 
   const closeModal = () => {
@@ -647,11 +652,7 @@ export default function Home() {
         setPosts(prev => prev.filter(p => p.id !== postToDelete.id));
         setShowConfirmDelete(false);
         setPostToDelete(null);
-        
-        // Automatically refresh the page after successful deletion
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
+        // No full reload; list is already updated above
       } else {
         const errorData = await res.json();
         console.error('Failed to delete post:', errorData.error);
@@ -670,9 +671,24 @@ export default function Home() {
     setPostToDelete(null);
   };
 
-  const handleReport = (postId) => {
-    // Implement report functionality
-    console.log('Report functionality to be implemented for post:', postId);
+  const handleReport = async (postId) => {
+    try {
+      const res = await fetch(`${API}/homepage/reportPost`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, reason: 'Reported by user' })
+      });
+      
+      if (res.ok) {
+        setReportAlert({ show: true, message: 'Post reported successfully. Thank you for helping keep our community safe.' });
+      } else {
+        setReportAlert({ show: true, message: 'Failed to report post. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Failed to report post:', error);
+      setReportAlert({ show: true, message: 'Failed to report post. Please try again.' });
+    }
     closeMenu(postId);
   };
 
@@ -686,9 +702,9 @@ export default function Home() {
   };
 
   const handlePostUpdated = (updatedPost) => {
-    // Reload the page to show the updated post with fresh data
-    console.log('✏️ Post updated, reloading page...');
-    window.location.reload();
+    // Update the specific post in-place to avoid reloading the app
+    if (!updatedPost?.id) return;
+    setPosts(prev => prev.map(p => (String(p.id) === String(updatedPost.id) ? { ...p, ...updatedPost } : p)));
   };
 
   // Close menus when clicking outside
@@ -1130,6 +1146,15 @@ export default function Home() {
         cancelText="Cancel"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+      />
+
+      {/* Report Alert Modal */}
+      <AlertModal
+        open={reportAlert.show}
+        title="Report Submitted"
+        message={reportAlert.message}
+        okText="OK"
+        onOk={() => setReportAlert({ show: false, message: '' })}
       />
 
       {/* Edit Post Modal */}

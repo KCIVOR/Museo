@@ -11,6 +11,7 @@ import MarketplaceItem from "./pages/Marketplace/marketPlaceItem";
 import GalleryAll from "./pages/Gallery/galleryAll";
 import Layout from "../components/Layout";
 import MyProfile from "./pages/Profile/MyProfile";
+
 import MarketplaceAll from "./pages/Marketplace/marketplaceAll"
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoutes from "./utils/protectedRoutes";

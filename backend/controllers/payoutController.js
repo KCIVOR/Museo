@@ -5,10 +5,345 @@
 
 import payoutService from '../services/payoutService.js';
 import db from '../database/db.js';
+// payoutMethodsRepo inlined below to keep controller self-contained
 
 // Show current mode in console
 const PAYOUT_MODE = process.env.PAYOUT_MODE || 'demo';
 console.log(`💰 Payout System Running in ${PAYOUT_MODE.toUpperCase()} MODE`);
+
+// Inlined payout methods helpers (previously in repositories/payoutMethodsRepo.js)
+const normalizePhoneE164 = (phone) => {
+  if (!phone) return null;
+  const p = String(phone).trim();
+  if (p.startsWith('+')) return p; // assume already E.164
+  if (p.startsWith('0')) return `+63${p.slice(1)}`; // PH local to E.164
+  return p;
+};
+
+/**
+ * Delete a payout method (soft delete). If it was default, set another as default or clear legacy fields.
+ */
+export const deletePayoutMethod = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!id) return res.status(400).json({ success: false, error: 'Method id is required' });
+
+    // Get seller profile id
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(404).json({ success: false, error: 'Seller profile not found' });
+    }
+
+    // Load method
+    const { data: methodRow, error: methodErr } = await db
+      .from('sellerPayoutMethods')
+      .select('*')
+      .eq('sellerPayoutMethodId', id)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .neq('status', 'deleted')
+      .single();
+
+    if (methodErr || !methodRow) {
+      return res.status(404).json({ success: false, error: 'Payout method not found' });
+    }
+
+    const now = new Date().toISOString();
+
+    // Soft delete
+    const { error: delErr } = await db
+      .from('sellerPayoutMethods')
+      .update({ status: 'deleted', isDefault: false, updatedAt: now })
+      .eq('sellerPayoutMethodId', id)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId);
+    if (delErr) {
+      console.error('Error deleting payout method:', delErr);
+      return res.status(500).json({ success: false, error: 'Failed to delete payout method' });
+    }
+
+    // If deleted method was default, pick a replacement or clear legacy fields
+    if (methodRow.isDefault) {
+      // Find the most recent remaining active method
+      const { data: candidates, error: candErr } = await db
+        .from('sellerPayoutMethods')
+        .select('*')
+        .eq('sellerProfileId', sellerProfile.sellerProfileId)
+        .neq('status', 'deleted')
+        .order('createdAt', { ascending: false })
+        .limit(1);
+
+      if (candErr) {
+        console.warn('Warning: failed to load replacement default:', candErr);
+      }
+
+      const replacement = Array.isArray(candidates) ? candidates[0] : null;
+      if (replacement) {
+        await db
+          .from('sellerPayoutMethods')
+          .update({ isDefault: true, updatedAt: now })
+          .eq('sellerPayoutMethodId', replacement.sellerPayoutMethodId)
+          .eq('sellerProfileId', sellerProfile.sellerProfileId);
+
+        // Sync legacy sellerProfiles to replacement
+        const updates = {
+          paymentMethod: replacement.method,
+          bankAccountName: null,
+          bankAccountNumber: null,
+          bankName: null,
+          gcashNumber: null,
+          mayaNumber: null,
+          paymentInfoUpdatedAt: now
+        };
+        if (replacement.method === 'gcash') updates.gcashNumber = replacement.phoneE164;
+        if (replacement.method === 'maya') updates.mayaNumber = replacement.phoneE164;
+        if (replacement.method === 'bank') {
+          updates.bankName = replacement.bankName;
+          updates.bankAccountName = replacement.bankAccountName;
+          updates.bankAccountNumber = replacement.bankAccountNumber;
+        }
+        await db
+          .from('sellerProfiles')
+          .update(updates)
+          .eq('sellerProfileId', sellerProfile.sellerProfileId);
+      } else {
+        // No remaining methods: clear legacy fields
+        await db
+          .from('sellerProfiles')
+          .update({
+            paymentMethod: null,
+            bankAccountName: null,
+            bankAccountNumber: null,
+            bankName: null,
+            gcashNumber: null,
+            mayaNumber: null,
+            paymentInfoUpdatedAt: now
+          })
+          .eq('sellerProfileId', sellerProfile.sellerProfileId);
+      }
+    }
+
+    res.json({ success: true, message: 'Payout method deleted' });
+  } catch (e) {
+    console.error('Error deleting payout method:', e);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+async function getDefaultPayoutMethod(sellerProfileId) {
+  const { data, error } = await db
+    .from('sellerPayoutMethods')
+    .select('*')
+    .eq('sellerProfileId', sellerProfileId)
+    .eq('isDefault', true)
+    .neq('status', 'deleted')
+    .limit(1);
+
+  if (error) {
+    console.error('getDefaultPayoutMethod error:', error);
+    return null;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return row || null;
+}
+
+/**
+ * List payout methods for a seller (non-deleted)
+ */
+export const getPayoutMethods = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(404).json({ success: false, error: 'Seller profile not found' });
+    }
+
+    const { data: methods, error } = await db
+      .from('sellerPayoutMethods')
+      .select('*')
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .neq('status', 'deleted')
+      .order('createdAt', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({ success: true, data: methods || [] });
+  } catch (e) {
+    console.error('Error listing payout methods:', e);
+    res.status(500).json({ success: false, error: 'Failed to fetch payout methods' });
+  }
+};
+
+/**
+ * Set a payout method as default by id (and sync legacy sellerProfiles)
+ */
+export const setDefaultPayoutMethod = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Method id is required' });
+    }
+
+    // Get seller profile id
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !sellerProfile) {
+      return res.status(404).json({ success: false, error: 'Seller profile not found' });
+    }
+
+    // Verify method belongs to seller
+    const { data: methodRow, error: methodErr } = await db
+      .from('sellerPayoutMethods')
+      .select('*')
+      .eq('sellerPayoutMethodId', id)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .neq('status', 'deleted')
+      .single();
+
+    if (methodErr || !methodRow) {
+      return res.status(404).json({ success: false, error: 'Payout method not found' });
+    }
+
+    const now = new Date().toISOString();
+
+    // Clear existing default and set new default
+    await db
+      .from('sellerPayoutMethods')
+      .update({ isDefault: false, updatedAt: now })
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .eq('isDefault', true);
+
+    const { error: setErr } = await db
+      .from('sellerPayoutMethods')
+      .update({ isDefault: true, updatedAt: now })
+      .eq('sellerPayoutMethodId', id)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId);
+
+    if (setErr) {
+      console.error('Error setting default payout method:', setErr);
+      return res.status(500).json({ success: false, error: 'Failed to set default payout method' });
+    }
+
+    // Sync legacy sellerProfiles for backward compatibility
+    const updates = {
+      paymentMethod: methodRow.method,
+      bankAccountName: null,
+      bankAccountNumber: null,
+      bankName: null,
+      gcashNumber: null,
+      mayaNumber: null,
+      paymentInfoUpdatedAt: now
+    };
+    if (methodRow.method === 'gcash') updates.gcashNumber = methodRow.phoneE164;
+    if (methodRow.method === 'maya') updates.mayaNumber = methodRow.phoneE164;
+    if (methodRow.method === 'bank') {
+      updates.bankName = methodRow.bankName;
+      updates.bankAccountName = methodRow.bankAccountName;
+      updates.bankAccountNumber = methodRow.bankAccountNumber;
+    }
+    const { error: syncErr } = await db
+      .from('sellerProfiles')
+      .update(updates)
+      .eq('sellerProfileId', sellerProfile.sellerProfileId);
+    if (syncErr) {
+      console.warn('Warning: default set but failed to sync sellerProfiles:', syncErr);
+    }
+
+    res.json({ success: true, message: 'Default payout method updated' });
+  } catch (e) {
+    console.error('Error setting default payout method:', e);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+async function upsertPayoutMethod(sellerProfileId, payload) {
+  const now = new Date().toISOString();
+  const {
+    method,
+    provider = 'xendit',
+    gcashNumber,
+    mayaNumber,
+    bankName,
+    bankAccountName,
+    bankAccountNumber,
+    externalAccountId,
+    cardBrand,
+    cardLast4,
+    cardExpMonth,
+    cardExpYear,
+    setDefault = true
+  } = payload || {};
+
+  if (!method) throw new Error('method is required');
+
+  const phoneE164 = method === 'gcash'
+    ? normalizePhoneE164(gcashNumber)
+    : method === 'maya'
+      ? normalizePhoneE164(mayaNumber)
+      : null;
+
+  if (setDefault) {
+    await db
+      .from('sellerPayoutMethods')
+      .update({ isDefault: false, updatedAt: now })
+      .eq('sellerProfileId', sellerProfileId)
+      .eq('isDefault', true);
+  }
+
+  const insertRow = {
+    sellerProfileId,
+    method,
+    provider,
+    externalAccountId: externalAccountId || null,
+    isDefault: !!setDefault,
+    phoneE164,
+    bankName: bankName || null,
+    bankAccountName: bankAccountName || null,
+    bankAccountNumber: bankAccountNumber || null,
+    cardBrand: cardBrand || null,
+    cardLast4: cardLast4 || null,
+    cardExpMonth: cardExpMonth || null,
+    cardExpYear: cardExpYear || null,
+    verified: false,
+    status: 'active',
+    createdAt: now,
+    updatedAt: now
+  };
+
+  const { data, error } = await db
+    .from('sellerPayoutMethods')
+    .insert(insertRow)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message || 'Failed to save payout method');
+
+  return data;
+}
 
 /**
  * Get seller's balance information
@@ -425,6 +760,17 @@ export const updatePaymentInfo = async (req, res) => {
       });
     }
 
+    // Upsert into sellerPayoutMethods (set as default)
+    await upsertPayoutMethod(sellerProfile.sellerProfileId, {
+      method: paymentMethod,
+      gcashNumber,
+      mayaNumber,
+      bankName,
+      bankAccountName,
+      bankAccountNumber,
+      setDefault: true
+    });
+
     // Update payment info
     const { error: updateError } = await db
       .from('sellerProfiles')
@@ -476,23 +822,49 @@ export const getPaymentInfo = async (req, res) => {
       });
     }
 
-    // Get seller profile with payment info
-    const { data: sellerProfile, error } = await db
+    // Get seller profile id
+    const { data: profileRow, error: profileErr } = await db
       .from('sellerProfiles')
-      .select('paymentMethod, bankAccountName, bankAccountNumber, bankName, gcashNumber, mayaNumber, paymentInfoUpdatedAt')
+      .select('sellerProfileId, paymentMethod, bankAccountName, bankAccountNumber, bankName, gcashNumber, mayaNumber, paymentInfoUpdatedAt')
       .eq('userId', userId)
       .single();
 
-    if (error || !sellerProfile) {
+    if (profileErr || !profileRow) {
       return res.status(404).json({
         success: false,
         error: 'Seller profile not found'
       });
     }
 
-    res.json({
+    // Try new table first
+    const defaultPm = await getDefaultPayoutMethod(profileRow.sellerProfileId);
+    if (defaultPm) {
+      // Map to legacy shape for frontend compatibility
+      const mapped = {
+        paymentMethod: defaultPm.method,
+        bankAccountName: defaultPm.bankAccountName,
+        bankAccountNumber: defaultPm.bankAccountNumber,
+        bankName: defaultPm.bankName,
+        gcashNumber: defaultPm.method === 'gcash' ? defaultPm.phoneE164 : null,
+        mayaNumber: defaultPm.method === 'maya' ? defaultPm.phoneE164 : null,
+        paymentInfoUpdatedAt: defaultPm.updatedAt
+      };
+
+      return res.json({ success: true, data: mapped });
+    }
+
+    // Fallback to legacy fields
+    return res.json({
       success: true,
-      data: sellerProfile
+      data: {
+        paymentMethod: profileRow.paymentMethod,
+        bankAccountName: profileRow.bankAccountName,
+        bankAccountNumber: profileRow.bankAccountNumber,
+        bankName: profileRow.bankName,
+        gcashNumber: profileRow.gcashNumber,
+        mayaNumber: profileRow.mayaNumber,
+        paymentInfoUpdatedAt: profileRow.paymentInfoUpdatedAt
+      }
     });
 
   } catch (error) {

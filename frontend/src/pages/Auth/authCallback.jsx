@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
+import MuseoLoadingPage from "../../components/MuseoLoadingPage";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function AuthCallback() {
@@ -44,11 +45,6 @@ export default function AuthCallback() {
     finishLogin();
   }, [navigate]);
 
-  // Show a more informative message
-  return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <p>{message}</p>
-      {/* You can add a spinner or a "Click here" link here */}
-    </div>
-  );
+  // Show loading page while processing auth
+  return <MuseoLoadingPage />;
 }

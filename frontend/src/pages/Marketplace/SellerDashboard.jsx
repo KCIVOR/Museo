@@ -7,6 +7,7 @@ import AddAuctionProductModal from './AddAuctionProductModal';
 import EditProductModal from './EditProductModal';
 import EditAuctionModal from './EditAuctionModal';
 import ConfirmModal from '../Shared/ConfirmModal';
+import AlertModal from '../Shared/AlertModal.jsx';
 import ViewBidsModal from './components/ViewBidsModal.jsx';
 import { 
   SalesIcon, 
@@ -25,6 +26,9 @@ import SellerReturnsTab from './SellerReturnsTab.jsx';
 import '../../styles/main.css';
 import './css/sellerDashboard.css';
 import '../../styles/components/dropdowns.css';
+
+import PayoutMethodSettings from './components/PayoutMethodSettings.jsx';
+import PayoutsManager from './components/PayoutsManager.jsx';
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -102,6 +106,43 @@ export default function SellerDashboard() {
   // Actions modal state (replaces dropdown)
   const [actionsModalOpen, setActionsModalOpen] = useState(false);
   const [actionsAuction, setActionsAuction] = useState(null);
+  // Global alert modal state
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('Notice');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertOkText, setAlertOkText] = useState('OK');
+  const showAlert = (message, title = 'Notice', okText = 'OK') => {
+    setAlertMessage(message);
+    setAlertTitle(title);
+    setAlertOkText(okText);
+    setAlertOpen(true);
+  };
+  const handleAlertOk = () => setAlertOpen(false);
+  // Generic confirm modal state
+  const [genericConfirmOpen, setGenericConfirmOpen] = useState(false);
+  const [genericConfirmTitle, setGenericConfirmTitle] = useState('Confirm');
+  const [genericConfirmMessage, setGenericConfirmMessage] = useState('');
+  const [genericConfirmText, setGenericConfirmText] = useState('Confirm');
+  const [genericCancelText, setGenericCancelText] = useState('Cancel');
+  const [genericOnConfirm, setGenericOnConfirm] = useState(null);
+  const openConfirm = (message, onConfirm, { title = 'Confirm', confirmText = 'Confirm', cancelText = 'Cancel' } = {}) => {
+    setGenericConfirmTitle(title);
+    setGenericConfirmMessage(message);
+    setGenericConfirmText(confirmText);
+    setGenericCancelText(cancelText);
+    setGenericOnConfirm(() => onConfirm);
+    setGenericConfirmOpen(true);
+  };
+  const handleGenericConfirm = () => {
+    const cb = genericOnConfirm;
+    setGenericConfirmOpen(false);
+    setGenericOnConfirm(null);
+    cb && cb();
+  };
+  const handleGenericCancel = () => {
+    setGenericConfirmOpen(false);
+    setGenericOnConfirm(null);
+  };
   
   // Orders management state
   const [orders, setOrders] = useState([]);
@@ -167,7 +208,7 @@ export default function SellerDashboard() {
   const handleProductAdded = async (result) => {
     // Refresh products list
     await fetchProducts();
-    alert(result.message || 'Product added successfully!');
+    showAlert(result.message || 'Product added successfully!', 'Success');
   };
 
   // Load seller shipping preferences
@@ -201,9 +242,9 @@ export default function SellerDashboard() {
       }
       // Update local state from sanitized server response to keep UI in sync
       if (data?.data) setShippingPrefs(data.data);
-      alert('Shipping preferences saved');
+      showAlert('Shipping preferences saved', 'Success');
     } catch (e) {
-      alert(e.message || 'Failed to save shipping preferences');
+      showAlert(e.message || 'Failed to save shipping preferences', 'Error');
     } finally {
       setPrefsSaving(false);
     }
@@ -287,9 +328,9 @@ export default function SellerDashboard() {
       const result = await response.json();
       if (!result.success) throw new Error(result.error || 'Failed to activate auction');
       fetchSellerAuctions(auctionStatusFilter);
-      alert('Auction activated');
+      showAlert('Auction activated', 'Success');
     } catch (error) {
-      alert(error.message || 'Failed to activate auction');
+      showAlert(error.message || 'Failed to activate auction', 'Error');
     }
   };
 
@@ -302,8 +343,43 @@ export default function SellerDashboard() {
     setIsEditAuctionModalOpen(false);
     setSelectedAuction(null);
     await fetchSellerAuctions(auctionStatusFilter);
-    alert('Auction updated');
+    showAlert('Auction updated', 'Success');
   };
+
+  // Load products when switching to Products tab → Inventory view
+  useEffect(() => {
+    if (activeTab === 'products' && productView === 'inventory') {
+      fetchProducts();
+    }
+  }, [activeTab, productView]);
+
+  // Load auction items/auctions when switching to Products tab → Auctions view
+  useEffect(() => {
+    if (activeTab === 'products' && productView === 'auctions') {
+      if (auctionsTab === 'items') {
+        fetchAuctionItems();
+      } else if (auctionsTab === 'auctions') {
+        fetchSellerAuctions(auctionStatusFilter);
+      }
+    }
+  }, [activeTab, productView, auctionsTab, auctionStatusFilter]);
+
+  // Load orders when switching to Orders tab or when filter changes
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      const status = orderFilter === 'all' ? null : orderFilter;
+      fetchOrders(status);
+    }
+  }, [activeTab, orderFilter]);
+
+  // Load stats for summary cards whenever selectedPeriod changes (runs on mount as well)
+  useEffect(() => {
+    const period = selectedPeriod === 'daily' ? 'daily'
+                  : selectedPeriod === 'weekly' ? 'weekly'
+                  : selectedPeriod === 'monthly' ? 'monthly'
+                  : 'all';
+    fetchStats(period);
+  }, [selectedPeriod]);
 
   // Live countdown ticker when Auctions tab visible
   useEffect(() => {
@@ -317,6 +393,15 @@ export default function SellerDashboard() {
   useEffect(() => {
     if (activeTab === 'settings') {
       if (!prefsLoading) fetchShippingPrefs();
+      fetchPaymentMethod();
+    }
+  }, [activeTab]);
+
+  // Load payout info when Payouts tab is opened
+  useEffect(() => {
+    if (activeTab === 'payouts') {
+      fetchPayoutBalance();
+      fetchPaymentMethod();
     }
   }, [activeTab]);
 
@@ -359,9 +444,9 @@ export default function SellerDashboard() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) throw new Error(data.error || 'Pause endpoint not available');
       fetchSellerAuctions(auctionStatusFilter);
-      alert('Auction paused');
+      showAlert('Auction paused', 'Success');
     } catch (e) {
-      alert(e.message || 'Failed to pause auction');
+      showAlert(e.message || 'Failed to pause auction', 'Error');
     }
   };
 
@@ -372,22 +457,28 @@ export default function SellerDashboard() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) throw new Error(data.error || 'Resume endpoint not available');
       fetchSellerAuctions(auctionStatusFilter);
-      alert('Auction resumed');
+      showAlert('Auction resumed', 'Success');
     } catch (e) {
-      alert(e.message || 'Failed to resume auction');
+      showAlert(e.message || 'Failed to resume auction', 'Error');
     }
   };
 
   const cancelAuction = async (auctionId) => {
-    if (!confirm('Cancel this auction? This action cannot be undone.')) return;
+    openConfirm(
+      'Cancel this auction? This action cannot be undone.',
+      () => performCancelAuction(auctionId),
+      { title: 'Cancel Auction', confirmText: 'Yes, cancel', cancelText: 'No' }
+    );
+  };
+  const performCancelAuction = async (auctionId) => {
     try {
       const res = await fetch(`${API}/auctions/${auctionId}/cancel`, { method: 'PUT', credentials: 'include' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) throw new Error(data.error || 'Cancel endpoint not available');
       fetchSellerAuctions(auctionStatusFilter);
-      alert('Auction cancelled');
+      showAlert('Auction cancelled', 'Success');
     } catch (e) {
-      alert(e.message || 'Failed to cancel auction');
+      showAlert(e.message || 'Failed to cancel auction', 'Error');
     }
   };
 
@@ -514,30 +605,31 @@ export default function SellerDashboard() {
 
   // Mark order as processing
   const handleMarkAsProcessing = async (order) => {
-    if (!window.confirm('Mark this order as processing? This means you are preparing the items for shipment.')) {
-      return;
-    }
-
+    openConfirm(
+      'Mark this order as processing? This means you are preparing the items for shipment.',
+      () => performMarkAsProcessing(order),
+      { title: 'Mark as Processing', confirmText: 'Yes, mark', cancelText: 'No' }
+    );
+  };
+  const performMarkAsProcessing = async (order) => {
     try {
       const response = await fetch(`${API}/marketplace/orders/${order.orderId}/process`, {
         method: 'PUT',
         credentials: 'include'
       });
-
       const result = await response.json();
-
       if (result.success) {
-        alert('Order marked as processing!');
+        showAlert('Order marked as processing!', 'Success');
         fetchOrders(orderFilter === 'all' ? null : orderFilter);
         fetchStats(selectedPeriod === 'daily' ? 'daily' : 
                    selectedPeriod === 'weekly' ? 'weekly' : 
                    selectedPeriod === 'monthly' ? 'monthly' : 'all');
       } else {
-        alert(result.error || 'Failed to update order status');
+        showAlert(result.error || 'Failed to update order status', 'Error');
       }
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Failed to update order. Please try again.');
+      showAlert('Failed to update order. Please try again.', 'Error');
     }
   };
 
@@ -551,7 +643,7 @@ export default function SellerDashboard() {
   // Submit tracking information
   const submitTracking = async () => {
     if (!trackingNumber.trim()) {
-      alert('Please enter a tracking number');
+      showAlert('Please enter a tracking number', 'Error');
       return;
     }
 
@@ -570,7 +662,7 @@ export default function SellerDashboard() {
       const result = await response.json();
 
       if (result.success) {
-        alert('Order marked as shipped successfully!');
+        showAlert('Order marked as shipped successfully!', 'Success');
         setShippingModal(false);
         setSelectedOrder(null);
         setTrackingNumber('');
@@ -579,12 +671,17 @@ export default function SellerDashboard() {
                    selectedPeriod === 'weekly' ? 'weekly' : 
                    selectedPeriod === 'monthly' ? 'monthly' : 'all');
       } else {
-        alert(result.error || 'Failed to update order status');
+        showAlert(result.error || 'Failed to update order status', 'Error');
       }
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Failed to update order. Please try again.');
+      showAlert('Failed to update order. Please try again.', 'Error');
     }
+  };
+
+  // Handle add product
+  const handleAddProduct = () => {
+    setIsAddModalOpen(true);
   };
 
   // Handle add auction product
@@ -606,7 +703,7 @@ export default function SellerDashboard() {
     await fetchProducts();
     setIsEditModalOpen(false);
     setSelectedProduct(null);
-    alert('Product updated successfully!');
+    showAlert('Product updated successfully!', 'Success');
   };
 
   // Handle delete product
@@ -629,7 +726,7 @@ export default function SellerDashboard() {
 
       if (!response.ok) {
         // Show the error message from backend
-        alert(result.error || 'Failed to delete product');
+        showAlert(result.error || 'Failed to delete product', 'Error');
         setDeleteConfirmOpen(false);
         setProductToDelete(null);
         return;
@@ -638,11 +735,11 @@ export default function SellerDashboard() {
       if (result.success) {
         // Refresh products list
         await fetchProducts();
-        alert('Product deleted successfully!');
+        showAlert('Product deleted successfully!', 'Success');
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert(error.message || 'Failed to delete product. Please try again.');
+      showAlert(error.message || 'Failed to delete product. Please try again.', 'Error');
     } finally {
       setDeleteConfirmOpen(false);
       setProductToDelete(null);
@@ -1652,316 +1749,8 @@ export default function SellerDashboard() {
 
         {/* Payouts Tab */}
         {activeTab === 'payouts' && (
-          <div>
-            <div style={{
-              marginBottom: 'var(--museo-space-6)'
-            }}>
-              <h2 className="museo-heading" style={{
-                fontSize: 'var(--museo-text-2xl)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--museo-space-2)'
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="12" y1="1" x2="12" y2="23"/>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-                Payouts & Earnings
-              </h2>
-              <p style={{
-                color: 'var(--museo-text-secondary)',
-                marginTop: 'var(--museo-space-2)'
-              }}>Manage your earnings and withdraw funds</p>
-            </div>
-
-            {/* Balance Card */}
-            <div style={{
-              background: 'var(--museo-white)',
-              borderRadius: 'var(--museo-radius-lg)',
-              padding: 'var(--museo-space-6)',
-              marginBottom: 'var(--museo-space-4)',
-              border: '1px solid var(--museo-border)',
-              boxShadow: 'var(--museo-shadow-sm)'
-            }}>
-              <div>
-                <h3 className="museo-heading" style={{
-                  fontSize: 'var(--museo-text-lg)',
-                  marginBottom: 'var(--museo-space-3)'
-                }}>Available Balance</h3>
-                <p style={{
-                  fontSize: 'var(--museo-text-3xl)',
-                  fontWeight: 'var(--museo-font-bold)',
-                  color: 'var(--museo-primary)',
-                  margin: 'var(--museo-space-2) 0'
-                }}>₱{payoutBalance.available.toLocaleString()}</p>
-                {payoutBalance.pending > 0 && (
-                  <p style={{
-                    fontSize: 'var(--museo-text-sm)',
-                    color: 'var(--museo-text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--museo-space-1)',
-                    marginBottom: 'var(--museo-space-2)'
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    Pending (Escrow): ₱{payoutBalance.pending.toLocaleString()}
-                  </p>
-                )}
-                <small style={{
-                  display: 'block',
-                  color: 'var(--museo-text-secondary)',
-                  marginTop: 'var(--museo-space-2)'
-                }}>Minimum withdrawal: ₱{payoutBalance.minimumPayout}</small>
-                {!paymentMethod.method && (
-                  <small style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--museo-space-1)',
-                    color: 'var(--museo-warning)',
-                    marginTop: 'var(--museo-space-2)'
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/>
-                      <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    Set up payment method first
-                  </small>
-                )}
-              </div>
-              <div style={{
-                marginTop: 'var(--museo-space-4)',
-                display: 'flex',
-                justifyContent: 'center'
-              }}>
-                {payoutBalance.canWithdraw && paymentMethod.method ? (
-                  <button 
-                    className="btn btn-primary btn-sm"
-                    onClick={async () => {
-                      const paymentMethodName = paymentMethod.method === 'gcash' ? 
-                        `GCash (${paymentMethod.gcashNumber})` : 
-                        paymentMethod.method === 'bank' ?
-                        `${paymentMethod.bankName} (${paymentMethod.bankAccountNumber})` :
-                        paymentMethod.method;
-                        
-                      if (!confirm(`Withdraw ₱${payoutBalance.available.toLocaleString()} to your ${paymentMethodName}?`)) return;
-                      
-                      try {
-                        const response = await fetch(`${API}/payouts/withdraw`, {
-                          method: 'POST',
-                          credentials: 'include'
-                        });
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                          alert(`${result.message}\n\nAmount: ₱${result.data.amount}\nReference: ${result.data.reference}\nMethod: ${result.data.paymentMethod}`);
-                          // Refresh balances
-                          fetchPayoutBalance();
-                          fetchStats();
-                        } else {
-                          alert(`Error: ${result.error}`);
-                        }
-                      } catch (error) {
-                        alert('Error processing withdrawal: ' + error.message);
-                      }
-                    }}
-                  >
-                    Withdraw Funds
-                  </button>
-                ) : !paymentMethod.method ? (
-                  <button className="btn btn-secondary btn-sm" disabled>
-                    Set Up Payment Method First
-                  </button>
-                ) : (
-                  <button className="btn btn-secondary btn-sm" disabled>
-                    Minimum ₱{payoutBalance.minimumPayout} Required
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Earnings Breakdown */}
-            <div style={{
-              background: 'var(--museo-white)',
-              borderRadius: 'var(--museo-radius-lg)',
-              padding: 'var(--museo-space-4)',
-              marginBottom: 'var(--museo-space-4)',
-              border: '1px solid var(--museo-border)'
-            }}>
-              <h3 className="museo-heading" style={{
-                fontSize: 'var(--museo-text-lg)',
-                marginBottom: 'var(--museo-space-3)'
-              }}>Earnings Breakdown</h3>
-              <div style={{
-                display: 'grid',
-                gap: 'var(--museo-space-3)'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: 'var(--museo-space-2) 0'
-                }}>
-                  <span style={{color: 'var(--museo-text-secondary)'}}>Gross Sales</span>
-                  <span style={{
-                    fontWeight: 'var(--museo-font-semibold)',
-                    color: 'var(--museo-text-primary)'
-                  }}>₱{stats.earnings.gross.toLocaleString()}</span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: 'var(--museo-space-2) 0'
-                }}>
-                  <span style={{color: 'var(--museo-text-secondary)'}}>Platform Fee (4%)</span>
-                  <span style={{
-                    fontWeight: 'var(--museo-font-semibold)',
-                    color: 'var(--museo-error)'
-                  }}>-₱{stats.earnings.platformFee.toLocaleString()}</span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: 'var(--museo-space-2) 0',
-                  borderTop: '2px solid var(--museo-border)',
-                  paddingTop: 'var(--museo-space-3)'
-                }}>
-                  <span style={{
-                    fontWeight: 'var(--museo-font-semibold)',
-                    color: 'var(--museo-text-primary)'
-                  }}>Net Earnings</span>
-                  <span style={{
-                    fontWeight: 'var(--museo-font-bold)',
-                    fontSize: 'var(--museo-text-lg)',
-                    color: 'var(--museo-primary)'
-                  }}>₱{stats.earnings.net.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Payout Info */}
-            <div style={{
-              background: 'var(--museo-white)',
-              borderRadius: 'var(--museo-radius-lg)',
-              padding: 'var(--museo-space-4)',
-              border: '1px solid var(--museo-border)'
-            }}>
-              <h3 className="museo-heading" style={{
-                fontSize: 'var(--museo-text-lg)',
-                marginBottom: 'var(--museo-space-3)'
-              }}>How Payouts Work</h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: 'var(--museo-space-3)'
-              }}>
-                <div style={{
-                  padding: 'var(--museo-space-3)',
-                  background: 'var(--museo-bg-secondary)',
-                  borderRadius: 'var(--museo-radius-md)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    marginBottom: 'var(--museo-space-2)',
-                    color: 'var(--museo-primary)'
-                  }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                  </div>
-                  <h4 style={{
-                    fontSize: 'var(--museo-text-base)',
-                    fontWeight: 'var(--museo-font-semibold)',
-                    marginBottom: 'var(--museo-space-1)'
-                  }}>24-Hour Escrow</h4>
-                  <p style={{
-                    fontSize: 'var(--museo-text-sm)',
-                    color: 'var(--museo-text-secondary)'
-                  }}>Funds are held for 24 hours after delivery for buyer protection</p>
-                </div>
-                <div style={{
-                  padding: 'var(--museo-space-3)',
-                  background: 'var(--museo-bg-secondary)',
-                  borderRadius: 'var(--museo-radius-md)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    marginBottom: 'var(--museo-space-2)',
-                    color: 'var(--museo-primary)'
-                  }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                      <line x1="1" y1="10" x2="23" y2="10"/>
-                    </svg>
-                  </div>
-                  <h4 style={{
-                    fontSize: 'var(--museo-text-base)',
-                    fontWeight: 'var(--museo-font-semibold)',
-                    marginBottom: 'var(--museo-space-1)'
-                  }}>GCash Payout</h4>
-                  <p style={{
-                    fontSize: 'var(--museo-text-sm)',
-                    color: 'var(--museo-text-secondary)'
-                  }}>Receive money directly to your GCash account</p>
-                </div>
-                <div style={{
-                  padding: 'var(--museo-space-3)',
-                  background: 'var(--museo-bg-secondary)',
-                  borderRadius: 'var(--museo-radius-md)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    marginBottom: 'var(--museo-space-2)',
-                    color: 'var(--museo-primary)'
-                  }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="20" x2="18" y2="10"/>
-                      <line x1="12" y1="20" x2="12" y2="4"/>
-                      <line x1="6" y1="20" x2="6" y2="14"/>
-                    </svg>
-                  </div>
-                  <h4 style={{
-                    fontSize: 'var(--museo-text-base)',
-                    fontWeight: 'var(--museo-font-semibold)',
-                    marginBottom: 'var(--museo-space-1)'
-                  }}>4% Platform Fee</h4>
-                  <p style={{
-                    fontSize: 'var(--museo-text-sm)',
-                    color: 'var(--museo-text-secondary)'
-                  }}>Low fees to help artists earn more</p>
-                </div>
-                <div style={{
-                  padding: 'var(--museo-space-3)',
-                  background: 'var(--museo-bg-secondary)',
-                  borderRadius: 'var(--museo-radius-md)',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    marginBottom: 'var(--museo-space-2)',
-                    color: 'var(--museo-primary)'
-                  }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                    </svg>
-                  </div>
-                  <h4 style={{
-                    fontSize: 'var(--museo-text-base)',
-                    fontWeight: 'var(--museo-font-semibold)',
-                    marginBottom: 'var(--museo-space-1)'
-                  }}>Fast Processing</h4>
-                  <p style={{
-                    fontSize: 'var(--museo-text-sm)',
-                    color: 'var(--museo-text-secondary)'
-                  }}>Withdrawals processed within minutes</p>
-                </div>
-              </div>
-            </div>
+          <div className="museo-payouts-section" style={{marginTop: 'var(--museo-space-6)'}}>
+            <PayoutsManager apiBase={API} />
           </div>
         )}
 
@@ -2019,23 +1808,13 @@ export default function SellerDashboard() {
               )}
             </div>
 
-            {/* Payment Settings placeholder (unchanged) */}
+            {/* Payment Settings */}
             <div>
               <div style={{ marginBottom: 'var(--museo-space-4)' }}>
                 <h2 className="museo-heading" style={{ fontSize: 'var(--museo-text-2xl)' }}>Payment Settings</h2>
-                <p style={{ color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)' }}>Configure how you receive payouts</p>
+                <p style={{ color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)' }}>Connect your e‑wallet or bank account for payouts</p>
               </div>
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: 'var(--museo-space-8)', background: 'var(--museo-white)', borderRadius: 'var(--museo-radius-lg)', textAlign: 'center', border: '1px solid var(--museo-border)'
-              }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--museo-text-muted)', marginBottom: 'var(--museo-space-3)' }}>
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="16" x2="12" y2="12"/>
-                  <line x1="12" y1="8" x2="12.01" y2="8"/>
-                </svg>
-                <p style={{ fontSize: 'var(--museo-text-lg)', color: 'var(--museo-text-secondary)' }}>Payment settings coming soon</p>
-              </div>
+              <PayoutMethodSettings apiBase={API} />
             </div>
           </div>
         )}
@@ -2179,6 +1958,37 @@ export default function SellerDashboard() {
         </MuseoModal>
       )}
 
+      {/* Global Alert Modal */}
+      <AlertModal
+        open={alertOpen}
+        title={alertTitle}
+        message={alertMessage}
+        okText={alertOkText}
+        onOk={handleAlertOk}
+      />
+
+      {/* Generic Confirm Modal */}
+      <ConfirmModal
+        open={genericConfirmOpen}
+        title={genericConfirmTitle}
+        message={genericConfirmMessage}
+        confirmText={genericConfirmText}
+        cancelText={genericCancelText}
+        onConfirm={handleGenericConfirm}
+        onCancel={handleGenericCancel}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Delete Product"
+        message={productToDelete ? `Delete "${productToDelete.title}"? This action cannot be undone.` : 'Delete this product? This action cannot be undone.'}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteProduct}
+        onCancel={cancelDelete}
+      />
+
       {/* Add Product Modal */}
       <AddProductModal
         isOpen={isAddModalOpen}
@@ -2212,15 +2022,6 @@ export default function SellerDashboard() {
         }}
         onSuccess={handleEditSuccess}
         product={selectedProduct}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        open={deleteConfirmOpen}
-        title="Delete Product"
-        message={productToDelete ? 
-          `Are you sure you want to delete "${productToDelete.title}"? This action cannot be undone.` : 
-          'Are you sure you want to delete this product?'}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={confirmDeleteProduct}

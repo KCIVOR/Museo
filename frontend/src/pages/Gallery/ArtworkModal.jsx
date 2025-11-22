@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import ConfirmModal from '../Shared/ConfirmModal';
+import AlertModal from '../Shared/AlertModal';
 import EditGalleryArtworkModal from './EditGalleryArtworkModal';
 import './css/ArtworkModal.css';
 
 const API = import.meta.env.VITE_API_BASE;
 
-const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
+const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate, onArtworkEdited, onArtworkDeleted }) => {
   const { userData } = useUser();
   // Get role and currentUser from UserContext instead of fetching
   const role = userData?.role || null;
@@ -34,6 +35,9 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [openCommentMenus, setOpenCommentMenus] = useState({});
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [reportAlert, setReportAlert] = useState({ show: false, title: '', message: '' });
   
   // Comment pagination state
   const [commentPage, setCommentPage] = useState(1);
@@ -241,42 +245,50 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
     setEditingCommentText("");
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Delete this comment?')) return;
+  const handleDeleteComment = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteCommentConfirm(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
     
     try {
-      const res = await fetch(`${API}/gallery/deleteComment/${commentId}`, {
+      const res = await fetch(`${API}/gallery/deleteComment/${commentToDelete}`, {
         method: 'DELETE',
         credentials: 'include'
       });
       
       if (res.ok) {
-        setComments(prev => prev.filter(c => c.id !== commentId));
+        setComments(prev => prev.filter(c => c.id !== commentToDelete));
         setOpenCommentMenus({});
       }
     } catch (error) {
       console.error('Failed to delete comment:', error);
+    } finally {
+      setShowDeleteCommentConfirm(false);
+      setCommentToDelete(null);
     }
   };
 
   const handleReportComment = async (commentId) => {
-    const reason = window.prompt('Why are you reporting this comment?');
-    if (!reason) return;
-    
     try {
       const res = await fetch(`${API}/gallery/reportComment`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commentId, reason })
+        body: JSON.stringify({ commentId, reason: 'Reported by user' })
       });
       
       if (res.ok) {
-        alert('Comment reported successfully');
+        setReportAlert({ show: true, title: 'Report Submitted', message: 'Comment reported successfully' });
         setOpenCommentMenus({});
+      } else {
+        setReportAlert({ show: true, title: 'Report Failed', message: 'Failed to report comment' });
       }
     } catch (error) {
       console.error('Failed to report comment:', error);
+      setReportAlert({ show: true, title: 'Report Failed', message: 'Failed to report comment' });
     }
   };
 
@@ -444,14 +456,13 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
     if (onStatsUpdate) {
       onStatsUpdate();
     }
+    // Push edits up so Gallery list reflects latest fields (title/images)
+    if (onArtworkEdited && updatedArtwork) {
+      onArtworkEdited(updatedArtwork);
+    }
     
     // Close the artwork modal and refresh the page to show updated data
     onClose();
-    
-    // Force a page refresh to ensure all components show updated data
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   };
 
   // Handle delete artwork (show confirmation)
@@ -485,20 +496,20 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
         
         // Close the artwork modal
         onClose();
-        
-        // Force a page refresh to ensure all components show updated data
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+
+        // Inform parent to remove this artwork from the list immediately
+        if (onArtworkDeleted) {
+          onArtworkDeleted(artworkId);
+        }
       } else {
         setShowConfirmDelete(false);
         setArtworkToDelete(null);
-        alert('Failed to delete artwork: ' + data.error);
+        setReportAlert({ show: true, title: 'Delete Failed', message: 'Failed to delete artwork: ' + (data?.error || 'Please try again.') });
       }
     } catch (error) {
       setShowConfirmDelete(false);
       setArtworkToDelete(null);
-      alert('Error deleting artwork. Please try again.');
+      setReportAlert({ show: true, title: 'Delete Failed', message: 'Error deleting artwork. Please try again.' });
     }
   };
 
@@ -980,13 +991,36 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
           onArtworkUpdated={handleArtworkUpdated}
         />
 
-        {/* Confirm Delete Modal */}
+        {/* Confirm Delete Artwork Modal */}
         <ConfirmModal
           open={showConfirmDelete}
           title="Delete Artwork"
           message={`Are you sure you want to delete "${artworkToDelete?.title || 'this artwork'}"? This action cannot be undone.`}
           onConfirm={confirmDeleteArtwork}
           onCancel={cancelDeleteArtwork}
+        />
+
+        {/* Delete Comment Confirmation Modal */}
+        <ConfirmModal
+          open={showDeleteCommentConfirm}
+          title="Delete Comment"
+          message="Are you sure you want to delete this comment? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDeleteComment}
+          onCancel={() => {
+            setShowDeleteCommentConfirm(false);
+            setCommentToDelete(null);
+          }}
+        />
+
+        {/* Report/Info Alert Modal */}
+        <AlertModal
+          open={reportAlert.show}
+          title={reportAlert.title || 'Notice'}
+          message={reportAlert.message}
+          okText="OK"
+          onOk={() => setReportAlert({ show: false, title: '', message: '' })}
         />
       </div>
     </div>
