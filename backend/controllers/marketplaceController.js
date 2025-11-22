@@ -97,87 +97,15 @@ const validateAuth = (req) => {
 // Helper: Create test marketplace items (TESTING ONLY - REMOVE IN PRODUCTION)
 export const createTestItems = async (req, res) => {
   try {
-    // Check authentication
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    const userId = req.user.id;
-
-    const testItems = [
-      {
-        userId: userId,
-        title: "Sunset Over Mountains",
-        description: "A breathtaking landscape painting capturing the golden hour",
-        price: 2500,
-        quantity: 3,
-        status: "active",
-        medium: "Oil on Canvas",
-        dimensions: "24x36 inches",
-        is_original: true,
-        is_available: true,
-        is_featured: false
-      },
-      {
-        userId: userId,
-        title: "Abstract Emotions",
-        description: "Modern abstract art expressing deep feelings",
-        price: 1800,
-        quantity: 5,
-        status: "active",
-        medium: "Acrylic",
-        dimensions: "18x24 inches",
-        is_original: true,
-        is_available: true,
-        is_featured: false
-      },
-      {
-        userId: userId,
-        title: "City Lights at Night",
-        description: "Urban landscape with vibrant city lights",
-        price: 3200,
-        quantity: 2,
-        status: "active",
-        medium: "Digital Print",
-        dimensions: "30x40 inches",
-        is_original: false,
-        is_available: true,
-        is_featured: true
-      }
-    ];
-
-    const { data, error } = await db
-      .from('marketplace_items')
-      .insert(testItems)
-      .select();
-
-    if (error) {
-      console.error('Error creating test items:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
-    }
-
-    res.status(201).json({ 
-      success: true, 
-      message: `Created ${data.length} test items`,
-      data: data
-    });
-
+    return res.status(200).json({ success: true, message: 'Test endpoint disabled' });
   } catch (error) {
     console.error('Error in createTestItems:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
   }
 };
 
 // Create/Upload marketplace item
 export const createMarketplaceItem = async (req, res) => {
+  
   try {
     const userId = req.user?.id;
     
@@ -441,7 +369,8 @@ export const getMarketplaceItem = async (req, res) => {
           province,
           region,
           isActive,
-          isSuspended
+          isSuspended,
+          shippingPreferences
         )
       `)
       .eq('marketItemId', id)
@@ -1130,6 +1059,8 @@ export const buyNowOrder = async (req, res) => {
       quantity = 1, 
       shippingFee,
       shippingMethod,
+      courier,
+      courierService,
       orderNotes,
       shippingAddress,
       contactInfo
@@ -1148,7 +1079,7 @@ export const buyNowOrder = async (req, res) => {
       .from('marketplace_items')
       .select(`
         marketItemId, title, price, quantity, status, is_available, sellerProfileId, userId,
-        sellerProfiles ( sellerProfileId, isActive, isSuspended, shopName )
+        sellerProfiles ( sellerProfileId, isActive, isSuspended, shopName, shippingPreferences )
       `)
       .eq('marketItemId', marketItemId)
       .single();
@@ -1188,6 +1119,26 @@ export const buyNowOrder = async (req, res) => {
       }
     }
 
+    // Enforce seller shipping preferences (if configured)
+    try {
+      const prefs = item?.sellerProfiles?.shippingPreferences;
+      const requestedCourier = courier || null;
+      const requestedService = (courierService || shippingMethod || 'standard');
+      if (prefs && requestedCourier) {
+        const allowed = prefs?.couriers?.[requestedCourier]?.[requestedService] === true;
+        if (!allowed) {
+          const available = [];
+          const c = prefs.couriers || {};
+          Object.entries(c).forEach(([brand, services]) => {
+            Object.entries(services || {}).forEach(([svc, enabled]) => {
+              if (enabled) available.push(`${brand} ${svc}`);
+            });
+          });
+          return res.status(400).json({ success: false, error: `Seller does not support ${requestedCourier} ${requestedService}. Supported: ${available.join(', ') || 'None'}` });
+        }
+      }
+    } catch (_) { /* ignore malformed prefs */ }
+
     const shipping = parseFloat(shippingFee) > 0 ? parseFloat(shippingFee) : 0;
     const subtotal = item.price * qty;
     const totalAmount = subtotal + shipping;
@@ -1207,9 +1158,9 @@ export const buyNowOrder = async (req, res) => {
       platformFee: platformFee,
       shippingCost: shipping,
       totalAmount: totalAmount,
-      shippingMethod: shippingMethod || 'standard', // DB column name per schema screenshot
+      shippingMethod: shippingMethod || courierService || 'standard', // keep compatibility
       orderNotes: orderNotes || 'None',
-      shippingAddress: shippingAddress || {},
+      shippingAddress: shippingAddress ? { ...shippingAddress, courier: courier || null, courierService: courierService || (shippingMethod || 'standard') } : { courier: courier || null, courierService: courierService || (shippingMethod || 'standard') },
       contactInfo: contactInfo || {},
       createdAt: now,
       updatedAt: now,
@@ -1270,7 +1221,9 @@ export const buyNowOrder = async (req, res) => {
           userId, 
           sellerProfileId: item.sellerProfileId, 
           shippingFee: shipping, 
-          shippingMethod: shippingMethod || 'standard',
+          shippingMethod: shippingMethod || courierService || 'standard',
+          courier: courier || null,
+          courierService: courierService || null,
           customerInfo: contactInfo || {}
         }
       });
@@ -3801,6 +3754,113 @@ export const deleteAddress = async (req, res) => {
       success: false, 
       error: 'Internal server error' 
     });
+  }
+};
+
+// ========================================
+// SELLER SHIPPING PREFERENCES
+// ========================================
+
+// GET /marketplace/seller/shipping-prefs
+export const getSellerShippingPrefs = async (req, res) => {
+  try {
+    const auth = validateAuth(req);
+    if (!auth.valid) {
+      return res.status(401).json({ success: false, message: auth.error });
+    }
+    const userId = auth.userId;
+
+    const { data: sellerProfile, error } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId, isActive, isSuspended, shippingPreferences')
+      .eq('userId', userId)
+      .single();
+
+    if (error || !sellerProfile || !sellerProfile.isActive || sellerProfile.isSuspended) {
+      return res.status(403).json({ success: false, error: 'You must be an active seller to manage shipping preferences' });
+    }
+
+    const defaults = {
+      couriers: {
+        'J&T Express': { standard: false, express: false },
+        'LBC': { standard: false, express: false }
+      }
+    };
+
+    // Sanitize legacy/stale keys and normalize to canonical brands
+    const raw = sellerProfile.shippingPreferences || {};
+    const rawCouriers = (raw && typeof raw === 'object' && raw.couriers && typeof raw.couriers === 'object') ? raw.couriers : {};
+    const jnt = rawCouriers['J&T Express'] 
+             || rawCouriers['J\u0026T Express'] 
+             || rawCouriers['J & T Express'] 
+             || rawCouriers['JNT'] 
+             || rawCouriers['JNT Express'] 
+             || {};
+    const lbc = rawCouriers['LBC'] 
+             || rawCouriers['LBC Express'] 
+             || rawCouriers['Lbc'] 
+             || {};
+
+    const sanitized = {
+      couriers: {
+        'J&T Express': { standard: Boolean(jnt.standard), express: Boolean(jnt.express) },
+        'LBC': { standard: Boolean(lbc.standard), express: Boolean(lbc.express) }
+      }
+    };
+
+    return res.json({ success: true, data: sanitized });
+  } catch (err) {
+    console.error('Error in getSellerShippingPrefs:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+// PUT /marketplace/seller/shipping-prefs
+export const updateSellerShippingPrefs = async (req, res) => {
+  try {
+    const auth = validateAuth(req);
+    if (!auth.valid) {
+      return res.status(401).json({ success: false, message: auth.error });
+    }
+    const userId = auth.userId;
+
+    const { data: sellerProfile, error: profileError } = await db
+      .from('sellerProfiles')
+      .select('sellerProfileId, isActive, isSuspended')
+      .eq('userId', userId)
+      .single();
+
+    if (profileError || !sellerProfile || !sellerProfile.isActive || sellerProfile.isSuspended) {
+      return res.status(403).json({ success: false, error: 'You must be an active seller to manage shipping preferences' });
+    }
+
+    const payloadCouriers = req.body?.couriers || {};
+    const allowedCouriers = ['J&T Express', 'LBC'];
+    const sanitized = { couriers: {} };
+    for (const brand of allowedCouriers) {
+      const svc = payloadCouriers[brand] || {};
+      sanitized.couriers[brand] = {
+        standard: Boolean(svc.standard),
+        express: Boolean(svc.express)
+      };
+    }
+
+    const { data: updated, error: updateError } = await db
+      .from('sellerProfiles')
+      .update({ shippingPreferences: sanitized, updatedAt: new Date().toISOString() })
+      .eq('sellerProfileId', sellerProfile.sellerProfileId)
+      .select('sellerProfileId, shippingPreferences')
+      .single();
+
+    if (updateError) {
+      console.error('Error updating shipping preferences:', updateError);
+      return res.status(500).json({ success: false, error: updateError.message });
+    }
+
+    return res.json({ success: true, message: 'Shipping preferences updated', data: updated.shippingPreferences });
+  } catch (err) {
+    console.error('Error in updateSellerShippingPrefs:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 

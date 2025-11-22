@@ -41,6 +41,153 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// ✅ Change Email (requires authenticated user)
+export const changeEmail = async (req, res) => {
+  try {
+    const { newEmail, currentPassword } = req.body;
+
+    if (!newEmail || !newEmail.trim()) {
+      return res.status(400).json({ message: "New email is required" });
+    }
+
+    // Get token from Authorization header (preferred), cookie, or body
+    const bearer = req.headers?.authorization || "";
+    const tokenFromHeader = bearer.startsWith("Bearer ") ? bearer.substring(7) : null;
+    const tokenFromCookie = req.cookies?.access_token || null;
+    const tokenFromBody = req.body?.access_token || null;
+    const accessToken = tokenFromHeader || tokenFromCookie || tokenFromBody;
+
+    if (!accessToken) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Resolve current user
+    let userEmail = null;
+    let userId = null;
+    const { data: userRes, error: getUserErr } = await supabase.auth.getUser(accessToken);
+    if (!getUserErr && userRes?.user) {
+      userId = userRes.user.id;
+      userEmail = userRes.user.email;
+    } else {
+      // Fallback decode JWT for user id
+      try {
+        const base64Url = accessToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+        userId = payload?.sub || null;
+      } catch {}
+    }
+
+    // Optional: verify current password if provided
+    if (currentPassword && userEmail) {
+      try {
+        const anonClient = createAuthClient();
+        const { error: signInErr } = await anonClient.auth.signInWithPassword({ email: userEmail, password: currentPassword });
+        if (signInErr) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+      } catch (e) {
+        // do not block if sign-in library fails unexpectedly
+      }
+    }
+
+    // Use user-scoped client so Supabase sends verification to new email
+    const authClient = createAuthClient(accessToken);
+    const { error: updateErr } = await authClient.auth.updateUser({
+      email: newEmail,
+      options: {
+        emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`
+      }
+    });
+
+    if (updateErr) {
+      return res.status(400).json({ message: updateErr.message || "Failed to start email change" });
+    }
+
+    return res.json({
+      message: "Verification sent to the new email. Please confirm to complete the change.",
+      success: true
+    });
+  } catch (error) {
+    console.error("changeEmail error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ✅ Change Password (requires authenticated user)
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long" });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    // Get token
+    const bearer = req.headers?.authorization || "";
+    const tokenFromHeader = bearer.startsWith("Bearer ") ? bearer.substring(7) : null;
+    const tokenFromCookie = req.cookies?.access_token || null;
+    const tokenFromBody = req.body?.access_token || null;
+    const accessToken = tokenFromHeader || tokenFromCookie || tokenFromBody;
+    if (!accessToken) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Resolve user email/id
+    let userEmail = null;
+    let userId = null;
+    const { data: userRes, error: getUserErr } = await supabase.auth.getUser(accessToken);
+    if (!getUserErr && userRes?.user) {
+      userId = userRes.user.id;
+      userEmail = userRes.user.email;
+    } else {
+      try {
+        const base64Url = accessToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+        userId = payload?.sub || null;
+      } catch {}
+    }
+
+    // Require currentPassword verification
+    if (!userEmail) {
+      return res.status(401).json({ message: "Unable to resolve user for verification" });
+    }
+    const anonClient = createAuthClient();
+    const { error: signInErr } = await anonClient.auth.signInWithPassword({ email: userEmail, password: currentPassword });
+    if (signInErr) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Try user-scoped update first
+    const userClient = createAuthClient(accessToken);
+    const { error: updErr } = await userClient.auth.updateUser({ password: newPassword });
+    if (updErr && updErr.message?.toLowerCase().includes('auth session')) {
+      // Fallback to admin update without session
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+      const { error: adminErr } = await supabase.auth.admin.updateUserById(userId, { password: newPassword });
+      if (adminErr) {
+        return res.status(400).json({ message: adminErr.message || "Failed to change password" });
+      }
+    } else if (updErr) {
+      return res.status(400).json({ message: updErr.message || "Failed to change password" });
+    }
+
+    return res.json({ message: "Password updated successfully", success: true });
+  } catch (error) {
+    console.error("changePassword error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -66,6 +213,113 @@ export const registerUser = async (req, res) => {
   } catch (error) {
     console.error("Server error:", error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// ✅ Request Password Reset
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate email
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Rate limiting check (optional - can be enhanced with Redis)
+    // For now, we'll just proceed with the request
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/reset-password`,
+    });
+
+    if (error) {
+      console.error("Password reset error:", error.message);
+      return res.status(400).json({ message: error.message || "Failed to send reset email" });
+    }
+
+    // ✅ Log password reset attempt (optional - for audit trail)
+    console.log(`✅ Password reset email sent to: ${email}`);
+
+    return res.json({
+      message: "Password reset link sent to your email. Check your inbox!",
+      success: true
+    });
+  } catch (error) {
+    console.error("Server error:", error);
+    return res.status(500).json({ message: "An error occurred. Please try again." });
+  }
+};
+
+// ✅ Reset Password (called after user clicks email link)
+export const resetPassword = async (req, res) => {
+  try {
+    const { password, confirmPassword } = req.body;
+
+    // Validate inputs
+    if (!password || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    // ✅ Accept access token from Authorization header (preferred),
+    //    then fall back to cookies or body if provided.
+    const bearer = req.headers?.authorization || "";
+    const tokenFromHeader = bearer.startsWith("Bearer ") ? bearer.substring(7) : null;
+    const tokenFromCookie = req.cookies?.access_token || null;
+    const tokenFromBody = req.body?.access_token || null; // not recommended, but supported
+    const accessToken = tokenFromHeader || tokenFromCookie || tokenFromBody;
+
+    if (!accessToken) {
+      console.error("❌ No access token provided (header/cookie/body)");
+      return res.status(401).json({ message: "Invalid or expired reset link" });
+    }
+
+    console.log("✅ Access token provided, resolving user and updating password via admin API...");
+
+    // Resolve user from access token (server-side pattern)
+    let userId = null;
+    const { data: userRes, error: getUserErr } = await supabase.auth.getUser(accessToken);
+    if (!getUserErr && userRes?.user?.id) {
+      userId = userRes.user.id;
+    } else {
+      // Fallback: decode JWT to extract sub (user id)
+      try {
+        const base64Url = accessToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+        userId = payload?.sub || null;
+        if (!userId) throw new Error("sub missing in JWT payload");
+        console.log("ℹ️ User ID resolved from JWT payload");
+      } catch (e) {
+        console.error("❌ Failed to resolve user from token:", getUserErr?.message || e?.message);
+        return res.status(401).json({ message: "Invalid or expired reset link" });
+      }
+    }
+
+    // Update password using Admin API (no session required)
+    const { error: adminUpdateErr } = await supabase.auth.admin.updateUserById(userId, { password });
+    if (adminUpdateErr) {
+      console.error("❌ Password update error (admin):", adminUpdateErr.message);
+      return res.status(400).json({ message: adminUpdateErr.message || "Failed to reset password" });
+    }
+
+    console.log("✅ Password reset successfully");
+
+    return res.json({
+      message: "Password reset successfully!",
+      success: true
+    });
+  } catch (error) {
+    console.error("❌ Server error:", error);
+    return res.status(500).json({ message: "An error occurred. Please try again." });
   }
 };
 

@@ -144,3 +144,12 @@
 .museo-badge--info.museo-badge--interactive:hover {
   color: var(--museo-primary);
 }
+
+/* ===== POSITION HELPERS ===== */
+/* Place badge at top-right corner within relatively positioned container */
+.museo-badge--corner {
+  position: absolute;
+  top: var(--museo-space-2);
+  right: var(--museo-space-2);
+  z-index: 2;
+}

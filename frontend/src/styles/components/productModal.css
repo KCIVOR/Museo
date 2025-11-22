@@ -20,6 +20,36 @@
   animation: fadeIn 0.2s ease;
 }
 
+/* ===== MY BIDS TAB ===== */
+.pdm-my-bids-list {
+  display: grid;
+  gap: var(--museo-space-3);
+}
+
+.pdm-my-bid-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--museo-space-3);
+  padding: var(--museo-space-3) 0;
+  border-bottom: 1px dashed var(--museo-border);
+}
+
+.pdm-my-bid-row:last-child {
+  border-bottom: none;
+}
+
+.pdm-my-bid-amount {
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  font-size: var(--museo-text-base);
+}
+
+.pdm-my-bid-time {
+  color: var(--museo-text-muted);
+  font-size: var(--museo-text-sm);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -778,6 +808,34 @@
 .pdm-bid-note svg {
   fill: var(--museo-warning);
   flex-shrink: 0;
+}
+
+/* ===== COUNTDOWN (Separated) ===== */
+.pdm-countdown-card {
+  margin-bottom: var(--museo-space-3);
+}
+
+.pdm-countdown-card .museo-card__body {
+  padding: var(--museo-space-4) var(--museo-space-5);
+}
+
+.pdm-countdown {
+  display: flex;
+  align-items: center;
+  gap: var(--museo-space-3);
+}
+
+.pdm-countdown-value {
+  font-size: var(--museo-text-lg);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+  .pdm-countdown-value {
+    font-size: var(--museo-text-base);
+  }
 }
 
 /* ===== RESPONSIVE ===== */

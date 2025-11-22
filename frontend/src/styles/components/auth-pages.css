@@ -1,0 +1,295 @@
+/* ========================================
+   🔐 MUSEO AUTH PAGES
+   Login, Register, Reset Password styling
+   ======================================== */
+
+/* ===== AUTH CONTAINER ===== */
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%);
+  padding: var(--museo-space-5);
+}
+
+/* ===== AUTH CARD ===== */
+
+.auth-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 1000px;
+  width: 100%;
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-2xl);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.auth-card--single {
+  grid-template-columns: 1fr;
+}
+
+/* ===== AUTH FORM SECTION ===== */
+
+.auth-form-section {
+  padding: var(--museo-space-12) var(--museo-space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-6);
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: var(--museo-space-5);
+}
+
+.auth-logo img {
+  height: 60px;
+}
+
+.auth-title {
+  font-family: var(--museo-font-display);
+  font-size: var(--museo-text-3xl);
+  font-weight: var(--museo-font-bold);
+  color: var(--museo-primary);
+  text-align: center;
+  margin: 0 0 var(--museo-space-2) 0;
+}
+
+.auth-subtitle {
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  text-align: center;
+  margin-bottom: var(--museo-space-6);
+}
+
+/* ===== AUTH FORM ===== */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-5);
+}
+
+.auth-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-2);
+}
+
+.auth-form-field .museo-label {
+  font-weight: 600;
+  color: var(--museo-text-primary);
+}
+
+/* ===== AUTH LINK ===== */
+
+.auth-link {
+  text-align: right;
+  font-size: var(--museo-text-sm);
+  color: var(--museo-accent);
+  cursor: pointer;
+  transition: opacity var(--museo-duration-fast) var(--museo-ease-out);
+  margin-top: calc(var(--museo-space-2) * -1);
+}
+
+.auth-link:hover {
+  opacity: 0.8;
+}
+
+/* ===== AUTH DIVIDER ===== */
+
+.auth-divider {
+  text-align: center;
+  color: var(--museo-text-muted);
+  font-size: var(--museo-text-sm);
+  margin: var(--museo-space-2) 0;
+}
+
+/* ===== AUTH MESSAGE ===== */
+
+.auth-message {
+  padding: var(--museo-space-3);
+  border-radius: var(--museo-radius-md);
+  font-size: var(--museo-text-sm);
+  text-align: center;
+}
+
+.auth-message--error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.auth-message--success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+/* ===== AUTH IMAGE SECTION ===== */
+
+.auth-image-section {
+  background: center / cover;
+  min-height: 600px;
+}
+
+/* ===== AUTH FOOTER ===== */
+
+.auth-footer {
+  text-align: center;
+  font-size: var(--museo-text-sm);
+  color: var(--museo-text-secondary);
+  margin-top: var(--museo-space-3);
+}
+
+.auth-footer-link {
+  color: var(--museo-accent);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.auth-footer-link:hover {
+  opacity: 0.8;
+}
+
+/* ===== FORGOT PASSWORD MODAL ===== */
+
+.forgot-password-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--museo-space-4);
+}
+
+.forgot-password-modal--hidden {
+  display: none;
+}
+
+.forgot-password-modal-content {
+  background: var(--museo-white);
+  border-radius: var(--museo-radius-lg);
+  padding: var(--museo-space-8);
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.forgot-password-modal-close {
+  position: absolute;
+  top: var(--museo-space-4);
+  right: var(--museo-space-4);
+  background: transparent;
+  border: none;
+  font-size: var(--museo-text-2xl);
+  cursor: pointer;
+  color: var(--museo-text-muted);
+  transition: color var(--museo-duration-fast) var(--museo-ease-out);
+}
+
+.forgot-password-modal-close:hover {
+  color: var(--museo-text-primary);
+}
+
+.forgot-password-modal-title {
+  font-family: var(--museo-font-display);
+  font-size: var(--museo-text-2xl);
+  font-weight: 600;
+  color: var(--museo-primary);
+  margin-bottom: var(--museo-space-3);
+  text-align: center;
+}
+
+.forgot-password-modal-subtitle {
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  text-align: center;
+  margin-bottom: var(--museo-space-6);
+}
+
+/* ===== SUCCESS STATE ===== */
+
+.forgot-password-success {
+  text-align: center;
+}
+
+.forgot-password-success-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--museo-space-4);
+  font-size: var(--museo-text-3xl);
+}
+
+.forgot-password-success-title {
+  font-family: var(--museo-font-display);
+  font-size: var(--museo-text-2xl);
+  font-weight: 600;
+  color: var(--museo-primary);
+  margin-bottom: var(--museo-space-3);
+}
+
+.forgot-password-success-message {
+  color: var(--museo-text-secondary);
+  font-size: var(--museo-text-sm);
+  line-height: var(--museo-leading-relaxed);
+}
+
+.forgot-password-success-note {
+  color: var(--museo-text-muted);
+  font-size: var(--museo-text-xs);
+  margin-top: var(--museo-space-3);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-form-section {
+    padding: var(--museo-space-8) var(--museo-space-6);
+  }
+
+  .auth-image-section {
+    display: none;
+  }
+
+  .auth-title {
+    font-size: var(--museo-text-2xl);
+  }
+
+  .forgot-password-modal-content {
+    padding: var(--museo-space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-form-section {
+    padding: var(--museo-space-6) var(--museo-space-4);
+    gap: var(--museo-space-4);
+  }
+
+  .auth-title {
+    font-size: var(--museo-text-xl);
+  }
+
+  .forgot-password-modal-content {
+    padding: var(--museo-space-4);
+    max-width: 100%;
+  }
+}

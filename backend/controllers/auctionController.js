@@ -73,6 +73,30 @@ export const getAuctionDetails = async (req, res) => {
   }
 };
 
+// GET /api/auctions/:auctionId/my-bids - Full bid history for the authenticated user
+export const getMyBids = async (req, res) => {
+  try {
+    const { auctionId } = req.params;
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (!auctionId) return res.status(400).json({ success: false, error: 'Missing auctionId' });
+
+    const { data, error } = await db
+      .from('auction_bids')
+      .select('bidId, amount, created_at')
+      .eq('auctionId', auctionId)
+      .eq('bidderUserId', userId)
+      .eq('isWithdrawn', false)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+
+    return res.json({ success: true, data: data || [] });
+  } catch (error) {
+    console.error('Error fetching my bids:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // PUT /api/auctions/:auctionId/cancel - Cancel an auction
 // Rules:
 // - Admin can cancel if not ended/settled/cancelled

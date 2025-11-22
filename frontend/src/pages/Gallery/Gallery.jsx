@@ -1164,7 +1164,7 @@ export default function Gallery() {
 
       <div className="museo-page museo-page--gallery">
         <div className="museo-feed">
-          {role === 'admin' && (
+          {/*role === 'admin' && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
               <button
                 className={`btn btn-secondary btn-sm ${isRecomputingTopArts ? 'loading disabled' : ''}`}
@@ -1175,8 +1175,8 @@ export default function Gallery() {
                 {isRecomputingTopArts ? 'Recomputing…' : 'Recompute Top Arts'}
               </button>
             </div>
-          )}
-          
+          )*/}
+      
           {/* Top Arts of the Week - New API-based system */}
           {!isLoadingTopArts && topArtsWeekly.length > 0 && (
           <div className="museo-top-arts-container">

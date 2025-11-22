@@ -17,6 +17,7 @@ import {
   forceExpireAndRollover,
   updateAuction,
   getAuctionBids,
+  getMyBids,
   pauseAuction,
   resumeAuction,
   cancelAuction
@@ -166,6 +167,16 @@ router.get(
     { source: 'params', allowUnknown: false }
   ),
   getAuctionBids
+);
+
+// GET /api/auctions/:auctionId/my-bids - Authenticated user's bid history
+router.get(
+  '/:auctionId/my-bids',
+  validateRequest(
+    { params: { auctionId: { type: 'string', required: true, min: 1 } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  getMyBids
 );
 
 // PUT /api/auctions/:auctionId - Update auction scheduling/pricing (seller/admin)

@@ -16,6 +16,9 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
   const [selectedTab, setSelectedTab] = useState("details")
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [nowTs, setNowTs] = useState(Date.now());
+  const [myBids, setMyBids] = useState([]);
+  const [loadingMyBids, setLoadingMyBids] = useState(false);
+  const [errorMyBids, setErrorMyBids] = useState('');
   // Images from API (primary_image + images[]) with de-duplication
   const images = item ? (() => {
     const arr = [
@@ -67,6 +70,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
   const reservePrice = item ? (item.reservePrice ?? item.reserve_price ?? null) : null;
   const allowBidUpdates = item ? (item.allowBidUpdates ?? item.allow_bid_updates ?? false) : false;
   const singleBidOnly = item ? (item.singleBidOnly ?? item.single_bid_only ?? false) : false;
+  const auctionId = item?.auctionId ?? item?.id ?? item?.auction_id ?? item?.auctionID ?? item?.auctionid;
 
   // Debug: log incoming item and derived auction fields
   useEffect(() => {
@@ -82,6 +86,46 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       });
     }
   }, [isOpen, item]);
+
+  // Fetch my bid history for this auction
+  const fetchMyBids = async () => {
+    if (!auctionId) return;
+    try {
+      setLoadingMyBids(true);
+      setErrorMyBids('');
+      const API = import.meta.env.VITE_API_BASE;
+      let res = await fetch(`${API}/auctions/${auctionId}/my-bids`, { credentials: 'include' });
+      let data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        // Fallback to single latest bid endpoint if list isn't available
+        const res2 = await fetch(`${API}/auctions/${auctionId}/my-bid`, { credentials: 'include' });
+        const data2 = await res2.json().catch(() => ({}));
+        if (!res2.ok || data2.success === false || (!Array.isArray(data2.data) && !data2.data)) {
+          setErrorMyBids('Bid history endpoint is not available yet.');
+          setMyBids([]);
+          return;
+        }
+        const arr = Array.isArray(data2.data) ? data2.data : [data2.data];
+        const sorted = [...arr].sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
+        setMyBids(sorted);
+        return;
+      }
+      const arr = Array.isArray(data.data) ? data.data : [];
+      const sorted = [...arr].sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt));
+      setMyBids(sorted);
+    } catch (e) {
+      setErrorMyBids(e?.message || 'Failed to load bid history');
+    } finally {
+      setLoadingMyBids(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (selectedTab !== 'my-bids') return;
+    fetchMyBids();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, selectedTab, auctionId]);
 
   if (!isOpen || !item) return null;
 
@@ -240,6 +284,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                   </button>
                 </>
               )}
+
             </div>
 
             {images.length > 1 && (
@@ -301,6 +346,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
             <div className="pdm-tabs">
               <button className={`pdm-tab ${selectedTab === 'details' ? 'active' : ''}`} onClick={() => setSelectedTab('details')}>Details</button>
               <button className={`pdm-tab ${selectedTab === 'auction-info' ? 'active' : ''}`} onClick={() => setSelectedTab('auction-info')}>Auction Info</button>
+              <button className={`pdm-tab ${selectedTab === 'my-bids' ? 'active' : ''}`} onClick={() => setSelectedTab('my-bids')}>My Bids</button>
               <button className={`pdm-tab ${selectedTab === 'shipping' ? 'active' : ''}`} onClick={() => setSelectedTab('shipping')}>Shipping</button>
             </div>
 
@@ -366,10 +412,43 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     <strong>Auction Ends</strong>
                     <span>{endsAt ? new Date(endsAt).toLocaleString() : 'N/A'}</span>
                   </div>
-                  <div className="pdm-ship-option">
-                    <strong>Single Bid Only</strong>
-                    <span>{singleBidOnly ? '✅ Yes' : '❌ No'}</span>
-                  </div>
+                  {/*
+                    <div className="pdm-ship-option">
+                      <strong>Single Bid Only</strong>
+                      <span>{singleBidOnly ? '✅ Yes' : '❌ No'}</span>
+                    </div>
+                  */}
+                  
+                </div>
+              )}
+
+              {selectedTab === 'my-bids' && (
+                <div className="pdm-my-bids">
+                  {loadingMyBids && <div className="museo-message">Loading your bids…</div>}
+                  {errorMyBids && !loadingMyBids && (
+                    <div className="museo-error-message">{errorMyBids}</div>
+                  )}
+                  {!loadingMyBids && !errorMyBids && (
+                    myBids.length > 0 ? (
+                      <div className="museo-card">
+                        <div className="museo-card__body">
+                          <div className="pdm-my-bids-list">
+                            {myBids.map((b, i) => (
+                              <div key={b.bidId || b.id || i} className="pdm-my-bid-row">
+                                <div className="pdm-my-bid-amount">₱{Number(b.amount || 0).toLocaleString()}</div>
+                                <div className="pdm-my-bid-time">{new Date(b.created_at || b.createdAt).toLocaleString()}</div>
+                                {i === 0 && (
+                                  <span className="museo-badge museo-badge--outline museo-badge--sm">Latest</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="museo-form-helper">You haven't placed any bids for this auction yet.</div>
+                    )
+                  )}
                 </div>
               )}
 
@@ -416,10 +495,13 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     <strong>Express Shipping</strong>
                     <span>1-3 business days, insured</span>
                   </div>
-                  <div className="pdm-ship-option">
-                    <strong>International</strong>
-                    <span>Worldwide delivery available</span>
-                  </div>
+                  
+                  {/*
+                    <div className="pdm-ship-option">
+                      <strong>International</strong>
+                      <span>Worldwide delivery available</span>
+                    </div>
+                  */}
                 </div>
               )}
             </div>
@@ -427,6 +509,17 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
             {/* Auction pricing + bid (match ProductDetailModal styles) */}
             <div className="pdm-purchase">
               <div className="pdm-auction">
+                {(startsAt || endsAt) && timerLabel && (
+                  <div className="museo-card pdm-countdown-card">
+                    <div className="museo-card__body">
+                      <div className="pdm-countdown">
+                        <span className="museo-badge museo-badge--primary museo-badge--sm museo-badge--dot">Time</span>
+                        <span className="pdm-countdown-value">{timerLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pdm-auction-info">
                   {Number.isFinite(startPriceVal) && startPriceVal > 0 && (
                     <div className="pdm-auction-stat">
@@ -444,12 +537,6 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     <div className="pdm-auction-stat">
                       <span className="pdm-stat-label">Ends</span>
                       <span className="pdm-stat-value">{new Date(endsAt).toLocaleString()}</span>
-                    </div>
-                  )}
-                  {(startsAt || endsAt) && timerLabel && (
-                    <div className="pdm-auction-stat">
-                      <span className="pdm-stat-label">Time</span>
-                      <span className="pdm-stat-value">{timerLabel}</span>
                     </div>
                   )}
                 </div>

@@ -580,9 +580,23 @@ export default function MyProfile() {
             {/* Overlay for better text readability */}
             <div className="mp__cover-overlay" />
             
-            {/* Role Badge */}
-            <div className="mp__role-badge">
-              {role === 'artist' ? '🎨 Artist' : role === 'admin' ? '👑 Admin' : '👤 User'}
+            {/* Role Badge (SVG, no emoji) */}
+            <div className="mp__role-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {role === 'artist' ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.485 2.015 4.5 4.5 4.5h.75a1.75 1.75 0 1 0 3.5 0h1.5a3.75 3.75 0 1 0 0-7.5h-.75C10.093 8 9 6.907 9 5.5S10.093 3 11.5 3H12z"/>
+                </svg>
+              ) : role === 'admin' ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2l3 6 6 .9-4.5 4.2L17.8 20 12 16.9 6.2 20l1.3-6.9L3 8.9 9 8z"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              )}
+              <span>{role === 'artist' ? 'Artist' : role === 'admin' ? 'Admin' : 'User'}</span>
             </div>
 
             {/* Edit Button */}
@@ -651,8 +665,20 @@ export default function MyProfile() {
                 </div>
               </div>
               <div className="mp__stat-item">
-                <div className="mp__stat-number">
-                  {role === 'artist' ? '🎨' : role === 'admin' ? '👑' : '⭐'}
+                <div className="mp__stat-number" aria-hidden="true">
+                  {role === 'artist' ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.485 2.015 4.5 4.5 4.5h.75a1.75 1.75 0 1 0 3.5 0h1.5a3.75 3.75 0 1 0 0-7.5h-.75C10.093 8 9 6.907 9 5.5S10.093 3 11.5 3H12z"/>
+                    </svg>
+                  ) : role === 'admin' ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l3 6 6 .9-4.5 4.2L17.8 20 12 16.9 6.2 20l1.3-6.9L3 8.9 9 8z"/>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                  )}
                 </div>
                 <div className="mp__stat-label">
                   {role === 'artist' ? 'Artist' : role === 'admin' ? 'Admin' : 'Member'}
@@ -713,6 +739,11 @@ export default function MyProfile() {
                   onModalClose={handleModalClose}
                   fallbackImage={FALLBACK_COVER}
                   currentUser={{ name: fullName, avatar }}
+                  emptyStateIcon={(
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.485 2.015 4.5 4.5 4.5h.75a1.75 1.75 0 1 0 3.5 0h1.5a3.75 3.75 0 1 0 0-7.5h-.75C10.093 8 9 6.907 9 5.5S10.093 3 11.5 3H12z"/>
+                    </svg>
+                  )}
                 />
               </div>
             </div>
@@ -726,7 +757,11 @@ export default function MyProfile() {
                   title=""
                   emptyStateTitle="No featured works"
                   emptyStateMessage="Promote your best artwork here!"
-                  emptyStateIcon="⭐"
+                  emptyStateIcon={(
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                  )}
                   showActions={false}
                 />
               </div>
@@ -738,8 +773,10 @@ export default function MyProfile() {
         {role === "user" && (
           <div className="museo-card">
             <div className="museo-body" style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: '0.7' }}>
-                🎨
+              <div style={{ marginBottom: '16px', opacity: 0.7, display: 'flex', justifyContent: 'center' }}>
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.485 2.015 4.5 4.5 4.5h.75a1.75 1.75 0 1 0 3.5 0h1.5a3.75 3.75 0 1 0 0-7.5h-.75C10.093 8 9 6.907 9 5.5S10.093 3 11.5 3H12z"/>
+                </svg>
               </div>
               <h3 className="museo-title" style={{ fontSize: '22px', color: 'var(--museo-primary)', marginBottom: '8px' }}>
                 Welcome to the Gallery!

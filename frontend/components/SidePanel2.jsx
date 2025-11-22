@@ -84,8 +84,8 @@ export default function SidePanel2({
                 className="museo-card museo-artwork-card"
                 onClick={() => navigate('/gallery')}
               >
-                {/* Rank badge */}
-                <div className="museo-rank-badge">
+                {/* Rank badge - themed */}
+                <div className="museo-badge museo-badge--primary museo-badge--sm museo-badge--corner">
                   Top {index + 1}
                 </div>
                 

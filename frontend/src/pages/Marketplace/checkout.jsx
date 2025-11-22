@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
-import AddressModal from "../../components/AddressModal";
+import AddressPickerModal from "../../components/AddressPickerModal.jsx";
 import "../../styles/main.css";
 import "./css/checkout.css";
-
-const API = import.meta.env.VITE_API_BASE;
 import { buyNow } from "../../api/orders";
+const API = import.meta.env.VITE_API_BASE;
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -16,11 +15,12 @@ export default function Checkout() {
   // State management (single-item Buy Now)
   const [cartItems, setCartItems] = useState([]); // will hold one item for Buy Now
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [selectedShipping, setSelectedShipping] = useState("standard");
+  const [selectedShipping, setSelectedShipping] = useState("jnt-standard");
   // Payment method removed - Xendit handles this
   const [orderNotes, setOrderNotes] = useState("None"); // Default to 'None' for NOT NULL constraint
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [error, setError] = useState("");
   
   // Form states
   const [addressForm, setAddressForm] = useState({
@@ -35,6 +35,8 @@ export default function Checkout() {
   });
   
   const [savedAddresses, setSavedAddresses] = useState([]);
+  const [availableShippingOptions, setAvailableShippingOptions] = useState([]);
+  const [selectedCourierBrand, setSelectedCourierBrand] = useState('');
 
   // Load selected Buy Now item (from router state)
   const fetchSelectedItem = async (marketItemId, quantity) => {
@@ -45,16 +47,34 @@ export default function Checkout() {
         throw new Error(result.error || 'Item not found');
       }
       const item = result.data;
-      setCartItems([{
+      setCartItems([{ 
         id: marketItemId,
         marketItemId: marketItemId,
         title: item.title,
         price: item.price,
         quantity: Number(quantity) || 1,
-        image: item.images?.[0] || '/assets/default-art.jpg',
+        image: (Array.isArray(item.images) ? item.images[0] : item.images) || '/assets/default-art.jpg',
         artist: item.sellerProfiles?.shopName || 'Unknown Shop',
         sellerProfileId: item.sellerProfileId
       }]);
+
+      // Filter shipping options using seller's shippingPreferences if provided
+      const prefsContainer = Array.isArray(item?.sellerProfiles) ? item?.sellerProfiles[0] : item?.sellerProfiles;
+      const prefs = prefsContainer?.shippingPreferences;
+      const filteredOpts = prefs && prefs.couriers ? shippingOptions.filter(opt => {
+        const courierBrand = opt.courier;
+        const svc = opt.courierService;
+        return prefs.couriers?.[courierBrand]?.[svc] === true;
+      }) : shippingOptions;
+      setAvailableShippingOptions(filteredOpts);
+      // Ensure selected option is valid
+      const stillValid = filteredOpts.some(o => o.id === selectedShipping);
+      if (!stillValid) {
+        setSelectedShipping(filteredOpts[0]?.id || selectedShipping);
+      }
+      // Default brand selection
+      const firstBrand = filteredOpts[0]?.courier || '';
+      setSelectedCourierBrand(firstBrand);
     } catch (err) {
       console.error('Error loading item:', err);
       navigate('/marketplace');
@@ -106,12 +126,14 @@ export default function Checkout() {
     fetchAddresses();
   }, [userData]);
   
-  // Shipping options
+  // Shipping options (courier-branded)
   const shippingOptions = [
     {
-      id: "standard",
-      name: "Standard Shipping",
-      description: "5-7 business days",
+      id: "jnt-standard",
+      courier: "J&T Express",
+      courierService: "standard",
+      name: "J&T Express — Standard",
+      description: "5–7 business days",
       price: 100,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -123,10 +145,28 @@ export default function Checkout() {
       )
     },
     {
-      id: "express",
-      name: "Express Shipping",
-      description: "2-3 business days",
-      price: 250,
+      id: "jnt-express",
+      courier: "J&T Express",
+      courierService: "express",
+      name: "J&T Express — Express",
+      description: "2–3 business days",
+      price: 180,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="1" y="3" width="15" height="13"/>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      )
+    },
+    {
+      id: "lbc-standard",
+      courier: "LBC",
+      courierService: "standard",
+      name: "LBC — Standard",
+      description: "4–6 business days",
+      price: 120,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -134,18 +174,52 @@ export default function Checkout() {
       )
     },
     {
-      id: "priority",
-      name: "Priority Shipping",
-      description: "Next business day",
-      price: 500,
+      id: "lbc-express",
+      courier: "LBC",
+      courierService: "express",
+      name: "LBC — Express",
+      description: "2–3 business days",
+      price: 250,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
         </svg>
       )
     }
   ];
+  
+  // Effective options (respect seller preferences when available)
+  const effectiveShippingOptions = availableShippingOptions.length ? availableShippingOptions : shippingOptions;
+
+  // Group by courier brand for categorized UI
+  const groupedByCourier = useMemo(() => {
+    const map = {};
+    for (const opt of effectiveShippingOptions) {
+      if (!map[opt.courier]) map[opt.courier] = [];
+      map[opt.courier].push(opt);
+    }
+    // Stable sort services per brand by price ascending then service
+    Object.values(map).forEach(list => list.sort((a, b) => (a.price - b.price) || a.courierService.localeCompare(b.courierService)));
+    return map;
+  }, [effectiveShippingOptions]);
+
+  // Keep selectedShipping consistent with selected brand
+  useEffect(() => {
+    const brandOptions = groupedByCourier[selectedCourierBrand] || [];
+    if (brandOptions.length === 0) {
+      // pick the first available brand if current is empty
+      const firstBrand = Object.keys(groupedByCourier)[0];
+      if (firstBrand) {
+        setSelectedCourierBrand(firstBrand);
+        setSelectedShipping(groupedByCourier[firstBrand][0]?.id || selectedShipping);
+      }
+      return;
+    }
+    const exists = brandOptions.some(o => o.id === selectedShipping);
+    if (!exists && brandOptions[0]) {
+      setSelectedShipping(brandOptions[0].id);
+    }
+  }, [selectedCourierBrand, groupedByCourier]);
   // Payment methods removed - Xendit handles payment selection
   
   // Calculations
@@ -154,7 +228,7 @@ export default function Checkout() {
   };
   
   const getShippingCost = () => {
-    const option = shippingOptions.find(opt => opt.id === selectedShipping);
+    const option = effectiveShippingOptions.find(opt => opt.id === selectedShipping);
     return option ? option.price : 0;
   };
   
@@ -177,14 +251,14 @@ export default function Checkout() {
   };
   
   const handlePlaceOrder = async () => {
+    setError("");
     if (!selectedAddress) {
       alert("Please select a delivery address");
       return;
     }
     if (!cartItems.length) return;
-    
-    setIsProcessing(true);
     try {
+      setIsProcessing(true);
       const item = cartItems[0];
       const shippingFee = getShippingCost();
       const address = savedAddresses.find(addr => addr.userAddressId === selectedAddress);
@@ -194,14 +268,16 @@ export default function Checkout() {
       }
       
       // Get shipping method details
-      const shippingMethod = shippingOptions.find(opt => opt.id === selectedShipping);
+      const shippingMethod = effectiveShippingOptions.find(opt => opt.id === selectedShipping);
       
       // Build order data with shipping and contact information
       const orderData = {
         marketItemId: item.marketItemId,
         quantity: item.quantity,
         shippingFee,
-        shippingMethod: selectedShipping,
+        shippingMethod: shippingMethod?.courierService || 'standard',
+        courier: shippingMethod?.courier || null,
+        courierService: shippingMethod?.courierService || null,
         orderNotes,
         shippingAddress: {
           fullName: address.fullName,
@@ -267,54 +343,49 @@ export default function Checkout() {
               
               <div className="address-options">
                 {savedAddresses.length > 0 ? (
-                  savedAddresses.map(addr => (
-                    <div 
-                      key={addr.userAddressId}
-                      className={`address-card ${selectedAddress === addr.userAddressId ? 'selected' : ''}`}
-                      onClick={() => setSelectedAddress(addr.userAddressId)}
-                    >
-                      <div className="address-radio">
-                        {selectedAddress === addr.userAddressId && (
+                  (() => {
+                    const addr = savedAddresses.find(a => a.userAddressId === selectedAddress) || savedAddresses[0];
+                    return (
+                      <div className={`address-card selected`}>
+                        <div className="address-radio">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                           </svg>
-                        )}
+                        </div>
+                        <div className="address-details">
+                          <div className="address-name">
+                            {addr.fullName}
+                            {addr.isDefault && <span className="default-badge">Default</span>}
+                          </div>
+                          <div className="address-phone">{addr.phoneNumber}</div>
+                          <div className="address-text">
+                            {addr.addressLine1}
+                            {addr.addressLine2 && `, ${addr.addressLine2}`}
+                          </div>
+                          <div className="address-location">
+                            {addr.barangayName}, {addr.cityMunicipalityName}, {addr.provinceName} {addr.postalCode}
+                          </div>
+                          {addr.landmark && <div className="address-landmark">Near: {addr.landmark}</div>}
+                        </div>
                       </div>
-                      <div className="address-details">
-                        <div className="address-name">
-                          {addr.fullName}
-                          {addr.isDefault && <span className="default-badge">Default</span>}
-                        </div>
-                        <div className="address-phone">{addr.phoneNumber}</div>
-                        <div className="address-text">
-                          {addr.addressLine1}
-                          {addr.addressLine2 && `, ${addr.addressLine2}`}
-                        </div>
-                        <div className="address-location">
-                          {addr.barangayName}, {addr.cityMunicipalityName}, {addr.provinceName} {addr.postalCode}
-                        </div>
-                        {addr.landmark && <div className="address-landmark">Near: {addr.landmark}</div>}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })()
                 ) : (
                   <div className="empty-state">
                     No addresses saved yet. Please add an address to continue.
                   </div>
                 )}
-                
-                <button 
-                  className="btn btn-secondary"
-                  type="button"
-                  onClick={() => setShowAddressModal(true)}
-                  style={{ width: '100%', marginTop: '16px' }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  Add New Address
-                </button>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <button 
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => setShowAddressPicker(true)}
+                    style={{ flex: 1 }}
+                  >
+                    Manage Addresses
+                  </button>
+                </div>
               </div>
             </section>
             
@@ -331,27 +402,47 @@ export default function Checkout() {
               </div>
               
               <div className="shipping-options">
-                {shippingOptions.map(option => (
-                  <div 
-                    key={option.id}
-                    className={`shipping-card ${selectedShipping === option.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedShipping(option.id)}
-                  >
-                    <div className="shipping-radio">
-                      {selectedShipping === option.id && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                      )}
-                    </div>
-                    <div className="shipping-icon">{option.icon}</div>
-                    <div className="shipping-details">
-                      <div className="shipping-name">{option.name}</div>
-                      <div className="shipping-desc">{option.description}</div>
-                    </div>
-                    <div className="shipping-price">₱{option.price}</div>
-                  </div>
-                ))}
+                {effectiveShippingOptions.length === 0 ? (
+                  <div className="museo-message" style={{ padding: '12px' }}>Seller has no supported shipping methods configured for this item. Please contact the seller.</div>
+                ) : (
+                  Object.entries(groupedByCourier).map(([brand, options]) => {
+                    const brandSelected = selectedCourierBrand === brand;
+                    const current = options.find(o => o.id === selectedShipping) || options[0];
+                    return (
+                      <div key={brand} className={`shipping-card ${brandSelected ? 'selected' : ''}`} onClick={() => setSelectedCourierBrand(brand)}>
+                        <div className="shipping-radio">
+                          {brandSelected && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="shipping-icon">{current?.icon}</div>
+                        <div className="shipping-details" style={{ flex: 1 }}>
+                          <div className="shipping-name">{brand}</div>
+                          {brandSelected ? (
+                            <div style={{ marginTop: 6, display: 'flex', gap: 12, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                              <select
+                                className="museo-select"
+                                value={selectedShipping && options.some(o => o.id === selectedShipping) ? selectedShipping : current?.id}
+                                onChange={(e) => setSelectedShipping(e.target.value)}
+                                style={{ minWidth: 220 }}
+                              >
+                                {options.map(o => (
+                                  <option key={o.id} value={o.id}>{`${o.courierService.charAt(0).toUpperCase() + o.courierService.slice(1)} — ₱${o.price}`}</option>
+                                ))}
+                              </select>
+                              <div className="shipping-desc">{current?.description}</div>
+                            </div>
+                          ) : (
+                            <div className="shipping-desc">Select to choose service</div>
+                          )}
+                        </div>
+                        <div className="shipping-price">₱{current?.price}</div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </section>
             
@@ -417,11 +508,16 @@ export default function Checkout() {
                   <span className="total-amount">₱{getTotal().toFixed(2)}</span>
                 </div>
               </div>
+              {error && (
+                <div className="auth-message error" style={{ marginTop: '12px' }}>
+                  {error}
+                </div>
+              )}
               
               <button 
                 className={`btn btn-primary ${isProcessing ? 'processing' : ''}`}
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || cartItems.length === 0 || !selectedAddress}
+                disabled={isProcessing || cartItems.length === 0 || !selectedAddress || effectiveShippingOptions.length === 0}
                 style={{ width: '100%' }}
               >
                 {isProcessing ? (
@@ -438,12 +534,21 @@ export default function Checkout() {
         </div>
       </div>
       
-      {/* Address Modal */}
-      <AddressModal 
-        isOpen={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        onAddressSaved={handleAddressSaved}
-      />
+      {/* Address Picker */}
+      {showAddressPicker && (
+        <AddressPickerModal
+          isOpen={showAddressPicker}
+          onClose={() => setShowAddressPicker(false)}
+          initialSelectedId={selectedAddress}
+          onSelect={(sel) => {
+            const id = typeof sel === 'string' ? sel : sel?.userAddressId;
+            if (id) setSelectedAddress(id);
+            setShowAddressPicker(false);
+            // Refresh to reflect any address changes
+            fetchAddresses();
+          }}
+        />
+      )}
     </div>
   );
 }

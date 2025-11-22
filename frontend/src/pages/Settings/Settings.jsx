@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabase/supabaseClient';
 import SellerApplicationModal from '../../components/SellerApplicationModal';
 import './Settings.css';
 
@@ -13,6 +14,21 @@ export default function Settings() {
   const [showSellerModal, setShowSellerModal] = useState(false);
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
+  // Security forms state
+  const [showPwdForm, setShowPwdForm] = useState(false);
+  const [pwdCurrent, setPwdCurrent] = useState("");
+  const [pwdNew, setPwdNew] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState("");
+  const [pwdMsgType, setPwdMsgType] = useState("");
+
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
+  const [emailMsgType, setEmailMsgType] = useState("");
 
   // Fetch user activities
   useEffect(() => {
@@ -36,6 +52,105 @@ export default function Settings() {
       console.error('Error fetching activities:', error);
     } finally {
       setLoadingActivities(false);
+    }
+  };
+
+  // Handlers: Change Password
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPwdMsg("");
+
+    if (!pwdCurrent) {
+      setPwdMsgType("error");
+      setPwdMsg("Current password is required");
+      return;
+    }
+    if (!pwdNew || !pwdConfirm) {
+      setPwdMsgType("error");
+      setPwdMsg("Please fill in all password fields");
+      return;
+    }
+    if (pwdNew.length < 8) {
+      setPwdMsgType("error");
+      setPwdMsg("Password must be at least 8 characters long");
+      return;
+    }
+    if (pwdNew !== pwdConfirm) {
+      setPwdMsgType("error");
+      setPwdMsg("Passwords do not match");
+      return;
+    }
+
+    try {
+      setPwdLoading(true);
+      const API = import.meta.env.VITE_API_BASE;
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token || null;
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${API}/auth/change-password`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword: pwdCurrent, newPassword: pwdNew, confirmPassword: pwdConfirm, access_token: token })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPwdMsgType("error");
+        setPwdMsg(data.message || 'Failed to change password');
+      } else {
+        setPwdMsgType("success");
+        setPwdMsg('Password updated successfully');
+        setPwdCurrent(""); setPwdNew(""); setPwdConfirm("");
+        setShowPwdForm(false);
+      }
+    } catch (err) {
+      setPwdMsgType("error");
+      setPwdMsg('An error occurred. Please try again.');
+    } finally {
+      setPwdLoading(false);
+    }
+  };
+
+  // Handlers: Change Email
+  const handleChangeEmailSubmit = async (e) => {
+    e.preventDefault();
+    setEmailMsg("");
+    if (!newEmail) {
+      setEmailMsgType("error");
+      setEmailMsg('Please enter a new email');
+      return;
+    }
+    try {
+      setEmailLoading(true);
+      const API = import.meta.env.VITE_API_BASE;
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token || null;
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${API}/auth/change-email`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ newEmail, currentPassword: emailCurrentPassword, access_token: token })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailMsgType('error');
+        setEmailMsg(data.message || 'Failed to start email change');
+      } else {
+        setEmailMsgType('success');
+        setEmailMsg(data.message || 'Verification sent to the new email');
+        setShowEmailForm(false);
+      }
+    } catch (err) {
+      setEmailMsgType('error');
+      setEmailMsg('An error occurred. Please try again.');
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -177,16 +292,113 @@ export default function Settings() {
                   <label className="museo-label">Password</label>
                   <p className="settings-description">Change your account password</p>
                 </div>
-                <button className="btn btn-secondary">Change Password</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowPwdForm(v => !v)}>
+                  {showPwdForm ? 'Cancel' : 'Change Password'}
+                </button>
               </div>
+              {showPwdForm && (
+                <form onSubmit={handleChangePasswordSubmit} className="museo-form" style={{ marginTop: '12px', display:'grid', gap:'12px' }}>
+                  <div className="museo-form-field">
+                    <label className="museo-label">Current Password</label>
+                    <input
+                      type="password"
+                      className="museo-input"
+                      value={pwdCurrent}
+                      onChange={e => setPwdCurrent(e.target.value)}
+                      placeholder="Enter current password"
+                      required
+                      disabled={pwdLoading}
+                    />
+                  </div>
+                  <div className="museo-form-field">
+                    <label className="museo-label">New Password</label>
+                    <input
+                      type="password"
+                      className="museo-input"
+                      value={pwdNew}
+                      onChange={e => setPwdNew(e.target.value)}
+                      placeholder="At least 8 characters"
+                      required
+                      disabled={pwdLoading}
+                    />
+                  </div>
+                  <div className="museo-form-field">
+                    <label className="museo-label">Confirm New Password</label>
+                    <input
+                      type="password"
+                      className="museo-input"
+                      value={pwdConfirm}
+                      onChange={e => setPwdConfirm(e.target.value)}
+                      placeholder="Re-enter new password"
+                      required
+                      disabled={pwdLoading}
+                    />
+                  </div>
+                  {pwdMsg && (
+                    <div className={pwdMsgType === 'error' ? 'auth-message auth-message--error' : 'auth-message auth-message--success'}>
+                      {pwdMsg}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={pwdLoading}>
+                      {pwdLoading ? 'Saving...' : 'Save Password'}
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowPwdForm(false)} disabled={pwdLoading}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
               
               <div className="settings-item">
                 <div className="settings-item-info">
                   <label className="museo-label">Email</label>
                   <p className="settings-description">{userData?.email || 'user@example.com'}</p>
                 </div>
-                <button className="btn btn-secondary">Update Email</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowEmailForm(v => !v)}>
+                  {showEmailForm ? 'Cancel' : 'Update Email'}
+                </button>
               </div>
+              {showEmailForm && (
+                <form onSubmit={handleChangeEmailSubmit} className="museo-form" style={{ marginTop: '12px', display:'grid', gap:'12px' }}>
+                  <div className="museo-form-field">
+                    <label className="museo-label">New Email</label>
+                    <input
+                      type="email"
+                      className="museo-input"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      disabled={emailLoading}
+                    />
+                  </div>
+                  <div className="museo-form-field">
+                    <label className="museo-label">Current Password (optional)</label>
+                    <input
+                      type="password"
+                      className="museo-input"
+                      value={emailCurrentPassword}
+                      onChange={e => setEmailCurrentPassword(e.target.value)}
+                      placeholder="For extra verification"
+                      disabled={emailLoading}
+                    />
+                  </div>
+                  {emailMsg && (
+                    <div className={emailMsgType === 'error' ? 'auth-message auth-message--error' : 'auth-message auth-message--success'}>
+                      {emailMsg}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={emailLoading}>
+                      {emailLoading ? 'Sending...' : 'Send Verification'}
+                    </button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowEmailForm(false)} disabled={emailLoading}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             {/* Account Management */}
@@ -197,7 +409,7 @@ export default function Settings() {
                   <label className="museo-label">Delete Account</label>
                   <p className="settings-description">Permanently delete your account and all data</p>
                 </div>
-                <button className="btn btn-danger">Delete Account</button>
+                <button className="btn btn-danger btn-sm">Delete Account</button>
               </div>
             </div>
           </div>
@@ -260,7 +472,7 @@ export default function Settings() {
                   <h4>{userData?.fullName || userData?.username || 'User Name'}</h4>
                   <p>@{userData?.username || 'username'}</p>
                   <button 
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm"
                     onClick={() => navigate('/MyProfile')}
                   >
                     Edit Profile
@@ -313,7 +525,7 @@ export default function Settings() {
                     </div>
                     <p className="seller-status-description">You are registered as a seller on Museo Marketplace</p>
                     <button 
-                      className="btn btn-primary"
+                      className="btn btn-primary btn-sm"
                       onClick={() => navigate('/marketplace/seller-dashboard')}
                     >
                       Go to Seller Dashboard
@@ -369,7 +581,7 @@ export default function Settings() {
                       <label className="museo-label">Payout Method</label>
                       <p className="settings-description">New artist-friendly payout system coming soon!</p>
                     </div>
-                    <button className="btn btn-secondary" disabled>Coming Soon</button>
+                    <button className="btn btn-secondary btn-sm" disabled>Coming Soon</button>
                   </div>
                 </div>
               </>
@@ -412,7 +624,7 @@ export default function Settings() {
                     </div>
                     
                     <button 
-                      className="btn btn-primary btn-lg"
+                      className="btn btn-primary btn-sm"
                       onClick={() => setShowSellerModal(true)}
                     >
                       Apply to Become a Seller
@@ -524,7 +736,7 @@ export default function Settings() {
                 <h3>No Activities Yet</h3>
                 <p>Your activities will appear here as you interact with Museo</p>
                 <button 
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm"
                   onClick={() => navigate('/gallery')}
                 >
                   Explore Gallery

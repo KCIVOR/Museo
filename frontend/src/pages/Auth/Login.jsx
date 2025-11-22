@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
+import ForgotPasswordModal from "./ForgotPasswordModal";
+import "../../styles/components/auth-pages.css";
 const API = import.meta.env.VITE_API_BASE;
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -50,50 +53,21 @@ export default function Login() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, var(--museo-bg-primary) 0%, var(--museo-bg-secondary) 100%)',
-      padding: '20px'
-    }}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        maxWidth: '1000px',
-        width: '100%',
-        background: 'var(--museo-white)',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-      }}>
+    <div className="auth-container">
+      <div className="auth-card">
         {/* Left column: form */}
-        <div style={{
-          padding: '60px 50px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px'
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div className="auth-form-section">
+          <div className="auth-logo">
             <img
               src="https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/Museo.png"
               alt="Museo Logo"
-              style={{ height: '60px' }}
             />
           </div>
 
-          <h1 style={{
-            fontFamily: 'var(--museo-font-display)',
-            fontSize: 'var(--museo-text-3xl)',
-            fontWeight: 'var(--museo-font-bold)',
-            color: 'var(--museo-primary)',
-            textAlign: 'center',
-            margin: '0 0 8px 0'
-          }}>Sign in</h1>
+          <h1 className="auth-title">Sign in</h1>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="museo-form-field">
+          <form onSubmit={handleLogin} className="auth-form">
+            <div className="auth-form-field">
               <label className="museo-label">Email</label>
               <input
                 type="email"
@@ -105,7 +79,7 @@ export default function Login() {
               />
             </div>
 
-            <div className="museo-form-field">
+            <div className="auth-form-field">
               <label className="museo-label">Password</label>
               <input
                 type="password"
@@ -117,13 +91,10 @@ export default function Login() {
               />
             </div>
 
-            <div style={{
-              textAlign: 'right',
-              fontSize: '14px',
-              color: 'var(--museo-accent)',
-              cursor: 'pointer',
-              marginTop: '-8px'
-            }}>
+            <div 
+              onClick={() => setShowForgotPassword(true)}
+              className="auth-link"
+            >
               Forgot your password?
             </div>
 
@@ -131,12 +102,7 @@ export default function Login() {
               Sign in
             </button>
 
-            <div style={{
-              textAlign: 'center',
-              color: 'var(--museo-text-muted)',
-              fontSize: '14px',
-              margin: '8px 0'
-            }}>or</div>
+            <div className="auth-divider">or</div>
 
             <button 
               className="btn btn-secondary btn-sm" 
@@ -160,33 +126,17 @@ export default function Login() {
             </button>
 
             {message && (
-              <div style={{
-                padding: '12px',
-                background: 'rgba(220, 38, 38, 0.1)',
-                color: '#dc2626',
-                borderRadius: '8px',
-                fontSize: '14px',
-                textAlign: 'center'
-              }}>
+              <div className="auth-message auth-message--error">
                 {message}
               </div>
             )}
           </form>
 
-          <div style={{
-            textAlign: 'center',
-            fontSize: '14px',
-            color: 'var(--museo-text-secondary)',
-            marginTop: '12px'
-          }}>
+          <div className="auth-footer">
             Don't have an account?{" "}
             <span 
               onClick={() => navigate("/register")}
-              style={{
-                color: 'var(--museo-accent)',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="auth-footer-link"
             >
               Register
             </span>
@@ -194,11 +144,19 @@ export default function Login() {
         </div>
 
         {/* Right column: image */}
-        <div style={{
-          background: `url('https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/login.png') center/cover`,
-          minHeight: '600px'
-        }} />
+        <div 
+          className="auth-image-section"
+          style={{
+            backgroundImage: `url('https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/login.png')`
+          }}
+        />
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 }

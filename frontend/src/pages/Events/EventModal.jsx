@@ -343,7 +343,7 @@ export default function EventModal({ open, event, onClose }) {
                   onClick={() => { if (!isEventPast) joinEvent(); }}
                   disabled={isSubmitting || isEventPast} 
                   title={isEventPast ? 'This event has already passed' : undefined}
-                  className={`btn ${joined ? 'btn-outline-danger' : 'btn-primary'} btn-lg`}
+                  className={`btn ${joined ? 'btn-primary' : 'btn-primary'} btn-md`}
                   style={{ width: '100%' }}
                 >
                   {isEventPast
@@ -354,7 +354,7 @@ export default function EventModal({ open, event, onClose }) {
                 {(role === 'admin' || role?.role === 'admin') && (
                   <button
                     onClick={() => setParticipantsOpen(true)}
-                    className="btn btn-secondary btn-lg"
+                    className="btn btn-secondary btn-md"
                     style={{ width: '100%', marginTop: 'var(--museo-space-2)' }}
                   >
                     View Participants

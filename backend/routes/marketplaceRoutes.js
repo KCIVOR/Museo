@@ -34,6 +34,8 @@ import {
   deleteAddress,
   getMyItems,
   getSellerStats,
+  getSellerShippingPrefs,
+  updateSellerShippingPrefs,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -189,6 +191,8 @@ router.post(
         quantity: { type: 'integer', required: false, default: 1, min: 1, max: 100 },
         shippingFee: { type: 'number', required: false, min: 0, max: 100000 },
         shippingMethod: { type: 'string', required: false, min: 1, max: 50 },
+        courier: { type: 'string', required: false, enum: ['J&T Express', 'LBC'] },
+        courierService: { type: 'string', required: false, enum: ['standard', 'express'] },
         orderNotes: { type: 'string', required: false, min: 0, max: 500 },
         shippingAddress: { type: 'object', required: false },
         contactInfo: { type: 'object', required: false }
@@ -478,6 +482,17 @@ router.get(
     { source: 'query', allowUnknown: false, stripUnknown: true }
   ),
   getSellerStats
+);
+
+// Seller shipping preferences
+router.get('/seller/shipping-prefs', getSellerShippingPrefs);
+router.put(
+  '/seller/shipping-prefs',
+  validateRequest(
+    { body: { couriers: { type: 'object', required: true } } },
+    { source: 'body', allowUnknown: true, stripUnknown: false }
+  ),
+  updateSellerShippingPrefs
 );
 
 // ========================================

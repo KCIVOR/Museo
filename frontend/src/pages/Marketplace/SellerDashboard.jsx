@@ -115,6 +115,11 @@ export default function SellerDashboard() {
     cancelled: 0
   });
   
+  // Shipping preferences (seller-supported couriers/services)
+  const [shippingPrefs, setShippingPrefs] = useState(null);
+  const [prefsLoading, setPrefsLoading] = useState(false);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  
   // Modal states
   const [processingModal, setProcessingModal] = useState(false);
   const [shippingModal, setShippingModal] = useState(false);
@@ -163,6 +168,60 @@ export default function SellerDashboard() {
     // Refresh products list
     await fetchProducts();
     alert(result.message || 'Product added successfully!');
+  };
+
+  // Load seller shipping preferences
+  const fetchShippingPrefs = async () => {
+    try {
+      setPrefsLoading(true);
+      const res = await fetch(`${API}/marketplace/seller/shipping-prefs`, { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success && data?.data) {
+        setShippingPrefs(data.data);
+      }
+    } catch (e) {
+      console.error('Error loading shipping prefs:', e);
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
+
+  const saveShippingPrefs = async () => {
+    try {
+      setPrefsSaving(true);
+      const res = await fetch(`${API}/marketplace/seller/shipping-prefs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ couriers: shippingPrefs?.couriers || {} })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || 'Failed to save shipping preferences');
+      }
+      // Update local state from sanitized server response to keep UI in sync
+      if (data?.data) setShippingPrefs(data.data);
+      alert('Shipping preferences saved');
+    } catch (e) {
+      alert(e.message || 'Failed to save shipping preferences');
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
+
+  const togglePref = (brand, svc) => {
+    setShippingPrefs(prev => {
+      const curr = prev?.couriers?.[brand]?.[svc] === true;
+      return {
+        couriers: {
+          ...(prev?.couriers || {}),
+          [brand]: {
+            ...(prev?.couriers?.[brand] || {}),
+            [svc]: !curr
+          }
+        }
+      };
+    });
   };
 
   // Fetch products from API
@@ -253,6 +312,19 @@ export default function SellerDashboard() {
       return () => clearInterval(id);
     }
   }, [activeTab, productView, auctionsTab]);
+
+  // Load shipping preferences when Settings tab is opened
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      if (!prefsLoading) fetchShippingPrefs();
+    }
+  }, [activeTab]);
+
+  // Also load shipping preferences on initial mount so UI reflects saved values immediately
+  useEffect(() => {
+    fetchShippingPrefs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load participants count per auction (seller can see it via GET /auctions/:id)
   useEffect(() => {
@@ -513,41 +585,6 @@ export default function SellerDashboard() {
       console.error('Error updating order:', error);
       alert('Failed to update order. Please try again.');
     }
-  };
-
-  // Payment functions - REMOVED (will be replaced)
-
-  // Load data on mount and when period changes
-  useEffect(() => {
-    if (userData?.isSeller) {
-      fetchProducts();
-      fetchStats(selectedPeriod === 'daily' ? 'daily' : 
-                 selectedPeriod === 'weekly' ? 'weekly' : 
-                 selectedPeriod === 'monthly' ? 'monthly' : 'all');
-      
-      // Fetch payout data
-      fetchPayoutBalance();
-      fetchPaymentMethod();
-      
-      // Fetch orders if on orders tab
-      if (activeTab === 'orders') {
-        fetchOrders(orderFilter === 'all' ? null : orderFilter);
-      }
-
-      // Fetch auctions data when on My Products > Auctions
-      if (activeTab === 'products' && productView === 'auctions') {
-        if (auctionsTab === 'items') {
-          fetchAuctionItems();
-        } else if (auctionsTab === 'auctions') {
-          fetchSellerAuctions(auctionStatusFilter);
-        }
-      }
-    }
-  }, [userData, selectedPeriod, activeTab, orderFilter, productView, auctionsTab, auctionStatusFilter]);
-
-  // Handle add new product
-  const handleAddProduct = () => {
-    setIsAddModalOpen(true);
   };
 
   // Handle add auction product
@@ -1931,40 +1968,74 @@ export default function SellerDashboard() {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div>
-            <div style={{
-              marginBottom: 'var(--museo-space-4)'
-            }}>
-              <h2 className="museo-heading" style={{
-                fontSize: 'var(--museo-text-2xl)'
-              }}>Payment Settings</h2>
-              <p style={{
-                color: 'var(--museo-text-secondary)',
-                marginTop: 'var(--museo-space-1)'
-              }}>Configure how you receive payouts</p>
+            {/* Shipping Preferences */}
+            <div style={{ marginBottom: 'var(--museo-space-6)' }}>
+              <h2 className="museo-heading" style={{ fontSize: 'var(--museo-text-2xl)' }}>Shipping Preferences</h2>
+              <p style={{ color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)' }}>
+                Choose which couriers and services you support in your area.
+              </p>
             </div>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 'var(--museo-space-8)',
-              background: 'var(--museo-white)',
-              borderRadius: 'var(--museo-radius-lg)',
-              textAlign: 'center',
-              border: '1px solid var(--museo-border)'
-            }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{
-                color: 'var(--museo-text-muted)',
-                marginBottom: 'var(--museo-space-3)'
+
+            <div className="museo-card" style={{ padding: 'var(--museo-space-5)', border: '1px solid var(--museo-border)', borderRadius: 'var(--museo-radius-lg)', background: 'var(--museo-white)', marginBottom: 'var(--museo-space-6)' }}>
+              {prefsLoading ? (
+                <div className="museo-message">Loading preferences…</div>
+              ) : (
+                <>
+                  <div className="museo-grid museo-grid--2" style={{ gap: 'var(--museo-space-4)' }}>
+                    <div className="museo-form-group">
+                      <label className="museo-label">J&amp;T Express</label>
+                      <div className="museo-switches" style={{ display: 'flex', gap: 'var(--museo-space-4)' }}>
+                        <label className="museo-switch">
+                          <input type="checkbox" checked={Boolean(shippingPrefs?.couriers?.['J&T Express']?.standard)} onChange={() => togglePref('J&T Express', 'standard')} />
+                          <span>Standard</span>
+                        </label>
+                        <label className="museo-switch">
+                          <input type="checkbox" checked={Boolean(shippingPrefs?.couriers?.['J&T Express']?.express)} onChange={() => togglePref('J&T Express', 'express')} />
+                          <span>Express</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="museo-form-group">
+                      <label className="museo-label">LBC</label>
+                      <div className="museo-switches" style={{ display: 'flex', gap: 'var(--museo-space-4)' }}>
+                        <label className="museo-switch">
+                          <input type="checkbox" checked={Boolean(shippingPrefs?.couriers?.LBC?.standard)} onChange={() => togglePref('LBC', 'standard')} />
+                          <span>Standard</span>
+                        </label>
+                        <label className="museo-switch">
+                          <input type="checkbox" checked={Boolean(shippingPrefs?.couriers?.LBC?.express)} onChange={() => togglePref('LBC', 'express')} />
+                          <span>Express</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="museo-actions" style={{ marginTop: 'var(--museo-space-5)' }}>
+                    <button className={`btn btn-primary btn-sm ${prefsSaving ? 'processing' : ''}`} onClick={saveShippingPrefs} disabled={prefsSaving || prefsLoading}>
+                      {prefsSaving ? 'Saving…' : 'Save Preferences'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Payment Settings placeholder (unchanged) */}
+            <div>
+              <div style={{ marginBottom: 'var(--museo-space-4)' }}>
+                <h2 className="museo-heading" style={{ fontSize: 'var(--museo-text-2xl)' }}>Payment Settings</h2>
+                <p style={{ color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)' }}>Configure how you receive payouts</p>
+              </div>
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: 'var(--museo-space-8)', background: 'var(--museo-white)', borderRadius: 'var(--museo-radius-lg)', textAlign: 'center', border: '1px solid var(--museo-border)'
               }}>
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="16" x2="12" y2="12"/>
-                <line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              <p style={{
-                fontSize: 'var(--museo-text-lg)',
-                color: 'var(--museo-text-secondary)'
-              }}>Payment settings coming soon</p>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--museo-text-muted)', marginBottom: 'var(--museo-space-3)' }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <p style={{ fontSize: 'var(--museo-text-lg)', color: 'var(--museo-text-secondary)' }}>Payment settings coming soon</p>
+              </div>
             </div>
           </div>
         )}

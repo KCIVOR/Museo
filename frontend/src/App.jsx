@@ -27,6 +27,7 @@ import SellerDashboard from "./pages/Marketplace/SellerDashboard"
 import Checkout from "./pages/Marketplace/checkout"
 import MyOrders from "./pages/Marketplace/MyOrders"
 import Settings from "./pages/Settings/Settings"
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 export default function App() {
   const { userData, isLoading, isAuthenticated } = useUser();
@@ -47,8 +48,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/Register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
 
       {/* Auth gate */}
       <Route element={<ProtectedRoutes />}>
