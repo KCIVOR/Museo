@@ -3,10 +3,11 @@ import RequestsTab from "../Admin/manage/RequestsTab";
 import StatisticsTab from "../Admin/manage/StatisticsTab";
 import UsersTab from "../Admin/manage/UsersTab";
 import AdminReturnsTab from "../Admin/manage/AdminReturnsTab";
+import ReportsTab from "../Admin/manage/ReportsTab";
 import "../../styles/main.css";
 
 export default function ManagePage() {
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'returns', 'statistics', 'users'
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'returns', 'statistics', 'users', 'reports'
 
   return (
     <div className={`museo-page ${activeTab === 'requests' ? 'museo-tab--active' : ''}`}>
@@ -128,6 +129,30 @@ export default function ManagePage() {
               </svg>
               Manage Users
             </button>
+
+            <button
+              className={`museo-tab ${activeTab === 'reports' ? 'museo-tab--active' : ''}`}
+              onClick={() => setActiveTab('reports')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: 'var(--museo-space-3) var(--museo-space-4)',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'reports' ? '3px solid var(--museo-primary)' : '3px solid transparent',
+                color: activeTab === 'reports' ? 'var(--museo-primary)' : 'var(--museo-text-muted)',
+                fontWeight: 'var(--museo-font-weight-medium)',
+                fontSize: 'var(--museo-font-size-base)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-transition-base)',
+                marginBottom: '-2px'
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+              Reports
+            </button>
           </nav>
         </header>
 
@@ -137,6 +162,7 @@ export default function ManagePage() {
           {activeTab === 'returns' && <AdminReturnsTab />}
           {activeTab === 'statistics' && <StatisticsTab />}
           {activeTab === 'users' && <UsersTab />}
+          {activeTab === 'reports' && <ReportsTab />}
         </div>
       </div>
     </div>

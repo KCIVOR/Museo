@@ -4,6 +4,8 @@ import { useUser } from '../../contexts/UserContext';
 import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import EditArtworkModal from '../Gallery/EditArtworkModal';
 import ConfirmModal from '../Shared/ConfirmModal';
+import AlertModal from '../Shared/AlertModal';
+import ReportModal from '../../../components/ReportModal';
 import '../Gallery/css/ArtworkModal.css';
 
 const API = import.meta.env.VITE_API_BASE;
@@ -40,6 +42,10 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
   const [openCommentMenus, setOpenCommentMenus] = useState({});
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  
+  // Report modal state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportAlert, setReportAlert] = useState({ show: false, title: '', message: '' });
 
 
   // Initialize like status and count
@@ -645,6 +651,7 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
                     className="dropdown-item"
                     onClick={(e) => {
                       e.stopPropagation();
+                      setShowReportModal(true);
                       closeMenu(artwork?.id || artwork?.artId);
                     }}
                   >
@@ -1070,6 +1077,26 @@ const ArtistArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate }) => {
           cancelText="Cancel"
           onConfirm={confirmDeleteArtwork}
           onCancel={cancelDeleteArtwork}
+        />
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType="artwork"
+          targetId={artwork?.id || artwork?.artId}
+          onSubmitted={() => {
+            setReportAlert({ show: true, title: 'Report Submitted', message: 'Thank you for reporting this content. Our team will review it shortly.' });
+          }}
+        />
+
+        {/* Report Alert Modal */}
+        <AlertModal
+          open={reportAlert.show}
+          title={reportAlert.title || 'Notice'}
+          message={reportAlert.message}
+          okText="OK"
+          onOk={() => setReportAlert({ show: false, title: '', message: '' })}
         />
       </div>
     </div>,

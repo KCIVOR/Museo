@@ -4,6 +4,7 @@ import FullscreenImageViewer from '../../components/FullscreenImageViewer';
 import ConfirmModal from '../Shared/ConfirmModal';
 import AlertModal from '../Shared/AlertModal';
 import EditGalleryArtworkModal from './EditGalleryArtworkModal';
+import ReportModal from '../../../components/ReportModal';
 import './css/ArtworkModal.css';
 
 const API = import.meta.env.VITE_API_BASE;
@@ -37,12 +38,15 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate, onArtworkEdited
   const [editingCommentText, setEditingCommentText] = useState("");
   const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
-  const [reportAlert, setReportAlert] = useState({ show: false, title: '', message: '' });
   
   // Comment pagination state
   const [commentPage, setCommentPage] = useState(1);
   const [hasMoreComments, setHasMoreComments] = useState(false);
   const [loadingMoreComments, setLoadingMoreComments] = useState(false);
+  
+  // Report modal state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportAlert, setReportAlert] = useState({ show: false, title: '', message: '' });
 
 
   // Fetch fresh stats when modal opens
@@ -582,6 +586,7 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate, onArtworkEdited
                     className="dropdown-item"
                     onClick={(e) => {
                       e.stopPropagation();
+                      setShowReportModal(true);
                       closeMenu(artwork?.id || artwork?.artId);
                     }}
                   >
@@ -1021,6 +1026,17 @@ const ArtworkModal = ({ artwork, isOpen, onClose, onStatsUpdate, onArtworkEdited
           message={reportAlert.message}
           okText="OK"
           onOk={() => setReportAlert({ show: false, title: '', message: '' })}
+        />
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetType="artwork"
+          targetId={artwork?.id || artwork?.galleryArtId}
+          onSubmitted={() => {
+            setReportAlert({ show: true, title: 'Report Submitted', message: 'Thank you for reporting this content. Our team will review it shortly.' });
+          }}
         />
       </div>
     </div>
