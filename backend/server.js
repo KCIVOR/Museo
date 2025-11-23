@@ -22,6 +22,7 @@ import returnRoutes from "./routes/returnRoutes.js"
 import webhookRoutes from "./routes/webhookRoutes.js"
 import auctionRoutes from "./routes/auctionRoutes.js"
 import searchRoutes from "./routes/searchRoutes.js"
+import reportRoutes from "./routes/reportRoutes.js"
 import cookieParser from "cookie-parser";
 import { simpleRotation, promotePopularOldPosts, generateWeeklyTopArts } from './controllers/galleryController.js';
 import { cancelExpiredOrders } from './controllers/orderCleanupController.js';
@@ -119,6 +120,9 @@ app.use("/api/auctions", authMiddleware, auctionRoutes)
 
 // Unified search (public or protected as needed)
 app.use("/api/search", authMiddleware, searchRoutes)
+
+// Reports routes
+app.use("/api/reports", authMiddleware, reportRoutes)
 
 
 // Create HTTP + Socket.IO

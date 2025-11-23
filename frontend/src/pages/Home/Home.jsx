@@ -12,6 +12,7 @@ import AnnouncementCard from "./AnnouncementCard.jsx";
 import ConfirmModal from "../Shared/ConfirmModal";
 import AlertModal from "../Shared/AlertModal";
 import EditPostModal from "./EditPostModal";
+import ReportModal from "../../../components/ReportModal.jsx";
 const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
 function getAverageColorFromImageElement(img) {
@@ -169,6 +170,8 @@ export default function Home() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [reportAlert, setReportAlert] = useState({ show: false, message: '' });
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState({ type: '', id: '' });
 
   // profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -671,24 +674,9 @@ export default function Home() {
     setPostToDelete(null);
   };
 
-  const handleReport = async (postId) => {
-    try {
-      const res = await fetch(`${API}/homepage/reportPost`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, reason: 'Reported by user' })
-      });
-      
-      if (res.ok) {
-        setReportAlert({ show: true, message: 'Post reported successfully. Thank you for helping keep our community safe.' });
-      } else {
-        setReportAlert({ show: true, message: 'Failed to report post. Please try again.' });
-      }
-    } catch (error) {
-      console.error('Failed to report post:', error);
-      setReportAlert({ show: true, message: 'Failed to report post. Please try again.' });
-    }
+  const handleReport = (postId) => {
+    setReportTarget({ type: 'homepagePost', id: postId });
+    setShowReportModal(true);
     closeMenu(postId);
   };
 
@@ -1155,6 +1143,17 @@ export default function Home() {
         message={reportAlert.message}
         okText="OK"
         onOk={() => setReportAlert({ show: false, message: '' })}
+      />
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType={reportTarget.type}
+        targetId={reportTarget.id}
+        onSubmitted={() => {
+          setReportAlert({ show: true, message: 'Report submitted. Thank you for helping keep our community safe.' });
+        }}
       />
 
       {/* Edit Post Modal */}
