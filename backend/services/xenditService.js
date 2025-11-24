@@ -50,8 +50,8 @@ export const createPaymentLink = async ({ amount, description, metadata = {} }) 
       },
       
       // Success redirect (optional)
-      success_redirect_url: metadata.successUrl || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/marketplace/myorders`,
-      failure_redirect_url: metadata.failureUrl || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/marketplace`,
+      success_redirect_url: metadata.successUrl || `${process.env.FRONTEND_URL || 'https://museofrontend.onrender.com/'}/marketplace/myorders`,
+      failure_redirect_url: metadata.failureUrl || `${process.env.FRONTEND_URL || 'https://museofrontend.onrender.com/'}/marketplace`,
       
       // Payment methods to enable
       payment_methods: [
