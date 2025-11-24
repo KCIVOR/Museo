@@ -48,7 +48,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS || [
-  "http://localhost:5173",
   "https://museofrontend.onrender.com"
 ];
 
