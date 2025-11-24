@@ -358,8 +358,22 @@ export const createRefund = async ({ paymentIntentId, amount, reason }) => {
       reason
     });
 
-    // Xendit refund API endpoint
-    const response = await fetch(`${XENDIT_API_URL}/refunds`, {
+    // Normalize reason to Xendit's allowed enum
+    const normalizeReason = (val) => {
+      const allowed = ['FRAUDULENT','DUPLICATE','REQUESTED_BY_CUSTOMER','CANCELLATION','OTHERS'];
+      if (!val) return 'CANCELLATION';
+      const r = String(val).toUpperCase();
+      if (allowed.includes(r)) return r;
+      if (r.includes('FRAUD')) return 'FRAUDULENT';
+      if (r.includes('DUPLICATE')) return 'DUPLICATE';
+      if (r.includes('REQUEST') || r.includes('CUSTOMER') || r.includes('RETURN')) return 'REQUESTED_BY_CUSTOMER';
+      if (r.includes('CANCEL')) return 'CANCELLATION';
+      return 'OTHERS';
+    };
+    const reasonEnum = normalizeReason(reason);
+
+    // First attempt: refund using invoice_id (works for some channels)
+    let response = await fetch(`${XENDIT_API_URL}/refunds`, {
       method: 'POST',
       headers: {
         'Authorization': getAuthHeader(),
@@ -367,26 +381,79 @@ export const createRefund = async ({ paymentIntentId, amount, reason }) => {
       },
       body: JSON.stringify({
         invoice_id: paymentIntentId,
-        amount: amount,
-        reason: reason || 'Return approved'
+        amount: Number(amount),
+        reason: reasonEnum
       })
     });
 
-    const data = await response.json();
+    let data = await response.json();
 
     if (!response.ok) {
       console.error('❌ Xendit Refund Error:', {
         status: response.status,
         error: data
       });
-      
-      // Handle specific errors
-      if (data.error_code === 'INVOICE_NOT_FOUND') {
+
+      // If validation error, try deriving payment_id from invoice and retry
+      if (data?.error_code === 'API_VALIDATION_ERROR') {
+        try {
+          // Retrieve invoice details to find the underlying payment id
+          const invRes = await fetch(`${XENDIT_API_URL}/v2/invoices/${paymentIntentId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': getAuthHeader(),
+              'Content-Type': 'application/json'
+            }
+          });
+          const invData = await invRes.json();
+          if (!invRes.ok) {
+            console.error('❌ Failed to fetch invoice for refund fallback:', invData);
+            throw new Error(invData?.message || 'Could not retrieve invoice to resolve payment id');
+          }
+
+          // Attempt to extract payment id from invoice payload
+          // Common locations: root payment_id, payment_details.id, or payments[0].id
+          const pd = invData?.payment_details || null;
+          const payments = Array.isArray(invData?.payments) ? invData.payments : (pd ? [pd] : []);
+          const paymentId = invData?.payment_id || payments?.[0]?.id || pd?.id || pd?.payment_id || null;
+
+          if (!paymentId) {
+            console.error('❌ Could not resolve payment id from invoice payload:', invData);
+            throw new Error('Unable to resolve payment id for refund');
+          }
+
+          // Retry refund using payment_id
+          response = await fetch(`${XENDIT_API_URL}/refunds`, {
+            method: 'POST',
+            headers: {
+              'Authorization': getAuthHeader(),
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              payment_id: paymentId,
+              amount: Number(amount),
+              reason: reasonEnum
+            })
+          });
+          data = await response.json();
+
+          if (!response.ok) {
+            console.error('❌ Xendit Refund Retry Error (payment_id):', { status: response.status, error: data });
+            // Bubble up with details if present
+            const details = data?.errors ? ` Details: ${JSON.stringify(data.errors)}` : '';
+            throw new Error((data?.message || 'Failed to create refund via payment_id.') + details);
+          }
+        } catch (fallbackErr) {
+          // Re-throw to caller
+          throw fallbackErr;
+        }
+      } else if (data.error_code === 'INVOICE_NOT_FOUND') {
         throw new Error('Payment not found. Cannot process refund.');
       } else if (data.error_code === 'REFUND_AMOUNT_INVALID') {
         throw new Error('Invalid refund amount.');
       } else {
-        throw new Error(data.message || 'Failed to create refund');
+        const details = data?.errors ? ` Details: ${JSON.stringify(data.errors)}` : '';
+        throw new Error((data?.message || 'Failed to create refund') + details);
       }
     }
 

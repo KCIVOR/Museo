@@ -19,7 +19,7 @@ import {
   markOrderAsProcessing,
   markOrderAsShipped,
   markOrderAsDelivered,
-  cancelOrder,
+  cancelOrder as cancelOrderLegacy,
   submitSellerApplication,
   getMySellerApplication,
   getAllSellerApplications,
@@ -38,6 +38,7 @@ import {
   updateSellerShippingPrefs,
   quoteShipping,
 } from '../controllers/marketplaceController.js';
+import { cancelOrder as cancelOrderEnhanced } from '../controllers/orderCancellationController.js';
 
 const router = express.Router();
 
@@ -394,7 +395,7 @@ router.put(
     },
     { source: ['params', 'body'], allowUnknown: false, stripUnknown: true }
   ),
-  cancelOrder
+  cancelOrderEnhanced
 );
 
 // ========================================

@@ -343,4 +343,230 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
+// ========================================
+// CATEGORY MANAGEMENT (ADMIN ONLY)
+// ========================================
+
+// @desc    Create a new category (Admin only)
+// @route   POST /api/users/admin/categories
+// @access  Private/Admin
+export const createCategory = async (req, res) => {
+  try {
+    const { name, slug, active, sortOrder } = req.body;
+
+    // Validate required fields
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Category name is required' });
+    }
+
+    // Check if category already exists
+    const { data: existing, error: existError } = await supabase
+      .from('category')
+      .select('categoryId')
+      .ilike('name', name)
+      .single();
+
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'Category already exists' });
+    }
+
+    // Create category
+    const { data, error } = await supabase
+      .from('category')
+      .insert({
+        name: name.trim(),
+        slug: slug?.trim() || name.trim().toLowerCase().replace(/\s+/g, '-'),
+        active: active !== false, // default true
+        sortOrder: sortOrder || 0
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Create category error:', error);
+      throw error;
+    }
+
+    // Clear cache
+    await cache.clearPattern('categories:*');
+
+    res.status(201).json({
+      success: true,
+      message: 'Category created successfully',
+      data
+    });
+
+  } catch (error) {
+    console.error('createCategory catch error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Get all categories
+// @route   GET /api/users/admin/categories
+// @access  Public
+export const getCategories = async (req, res) => {
+  try {
+    const { active } = req.query;
+
+    // Try cache first
+    const cacheKey = `categories:${active || 'all'}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return res.json({ success: true, data: JSON.parse(cached) });
+    }
+
+    let query = supabase.from('category').select('*');
+
+    // Filter by active status if provided
+    if (active !== undefined) {
+      const isActive = active === 'true' || active === '1';
+      query = query.eq('active', isActive);
+    }
+
+    const { data, error } = await query.order('name', { ascending: true });
+
+    if (error) {
+      console.error('Get categories error:', error);
+      throw error;
+    }
+
+    // Cache for 1 hour
+    await cache.set(cacheKey, JSON.stringify(data), 3600);
+
+    res.json({ success: true, data });
+
+  } catch (error) {
+    console.error('getCategories catch error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Get single category by ID
+// @route   GET /api/users/admin/categories/:categoryId
+// @access  Public
+export const getCategoryById = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    const { data, error } = await supabase
+      .from('category')
+      .select('*')
+      .eq('categoryId', categoryId)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ success: false, error: 'Category not found' });
+    }
+
+    res.json({ success: true, data });
+
+  } catch (error) {
+    console.error('getCategoryById catch error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Update category (Admin only)
+// @route   PUT /api/users/admin/categories/:categoryId
+// @access  Private/Admin
+export const updateCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { name, slug, active, sortOrder } = req.body;
+
+    // Validate at least one field is provided
+    if (!name && slug === undefined && active === undefined && sortOrder === undefined) {
+      return res.status(400).json({ success: false, error: 'At least one field is required' });
+    }
+
+    // Check if category exists
+    const { data: existing, error: existError } = await supabase
+      .from('category')
+      .select('categoryId')
+      .eq('categoryId', categoryId)
+      .single();
+
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Category not found' });
+    }
+
+    // Build update object
+    const updateObj = {};
+    if (name) updateObj.name = name.trim();
+    if (slug !== undefined) updateObj.slug = slug?.trim() || name?.trim().toLowerCase().replace(/\s+/g, '-');
+    if (active !== undefined) updateObj.active = active;
+    if (sortOrder !== undefined) updateObj.sortOrder = sortOrder;
+
+    // Update category
+    const { data, error } = await supabase
+      .from('category')
+      .update(updateObj)
+      .eq('categoryId', categoryId)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Update category error:', error);
+      throw error;
+    }
+
+    // Clear cache
+    await cache.clearPattern('categories:*');
+
+    res.json({
+      success: true,
+      message: 'Category updated successfully',
+      data
+    });
+
+  } catch (error) {
+    console.error('updateCategory catch error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Delete category (Admin only)
+// @route   DELETE /api/users/admin/categories/:categoryId
+// @access  Private/Admin
+export const deleteCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Check if category exists
+    const { data: existing, error: existError } = await supabase
+      .from('category')
+      .select('categoryId')
+      .eq('categoryId', categoryId)
+      .single();
+
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Category not found' });
+    }
+
+    // Delete category
+    const { error } = await supabase
+      .from('category')
+      .delete()
+      .eq('categoryId', categoryId);
+
+    if (error) {
+      console.error('Delete category error:', error);
+      throw error;
+    }
+
+    // Clear cache
+    await cache.clearPattern('categories:*');
+
+    res.json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('deleteCategory catch error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 //const isMatch = await bcrypt.compare(password, data.password); check password

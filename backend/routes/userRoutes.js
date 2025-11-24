@@ -1,5 +1,5 @@
 import express from "express"
-import {getAllUsers, createUsers,getUser,updateUser,deleteUser, getCurrentUser, getRole, getPicture, getAdminUsers, updateUserRole } from "../controllers/userController.js";
+import {getAllUsers, createUsers,getUser,updateUser,deleteUser, getCurrentUser, getRole, getPicture, getAdminUsers, updateUserRole, createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } from "../controllers/userController.js";
 import { requirePermission } from "../middleware/permission.js";
 import { validateRequest } from "../middleware/validation.js";
 const router = express.Router();
@@ -72,6 +72,78 @@ router.patch(
     { source: ['params','body'], allowUnknown: false, stripUnknown: true, trimStrings: true }
   ),
   updateUserRole
+);
+
+// ========================================
+// CATEGORY MANAGEMENT ROUTES
+// ========================================
+
+// Create category (Admin only)
+router.post(
+  "/admin/categories",
+  requirePermission(['admin']),
+  validateRequest(
+    {
+      body: {
+        name: { type: 'string', required: true, min: 1, max: 100 },
+        slug: { type: 'string', required: false, min: 1, max: 100 },
+        active: { type: 'boolean', required: false },
+        sortOrder: { type: 'integer', required: false }
+      }
+    },
+    { source: 'body', allowUnknown: false, stripUnknown: true, trimStrings: true }
+  ),
+  createCategory
+);
+
+// Get all categories (Public)
+router.get(
+  "/admin/categories",
+  validateRequest(
+    { query: { active: { type: 'string', required: false, enum: ['true', 'false'] } } },
+    { source: 'query', allowUnknown: false, stripUnknown: true }
+  ),
+  getCategories
+);
+
+// Get single category by ID (Public)
+router.get(
+  "/admin/categories/:categoryId",
+  validateRequest(
+    { params: { categoryId: { type: 'uuid', required: true } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  getCategoryById
+);
+
+// Update category (Admin only)
+router.put(
+  "/admin/categories/:categoryId",
+  requirePermission(['admin']),
+  validateRequest(
+    {
+      params: { categoryId: { type: 'uuid', required: true } },
+      body: {
+        name: { type: 'string', required: false, min: 1, max: 100 },
+        slug: { type: 'string', required: false, min: 1, max: 100 },
+        active: { type: 'boolean', required: false },
+        sortOrder: { type: 'integer', required: false }
+      }
+    },
+    { source: ['params', 'body'], allowUnknown: false, stripUnknown: true, trimStrings: true }
+  ),
+  updateCategory
+);
+
+// Delete category (Admin only)
+router.delete(
+  "/admin/categories/:categoryId",
+  requirePermission(['admin']),
+  validateRequest(
+    { params: { categoryId: { type: 'uuid', required: true } } },
+    { source: 'params', allowUnknown: false }
+  ),
+  deleteCategory
 );
 
 export default router;

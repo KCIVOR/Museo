@@ -1,6 +1,7 @@
 // returnService.js - CORRECTED VERSION
 import db from '../database/db.js';
 import xenditService from './xenditService.js';
+import { publishNotification } from './notificationService.js';
 
 class ReturnService {
   /**
@@ -824,7 +825,7 @@ class ReturnService {
       if (updateError) throw new Error('Failed to mark as received');
       
       // Process refund now
-      await this.processRefund(returnId);
+      const refundOutcome = await this.processRefund(returnId);
       
       // Update final statuses
       await db
@@ -844,8 +845,25 @@ class ReturnService {
         })
         .eq('orderId', returnData.orderId);
       
-      // Notify buyer
-      await this.createBuyerNotification(returnData.buyerId, returnId, 'return_refunded');
+      // Notify buyer via centralized notification service
+      try {
+        await publishNotification({
+          type: 'return_refund_completed',
+          title: 'Your refund has been issued',
+          body: `Your return for order ${returnData.orderId} has been processed.`,
+          data: {
+            returnId,
+            orderId: returnData.orderId,
+            refundAmount: returnData.refundAmount || null,
+            refundStatus: refundOutcome?.status || 'SUCCEEDED'
+          },
+          recipient: returnData.buyerId,
+          userId: null,
+          dedupeContains: { returnId }
+        });
+      } catch (notifyErr) {
+        console.warn('⚠️ Failed to publish return refund notification:', notifyErr?.message || notifyErr);
+      }
       
       return { success: true, message: 'Return received and refund processed' };
     } catch (e) {

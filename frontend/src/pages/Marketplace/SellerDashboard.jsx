@@ -632,6 +632,37 @@ export default function SellerDashboard() {
     }
   };
 
+  // Cancel order (Seller)
+  const handleCancelOrder = (order) => {
+    openConfirm(
+      'Cancel this order? If already paid, a refund will be issued to the buyer.',
+      () => performCancelOrder(order),
+      { title: 'Cancel Order', confirmText: 'Yes, cancel', cancelText: 'No' }
+    );
+  };
+
+  const performCancelOrder = async (order) => {
+    try {
+      const res = await fetch(`${API}/marketplace/orders/${order.orderId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason: 'Cancelled by seller' })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || 'Failed to cancel order');
+      }
+      showAlert(data?.message || 'Order cancelled successfully', 'Success');
+      // Refresh lists and stats
+      fetchOrders(orderFilter === 'all' ? null : orderFilter);
+      fetchStats(selectedPeriod === 'daily' ? 'daily' : selectedPeriod === 'weekly' ? 'weekly' : selectedPeriod === 'monthly' ? 'monthly' : 'all');
+    } catch (e) {
+      console.error('Cancel order error:', e);
+      showAlert(e.message || 'Failed to cancel order', 'Error');
+    }
+  };
+
   // Mark order as shipped
   const handleMarkAsShipped = (order) => {
     setSelectedOrder(order);
@@ -1707,15 +1738,31 @@ export default function SellerDashboard() {
                         >
                           Mark as Shipped
                         </button>
+                        <button 
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--museo-error)' }}
+                          onClick={() => handleCancelOrder(order)}
+                        >
+                          Cancel Order
+                        </button>
                       </>
                     )}
                     {order.status === 'processing' && (
-                      <button 
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleMarkAsShipped(order)}
-                      >
-                        Mark as Shipped
-                      </button>
+                      <>
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleMarkAsShipped(order)}
+                        >
+                          Mark as Shipped
+                        </button>
+                        <button 
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--museo-error)' }}
+                          onClick={() => handleCancelOrder(order)}
+                        >
+                          Cancel Order
+                        </button>
+                      </>
                     )}
                     {order.status === 'shipped' && (
                       <button 

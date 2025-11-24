@@ -4,10 +4,11 @@ import StatisticsTab from "../Admin/manage/StatisticsTab";
 import UsersTab from "../Admin/manage/UsersTab";
 import AdminReturnsTab from "../Admin/manage/AdminReturnsTab";
 import ReportsTab from "../Admin/manage/ReportsTab";
+import CategoryTab from "../Admin/manage/CategoryTab";
 import "../../styles/main.css";
 
 export default function ManagePage() {
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'returns', 'statistics', 'users', 'reports'
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests', 'returns', 'statistics', 'users', 'reports', 'categories'
 
   return (
     <div className={`museo-page ${activeTab === 'requests' ? 'museo-tab--active' : ''}`}>
@@ -153,6 +154,31 @@ export default function ManagePage() {
               </svg>
               Reports
             </button>
+
+            <button
+              className={`museo-tab ${activeTab === 'categories' ? 'museo-tab--active' : ''}`}
+              onClick={() => setActiveTab('categories')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: 'var(--museo-space-3) var(--museo-space-4)',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: activeTab === 'categories' ? '3px solid var(--museo-primary)' : '3px solid transparent',
+                color: activeTab === 'categories' ? 'var(--museo-primary)' : 'var(--museo-text-muted)',
+                fontWeight: 'var(--museo-font-weight-medium)',
+                fontSize: 'var(--museo-font-size-base)',
+                cursor: 'pointer',
+                transition: 'all var(--museo-transition-base)',
+                marginBottom: '-2px'
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                <line x1="12" y1="12" x2="12" y2="12.01"/>
+              </svg>
+              Categories
+            </button>
           </nav>
         </header>
 
@@ -163,6 +189,7 @@ export default function ManagePage() {
           {activeTab === 'statistics' && <StatisticsTab />}
           {activeTab === 'users' && <UsersTab />}
           {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'categories' && <CategoryTab />}
         </div>
       </div>
     </div>
