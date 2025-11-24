@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
 import MuseoLoadingPage from "../../components/MuseoLoadingPage";
-const API = import.meta.env.VITE_API_BASE;
+
+const API = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
