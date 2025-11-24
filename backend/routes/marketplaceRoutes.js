@@ -181,7 +181,7 @@ router.put(
         categories: { type: 'string', required: false, max: 2000 },
         tags: { type: 'string', required: false, max: 2000 },
         existing_images_to_keep: { type: 'string', required: false, max: 10000 },
-        remove_all_images: { type: 'boolean', required: false }
+        remove_all_images: { type: 'boolean', required: false },
       }
     },
     { source: ['params', 'body'], allowUnknown: false, stripUnknown: true, coerce: true }

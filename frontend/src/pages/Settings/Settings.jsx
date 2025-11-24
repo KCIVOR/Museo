@@ -330,16 +330,6 @@ export default function Settings() {
             </svg>
             Marketplace
           </button>
-          
-          <button 
-            className={`museo-tab ${activeTab === 'activities' ? 'museo-tab--active' : ''}`}
-            onClick={() => setActiveTab('activities')}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            Activities
-          </button>
       </div>
 
       {/* Tab Content */}
@@ -493,30 +483,6 @@ export default function Settings() {
                       <p>Join thousands of artists selling their work on Museo Marketplace</p>
                       
                       <div className="benefits-list">
-                        <div className="benefit-item">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Reach thousands of art collectors</span>
-                        </div>
-                        <div className="benefit-item">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Secure payment processing</span>
-                        </div>
-                        <div className="benefit-item">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Professional seller tools</span>
-                        </div>
-                        <div className="benefit-item">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 13l4 4L19 7"/>
-                          </svg>
-                          <span>Marketing support</span>
-                        </div>
                       </div>
                     </div>
                     
@@ -591,21 +557,6 @@ export default function Settings() {
 
           {/* Activities Tab */}
           <div className={`museo-tab-panel ${activeTab === 'activities' ? 'museo-tab-panel--active' : ''}`}>
-            <div className="activities-header">
-              <h2 className="settings-section-title">Your Activities</h2>
-              <button 
-                className="btn btn-secondary btn-sm"
-                onClick={fetchActivities}
-                disabled={loadingActivities}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="23 4 23 10 17 10"/>
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                </svg>
-                Refresh
-              </button>
-            </div>
-
             {loadingActivities ? (
               <div className="activities-loading">
                 <div className="loading-spinner"></div>

@@ -305,38 +305,6 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
                 />
                 {errors.title && <span className="museo-form-error">{errors.title}</span>}
               </div>
-        
-        {/* Protection */}
-        <div className="form-section">
-          <h3 className="section-title">Protection</h3>
-          <div className="museo-form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                className="museo-checkbox"
-                checked={applyWatermark}
-                onChange={(e) => setApplyWatermark(e.target.checked)}
-              />
-              <span>Protect images with watermark</span>
-            </label>
-            {applyWatermark && (
-              <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
-                <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
-                  Custom watermark text (optional)
-                </label>
-                <input
-                  type="text"
-                  value={watermarkText}
-                  onChange={(e) => setWatermarkText(e.target.value)}
-                  className="museo-input"
-                  placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
-                  style={{ fontSize: '14px' }}
-                />
-                <span className="museo-form-helper">Leave blank to use default format with your username</span>
-              </div>
-            )}
-          </div>
-        </div>
               
               <div className="museo-form-group">
                 <label htmlFor="price" className="museo-label museo-label--required">
@@ -356,6 +324,43 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
                 {errors.price && <span className="museo-form-error">{errors.price}</span>}
               </div>
             </div>
+          </div>
+
+          {/* Protection */}
+          <div className="form-section">
+            <h3 className="section-title">Protection</h3>
+            <div className="museo-form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  className="museo-checkbox"
+                  checked={applyWatermark}
+                  onChange={(e) => setApplyWatermark(e.target.checked)}
+                />
+                <span>Protect images with watermark</span>
+              </label>
+              {applyWatermark && (
+                <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
+                  <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
+                    Custom watermark text (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    className="museo-input"
+                    placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
+                    style={{ fontSize: '14px' }}
+                  />
+                  <span className="museo-form-helper">Leave blank to use default format with your username</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Product Details */}
+          <div className="form-section">
+            <h3 className="section-title">Product Details</h3>
 
             {/* Description */}
             <div className="museo-form-group">
@@ -368,13 +373,14 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
                 value={formData.description}
                 onChange={handleInputChange}
                 rows="4"
-                placeholder="Describe your product in detail..."
+                className="museo-textarea"
+              />
+            </div>
             
-            {/* Medium and Dimensions */}
+              {/* Medium and Dimensions */}
             <div className="form-row">
               <div className="museo-form-group">
                 <label htmlFor="medium" className="museo-label museo-label--required">
-{{ ... }}
                   Medium
                 </label>
                 <input

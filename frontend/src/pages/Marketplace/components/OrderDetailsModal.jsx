@@ -134,18 +134,21 @@ export default function OrderDetailsModal({
                 color: '#334155'
               }}>
                 <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>{safeOrder.shippingAddress?.fullName || 'No name provided'}</p>
-                <p style={{ margin: '0 0 0.5rem 0' }}>{safeOrder.shippingAddress?.phone || 'No phone provided'}</p>
-                <p style={{ margin: '0 0 0.25rem 0' }}>{safeOrder.shippingAddress?.street || 'No street provided'}</p>
-                {(safeOrder.shippingAddress?.barangay || safeOrder.shippingAddress?.city) && (
+                <p style={{ margin: '0 0 0.5rem 0' }}>{safeOrder.shippingAddress?.phoneNumber || safeOrder.shippingAddress?.phone || 'No phone provided'}</p>
+                <p style={{ margin: '0 0 0.25rem 0' }}>{safeOrder.shippingAddress?.addressLine1 || safeOrder.shippingAddress?.street || 'No street provided'}</p>
+                {safeOrder.shippingAddress?.addressLine2 && (
+                  <p style={{ margin: '0 0 0.25rem 0' }}>{safeOrder.shippingAddress.addressLine2}</p>
+                )}
+                {(safeOrder.shippingAddress?.barangayName || safeOrder.shippingAddress?.cityMunicipalityName) && (
                   <p style={{ margin: '0 0 0.25rem 0' }}>
-                    {safeOrder.shippingAddress?.barangay || ''}
-                    {safeOrder.shippingAddress?.barangay && safeOrder.shippingAddress?.city ? ', ' : ''}
-                    {safeOrder.shippingAddress?.city || ''}
+                    {safeOrder.shippingAddress?.barangayName || safeOrder.shippingAddress?.barangay || ''}
+                    {(safeOrder.shippingAddress?.barangayName || safeOrder.shippingAddress?.barangay) && (safeOrder.shippingAddress?.cityMunicipalityName || safeOrder.shippingAddress?.city) ? ', ' : ''}
+                    {safeOrder.shippingAddress?.cityMunicipalityName || safeOrder.shippingAddress?.city || ''}
                   </p>
                 )}
                 <p style={{ margin: 0 }}>
-                  {safeOrder.shippingAddress?.province || ''}
-                  {safeOrder.shippingAddress?.province && safeOrder.shippingAddress?.postalCode ? ' ' : ''}
+                  {safeOrder.shippingAddress?.provinceName || safeOrder.shippingAddress?.province || ''}
+                  {(safeOrder.shippingAddress?.provinceName || safeOrder.shippingAddress?.province) && safeOrder.shippingAddress?.postalCode ? ' ' : ''}
                   {safeOrder.shippingAddress?.postalCode || ''}
                 </p>
               </div>

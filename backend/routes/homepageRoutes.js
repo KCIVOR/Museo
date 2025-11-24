@@ -8,6 +8,7 @@ const router = express.Router();
 // Create post (multipart). Validate only body fields; files handled by multer.
 router.post(
   "/createPost",
+  requirePermission('artist','admin'),
   upload.fields([
     { name: "file", maxCount: 1 },
     { name: "file2", maxCount: 1 },

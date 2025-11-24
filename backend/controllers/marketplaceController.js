@@ -3,6 +3,7 @@ import db from '../database/db.js';
 import * as xenditService from '../services/xenditService.js';
 import payoutService from '../services/payoutService.js';
 import shippingService from '../services/shippingService.js';
+import { addUserWatermark, addTextWatermark } from '../utils/watermark.js';
 
 // Simple inline helper functions
 const sanitizeInput = (text) => {
@@ -241,7 +242,6 @@ export const createMarketplaceItem = async (req, res) => {
     // Check categories array
     if (categories.length > 10) {
       return res.status(400).json({ 
-        success: false, 
         message: 'Categories must not exceed 10 items' 
       });
     }
@@ -252,6 +252,21 @@ export const createMarketplaceItem = async (req, res) => {
     const sanitizedMedium = medium ? sanitizeInput(medium) : '';
     const sanitizedDimensions = dimensions ? sanitizeInput(dimensions) : '';
 
+    // Watermark options (similar to galleryController)
+    const shouldWatermark = req.body?.applyWatermark === 'true' || req.body?.applyWatermark === true;
+    const customWatermarkText = (req.body?.watermarkText || '').toString().trim();
+    let wmDisplayName = 'Museo Artist';
+    if (shouldWatermark && !customWatermarkText) {
+      try {
+        const { data: wmProfile } = await db
+          .from('profile')
+          .select('username, firstName, lastName')
+          .eq('userId', userId)
+          .single();
+        wmDisplayName = wmProfile?.username || `${wmProfile?.firstName || ''} ${wmProfile?.lastName || ''}`.trim() || 'Museo Artist';
+      } catch {}
+    }
+
     // Handle image uploads (similar to galleryController)
     let imageUrls = [];
     let primaryImageUrl = null;
@@ -259,13 +274,31 @@ export const createMarketplaceItem = async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
+          let imageBuffer = file.buffer;
+          if (shouldWatermark) {
+            if (customWatermarkText) {
+              imageBuffer = await addTextWatermark(imageBuffer, {
+                text: customWatermarkText,
+                position: 'bottom-right',
+                opacity: 0.7,
+              });
+            } else {
+              imageBuffer = await addUserWatermark(imageBuffer, {
+                username: wmDisplayName,
+                userId,
+                date: new Date().getFullYear(),
+              });
+            }
+          }
+
           const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
-          const fileName = `${Date.now()}-${safeName}`;
+          const prefix = shouldWatermark ? 'watermarked-' : '';
+          const fileName = `${prefix}${Date.now()}-${safeName}`;
           const filePath = `marketplace/${userId}/${fileName}`;
 
           const { data, error } = await db.storage
             .from("uploads")
-            .upload(filePath, file.buffer, {
+            .upload(filePath, imageBuffer, {
               contentType: file.mimetype,
               upsert: false,
             });
@@ -353,6 +386,7 @@ export const createMarketplaceItem = async (req, res) => {
 export const getMarketplaceItem = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id; // Get userId from authenticated user (optional)
 
     const { data: item, error } = await db
       .from('marketplace_items')
@@ -609,6 +643,7 @@ export const getMarketplaceItems = async (req, res) => {
 };
 
 // Update marketplace item
+// Update marketplace item
 export const updateMarketplaceItem = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -795,6 +830,25 @@ export const updateMarketplaceItem = async (req, res) => {
       });
     }
     
+    // ===== WATERMARK SUPPORT =====
+    const shouldWatermark = req.body?.applyWatermark === 'true' || req.body?.applyWatermark === true;
+    const customWatermarkText = (req.body?.watermarkText || '').toString().trim();
+    
+    let wmDisplayName = 'Museo Artist';
+    if (shouldWatermark && !customWatermarkText) {
+      try {
+        const { data: wmProfile } = await db
+          .from('profile')
+          .select('username, firstName, lastName')
+          .eq('userId', userId)
+          .single();
+        wmDisplayName = wmProfile?.username || `${wmProfile?.firstName || ''} ${wmProfile?.lastName || ''}`.trim() || 'Museo Artist';
+      } catch (wmErr) {
+        console.error('Error fetching user profile for watermark:', wmErr);
+      }
+    }
+    // ===== END WATERMARK SUPPORT =====
+    
     // Handle image updates
     let finalImageUrls = [];
     
@@ -881,17 +935,37 @@ export const updateMarketplaceItem = async (req, res) => {
       // Start with existing images to keep
       finalImageUrls = [...existingImagesToKeep];
       
-      // Upload and add new images
+      // Upload and add new images with watermark support
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
           try {
+            // Apply watermark to new images
+            let imageBuffer = file.buffer;
+            
+            if (shouldWatermark) {
+              if (customWatermarkText) {
+                imageBuffer = await addTextWatermark(imageBuffer, {
+                  text: customWatermarkText,
+                  position: 'bottom-right',
+                  opacity: 0.7,
+                });
+              } else {
+                imageBuffer = await addUserWatermark(imageBuffer, {
+                  username: wmDisplayName,
+                  userId,
+                  date: new Date().getFullYear(),
+                });
+              }
+            }
+            
             const safeName = file.originalname?.replace(/[^a-zA-Z0-9._-]/g, "_") || "image.png";
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-${safeName}`;
+            const prefix = shouldWatermark ? 'watermarked-' : '';
+            const fileName = `${prefix}${Date.now()}-${Math.random().toString(36).substring(2)}-${safeName}`;
             const filePath = `marketplace/${userId}/${fileName}`;
 
             const { data, error } = await db.storage
               .from("uploads")
-              .upload(filePath, file.buffer, {
+              .upload(filePath, imageBuffer, {
                 contentType: file.mimetype,
                 upsert: false,
               });
@@ -951,7 +1025,6 @@ export const updateMarketplaceItem = async (req, res) => {
     });
   }
 };
-
 // Delete marketplace item
 export const deleteMarketplaceItem = async (req, res) => {
   try {

@@ -236,7 +236,7 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
                 className="museo-checkbox"
               />
               <span className="museo-checkbox-label">
-                <strong>🔒 Protect with watermark</strong>
+                <strong>Protect with watermark</strong>
                 <small style={{ display: 'block', marginTop: '4px', color: 'var(--museo-text-muted)', fontWeight: 'normal' }}>
                   Add watermark to protect your artwork from unauthorized use
                 </small>

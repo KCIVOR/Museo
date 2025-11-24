@@ -127,12 +127,12 @@ export default function StatisticsTab() {
         )}
 
         <button
-          className="btn btn-ghost"
+          className="btn btn-primary btn-sm"
           onClick={loadStatistics}
           disabled={loading}
           style={{ marginLeft: 'auto' }}
         >
-          ↻ Refresh
+          Refresh
         </button>
       </div>
 

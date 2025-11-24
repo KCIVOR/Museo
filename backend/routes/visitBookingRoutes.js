@@ -58,12 +58,12 @@ router.post(
 ); // Submit a booking (no auth required)
 
 // Protected routes (require authentication)
-router.get('/my-bookings', authMiddleware, getMyBookings); // Get user's own bookings
+router.get('/my-bookings', getMyBookings); // Get user's own bookings
 
 // Admin only routes
 router.get(
   '/stats',
-  authMiddleware,
+
   requirePermission('admin'),
   validateRequest(
     { query: { startDate: { type: 'date', required: false }, endDate: { type: 'date', required: false } } },
@@ -73,7 +73,6 @@ router.get(
 ); // Get statistics
 router.get(
   '/',
-  authMiddleware,
   requirePermission('admin'),
   validateRequest(
     {
@@ -92,7 +91,7 @@ router.get(
 ); // Get all bookings
 router.get(
   '/:id',
-  authMiddleware,
+  requirePermission('admin'),
   validateRequest(
     { params: { id: { type: 'string', required: true, min: 1 } } },
     { source: 'params', allowUnknown: false }
@@ -101,7 +100,7 @@ router.get(
 ); // Get single booking (admin or owner)
 router.put(
   '/:id',
-  authMiddleware,
+
   requirePermission('admin'),
   validateRequest(
     {
@@ -119,7 +118,7 @@ router.put(
 ); // Update booking
 router.delete(
   '/:id',
-  authMiddleware,
+
   requirePermission('admin'),
   validateRequest(
     { params: { id: { type: 'string', required: true, min: 1 } } },

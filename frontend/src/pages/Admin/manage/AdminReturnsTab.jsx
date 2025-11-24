@@ -65,7 +65,7 @@ export default function AdminReturnsTab() {
             <input type="checkbox" checked={onlyDisputed} onChange={(e)=>setOnlyDisputed(e.target.checked)} />
             <span className="museo-form-helper">Only disputed</span>
           </label>
-          <button className="btn btn-ghost btn-sm" onClick={loadData} disabled={loading}>
+          <button className="btn-primary btn-sm" onClick={loadData} disabled={loading}>
             {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>

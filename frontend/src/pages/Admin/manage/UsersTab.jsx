@@ -175,7 +175,7 @@ export default function UsersTab() {
           />
         </div>
         <button 
-          className="btn btn-ghost btn-sm"
+          className="btn btn-primary btn-sm"
           onClick={() => loadUsers(1)}
           disabled={loading}
           style={{
@@ -184,7 +184,6 @@ export default function UsersTab() {
             gap: 'var(--museo-space-2)'
           }}
         >
-          <span style={{ fontSize: '18px' }}>↻</span>
           {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>

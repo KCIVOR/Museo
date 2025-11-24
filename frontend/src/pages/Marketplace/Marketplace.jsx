@@ -42,6 +42,10 @@ export default function Marketplace() {
   const [itemsHasMore, setItemsHasMore] = useState(true);
   const [loadingMoreItems, setLoadingMoreItems] = useState(false);
 
+  // Saved preferences (from /gallery/preferences)
+  const [savedCategorySlugs, setSavedCategorySlugs] = useState(new Set());
+  const [savedCategoryNames, setSavedCategoryNames] = useState(new Set());
+
   // Global alert modal state (uses pages/Shared/AlertModal.jsx)
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertTitle, setAlertTitle] = useState('Notice');
@@ -52,6 +56,43 @@ export default function Marketplace() {
     setAlertTitle(title);
     setAlertOkText(okText);
     setAlertOpen(true);
+  };
+
+  // Preference helpers
+  const getItemCategories = (item) => {
+    const arr = Array.isArray(item?.categories) ? item.categories : [];
+    return arr.map((v) => String(v || '').toLowerCase()).filter(Boolean);
+  };
+
+  const reorderByPreference = (items) => {
+    if (!items || !Array.isArray(items) || (!savedCategorySlugs.size && !savedCategoryNames.size)) {
+      return items;
+    }
+    const preferred = [];
+    const others = [];
+    for (const it of items) {
+      const cats = getItemCategories(it);
+      const hasMatch = cats.some((c) => savedCategorySlugs.has(c) || savedCategoryNames.has(c));
+      if (hasMatch) preferred.push(it); else others.push(it);
+    }
+    return [...preferred, ...others];
+  };
+
+  const fetchSavedCategories = async () => {
+    try {
+      const res = await fetch(`${API}/gallery/preferences`, { method: 'GET', credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json().catch(() => ({}));
+      const list = Array.isArray(json?.categories) ? json.categories : [];
+      const slugs = new Set(list.map((c) => String(c?.slug || '').toLowerCase()).filter(Boolean));
+      const names = new Set(list.map((c) => String(c?.name || '').toLowerCase()).filter(Boolean));
+      setSavedCategorySlugs(slugs);
+      setSavedCategoryNames(names);
+    } catch (e) {
+      // On 401 or any failure, keep preferences empty
+      setSavedCategorySlugs(new Set());
+      setSavedCategoryNames(new Set());
+    }
   };
 
   // Fetch marketplace items from API (includes both buy-now and auctions)
@@ -103,6 +144,9 @@ export default function Marketplace() {
           items.sort((a, b) => (b.views || 0) - (a.views || 0));
           break;
       }
+      
+      // Reorder by user preferences (preferred first, stable within groups)
+      items = reorderByPreference(items);
       
       if (append) {
         setMarketplaceItems(prev => [...prev, ...items]);
@@ -160,6 +204,18 @@ export default function Marketplace() {
     setCategoryPage(1);
     loadCategoriesPage(1);
   }, []);
+
+  // Load user saved preferences on mount and when user changes
+  useEffect(() => {
+    fetchSavedCategories();
+  }, [userData?.id]);
+
+  // Reorder currently loaded items when preferences become available
+  useEffect(() => {
+    if ((savedCategorySlugs.size || savedCategoryNames.size) && marketplaceItems.length > 0) {
+      setMarketplaceItems((prev) => reorderByPreference([...prev]));
+    }
+  }, [savedCategorySlugs, savedCategoryNames]);
 
   // Sidebar categories: All + DB categories
   const genericIcon = (

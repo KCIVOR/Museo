@@ -25,8 +25,6 @@ const upload = multer({
   }
 });
 
-// All routes require authentication (applied in server.js already, but adding for clarity)
-router.use(authMiddleware);
 
 // ========================================
 // BUYER ROUTES

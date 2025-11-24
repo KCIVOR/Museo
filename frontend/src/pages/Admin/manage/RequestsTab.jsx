@@ -388,7 +388,7 @@ export default function RequestsTab() {
         </select>
         
         <button 
-          className="btn btn-ghost btn-sm"
+          className="btn btn-primary btn-sm"
           onClick={loadRequests}
           disabled={loading}
           style={{
@@ -397,7 +397,6 @@ export default function RequestsTab() {
             gap: 'var(--museo-space-2)'
           }}
         >
-          <span style={{ fontSize: '18px' }}>↻</span>
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>

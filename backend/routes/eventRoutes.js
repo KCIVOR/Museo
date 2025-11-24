@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import { validateRequest } from "../middleware/validation.js";
 import { getEvents,getEventById, createEvent, updateEvent, deleteEvent, joinEvent, isJoined, myEvents, eventParticipants, removeParticipant, notifyEventEndedController } from "../controllers/eventController.js";
-
+import { requirePermission } from '../middleware/permission.js';
 
 const router = express.Router();
 
@@ -23,6 +23,7 @@ router.get(
 
 router.post(
   "/create",
+  requirePermission('admin'),
   upload.single('image'),
   validateRequest(
     {
@@ -82,6 +83,7 @@ router.post(
 
 router.post(
   "/removeParticipant",
+  requirePermission('admin'),
   validateRequest(
     { body: { eventId: { type: "string", required: true, min: 1 }, userId: { type: "string", required: true, min: 1 } } },
     { source: "body", allowUnknown: false, stripUnknown: true }

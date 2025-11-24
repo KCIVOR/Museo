@@ -505,7 +505,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                 />
               </div>
             </div>
-          </div>
             
             <div className="form-row">
               <div className="museo-form-group">

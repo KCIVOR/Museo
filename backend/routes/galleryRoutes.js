@@ -18,17 +18,6 @@ router.get('/trigger-top-arts', async (req, res) => {
   }
 });
 
-router.post('/trigger-top-arts', async (req, res) => {
-  try {
-    console.log('🚀 Manual trigger received (POST) - generating top arts...');
-    await generateWeeklyTopArts();
-    res.json({ success: true, message: 'Top arts generation triggered successfully' });
-  } catch (error) {
-    console.error('Manual trigger failed:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -49,15 +38,6 @@ const upload = multer({
   }
 });
 
-// Get available art categories (legacy static)
-router.get(
-  '/getCategories',
-  validateRequest(
-    { query: { page: { type: 'integer', default: 1, min: 1 }, limit: { type: 'integer', default: 15, min: 1, max: 100 } } },
-    { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
-  ),
-  getCategories
-);
 
 // New DB-driven categories
 router.get(

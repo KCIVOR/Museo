@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
+import CategorySelector from '../../components/modal-features/CategorySelector';
 import './css/addProductModal.css';
 
 const API = import.meta.env.VITE_API_BASE;
@@ -21,6 +22,41 @@ const EditAuctionItemModal = ({ isOpen, onClose, item, onSuccess }) => {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [applyWatermark, setApplyWatermark] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("");
+  const [dbCategoryOptions, setDbCategoryOptions] = useState([]);
+  const [isLoadingDbCategories, setIsLoadingDbCategories] = useState(false);
+
+  // Load categories from DB
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setIsLoadingDbCategories(true);
+        const res = await fetch(`${API}/gallery/categories?page=1&limit=200&nocache=1`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        const sorted = list.sort((a, b) => {
+          if (a.slug === 'other') return 1;
+          if (b.slug === 'other') return -1;
+          return 0;
+        });
+        const opts = sorted.map(c => ({
+          value: String(c.slug ?? c.categoryId ?? c.name),
+          label: String(c.name ?? c.slug ?? c.categoryId)
+        }));
+        if (!active) return;
+        setDbCategoryOptions(opts);
+      } catch (e) {
+        console.error('Failed to load DB categories:', e);
+        if (active) setDbCategoryOptions([]);
+      } finally {
+        if (active) setIsLoadingDbCategories(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   // Pre-fill form when item changes
   useEffect(() => {
@@ -88,6 +124,8 @@ const EditAuctionItemModal = ({ isOpen, onClose, item, onSuccess }) => {
         condition: formData.condition,
         categories: formData.categories,
         tags: formData.tags,
+        applyWatermark: applyWatermark.toString(),
+        watermarkText: watermarkText.trim() || '',
       };
 
       const response = await fetch(`${API}/auctions/items/${item.auctionItemId}`, {
@@ -279,28 +317,57 @@ const EditAuctionItemModal = ({ isOpen, onClose, item, onSuccess }) => {
             </div>
           </div>
 
+          {/* Protection */}
+          <div className="form-section">
+            <h3 className="section-title">Protection</h3>
+            <div className="museo-form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  className="museo-checkbox"
+                  checked={applyWatermark}
+                  onChange={(e) => setApplyWatermark(e.target.checked)}
+                />
+                <span>Protect images with watermark</span>
+              </label>
+              {applyWatermark && (
+                <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
+                  <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
+                    Custom watermark text (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    className="museo-input"
+                    placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
+                    style={{ fontSize: '14px' }}
+                  />
+                  <span className="museo-form-helper">Leave blank to use default format with your username</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="form-section">
             <h3 className="section-title">Categorization</h3>
             
-            <div className="museo-form-group">
-              <label htmlFor="categories" className="museo-label museo-label--required">
-                Categories
-              </label>
-              <input
-                type="text"
-                id="categories"
-                placeholder="e.g., Painting, Contemporary Art"
-                value={formData.categories.join(', ')}
-                onChange={(e) => handleArrayInputChange(e, 'categories')}
-                className={`museo-input ${errors.categories ? 'museo-input--error' : ''}`}
+            <div className="museo-form-group" style={{ width: '100%' }}>
+              <CategorySelector
+                selected={formData.categories}
+                onChange={(vals) => setFormData(prev => ({ ...prev, categories: vals }))}
+                error={errors.categories}
+                title="Categories"
+                description="Select categories that best describe this item"
+                options={dbCategoryOptions}
+                loading={isLoadingDbCategories}
+                maxPreview={16}
               />
-              <span className="museo-form-helper">Separate with commas</span>
-              {errors.categories && <span className="museo-form-error">{errors.categories}</span>}
             </div>
 
             <div className="museo-form-group">
               <label htmlFor="tags" className="museo-label">
-                Tags
+                Tags (comma-separated)
               </label>
               <input
                 type="text"

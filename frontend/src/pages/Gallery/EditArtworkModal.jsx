@@ -189,7 +189,7 @@ const EditArtworkModal = ({ isOpen, onClose, artwork, onArtworkUpdated }) => {
                     className="museo-checkbox"
                   />
                   <span className="museo-checkbox-label">
-                    <strong>🔒 Protect new images with watermark</strong>
+                    <strong>Protect new images with watermark</strong>
                     <small style={{ display: 'block', marginTop: '4px', color: 'var(--museo-text-muted)', fontWeight: 'normal' }}>
                       Add watermark to newly uploaded images (existing images remain unchanged)
                     </small>

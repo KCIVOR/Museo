@@ -307,7 +307,7 @@ export default function Search() {
                   <div 
                     key={product.id} 
                     className="museo-event-card"
-                    onClick={() => setSelectedProduct(product)}
+                    onClick={() => navigate(`/marketplace/product/${product.marketItemId || product.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <img className="museo-event-image" src={product.image || product.primary_image || "https://via.placeholder.com/200"} alt={product.title} loading="lazy" />
@@ -334,20 +334,7 @@ export default function Search() {
                   <div 
                     key={event.eventId || event.id} 
                     className="museo-event-card"
-                    onClick={() => setSelectedEvent({
-                      eventId: event.eventId || event.id,
-                      slug: event.eventId || event.id || event.title,
-                      title: event.title,
-                      hero: event.image,
-                      lead: event.details,
-                      activities: Array.isArray(event.activities) ? event.activities : (event.activities ? [event.activities] : []),
-                      admission: event.admission,
-                      admissionNote: event.admissionNote,
-                      venueName: event.venueName,
-                      venueAddress: event.venueAddress,
-                      start: event.startsAt,
-                      end: event.endsAt,
-                    })}
+                    onClick={() => navigate(`/event/${event.eventId || event.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <img className="museo-event-image" src={event.image || "https://via.placeholder.com/200"} alt={event.title} loading="lazy" />
@@ -373,19 +360,7 @@ export default function Search() {
                   <div
                     key={auc.auctionId || auc.id}
                     className="museo-event-card"
-                    onClick={() => setSelectedAuction({
-                      auctionId: auc.auctionId || auc.id,
-                      title: auc.title,
-                      description: auc.description,
-                      primary_image: auc.primary_image || auc.image,
-                      images: Array.isArray(auc.images) ? auc.images : (auc.primary_image ? [auc.primary_image] : []),
-                      startPrice: auc.startPrice,
-                      reservePrice: auc.reservePrice,
-                      minIncrement: auc.minIncrement,
-                      startAt: auc.startAt,
-                      endAt: auc.endAt,
-                      status: auc.status,
-                    })}
+                    onClick={() => navigate(`/marketplace/product/${auc.auctionId || auc.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <span className={`event-status ${getStatusClass(auc.status)}`}>{auc.status || 'Auction'}</span>

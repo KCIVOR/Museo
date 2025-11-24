@@ -96,6 +96,7 @@ async function searchAuctions(q, page, limit) {
     .from('auctions')
     .select('auctionId, status, endAt, startAt, startPrice, reservePrice, minIncrement, auction_items!inner(title, primary_image, images, description)', { count: 'exact' })
     .or(`title.ilike.${star},description.ilike.${star}`, { foreignTable: 'auction_items' })
+    .in('status', ['active', 'scheduled'])
     .order('endAt', { ascending: true })
     .range(offset, offset + limit - 1);
   const { data, error, count } = await query;

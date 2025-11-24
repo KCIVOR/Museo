@@ -102,7 +102,7 @@ app.use("/api/message", authMiddleware, messageRoutes)
 app.use("/api/gallery", authMiddleware, galleryRoutes)
 
 // Visit booking routes (public POST, protected GET/PUT/DELETE)
-app.use("/api/visit-bookings", visitBookingRoutes)
+app.use("/api/visit-bookings", authMiddleware, visitBookingRoutes)
 
 // Marketplace routes
 app.use("/api/marketplace", authMiddleware, marketplaceRoutes)

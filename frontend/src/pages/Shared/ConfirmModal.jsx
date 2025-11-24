@@ -1,23 +1,28 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import "../../styles/main.css";
 
 export default function ConfirmModal({ open, title = "Confirm", message, confirmText = "Confirm", cancelText = "Cancel", onConfirm, onCancel }) {
   if (!open) return null;
-  
-  return (
-    <div 
-      className="museo-modal-overlay" 
-      style={{ zIndex: 1070 }} 
+
+  // Render above artwork modals (overlay: 9999, modal: 10000)
+  const overlayZ = 11000;
+  const dialogZ = overlayZ + 1;
+
+  const modal = (
+    <div
+      className="museo-modal-overlay"
+      style={{ zIndex: overlayZ }}
       onMouseDown={(e) => e.target === e.currentTarget && onCancel?.()}
     >
-      <article 
-        role="dialog" 
-        aria-modal="true" 
-        aria-label={title} 
+      <article
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="museo-modal museo-modal--sm"
-        style={{ 
-          position: "relative", 
-          zIndex: 1071,
+        style={{
+          position: "relative",
+          zIndex: dialogZ,
           maxWidth: '500px'
         }}
       >
@@ -115,4 +120,7 @@ export default function ConfirmModal({ open, title = "Confirm", message, confirm
       </article>
     </div>
   );
+
+  // Use a portal so this modal is not constrained by parent stacking contexts
+  return createPortal(modal, document.body);
 }
