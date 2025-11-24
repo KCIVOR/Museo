@@ -32,12 +32,6 @@ export default function Settings() {
   const [pwdMsg, setPwdMsg] = useState("");
   const [pwdMsgType, setPwdMsgType] = useState("");
 
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [emailCurrentPassword, setEmailCurrentPassword] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailMsg, setEmailMsg] = useState("");
-  const [emailMsgType, setEmailMsgType] = useState("");
 
   // Edit profile modal state
   const [openEditProfile, setOpenEditProfile] = useState(false);
@@ -158,45 +152,6 @@ export default function Settings() {
     }
   };
 
-  // Handlers: Change Email
-  const handleChangeEmailSubmit = async (e) => {
-    e.preventDefault();
-    setEmailMsg("");
-    if (!newEmail) {
-      setEmailMsgType("error");
-      setEmailMsg('Please enter a new email');
-      return;
-    }
-    try {
-      setEmailLoading(true);
-      const API = import.meta.env.VITE_API_BASE;
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess?.session?.access_token || null;
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(`${API}/auth/change-email`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ newEmail, currentPassword: emailCurrentPassword, access_token: token })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setEmailMsgType('error');
-        setEmailMsg(data.message || 'Failed to start email change');
-      } else {
-        setEmailMsgType('success');
-        setEmailMsg(data.message || 'Verification sent to the new email');
-        setShowEmailForm(false);
-      }
-    } catch (err) {
-      setEmailMsgType('error');
-      setEmailMsg('An error occurred. Please try again.');
-    } finally {
-      setEmailLoading(false);
-    }
-  };
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -453,56 +408,6 @@ export default function Settings() {
                       {pwdLoading ? 'Saving...' : 'Save Password'}
                     </button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowPwdForm(false)} disabled={pwdLoading}>
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-              
-              <div className="settings-item">
-                <div className="settings-item-info">
-                  <label className="museo-label">Email</label>
-                  <p className="settings-description">{userData?.email || 'user@example.com'}</p>
-                </div>
-                <button className="btn btn-secondary btn-sm" onClick={() => setShowEmailForm(v => !v)}>
-                  {showEmailForm ? 'Cancel' : 'Update Email'}
-                </button>
-              </div>
-              {showEmailForm && (
-                <form onSubmit={handleChangeEmailSubmit} className="museo-form" style={{ marginTop: '12px', display:'grid', gap:'12px' }}>
-                  <div className="museo-form-field">
-                    <label className="museo-label">New Email</label>
-                    <input
-                      type="email"
-                      className="museo-input"
-                      value={newEmail}
-                      onChange={e => setNewEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                      disabled={emailLoading}
-                    />
-                  </div>
-                  <div className="museo-form-field">
-                    <label className="museo-label">Current Password (optional)</label>
-                    <input
-                      type="password"
-                      className="museo-input"
-                      value={emailCurrentPassword}
-                      onChange={e => setEmailCurrentPassword(e.target.value)}
-                      placeholder="For extra verification"
-                      disabled={emailLoading}
-                    />
-                  </div>
-                  {emailMsg && (
-                    <div className={emailMsgType === 'error' ? 'auth-message auth-message--error' : 'auth-message auth-message--success'}>
-                      {emailMsg}
-                    </div>
-                  )}
-                  <div style={{ display:'flex', gap:'8px' }}>
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={emailLoading}>
-                      {emailLoading ? 'Sending...' : 'Send Verification'}
-                    </button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowEmailForm(false)} disabled={emailLoading}>
                       Cancel
                     </button>
                   </div>
