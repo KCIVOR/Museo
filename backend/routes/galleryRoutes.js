@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { validateRequest } from "../middleware/validation.js";
-import {maintenanceRotation , getCategories, getFilteredArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, deleteGalleryComment, updateGalleryComment, reportGalleryComment, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt } from "../controllers/galleryController.js";
+import { maintenanceRotation , getCategories, getFilteredArtworks, getUserArtworks, uploadArtwork, getArtPreference, createGalleryReact, getGalleryReact, createGalleryComment, getGalleryComments, deleteGalleryComment, updateGalleryComment, reportGalleryComment, trackArtworkView, getArtworkViews, getBatchArtworkStats, getCurrentTopArts, generateWeeklyTopArts, updateGalleryArt, deleteGalleryArt, listCategories, getUserSavedCategories, setUserSavedCategories } from "../controllers/galleryController.js";
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ const upload = multer({
   }
 });
 
-// Get available art categories
+// Get available art categories (legacy static)
 router.get(
   '/getCategories',
   validateRequest(
@@ -57,6 +57,16 @@ router.get(
     { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
   ),
   getCategories
+);
+
+// New DB-driven categories
+router.get(
+  '/categories',
+  validateRequest(
+    { query: { page: { type: 'integer', default: 1, min: 1 }, limit: { type: 'integer', default: 100, min: 1, max: 200 } } },
+    { source: 'query', coerce: true, allowUnknown: true, stripUnknown: true }
+  ),
+  listCategories
 );
 
 router.post('/maintenance', maintenanceRotation);
@@ -78,7 +88,34 @@ router.get(
   getFilteredArtworks
 );
 
+// Get artworks for a specific user (artist) with pagination (default 10)
+router.get(
+  '/user-artworks',
+  validateRequest(
+    {
+      query: {
+        userId: { type: 'string', required: true, min: 1 },
+        page: { type: 'integer', default: 1, min: 1 },
+        limit: { type: 'integer', default: 10, min: 1, max: 100 }
+      }
+    },
+    { source: 'query', coerce: true, allowUnknown: false, stripUnknown: true }
+  ),
+  getUserArtworks
+);
+
 router.get('/getArtPreference', getArtPreference);
+
+// User saved categories (new)
+router.get('/preferences', getUserSavedCategories);
+router.post(
+  '/preferences',
+  validateRequest(
+    { body: { categoryIds: { type: 'array', required: true, min: 0, items: { type: 'string', min: 1 } } } },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  setUserSavedCategories
+);
 
 // Upload new artwork (with file upload middleware)
 router.post('/upload', (req, res, next) => {

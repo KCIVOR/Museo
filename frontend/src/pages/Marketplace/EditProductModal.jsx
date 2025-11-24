@@ -29,6 +29,8 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
   const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [applyWatermark, setApplyWatermark] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("");
 
   // Load product data when modal opens
   useEffect(() => {
@@ -192,6 +194,11 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
         newImages.forEach((image) => {
           submitData.append('images', image.file);
         });
+        // Watermark controls only matter when new images are uploaded
+        submitData.append('applyWatermark', applyWatermark.toString());
+        if (watermarkText.trim()) {
+          submitData.append('watermarkText', watermarkText.trim());
+        }
       }
       
       // If no images at all, that means user removed all
@@ -298,6 +305,38 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
                 />
                 {errors.title && <span className="museo-form-error">{errors.title}</span>}
               </div>
+        
+        {/* Protection */}
+        <div className="form-section">
+          <h3 className="section-title">Protection</h3>
+          <div className="museo-form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                className="museo-checkbox"
+                checked={applyWatermark}
+                onChange={(e) => setApplyWatermark(e.target.checked)}
+              />
+              <span>Protect images with watermark</span>
+            </label>
+            {applyWatermark && (
+              <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
+                <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
+                  Custom watermark text (optional)
+                </label>
+                <input
+                  type="text"
+                  value={watermarkText}
+                  onChange={(e) => setWatermarkText(e.target.value)}
+                  className="museo-input"
+                  placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
+                  style={{ fontSize: '14px' }}
+                />
+                <span className="museo-form-helper">Leave blank to use default format with your username</span>
+              </div>
+            )}
+          </div>
+        </div>
               
               <div className="museo-form-group">
                 <label htmlFor="price" className="museo-label museo-label--required">
@@ -330,19 +369,12 @@ const EditProductModal = ({ isOpen, onClose, onSuccess, product }) => {
                 onChange={handleInputChange}
                 rows="4"
                 placeholder="Describe your product in detail..."
-                className="museo-textarea"
-              />
-            </div>
-          </div>
-
-          {/* Product Details */}
-          <div className="form-section">
-            <h3 className="section-title">Product Details</h3>
             
             {/* Medium and Dimensions */}
             <div className="form-row">
               <div className="museo-form-group">
                 <label htmlFor="medium" className="museo-label museo-label--required">
+{{ ... }}
                   Medium
                 </label>
                 <input

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
 import CategorySelector from '../../components/modal-features/CategorySelector';
 import AlertModal from '../Shared/AlertModal';
 import './css/UploadArtModal.css';
+const API = import.meta.env.VITE_API_BASE;
 
 const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,40 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successAlert, setSuccessAlert] = useState({ show: false, title: '', message: '' });
+  const [dbCategoryOptions, setDbCategoryOptions] = useState([]);
+  const [isLoadingDbCategories, setIsLoadingDbCategories] = useState(false);
+
+  // Load categories from DB (category table)
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setIsLoadingDbCategories(true);
+        const res = await fetch(`${API}/gallery/categories?page=1&limit=200&nocache=1`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        // Sort: keep 'Other' last if present
+        const sorted = list.sort((a, b) => {
+          if (a.slug === 'other') return 1;
+          if (b.slug === 'other') return -1;
+          return 0;
+        });
+        const opts = sorted.map(c => ({
+          value: String(c.slug ?? c.categoryId ?? c.name),
+          label: String(c.name ?? c.slug ?? c.categoryId)
+        }));
+        if (!active) return;
+        setDbCategoryOptions(opts);
+      } catch (e) {
+        console.error('Failed to load DB categories for UploadArtModal:', e);
+        if (active) setDbCategoryOptions([]); // Fallback to static options in CategorySelector
+      } finally {
+        if (active) setIsLoadingDbCategories(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -186,6 +221,9 @@ const UploadArtModal = ({ isOpen, onClose, onSubmit }) => {
             error={errors.categories}
             title="Categories"
             description="Select categories that best describe your artwork"
+            options={dbCategoryOptions}
+            loading={isLoadingDbCategories}
+            maxPreview={16}
           />
 
           {/* Watermark Toggle */}

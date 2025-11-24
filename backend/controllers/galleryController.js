@@ -55,13 +55,11 @@ export const getCategories = async (req, res) => {
       categories: paginatedCategories,
       totalCount: 0, // No longer calculating total count
       pagination: {
-        page,
         limit,
         total: categoryDefinitions.length,
         hasMore
       }
     };
-    
     // Save to cache (30 minutes TTL - categories rarely change)
     await cache.set(cacheKey, result, 1800);
     console.log('💾💾💾 CACHED (SHARED):', cacheKey);
@@ -76,6 +74,120 @@ export const getCategories = async (req, res) => {
       error: 'Internal server error',
       message: error.message 
     });
+  }
+};
+
+// Get artworks for a specific user (only if the user is an artist)
+export const getUserArtworks = async (req, res) => {
+  try {
+    const { userId, page = 1, limit = 10 } = req.query;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Check the target user's role; return empty set if not an artist
+    const { data: profile, error: profileError } = await db
+      .from('profile')
+      .select('role, firstName, middleName, lastName, profilePicture')
+      .eq('userId', userId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Profile lookup error:', profileError);
+      return res.status(500).json({ error: 'Failed to check user role' });
+    }
+
+    if (!profile || String(profile.role).toLowerCase() !== 'artist') {
+      // Not an artist → return an empty, well-formed response
+      return res.json({
+        success: true,
+        artworks: [],
+        pagination: { page: Number(page), limit: Number(limit), count: 0, hasMore: false, total: 0 }
+      });
+    }
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    const cacheKey = `gallery:user-artworks:${userId}:${pageNum}:${limitNum}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Fetch artworks from galleryart for this artist
+    const { data: artworks, error } = await db
+      .from('galleryart')
+      .select(`
+        galleryArtId,
+        title,
+        description,
+        medium,
+        image,
+        categories,
+        datePosted,
+        userId,
+        featured,
+        top_art_week
+      `)
+      .eq('userId', userId)
+      .order('datePosted', { ascending: false })
+      .range(offset, offset + limitNum - 1);
+
+    if (error) {
+      console.error('Database error (user-artworks):', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Build artist info from profile lookup above
+    const nameParts = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean);
+    const artistName = nameParts.length > 0 ? nameParts.join(' ') : 'Gallery Artist';
+
+    const formattedArtworks = (artworks || []).map((artwork) => ({
+      id: artwork.galleryArtId,
+      title: artwork.title,
+      description: artwork.description,
+      medium: artwork.medium,
+      image: artwork.image,
+      categories: artwork.categories,
+      datePosted: artwork.datePosted,
+      userId: artwork.userId,
+      featured: artwork.featured || false,
+      top_art_week: artwork.top_art_week,
+      artist: artistName,
+      artistProfilePicture: profile.profilePicture || null,
+      category: artwork.categories?.[0] || 'Uncategorized'
+    }));
+
+    // Count total only on first page
+    let totalCount = null;
+    if (pageNum === 1) {
+      const { count } = await db
+        .from('galleryart')
+        .select('galleryArtId', { count: 'exact', head: true })
+        .eq('userId', userId);
+      totalCount = count;
+    }
+
+    const hasMore = formattedArtworks.length === limitNum;
+    const result = {
+      success: true,
+      artworks: formattedArtworks,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        count: formattedArtworks.length,
+        hasMore,
+        ...(totalCount !== null && { total: totalCount })
+      }
+    };
+
+    await cache.set(cacheKey, result, 900); // 15 minutes TTL
+    return res.json(result);
+  } catch (error) {
+    console.error('Error fetching user artworks:', error);
+    return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
 
@@ -2082,3 +2194,132 @@ const triggerTopArtsGeneration = async (req, res) => {
 
 // Export the new functions
 export { getCurrentTopArts, generateWeeklyTopArts, triggerTopArtsGeneration };
+
+// =====================
+// New DB-driven categories + saved preferences
+// =====================
+
+export const listCategories = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '100', 10);
+    const offset = (page - 1) * limit;
+    const noCache = String(req.query.nocache || '0') === '1';
+
+    const cacheKey = `gallery:categories:db:${page}:${limit}`;
+    if (!noCache) {
+      const cached = await cache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
+
+    const { data, error } = await db
+      .from('category')
+      .select('categoryId, slug, name, active, sortOrder')
+      .eq('active', true)
+      .order('sortOrder', { ascending: true })
+      .order('name', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('listCategories error:', error);
+      return res.status(500).json({ error: 'Failed to load categories' });
+    }
+
+    const result = {
+      success: true,
+      categories: data || [],
+      pagination: { page, limit, count: data?.length || 0 }
+    };
+    if (!noCache) {
+      await cache.set(cacheKey, result, 1800);
+    }
+    res.set('Cache-Control', noCache ? 'no-store' : 'public, max-age=300');
+    return res.json(result);
+  } catch (err) {
+    console.error('listCategories fatal:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getUserSavedCategories = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data, error } = await db
+      .from('userSavedCategory')
+      .select('categoryId, category:category(categoryId, slug, name, active, sortOrder)')
+      .eq('userId', userId);
+
+    if (error) {
+      console.error('Error fetching user saved categories:', error);
+      return res.status(500).json({ error: 'Failed to fetch preferences' });
+    }
+
+    const categories = (data || [])
+      .map((row) => row.category)
+      .filter(Boolean)
+      .filter((c) => c.active !== false);
+
+    return res.json({ success: true, categories });
+  } catch (err) {
+    console.error('getUserSavedCategories error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const setUserSavedCategories = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { categoryIds } = req.body || {};
+    if (!Array.isArray(categoryIds)) {
+      return res.status(400).json({ error: 'categoryIds must be an array of UUIDs' });
+    }
+
+    // Clear existing
+    const { error: delErr } = await db
+      .from('userSavedCategory')
+      .delete()
+      .eq('userId', userId);
+    if (delErr) {
+      console.error('Failed clearing existing preferences:', delErr);
+      return res.status(500).json({ error: 'Failed to update preferences' });
+    }
+
+    if (categoryIds.length === 0) {
+      return res.json({ success: true, categories: [] });
+    }
+
+    // Insert new
+    const rows = categoryIds.map((cid) => ({ userId, categoryId: cid }));
+    const { data: inserted, error: insErr } = await db
+      .from('userSavedCategory')
+      .insert(rows)
+      .select('categoryId');
+
+    if (insErr) {
+      console.error('Failed inserting preferences:', insErr);
+      return res.status(500).json({ error: 'Failed to save preferences' });
+    }
+
+    // Update profile.preferenceStatus to true
+    const { error: updateErr } = await db
+      .from('profile')
+      .update({ preferenceStatus: true })
+      .eq('userId', userId);
+
+    if (updateErr) {
+      console.error('Failed updating preferenceStatus:', updateErr);
+      // Don't fail the request; categories were saved
+    } else {
+      console.log(`✅ Set preferenceStatus=true for user ${userId}`);
+    }
+
+    return res.status(201).json({ success: true, count: inserted?.length || 0 });
+  } catch (err) {
+    console.error('setUserSavedCategories error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

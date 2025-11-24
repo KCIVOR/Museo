@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './css/InterestsSelection.css';
 
 const InterestsSelection = ({ isOpen = true, onClose }) => {
-  const [selectedInterests, setSelectedInterests] = useState([]);
+  const [selectedInterests, setSelectedInterests] = useState([]); // categoryIds (UUIDs) after DB load
   const [animationDelay, setAnimationDelay] = useState(0);
+  const [dbCategories, setDbCategories] = useState([]); // fetched categories { id, slug, name, color, svg }
+  const API = import.meta.env.VITE_API_BASE;
 
 
   const artCategories = [
@@ -255,6 +257,65 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
     }
   ];
 
+  // Visual color mapping by slug for DB categories
+  const visualColorBySlug = {
+    classicalArt: 'var(--museo-primary)',
+    contemporary: 'var(--museo-accent)',
+    impressionist: 'var(--museo-gold)',
+    abstractArt: 'var(--museo-success)',
+    sculpture: 'var(--museo-primary-dark)',
+    photography: 'var(--museo-info)',
+    digitalArt: 'var(--museo-accent-hover)',
+    streetArt: 'var(--museo-warning)',
+    minimalist: 'var(--museo-gray-600)',
+    surrealist: 'var(--museo-error)',
+    landscape: 'var(--museo-success)',
+    portrait: 'var(--museo-primary-light)',
+    miniature: 'var(--museo-warning)',
+    expressionist: 'var(--museo-error)',
+    realism: 'var(--museo-success)',
+    conceptual: 'var(--museo-info)'
+  };
+
+  const defaultIcon = (
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="20" fill="currentColor" opacity="0.2" />
+      <circle cx="32" cy="32" r="6" fill="currentColor" />
+    </svg>
+  );
+
+  // Load DB categories for real IDs
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/gallery/categories?page=1&limit=50&nocache=1`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load categories');
+        const data = await res.json();
+        if (!active) return;
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        // Sort so "Other" is last
+        const sorted = list.sort((a, b) => {
+          if (a.slug === 'other') return 1;
+          if (b.slug === 'other') return -1;
+          return 0;
+        });
+        const mapped = sorted.map(c => ({
+          id: c.categoryId,
+          slug: c.slug,
+          name: c.name,
+          color: visualColorBySlug[c.slug] || 'var(--museo-primary)',
+          svg: defaultIcon
+        }));
+        setDbCategories(mapped);
+      } catch (e) {
+        console.error('Failed to fetch categories:', e);
+        setDbCategories([]);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
   const toggleInterest = (categoryId) => {
     setSelectedInterests(prev => 
       prev.includes(categoryId)
@@ -264,42 +325,25 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
   };
 
   const handleContinue = async () => {
+    // Ensure we have DB categories so selectedInterests are UUIDs
+    const sourceCategories = dbCategories.length > 0 ? dbCategories : [];
     if (selectedInterests.length === 0) {
       // Don't allow continuing without selection
       console.log("No interests selected, cannot continue");
       return;
     }
+    if (sourceCategories.length === 0) {
+      alert('Please wait for categories to load and try again.');
+      return;
+    }
 
     try {
-      // Convert selected interests to database format
-      const preferences = {
-        classicalArt: selectedInterests.includes('classical'),
-        contemporaryArt: selectedInterests.includes('contemporary'),
-        impressionist: selectedInterests.includes('impressionist'),
-        abstractArt: selectedInterests.includes('abstract'),
-        sculpture: selectedInterests.includes('sculpture'),
-        photography: selectedInterests.includes('photography'),
-        digitalArt: selectedInterests.includes('digital'),
-        streetArt: selectedInterests.includes('street'),
-        minimalist: selectedInterests.includes('minimalist'),
-        surrealist: selectedInterests.includes('surrealist'),
-        landscape: selectedInterests.includes('landscape'),
-        portrait: selectedInterests.includes('portrait'),
-        miniature: selectedInterests.includes('miniature'),
-        expressionist: selectedInterests.includes('expressionist'),
-        realism: selectedInterests.includes('realism'),
-        conceptual: selectedInterests.includes('conceptual')
-      };
-
-      // Save preferences to database
-      const API = import.meta.env.VITE_API_BASE;
-      const response = await fetch(`${API}/profile/saveArtPreferences`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(preferences)
+      // Save preferences to new endpoint with categoryIds
+      const response = await fetch(`${API}/gallery/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ categoryIds: selectedInterests })
       });
 
       if (!response.ok) {
@@ -344,14 +388,9 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
         <div className="interests-content">
         {/* Header Section */}
         <div className="interests-header">
-          <div className="header-icon-container">
-            <div className="header-icon">
-              <span>🎨</span>
-            </div>
-            <h1 className="interests-title">
-              Curate Your Gallery
-            </h1>
-          </div>
+          <h1 className="interests-title">
+            Curate Your Gallery
+          </h1>
           
           <p className="interests-description">
             Select the art styles and movements that inspire you. We'll personalize your Museo experience 
@@ -359,15 +398,13 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
           </p>
           
           <div className="interests-hint">
-            <span>✨</span>
-            <span>Choose 3-8 interests for the best experience</span>
-            <span>✨</span>
+            <span>Choose at least 1 interest to continue</span>
           </div>
         </div>
 
         {/* Interest Tags Grid */}
         <div className="interests-grid">
-          {artCategories.map((category, index) => {
+          {(dbCategories.length > 0 ? dbCategories : artCategories).map((category, index) => {
             const isSelected = selectedInterests.includes(category.id);
             
             return (
@@ -375,75 +412,16 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
                 key={category.id}
                 className="interest-card animate"
                 onClick={() => toggleInterest(category.id)}
-                style={{
-                  animationDelay: `${index * 0.1}s`
-                }}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div
-                  className={`card-content ${isSelected ? 'selected' : ''}`}
-                  style={{
-                    background: isSelected 
-                      ? `linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%)`
-                      : undefined,
-                    borderColor: isSelected ? category.color : undefined,
-                    boxShadow: isSelected 
-                      ? `0 8px 25px -5px ${category.color}40, 0 4px 6px -2px ${category.color}20`
-                      : undefined
-                  }}
+                <span
+                  className={`museo-badge museo-badge--lg ${isSelected ? 'museo-badge--primary' : 'museo-badge--outline'} museo-badge--interactive`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleInterest(category.id); }}
                 >
-                  {/* Selection indicator */}
-                  {isSelected && (
-                    <div 
-                      className="selection-indicator"
-                      style={{ 
-                        background: category.color
-                      }}
-                    >
-                      ✓
-                    </div>
-                  )}
-
-                  {/* Decorative corner accents */}
-                  <div className="corner-accent-top">
-                    <div 
-                      className="corner-accent-top-inner"
-                      style={{ background: `linear-gradient(135deg, ${category.color} 0%, transparent 70%)` }}
-                    />
-                  </div>
-                  <div className="corner-accent-bottom">
-                    <div 
-                      className="corner-accent-bottom-inner"
-                      style={{ background: `linear-gradient(315deg, ${category.color} 0%, transparent 70%)` }}
-                    />
-                  </div>
-
-                  {/* SVG Icon */}
-                  <div className="card-svg-icon" style={{ color: category.color }}>
-                    {category.svg}
-                  </div>
-
-                  {/* Content */}
-                  <h3 
-                    className={`card-title ${isSelected ? 'selected' : ''}`}
-                    style={{
-                      color: isSelected ? category.color : undefined
-                    }}
-                  >
-                    {category.name}
-                  </h3>
-                  
-                  <p className="card-description">
-                    {category.description}
-                  </p>
-
-                  {/* Hover effect overlay */}
-                  <div 
-                    className="hover-overlay"
-                    style={{
-                      background: `linear-gradient(135deg, ${category.color}08 0%, transparent 100%)`
-                    }}
-                  />
-                </div>
+                  {category.name}
+                </span>
               </div>
             );
           })}
@@ -453,7 +431,6 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
         {selectedInterests.length > 0 && (
           <div className="selection-summary">
             <div className="summary-badge">
-              <span>🎯</span>
               <span>
                 {selectedInterests.length} interest{selectedInterests.length !== 1 ? 's' : ''} selected
               </span>
@@ -475,11 +452,6 @@ const InterestsSelection = ({ isOpen = true, onClose }) => {
 
         {/* Progress indicator */}
         <div className="progress-section">
-          <div className="progress-dots">
-            <div className="progress-dot active" />
-            <div className="progress-dot inactive" />
-            <div className="progress-dot inactive" />
-          </div>
           <p className="progress-text">
             Step 1 of 3 - Interest Selection
           </p>

@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
+import CategorySelector from '../../components/modal-features/CategorySelector';
 import './css/addProductModal.css';
 
 const API = import.meta.env.VITE_API_BASE;
@@ -29,6 +29,42 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dbCategoryOptions, setDbCategoryOptions] = useState([]);
+  const [isLoadingDbCategories, setIsLoadingDbCategories] = useState(false);
+  const [applyWatermark, setApplyWatermark] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("");
+
+  // Load categories from DB (category table)
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setIsLoadingDbCategories(true);
+        const res = await fetch(`${API}/gallery/categories?page=1&limit=200&nocache=1`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        // Keep 'Other' last
+        const sorted = list.sort((a, b) => {
+          if (a.slug === 'other') return 1;
+          if (b.slug === 'other') return -1;
+          return 0;
+        });
+        const opts = sorted.map(c => ({
+          value: String(c.slug ?? c.categoryId ?? c.name),
+          label: String(c.name ?? c.slug ?? c.categoryId)
+        }));
+        if (!active) return;
+        setDbCategoryOptions(opts);
+      } catch (e) {
+        console.error('Failed to load DB categories for AddProductModal:', e);
+        if (active) setDbCategoryOptions([]);
+      } finally {
+        if (active) setIsLoadingDbCategories(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -131,6 +167,11 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
       submitData.append('is_available', formData.is_available.toString());
       submitData.append('is_featured', formData.is_featured.toString());
       submitData.append('status', formData.status);
+      // Watermark controls
+      submitData.append('applyWatermark', applyWatermark.toString());
+      if (watermarkText.trim()) {
+        submitData.append('watermarkText', watermarkText.trim());
+      }
       
       // Add images
       images.forEach((image) => {
@@ -414,28 +455,57 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
             </div>
           </div>
+          {/* Protection */}
+          <div className="form-section">
+            <h3 className="section-title">Protection</h3>
+            <div className="museo-form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  className="museo-checkbox"
+                  checked={applyWatermark}
+                  onChange={(e) => setApplyWatermark(e.target.checked)}
+                />
+                <span>Protect images with watermark</span>
+              </label>
+              {applyWatermark && (
+                <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
+                  <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
+                    Custom watermark text (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    className="museo-input"
+                    placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
+                    style={{ fontSize: '14px' }}
+                  />
+                  <span className="museo-form-helper">Leave blank to use default format with your username</span>
+                </div>
+              )}
+            </div>
+          </div>
           
           {/* Categories and Tags */}
           <div className="form-section">
             <h3 className="section-title">Categories & Tags</h3>
             
             <div className="form-row">
-              <div className="museo-form-group">
-                <label htmlFor="categories" className="museo-label museo-label--required">
-                  Categories (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="categories"
-                  name="categories"
-                  value={formData.categories.join(', ')}
-                  onChange={(e) => handleArrayInputChange(e, 'categories')}
-                  placeholder="e.g., landscape, nature, contemporary"
-                  className={`museo-input ${errors.categories ? 'museo-input--error' : ''}`}
+              <div className="museo-form-group" style={{ width: '100%' }}>
+                <CategorySelector
+                  selected={formData.categories}
+                  onChange={(vals) => setFormData(prev => ({ ...prev, categories: vals }))}
+                  error={errors.categories}
+                  title="Categories"
+                  description="Select categories that best describe this product"
+                  options={dbCategoryOptions}
+                  loading={isLoadingDbCategories}
+                  maxPreview={16}
                 />
-                {errors.categories && <span className="museo-form-error">{errors.categories}</span>}
               </div>
             </div>
+          </div>
             
             <div className="form-row">
               <div className="museo-form-group">

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import ProductDetailModal from "./ProductDetailModal";
 import ProductAuctionModal from "./ProductAuctionModal";
 import "./css/marketplace.css";
+import AlertModal from "../Shared/AlertModal.jsx";
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -22,17 +23,50 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showAuctionModal, setShowAuctionModal] = useState(false);
   const hasOpenedProductRef = useRef(false);
+  const loadMoreRef = useRef(null);
 
+  // DB-driven categories for sidebar
+  const [dbCategoryOptions, setDbCategoryOptions] = useState([]); // [{ value: slug, label: name }]
+  const [isLoadingDbCategories, setIsLoadingDbCategories] = useState(false);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [categoriesHasMore, setCategoriesHasMore] = useState(true);
+  const [loadingMoreCategories, setLoadingMoreCategories] = useState(false);
 
-  // Fetch marketplace items from API
-  const fetchMarketplaceItems = async () => {
-    setLoading(true);
+  // Items pagination
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsHasMore, setItemsHasMore] = useState(true);
+  const [loadingMoreItems, setLoadingMoreItems] = useState(false);
+
+  // Global alert modal state (uses pages/Shared/AlertModal.jsx)
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('Notice');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertOkText, setAlertOkText] = useState('OK');
+  const showAlert = (message, title = 'Notice', okText = 'OK') => {
+    setAlertMessage(message);
+    setAlertTitle(title);
+    setAlertOkText(okText);
+    setAlertOpen(true);
+  };
+
+  // Fetch marketplace items from API (includes both buy-now and auctions)
+  const fetchMarketplaceItems = async (pageToLoad = 1, append = false) => {
+    const isFirstPage = pageToLoad === 1 && !append;
+    if (isFirstPage) setLoading(true); else setLoadingMoreItems(true);
     try {
-      const response = await fetch(`${API}/marketplace/items`, {
+      const params = new URLSearchParams();
+      params.set('page', String(pageToLoad));
+      params.set('limit', '12');
+      if (selectedCategory !== 'all') params.set('category', selectedCategory);
+      if (priceRange.min > 0) params.set('minPrice', String(priceRange.min));
+      if (priceRange.max < 100000) params.set('maxPrice', String(priceRange.max));
+      if (listingType !== 'all') params.set('listingType', listingType);
+      const response = await fetch(`${API}/marketplace/items?${params.toString()}`, {
         method: 'GET',
         credentials: 'include'
       });
@@ -43,7 +77,7 @@ export default function Marketplace() {
 
       const result = await response.json();
       
-      // Get items from response and add hardcoded auction
+      // Get items from response (now includes both buy-now and auctions)
       let items = result.data || [];
       
       // Ensure all items have a listingType
@@ -51,124 +85,8 @@ export default function Marketplace() {
         ...item,
         listingType: item.listingType || 'buy-now'
       }));
-
-      // Fetch active auctions and normalize to marketplace card shape
-      let auctionsNormalized = [];
-      try {
-        console.log('🔄 Fetching active auctions...');
-        const aRes = await fetch(`${API}/auctions?status=active&limit=100`, { method: 'GET', credentials: 'include' });
-        if (aRes.ok) {
-          const aJson = await aRes.json();
-          console.log('📦 Raw auctions response:', aJson);
-          
-          const aList = Array.isArray(aJson?.data)
-            ? aJson.data
-            : Array.isArray(aJson?.auctions)
-              ? aJson.auctions
-              : Array.isArray(aJson)
-                ? aJson
-                : [];
-
-          console.log(`📊 Found ${aList.length} auctions to normalize`);
-
-          auctionsNormalized = aList.map((a, idx) => {
-            console.log(`🎨 Raw auction data ${idx}:`, {
-              auctionId: a.auctionId,
-              startAt: a.startAt,
-              endAt: a.endAt,
-              startPrice: a.startPrice,
-              minIncrement: a.minIncrement,
-              status: a.status,
-              singleBidOnly: a.singleBidOnly,
-              allowBidUpdates: a.allowBidUpdates,
-              created_at: a.created_at,
-              updated_at: a.updated_at,
-              fullAuction: a
-            });
-            console.log(`🎨 Normalizing auction ${idx}:`, a);
-            
-            // auction_items is an object, not an array
-            const aItem = a.auction_items;
-            
-            const title = aItem?.title || a.title || 'Untitled';
-            const primary = aItem?.primary_image || a.primary_image;
-            const imgs = Array.isArray(aItem?.images) ? aItem.images : [];
-            const sellerData = aItem?.seller;
-            const seller = sellerData ? { 
-              shopName: sellerData.shopName || 'Unknown Artist',
-              profilePicture: `https://ui-avatars.com/api/?name=${sellerData.shopName || 'Artist'}&background=d4b48a&color=fff&size=32`
-            } : { shopName: 'Unknown Artist' };
-            const categories = aItem?.categories || [];
-            const current = a.currentBid ?? a.highestBid ?? null;
-            const startPrice = a.startPrice ?? a.startingPrice ?? 0;
-            const end = a.endAt ?? a.endTime;
-            const price = (current ?? startPrice ?? 0);
-            
-            const normalized = {
-              id: a.auctionId || a.id,
-              marketItemId: a.auctionId || a.id,
-              auctionId: a.auctionId || a.id,
-              title,
-              description: aItem?.description || a.description || '',
-              primary_image: primary,
-              images: imgs,
-              medium: aItem?.medium,
-              dimensions: aItem?.dimensions,
-              year_created: aItem?.year_created,
-              is_original: aItem?.is_original,
-              is_featured: aItem?.is_featured,
-              seller,
-              categories,
-              listingType: 'auction',
-              // Keep existing fields for backward compatibility
-              startingPrice: startPrice,
-              endTime: end,
-              currentBid: current,
-              price,
-              // Add DB-aligned fields for modal usage
-              startAt: a.startAt ?? a.start_time ?? a.startsAt ?? null,
-              endAt: end,
-              startPrice: startPrice,
-              minIncrement: a.minIncrement ?? a.min_increment ?? null,
-              singleBidOnly: a.singleBidOnly ?? a.single_bid_only ?? false,
-              allowBidUpdates: a.allowBidUpdates ?? a.allow_bid_updates ?? false
-            };
-            
-            console.log(`✅ Normalized auction ${idx}:`, normalized);
-            return normalized;
-          });
-          
-          console.log(`✅ Successfully normalized ${auctionsNormalized.length} auctions`);
-        } else {
-          console.warn('⚠️ Auctions fetch response not OK:', aRes.status);
-        }
-      } catch (e) {
-        console.error('❌ Failed to load auctions', e);
-      }
-
-      // Combine auctions with regular items
-      items = [...auctionsNormalized, ...items];
       
-      // Apply client-side filters
-      if (selectedCategory !== 'all') {
-        items = items.filter(item => 
-          item.categories?.includes(selectedCategory) || 
-          item.medium?.toLowerCase() === selectedCategory.toLowerCase()
-        );
-      }
-      
-      if (listingType === 'buy-now') {
-        // Only show buy-now items, exclude auctions
-        items = items.filter(item => item.listingType === 'buy-now');
-      } else if (listingType === 'auction') {
-        // Only show auction items
-        items = items.filter(item => item.listingType === 'auction');
-      }
-      // If listingType === 'all', show everything (no filter)
-      
-      items = items.filter(item => 
-        item.price >= priceRange.min && item.price <= priceRange.max
-      );
+      // All filtering (category, listing type, price) is now done server-side
       
       // Sort items
       switch (sortBy) {
@@ -186,94 +104,80 @@ export default function Marketplace() {
           break;
       }
       
-      setMarketplaceItems(items);
+      if (append) {
+        setMarketplaceItems(prev => [...prev, ...items]);
+      } else {
+        setMarketplaceItems(items);
+      }
+
+      // Pagination flags from backend response
+      const hasMore = result?.pagination?.hasMore ?? (Array.isArray(result.data) && result.data.length === 12);
+      setItemsHasMore(Boolean(hasMore));
+      setItemsPage(pageToLoad);
     } catch (error) {
       console.error('Error loading marketplace:', error);
       setMarketplaceItems([]);
     } finally {
-      setLoading(false);
+      if (isFirstPage) setLoading(false); else setLoadingMoreItems(false);
+    }
+  };
+  // Paginated category loader
+  const loadCategoriesPage = async (pageToLoad = 1) => {
+    try {
+      if (pageToLoad === 1) setIsLoadingDbCategories(true); else setLoadingMoreCategories(true);
+      const res = await fetch(`${API}/gallery/categories?page=${pageToLoad}&limit=10&nocache=1`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`);
+      const data = await res.json();
+      const list = Array.isArray(data?.categories) ? data.categories : [];
+      const sorted = list.sort((a, b) => {
+        if (a.slug === 'other') return 1;
+        if (b.slug === 'other') return -1;
+        return 0;
+      });
+      const opts = sorted.map(c => ({
+        value: String(c.slug ?? c.categoryId ?? c.name),
+        label: String(c.name ?? c.slug ?? c.categoryId)
+      }));
+      setDbCategoryOptions(prev => {
+        const map = new Map(prev.map(o => [o.value, o]));
+        opts.forEach(o => { if (!map.has(o.value)) map.set(o.value, o); });
+        return Array.from(map.values());
+      });
+      setCategoriesHasMore(list.length === 10);
+      setCategoryPage(pageToLoad);
+    } catch (e) {
+      console.error('Failed to load categories for Marketplace:', e);
+      if (pageToLoad === 1) setDbCategoryOptions([]);
+      setCategoriesHasMore(false);
+    } finally {
+      if (pageToLoad === 1) setIsLoadingDbCategories(false); else setLoadingMoreCategories(false);
     }
   };
 
-  // Category definitions 
+  useEffect(() => {
+    // initial category load
+    setDbCategoryOptions([]);
+    setCategoryPage(1);
+    loadCategoriesPage(1);
+  }, []);
 
-  const categories = [
-    { 
-      id: "all", 
-      name: "All Categories", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <line x1="3" y1="9" x2="21" y2="9"/>
-          <line x1="9" y1="21" x2="9" y2="9"/>
-        </svg>
-      )
-    },
-    { 
-      id: "painting", 
-      name: "Paintings", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-          <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
-      )
-    },
-    { 
-      id: "sculpture", 
-      name: "Sculptures", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-          <line x1="12" y1="22.08" x2="12" y2="12"/>
-        </svg>
-      )
-    },
-    { 
-      id: "photography", 
-      name: "Photography", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-      )
-    },
-    { 
-      id: "digital", 
-      name: "Digital Art", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      )
-    },
-    { 
-      id: "prints", 
-      name: "Prints & Posters", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="6 9 6 2 18 2 18 9"/>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-      )
-    },
-    { 
-      id: "mixed", 
-      name: "Mixed Media", 
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-          <polyline points="2 17 12 22 22 17"/>
-          <polyline points="2 12 12 17 22 12"/>
-        </svg>
-      )
-    }
-  ];
+  // Sidebar categories: All + DB categories
+  const genericIcon = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  );
+  const categories = useMemo(() => {
+    const base = [{ id: 'all', name: 'All Categories', icon: genericIcon }];
+    const dyn = dbCategoryOptions.map(o => ({ id: o.value, name: o.label, icon: genericIcon }));
+    return [...base, ...dyn];
+  }, [dbCategoryOptions]);
+
+  const handleLoadMoreCategories = () => {
+    if (loadingMoreCategories || !categoriesHasMore) return;
+    loadCategoriesPage(categoryPage + 1);
+  };
 
   const handleAddToCart = async (item, quantityToAdd = 1) => {
     // Buy Now go to checkout page with selected item & quantity
@@ -365,9 +269,33 @@ export default function Marketplace() {
 
   // Effects
   useEffect(() => {
-    fetchMarketplaceItems();
+    setItemsPage(1);
+    setItemsHasMore(true);
+    fetchMarketplaceItems(1, false);
     // Cart disabled by P2P migration
-  }, [userData]);
+  }, [userData, selectedCategory, listingType, priceRange.min, priceRange.max]);
+
+  // Infinite scroll: observe sentinel and load next page when in view
+  useEffect(() => {
+    if (!itemsHasMore) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+    let fetching = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && !fetching && !loadingMoreItems && !loading) {
+          fetching = true;
+          fetchMarketplaceItems(itemsPage + 1, true).finally(() => {
+            fetching = false;
+          });
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [itemsHasMore, itemsPage, loadingMoreItems, loading, selectedCategory]);
 
   const handleProductClick = (item) => {
     navigate(`/marketplace/product/${item.marketItemId || item.id}`);
@@ -488,18 +416,82 @@ export default function Marketplace() {
           {/* Categories */}
           <div className="mp-filter-group">
             <h4 className="mp-filter-title">Categories</h4>
-            <div className="mp-categories">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  className={`mp-category-btn ${selectedCategory === cat.id ? "mp-category-btn--active" : ""}`}
-                  onClick={() => setSelectedCategory(cat.id)}
-                >
-                  <span className="mp-category-icon">{cat.icon}</span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
+            
+            {/* Search box */}
+            <input
+              type="text"
+              value={categorySearch}
+              onChange={(e) => { setCategorySearch(e.target.value); }}
+              className="museo-input"
+              placeholder="Search categories..."
+              style={{ marginBottom: '10px' }}
+            />
+
+            {/* Selected category chip */}
+            {selectedCategory !== 'all' && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  background: 'var(--museo-accent)',
+                  color: 'var(--museo-white)',
+                  borderRadius: '20px',
+                  fontSize: '13px'
+                }}>
+                  {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('all')}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: 'inherit',
+                      fontSize: '16px',
+                      padding: '0 4px',
+                      lineHeight: 1
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              </div>
+            )}
+
+            {/* Filtered categories list */}
+            <div className="mp-categories" style={{ maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+              {(() => {
+                const q = categorySearch.trim().toLowerCase();
+                const filtered = categories.filter(cat => {
+                  if (!q) return true;
+                  return cat.name.toLowerCase().includes(q) || cat.id.toLowerCase().includes(q);
+                });
+                return filtered.map(cat => (
+                  <button
+                    key={cat.id}
+                    className={`mp-category-btn ${selectedCategory === cat.id ? "mp-category-btn--active" : ""}`}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <span className="mp-category-icon">{cat.icon}</span>
+                    <span>{cat.name}</span>
+                  </button>
+                ));
+              })()}
             </div>
+            {categoriesHasMore && !categorySearch.trim() && (
+              <button
+                type="button"
+                onClick={handleLoadMoreCategories}
+                className="btn btn-secondary btn-sm"
+                style={{ width: '100%', marginTop: '8px' }}
+                disabled={loadingMoreCategories}
+              >
+                {loadingMoreCategories ? 'Loading…' : 'Load more categories'}
+              </button>
+            )}
           </div>
 
           {/* Price Range */}
@@ -524,24 +516,6 @@ export default function Marketplace() {
             </div>
           </div>
 
-          {/* Additional Filters */}
-          <div className="mp-filter-group">
-            <h4 className="mp-filter-title">Artwork Type</h4>
-            <label className="mp-checkbox">
-              <input type="checkbox" />
-              <span>Original Artworks</span>
-            </label>
-            <label className="mp-checkbox">
-              <input type="checkbox" />
-              <span>Limited Editions</span>
-            </label>
-            <label className="mp-checkbox">
-              <input type="checkbox" />
-              <span>Open Editions</span>
-            </label>
-          </div>
-
-          <button className="btn btn-primary btn-block">Apply Filters</button>
           </div>
         </aside>
 
@@ -589,26 +563,16 @@ export default function Marketplace() {
               )}
             </div>
 
-            <div className="mp-sort">
-              <label>Sort by:</label>
-              <select 
-                className="mp-sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="newest">Newest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="popular">Most Popular</option>
-              </select>
-            </div>
+            {/* Sort removed as requested */}
           </div>
 
           {/* Grid Display */}
           {loading ? (
-            <div className="mp-loading">
-              <div className="mp-loading-spinner"></div>
-              <p>Loading artworks...</p>
+            <div className="home__loading-container">
+              <div className="home__loading-content">
+                <div className="home__loading-spinner"></div>
+                Loading artworks...
+              </div>
             </div>
           ) : marketplaceItems.length === 0 ? (
             <div className="mp-empty">
@@ -617,16 +581,16 @@ export default function Marketplace() {
                 <line x1="3" y1="9" x2="21" y2="9"/>
                 <line x1="9" y1="21" x2="9" y2="9"/>
               </svg>
-              <h3>No Items Found</h3>
-              <p>Try adjusting your filters or check back later for new items.</p>
-              {(selectedCategory !== 'all' || listingType !== 'all' || searchQuery) && (
+              <h2 className="mp-empty-title">No Items Found</h2>
+              <p className="mp-empty-text">Try adjusting your filters or check back later for new items.</p>
+              {(selectedCategory !== 'all' || listingType !== 'all' || searchQuery || priceRange.min > 0 || priceRange.max < 100000) && (
                 <button 
                   className="btn btn-primary"
                   onClick={() => {
                     setSelectedCategory('all');
                     setListingType('all');
                     setSearchQuery('');
-                    setPriceRange({ min: 0, max: 10000 });
+                    setPriceRange({ min: 0, max: 100000 });
                   }}
                 >
                   Clear Filters
@@ -634,43 +598,60 @@ export default function Marketplace() {
               )}
             </div>
           ) : (
-            <div className="mp-grid">
-              {marketplaceItems
-                .filter(item => {
-                  // Filter by listing type
-                  if (listingType !== "all" && item.listingType !== listingType) {
-                    return false;
-                  }
-                  // Filter by category
-                  if (selectedCategory !== "all" && item.category !== selectedCategory) {
-                    return false;
-                  }
-                  // Filter by price range
-                  const itemPrice = item.currentBid || item.price;
-                  if (itemPrice < priceRange.min || itemPrice > priceRange.max) {
-                    return false;
-                  }
-                  // Filter by search query
-                  if (searchQuery) {
-                    const query = searchQuery.toLowerCase();
-                    const matchesTitle = item.title?.toLowerCase().includes(query);
-                    const matchesShop = item.seller?.shopName?.toLowerCase().includes(query);
-                    const matchesMedium = item.medium?.toLowerCase().includes(query);
-                    if (!matchesTitle && !matchesShop && !matchesMedium) {
+            <>
+              <div className="mp-grid">
+                {marketplaceItems
+                  .filter(item => {
+                    // Filter by listing type
+                    if (listingType !== "all" && item.listingType !== listingType) {
                       return false;
                     }
-                  }
-                  return true;
-                })
-                .map(item => (
-                  <MarketplaceCard 
-                    key={item.marketItemId || item.id} 
-                    item={item} 
-                    onAddToCart={handleAddToCart}
-                    onClick={() => handleProductClick(item)}
-                  />
-                ))}
-            </div>
+                    // Filter by category (item.categories contains slugs)
+                    if (selectedCategory !== "all" && !(Array.isArray(item.categories) && item.categories.includes(selectedCategory))) {
+                      return false;
+                    }
+                    // Filter by price range
+                    const itemPrice = item.currentBid || item.price;
+                    if (itemPrice < priceRange.min || itemPrice > priceRange.max) {
+                      return false;
+                    }
+                    // Filter by search query
+                    if (searchQuery) {
+                      const query = searchQuery.toLowerCase();
+                      const matchesTitle = item.title?.toLowerCase().includes(query);
+                      const matchesShop = item.seller?.shopName?.toLowerCase().includes(query);
+                      const matchesMedium = item.medium?.toLowerCase().includes(query);
+                      if (!matchesTitle && !matchesShop && !matchesMedium) {
+                        return false;
+                      }
+                    }
+                    return true;
+                  })
+                  .map(item => (
+                    <MarketplaceCard 
+                      key={item.marketItemId || item.id} 
+                      item={item} 
+                      onAddToCart={handleAddToCart}
+                      onClick={() => handleProductClick(item)}
+                    />
+                  ))}
+              </div>
+              {itemsHasMore && (
+                <>
+                  {/* Infinite scroll sentinel */}
+                  <div ref={loadMoreRef} style={{ height: 1 }} />
+                  {/* Loading indicator when fetching more */}
+                  {loadingMoreItems && (
+                    <div className="home__loading-container">
+                      <div className="home__loading-content">
+                        <div className="home__loading-spinner"></div>
+                        Loading more artworks...
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
         </div>
 
@@ -692,6 +673,16 @@ export default function Marketplace() {
         onClose={closeProductModal}
         item={selectedProduct?.listingType === 'auction' ? selectedProduct : null}
         onPlaceBid={handlePlaceBid}
+        showAlert={showAlert}
+      />
+
+      {/* Global Alert Modal */}
+      <AlertModal
+        open={alertOpen}
+        title={alertTitle}
+        message={alertMessage}
+        okText={alertOkText}
+        onOk={() => setAlertOpen(false)}
       />
     </div>
   );

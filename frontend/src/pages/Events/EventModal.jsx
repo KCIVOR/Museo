@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "../../contexts/UserContext";
 import ConfirmModal from "../Shared/ConfirmModal.jsx";
+import MuseoModal, { MuseoModalBody } from "../../components/MuseoModal.jsx";
 import "./css/events.css";
 
 const API = import.meta.env.VITE_API_BASE;
@@ -366,154 +367,146 @@ export default function EventModal({ open, event, onClose }) {
         </div>
       </article>
 
-      {participantsOpen && (
-        <div
-          className="event-modal"
-          style={{ zIndex: 10001 }}
-          onMouseDown={(e) => { if (e.currentTarget === e.target) setParticipantsOpen(false); e.stopPropagation(); }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <article
-            role="dialog"
-            aria-modal="true"
-            aria-label="Participants"
-            className="event-modal__dialog event-modal__participants"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Participants Header */}
-            <div className="event-modal__participants-header">
-              <h2 className="event-modal__participants-title">
-                Participants ({participants.length})
-              </h2>
-              <button 
-                onClick={() => setParticipantsOpen(false)}
-                className="btn btn-ghost btn-sm"
-                style={{ background: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                Close
-              </button>
+      <MuseoModal
+        open={participantsOpen}
+        onClose={() => setParticipantsOpen(false)}
+        title="Participants"
+        subtitle={`${participants.length} attendee${participants.length !== 1 ? 's' : ''}`}
+        size="md"
+        nested
+      >
+        <MuseoModalBody>
+          {pLoading && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'var(--museo-space-6)',
+              color: 'var(--museo-text-primary)',
+              fontSize: 'var(--museo-text-base)'
+            }}>
+              Loading participants...
             </div>
-            <section className="event-modal__participants-list">
-              {pLoading && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 'var(--museo-space-6)',
-                  color: 'var(--museo-text-primary)',
-                  fontSize: 'var(--museo-text-base)'
-                }}>
-                  Loading participants...
-                </div>
-              )}
-              {pError && !pLoading && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 'var(--museo-space-6)',
-                  color: 'var(--museo-error)',
-                  fontSize: 'var(--museo-text-base)',
-                  textAlign: 'center'
-                }}>
-                  {pError}
-                </div>
-              )}
-              {!pLoading && !pError && (
-                participants.length > 0 ? (
-                  <div>
-                    {participants.map((u, i) => {
-                      // Order: firstName, lastName, middleName (if present)
-                      const fullName = [u.firstName, u.lastName, u.middleName].filter(Boolean).join(' ').trim();
-                      const username = u.username ? `@${u.username}` : '';
-                      const avatar = u.profilePicture || '/assets/user-placeholder.png';
-                      const fmtJoined = (dt) => dt ? new Date(dt).toLocaleString(undefined, { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-                      return (
-                        <div key={u.userId || u.id || i} className="event-modal__participant">
-                          <img
-                            src={avatar}
-                            alt={fullName || username || 'User'}
-                            className="event-modal__participant-avatar"
-                            onError={(e) => { e.currentTarget.src = '/assets/user-placeholder.png'; }}
-                          />
-                          <div className="event-modal__participant-info">
-                            <div className="event-modal__participant-name">
-                              {fullName || username || 'Unknown'}
-                            </div>
-                            {username && fullName && (
-                              <div className="event-modal__participant-username">
-                                {username}
-                              </div>
-                            )}
-                          </div>
-                          {u.joinedAt && (
-                            <span className="event-modal__participant-joined">
-                              Joined: {fmtJoined(u.joinedAt)}
-                            </span>
-                          )}
-                          {(role === 'admin' || role?.role === 'admin') && (
-                            <button
-                              aria-label="Remove"
-                              title="Remove"
-                              className="btn btn-danger btn-sm"
-                              disabled={removingId === (u.userId || u.id)}
-                              onClick={() => {
-                                setConfirmTarget({ userId: (u.userId || u.id), label: fullName || username || 'this user' });
-                                setConfirmOpen(true);
-                              }}
-                            >
-                              {removingId === (u.userId || u.id) ? 'Removing…' : 'Remove'}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 'var(--museo-space-8) var(--museo-space-6)',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '50%',
-                      background: 'var(--museo-bg-secondary)',
+          )}
+          {pError && !pLoading && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'var(--museo-space-6)',
+              color: 'var(--museo-error)',
+              fontSize: 'var(--museo-text-base)',
+              textAlign: 'center'
+            }}>
+              {pError}
+            </div>
+          )}
+          {!pLoading && !pError && (
+            participants.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--museo-space-3)' }}>
+                {participants.map((u, i) => {
+                  const fullName = [u.firstName, u.lastName, u.middleName].filter(Boolean).join(' ').trim();
+                  const username = u.username ? `@${u.username}` : '';
+                  const avatar = u.profilePicture || '/assets/user-placeholder.png';
+                  const fmtJoined = (dt) => dt ? new Date(dt).toLocaleString(undefined, { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                  return (
+                    <div key={u.userId || u.id || i} style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 'var(--museo-space-4)'
+                      gap: 'var(--museo-space-3)',
+                      padding: 'var(--museo-space-3)',
+                      borderRadius: '8px',
+                      background: 'var(--museo-bg-secondary)',
+                      justifyContent: 'space-between'
                     }}>
-                      <span style={{ fontSize: 'var(--museo-text-2xl)' }}>👥</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--museo-space-3)', flex: 1 }}>
+                        <img
+                          src={avatar}
+                          alt={fullName || username || 'User'}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => { e.currentTarget.src = '/assets/user-placeholder.png'; }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: '600', color: 'var(--museo-text-primary)' }}>
+                            {fullName || username || 'Unknown'}
+                          </div>
+                          {username && fullName && (
+                            <div style={{ fontSize: 'var(--museo-text-sm)', color: 'var(--museo-text-secondary)' }}>
+                              {username}
+                            </div>
+                          )}
+                          {u.joinedAt && (
+                            <div style={{ fontSize: 'var(--museo-text-sm)', color: 'var(--museo-text-muted)', marginTop: 'var(--museo-space-1)' }}>
+                              Joined: {fmtJoined(u.joinedAt)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {(role === 'admin' || role?.role === 'admin') && (
+                        <button
+                          aria-label="Remove"
+                          title="Remove"
+                          className="btn btn-danger btn-sm"
+                          disabled={removingId === (u.userId || u.id)}
+                          onClick={() => {
+                            setConfirmTarget({ userId: (u.userId || u.id), label: fullName || username || 'this user' });
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          {removingId === (u.userId || u.id) ? 'Removing…' : 'Remove'}
+                        </button>
+                      )}
                     </div>
-                    <div style={{
-                      color: 'var(--museo-text-primary)',
-                      fontSize: 'var(--museo-text-lg)',
-                      fontWeight: '600',
-                      marginBottom: 'var(--museo-space-2)'
-                    }}>
-                      No Participants Yet
-                    </div>
-                    <div style={{
-                      color: 'var(--museo-text-secondary)',
-                      fontSize: 'var(--museo-text-sm)',
-                      maxWidth: '300px',
-                      lineHeight: '1.5'
-                    }}>
-                      Be the first to join this event!
-                    </div>
-                  </div>
-                )
-              )}
-            </section>
-          </article>
-        </div>
-      )}
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 'var(--museo-space-8) var(--museo-space-6)',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: 'var(--museo-bg-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 'var(--museo-space-4)'
+                }}>
+                  <span style={{ fontSize: 'var(--museo-text-2xl)' }}>👥</span>
+                </div>
+                <div style={{
+                  color: 'var(--museo-text-primary)',
+                  fontSize: 'var(--museo-text-lg)',
+                  fontWeight: '600',
+                  marginBottom: 'var(--museo-space-2)'
+                }}>
+                  No Participants Yet
+                </div>
+                <div style={{
+                  color: 'var(--museo-text-secondary)',
+                  fontSize: 'var(--museo-text-sm)',
+                  maxWidth: '300px',
+                  lineHeight: '1.5'
+                }}>
+                  Be the first to join this event!
+                </div>
+              </div>
+            )
+          )}
+        </MuseoModalBody>
+      </MuseoModal>
       <ConfirmModal
         open={confirmOpen}
         title="Remove participant"

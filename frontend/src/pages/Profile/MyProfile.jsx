@@ -711,7 +711,7 @@ export default function MyProfile() {
                   fetchUrl="/api/profile/getArts"
                   title=""
                   showStats={true}
-                  showActions={true}
+                  showActions={false}
                   showUpload={true}
                   onUploadRequest={() => setOpenUploadArt(true)}
                   onViewArt={handleViewArt}
@@ -734,7 +734,9 @@ export default function MyProfile() {
               <div className="museo-body">
                 <h1 className="museo-heading">Featured Works</h1>
                 <ArtGallery
-                  arts={[]}
+                  enablePagination={true}
+                  fetchUrl="/api/gallery/user-artworks"
+                  userId={userData?.userId || userData?.id}
                   title=""
                   emptyStateTitle="No featured works"
                   emptyStateMessage="Promote your best artwork here!"
@@ -744,6 +746,7 @@ export default function MyProfile() {
                     </svg>
                   )}
                   showActions={false}
+                  showStats={false}
                 />
               </div>
             </div>

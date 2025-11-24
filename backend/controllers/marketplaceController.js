@@ -416,91 +416,186 @@ export const getMarketplaceItem = async (req, res) => {
   }
 };
 
-// Get all marketplace items
+// Get all marketplace items (buy-now and/or auctions based on listingType)
 export const getMarketplaceItems = async (req, res) => {
   try {
-    const { status, sellerProfileId, page, limit } = req.query;
-    
-    // Check pagination
+    const { status, sellerProfileId, category, listingType = 'all', minPrice, maxPrice, page = 1, limit = 20 } = req.query;
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 20;
-    
     if (pageNum < 1) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid page number' 
-      });
+      return res.status(400).json({ success: false, message: 'Invalid page number' });
     }
     if (limitNum < 1 || limitNum > 100) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Limit must be between 1 and 100' 
-      });
+      return res.status(400).json({ success: false, message: 'Limit must be between 1 and 100' });
     }
-    
     const offset = (pageNum - 1) * limitNum;
     
-    let query = db
-      .from('marketplace_items')
-      .select(`
-        *,
-        sellerProfiles!inner (
-          sellerProfileId,
-          shopName,
-          city,
-          province,
-          isActive,
-          isSuspended
-        )
-      `)
-      .eq('sellerProfiles.isActive', true)
-      .eq('sellerProfiles.isSuspended', false)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limitNum - 1);
-    
-    // Filter by status if provided, otherwise show only active items
-    if (status) {
-      query = query.eq('status', status);
-    } else {
-      // Default: only show active items in public marketplace
-      query = query.eq('status', 'active');
-    }
-    
-    // Also filter by is_available flag
-    query = query.eq('is_available', true);
+    let allItems = [];
 
-    // Filter by seller profile if provided (for seller dashboard)
-    if (sellerProfileId) {
-      query = query.eq('sellerProfileId', sellerProfileId);
-    }
-    
-    const { data: items, error } = await query;
-
-    if (error) {
-      console.error('Error fetching items:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: error.message 
-      });
-    }
-
-    // Transform to include seller info at root level
-    const transformedItems = items.map(item => ({
-      ...item,
-      seller: {
-        shopName: item.sellerProfiles.shopName,
-        location: `${item.sellerProfiles.city}, ${item.sellerProfiles.province}`
+    // Fetch buy-now items if listingType is 'all' or 'buy-now'
+    if (listingType === 'all' || listingType === 'buy-now') {
+      let query = db
+        .from('marketplace_items')
+        .select(`
+          *,
+          sellerProfiles!inner (
+            sellerProfileId,
+            shopName,
+            city,
+            province,
+            isActive,
+            isSuspended
+          )
+        `)
+        .eq('sellerProfiles.isActive', true)
+        .eq('sellerProfiles.isSuspended', false)
+        .order('created_at', { ascending: false });
+      
+      // Filter by status if provided, otherwise show only active items
+      if (status) {
+        query = query.eq('status', status);
+      } else {
+        query = query.eq('status', 'active');
       }
-    }));
+      
+      // Also filter by is_available flag
+      query = query.eq('is_available', true);
+
+      // Filter by seller profile if provided (for seller dashboard)
+      if (sellerProfileId) {
+        query = query.eq('sellerProfileId', sellerProfileId);
+      }
+      // Filter by category slug if provided (categories is JSONB array of slugs)
+      // Note: Using filter instead of contains for better compatibility
+      if (category && typeof category === 'string' && category.trim()) {
+        query = query.filter('categories', 'cs', `["${category}"]`);
+      }
+
+      // Filter by price range if provided
+      if (minPrice !== undefined && minPrice !== null) {
+        query = query.gte('price', parseFloat(minPrice));
+      }
+      if (maxPrice !== undefined && maxPrice !== null) {
+        query = query.lte('price', parseFloat(maxPrice));
+      }
+
+      const { data: items, error } = await query;
+      if (error) {
+        console.error('Error fetching buy-now items:', error);
+        console.error('Query params - category:', category, 'listingType:', listingType, 'minPrice:', minPrice, 'maxPrice:', maxPrice);
+        return res.status(500).json({ success: false, error: error.message });
+      }
+
+      allItems = (items || []).map(item => ({
+        ...item,
+        listingType: 'buy-now',
+        seller: {
+          shopName: item.sellerProfiles.shopName,
+          location: `${item.sellerProfiles.city}, ${item.sellerProfiles.province}`
+        }
+      }));
+    }
+
+    // Fetch auctions if listingType is 'all' or 'auction'
+    if (listingType === 'all' || listingType === 'auction') {
+      try {
+        const { data: auctions, error: auctionError } = await db
+          .from('auctions')
+          .select(`
+            *,
+            auction_items (
+              *,
+              seller:sellerProfiles (
+                sellerProfileId,
+                shopName,
+                city,
+                province,
+                isActive,
+                isSuspended
+              )
+            )
+          `)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (auctionError) {
+          console.error('Error fetching auctions:', auctionError);
+          // Don't fail the entire request if auctions fail, just skip them
+        } else if (auctions && Array.isArray(auctions) && auctions.length > 0) {
+          const auctionsNormalized = auctions
+            .filter(a => {
+              // Apply category filter if provided
+              if (category && typeof category === 'string' && category.trim()) {
+                const aItem = a.auction_items;
+                if (!Array.isArray(aItem?.categories) || !aItem.categories.includes(category)) {
+                  return false;
+                }
+              }
+              // Apply price filter if provided
+              const price = a.currentBid ?? a.startPrice ?? 0;
+              if (minPrice !== undefined && minPrice !== null && price < parseFloat(minPrice)) {
+                return false;
+              }
+              if (maxPrice !== undefined && maxPrice !== null && price > parseFloat(maxPrice)) {
+                return false;
+              }
+              return true;
+            })
+            .map(a => {
+              const aItem = a.auction_items;
+              const seller = aItem?.seller;
+              return {
+                id: a.auctionId || a.id,
+                marketItemId: a.auctionId || a.id,
+                auctionId: a.auctionId || a.id,
+                title: aItem?.title || a.title || 'Untitled',
+                description: aItem?.description || a.description || '',
+                primary_image: aItem?.primary_image || a.primary_image,
+                images: Array.isArray(aItem?.images) ? aItem.images : [],
+                medium: aItem?.medium,
+                dimensions: aItem?.dimensions,
+                year_created: aItem?.year_created,
+                is_original: aItem?.is_original,
+                is_featured: aItem?.is_featured,
+                categories: aItem?.categories || [],
+                listingType: 'auction',
+                price: a.currentBid ?? a.startPrice ?? 0,
+                currentBid: a.currentBid ?? a.highestBid ?? null,
+                startingPrice: a.startPrice ?? a.startingPrice ?? 0,
+                endTime: a.endAt ?? a.endTime,
+                startAt: a.startAt ?? a.start_time ?? a.startsAt ?? null,
+                endAt: a.endAt ?? a.endTime,
+                minIncrement: a.minIncrement ?? a.min_increment ?? null,
+                singleBidOnly: a.singleBidOnly ?? a.single_bid_only ?? false,
+                allowBidUpdates: a.allowBidUpdates ?? a.allow_bid_updates ?? false,
+                seller: seller ? {
+                  shopName: seller.shopName || 'Unknown Artist',
+                  location: `${seller.city || ''}, ${seller.province || ''}`.trim()
+                } : { shopName: 'Unknown Artist', location: '' }
+              };
+            });
+
+          allItems = [...allItems, ...auctionsNormalized];
+        }
+      } catch (e) {
+        console.error('Error fetching auctions:', e);
+      }
+    }
+
+    // Sort all items by created_at descending
+    allItems.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    // Apply pagination
+    const paginatedItems = allItems.slice(offset, offset + limitNum);
 
     res.json({ 
       success: true, 
-      data: transformedItems,
+      data: paginatedItems,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total: transformedItems.length,
-        hasMore: transformedItems.length === limitNum
+        total: paginatedItems.length,
+        hasMore: paginatedItems.length === limitNum
       }
     });
 

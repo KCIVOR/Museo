@@ -40,7 +40,7 @@ const ArtGallery = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 9;
 
   // Fetch paginated artworks
   const fetchArtworks = async (page = 1, append = false) => {

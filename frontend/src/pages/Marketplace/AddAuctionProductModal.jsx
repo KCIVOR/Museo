@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import ConfirmModal from '../Shared/ConfirmModal.jsx';
 import ImageUploadZone from '../../components/modal-features/ImageUploadZone';
+import CategorySelector from '../../components/modal-features/CategorySelector';
 import EditAuctionItemModal from './EditAuctionItemModal';
 import './css/addProductModal.css';
 
@@ -47,6 +48,10 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [auctionItemId, setAuctionItemId] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [dbCategoryOptions, setDbCategoryOptions] = useState([]);
+  const [isLoadingDbCategories, setIsLoadingDbCategories] = useState(false);
+  const [applyWatermark, setApplyWatermark] = useState(true);
+  const [watermarkText, setWatermarkText] = useState("");
   // Delete confirm modal state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -71,6 +76,37 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
       setLoadingItems(false);
     }
   };
+
+  // Load categories from DB (category table)
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setIsLoadingDbCategories(true);
+        const res = await fetch(`${API}/gallery/categories?page=1&limit=200&nocache=1`, { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to fetch categories (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data?.categories) ? data.categories : [];
+        const sorted = list.sort((a, b) => {
+          if (a.slug === 'other') return 1;
+          if (b.slug === 'other') return -1;
+          return 0;
+        });
+        const opts = sorted.map(c => ({
+          value: String(c.slug ?? c.categoryId ?? c.name),
+          label: String(c.name ?? c.slug ?? c.categoryId)
+        }));
+        if (!active) return;
+        setDbCategoryOptions(opts);
+      } catch (e) {
+        console.error('Failed to load DB categories for AddAuctionProductModal:', e);
+        if (active) setDbCategoryOptions([]);
+      } finally {
+        if (active) setIsLoadingDbCategories(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleChoiceSelect = (choice) => {
     setItemChoice(choice);
@@ -198,6 +234,11 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
       submitData.append('condition', formData.condition);
       submitData.append('categories', JSON.stringify(formData.categories));
       submitData.append('tags', JSON.stringify(formData.tags));
+      // Watermark controls
+      submitData.append('applyWatermark', applyWatermark.toString());
+      if (watermarkText.trim()) {
+        submitData.append('watermarkText', watermarkText.trim());
+      }
 
       images.forEach((image) => {
         submitData.append('images', image.file);
@@ -467,6 +508,37 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               <div className="form-section">
+                <h3 className="section-title">Protection</h3>
+                <div className="museo-form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="museo-checkbox"
+                      checked={applyWatermark}
+                      onChange={(e) => setApplyWatermark(e.target.checked)}
+                    />
+                    <span>Protect images with watermark</span>
+                  </label>
+                  {applyWatermark && (
+                    <div style={{ marginTop: '8px', paddingLeft: '28px' }}>
+                      <label className="museo-label" style={{ fontSize: '13px', marginBottom: '6px', display: 'block' }}>
+                        Custom watermark text (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={watermarkText}
+                        onChange={(e) => setWatermarkText(e.target.value)}
+                        className="museo-input"
+                        placeholder={`© Your Name ${new Date().getFullYear()} • Museo`}
+                        style={{ fontSize: '14px' }}
+                      />
+                      <span className="museo-form-helper">Leave blank to use default format with your username</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-section">
                 <h3 className="section-title">Product Details</h3>
                 
                 <div className="form-row">
@@ -587,20 +659,17 @@ const AddAuctionProductModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="form-section">
                 <h3 className="section-title">Categorization</h3>
                 
-                <div className="museo-form-group">
-                  <label htmlFor="categories" className="museo-label museo-label--required">
-                    Categories
-                  </label>
-                  <input
-                    type="text"
-                    id="categories"
-                    placeholder="e.g., Painting, Contemporary Art"
-                    value={formData.categories.join(', ')}
-                    onChange={(e) => handleArrayInputChange(e, 'categories')}
-                    className={`museo-input ${errors.categories ? 'museo-input--error' : ''}`}
+                <div className="museo-form-group" style={{ width: '100%' }}>
+                  <CategorySelector
+                    selected={formData.categories}
+                    onChange={(vals) => setFormData(prev => ({ ...prev, categories: vals }))}
+                    error={errors.categories}
+                    title="Categories"
+                    description="Select categories that best describe this item"
+                    options={dbCategoryOptions}
+                    loading={isLoadingDbCategories}
+                    maxPreview={16}
                   />
-                  <span className="museo-form-helper">Separate with commas</span>
-                  {errors.categories && <span className="museo-form-error">{errors.categories}</span>}
                 </div>
 
                 <div className="museo-form-group">

@@ -197,6 +197,11 @@
   padding: 4px;
 }
 
+/* Force 3-wide grid inside MyProfile feed on larger screens */
+.mp__feed .pArtGrid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .pArtCard {
   position: relative;
   background: var(--museo-white);
@@ -359,12 +364,6 @@
   .pArtGrid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 20px;
-  }
-  
-  .pSectionBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
   }
 }
 

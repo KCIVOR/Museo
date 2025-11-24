@@ -15,6 +15,73 @@
   }
 }
 
+/* ==============================
+   Museo-themed capsule buttons
+   ============================== */
+/* Layout: tidy row of capsules */
+.interests-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Remove non-button elements */
+.interest-card .corner-accent-top,
+.interest-card .corner-accent-bottom,
+.interest-card .card-description,
+.interest-card .hover-overlay,
+.interest-card .card-svg-icon,
+.interest-card .selection-indicator { display: none !important; }
+
+/* Capsule button surface */
+.interest-card .card-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--museo-border);
+  background: linear-gradient(180deg, var(--museo-bg-secondary) 0%, var(--museo-white) 100%);
+  color: var(--museo-text-primary);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: background .2s ease, box-shadow .2s ease, transform .1s ease, border-color .2s ease;
+}
+
+.interest-card .card-content:hover {
+  background: linear-gradient(180deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.10);
+}
+
+/* Focus ring for accessibility */
+.interest-card .card-content:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--museo-accent-light), 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* Selected state */
+.interest-card .card-content.selected {
+  border-color: var(--museo-accent);
+  background: linear-gradient(180deg, var(--museo-accent-light) 0%, var(--museo-white) 100%);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12), 0 0 0 2px var(--museo-accent-light);
+}
+
+.interest-card .card-title {
+  margin: 0;
+  font-family: var(--museo-font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .interests-grid { gap: 10px; }
+  .interest-card .card-content { padding: 8px 12px; }
+  .interest-card .card-title { font-size: 0.9rem; }
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -33,6 +100,39 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* ==============================
+   Plain button interest cards
+   ============================== */
+/* Remove all decorative elements and box styling */
+.interest-card .corner-accent-top,
+.interest-card .corner-accent-bottom,
+.interest-card .selection-indicator,
+.interest-card .card-description,
+.interest-card .hover-overlay {
+  display: none !important;
+}
+
+.interest-card {
+  display: inline-block;
+  margin: 0 8px 8px 0;
+}
+
+.interest-card .card-svg-icon { display: none !important; }
+
+.interest-card .card-content {
+  all: unset;                 /* wipe all styles */
+  display: inline;            /* text-only */
+  cursor: pointer;
+}
+
+.interest-card .card-content:hover { all: unset; cursor: pointer; }
+.interest-card .card-content.selected { all: unset; cursor: pointer; }
+
+.interest-card .card-title {
+  all: unset;                 /* inherit page typography */
+  cursor: pointer;
 }
 
 /* Modal overlay */
@@ -726,22 +826,14 @@
   font-size: var(--museo-text-xs);
 }
 
-/* Custom scrollbar */
+/* Hide scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--museo-bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--museo-accent);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--museo-accent-hover);
+/* Firefox */
+* {
+  scrollbar-width: none;
 }
 
 /* Responsive adjustments */
@@ -817,4 +909,86 @@
     font-size: 1.0625rem;
     max-width: 32rem;
   }
+}
+
+/* ==============================
+   FINAL OVERRIDES (Capsule buttons)
+   Ensures these styles take precedence over previous blocks
+   ============================== */
+.interests-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  column-count: initial !important;
+  column-gap: initial !important;
+}
+
+.interest-card {
+  display: inline-flex !important;
+  margin: 0 8px 8px 0 !important;
+  break-inside: initial !important;
+  page-break-inside: initial !important;
+  width: auto !important;
+}
+
+.interest-card .corner-accent-top,
+.interest-card .corner-accent-bottom,
+.interest-card .card-description,
+.interest-card .hover-overlay,
+.interest-card .card-svg-icon,
+.interest-card .selection-indicator { display: none !important; }
+
+.interest-card .card-content {
+  all: unset; /* wipe earlier card block styles */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px 14px !important;
+  border-radius: 9999px !important;
+  border: 1px solid var(--museo-border) !important;
+  background: linear-gradient(180deg, var(--museo-bg-secondary) 0%, var(--museo-white) 100%) !important;
+  color: var(--museo-text-primary) !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+  cursor: pointer !important;
+  transition: background .2s ease, box-shadow .2s ease, transform .1s ease, border-color .2s ease !important;
+  height: auto !important;
+  min-height: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* Explicitly nullify any earlier nth-child min-heights */
+.interest-card:nth-child(n) .card-content { min-height: 0 !important; height: auto !important; }
+
+.interest-card .card-content:hover {
+  background: linear-gradient(180deg, var(--museo-white) 0%, var(--museo-bg-secondary) 100%) !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.10) !important;
+}
+
+.interest-card .card-content:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--museo-accent-light), 0 2px 6px rgba(0,0,0,0.08) !important;
+}
+
+.interest-card .card-content.selected {
+  border-color: var(--museo-accent) !important;
+  background: linear-gradient(180deg, var(--museo-accent-light) 0%, var(--museo-white) 100%) !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12), 0 0 0 2px var(--museo-accent-light) !important;
+}
+
+.interest-card .card-title {
+  margin: 0 !important;
+  font-family: var(--museo-font-display) !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  color: inherit !important;
+}
+
+@media (max-width: 640px) {
+  .interests-grid { gap: 10px !important; }
+  .interest-card .card-content { padding: 8px 12px !important; }
+  .interest-card .card-title { font-size: 0.9rem !important; }
 }

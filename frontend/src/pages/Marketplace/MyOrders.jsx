@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import AlertModal from '../Shared/AlertModal.jsx';
+import ConfirmModal from '../Shared/ConfirmModal.jsx';
 import ReturnRequestModal from './components/ReturnRequestModal.jsx';
 import ReturnDetailsModal from './components/ReturnDetailsModal.jsx';
 import OrderDetailsModal from './components/OrderDetailsModal.jsx';
@@ -23,6 +25,37 @@ export default function MyOrders() {
   const [returnModalOrder, setReturnModalOrder] = useState(null);
   const [showReturnDetails, setShowReturnDetails] = useState(false);
   const [selectedReturnId, setSelectedReturnId] = useState(null);
+
+  // Museo-themed alert modal
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('Notice');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertOkText, setAlertOkText] = useState('OK');
+  const [alertAfterOk, setAlertAfterOk] = useState(null);
+  const showAlert = (message, title = 'Notice', okText = 'OK') => {
+    setAlertMessage(message);
+    setAlertTitle(title);
+    setAlertOkText(okText);
+    setAlertOpen(true);
+  };
+
+  // Confirm modal
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState('Confirm');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmOkText, setConfirmOkText] = useState('Confirm');
+  const [confirmCancelText, setConfirmCancelText] = useState('Cancel');
+  const [confirmAction, setConfirmAction] = useState(null); // 'pay' | 'check' | 'cancel' | 'deliver'
+  const [confirmPayload, setConfirmPayload] = useState(null);
+  const askConfirm = ({ title, message, okText = 'Confirm', cancelText = 'Cancel', action, payload }) => {
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    setConfirmOkText(okText);
+    setConfirmCancelText(cancelText);
+    setConfirmAction(action);
+    setConfirmPayload(payload);
+    setConfirmOpen(true);
+  };
 
   // Fetch orders when component mounts
   useEffect(() => {
@@ -91,121 +124,145 @@ export default function MyOrders() {
     }
   };
 
-  const handlePayNow = async (order) => {
+  const doPayNow = async (order) => {
     try {
-      // Get payment link for this order
       const response = await fetch(`${API}/marketplace/orders/${order.orderId}/payment-link`, {
         method: 'GET',
         credentials: 'include'
       });
-
       const result = await response.json();
-
       if (response.ok && result.success && result.data.paymentUrl) {
-        // Open payment link in new tab
         window.open(result.data.paymentUrl, '_blank');
-        alert('Payment link opened in new tab. Please complete your payment.');
+        showAlert('Payment link opened in a new tab. Please complete your payment.', 'Payment');
       } else {
-        alert(result.error || 'Failed to get payment link');
+        showAlert(result.error || 'Failed to get payment link', 'Error');
       }
     } catch (error) {
       console.error('Error getting payment link:', error);
-      alert('Failed to get payment link');
+      showAlert('Failed to get payment link', 'Error');
     }
   };
+  const handlePayNow = (order) => {
+    const shortId = (order?.orderId || '').slice(0, 8).toUpperCase();
+    askConfirm({
+      title: 'Open Payment',
+      message: `Open the payment page for Order #${shortId} in a new tab?`,
+      okText: 'Open',
+      cancelText: 'Cancel',
+      action: 'pay',
+      payload: order,
+    });
+  };
 
-  const handleCheckPaymentStatus = async (orderId) => {
+  const doCheckPaymentStatus = async (orderId) => {
     try {
-      const response = await fetch(`${API}/marketplace/orders/${orderId}/check-payment`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
+      const response = await fetch(`${API}/marketplace/orders/${orderId}/check-payment`, { method: 'GET', credentials: 'include' });
       const result = await response.json();
-
       if (response.ok && result.success) {
-        alert('Payment confirmed! Your order has been paid. The seller will process it soon.');
-        fetchOrders(); // Refresh orders list
+        setAlertAfterOk(() => () => { fetchOrders(); });
+        showAlert('Payment confirmed! Your order has been paid. The seller will process it soon.', 'Payment');
       } else {
-        alert(result.message || 'Payment not yet completed. Please complete payment first.');
+        showAlert(result.message || 'Payment not yet completed. Please complete payment first.', 'Payment');
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
-      alert('Failed to check payment status. Please try again.');
+      showAlert('Failed to check payment status. Please try again.', 'Error');
     }
   };
+  const handleCheckPaymentStatus = (orderId) => {
+    const shortId = (orderId || '').slice(0, 8).toUpperCase();
+    askConfirm({
+      title: 'Check Payment Status',
+      message: `Check payment status for Order #${shortId}?`,
+      okText: 'Check',
+      cancelText: 'Close',
+      action: 'check',
+      payload: orderId,
+    });
+  };
 
-  const handleCancelOrder = async (orderId) => {
-    // Find the order to get context for the confirmation message
-    const orderToCancel = orders.find(o => o.orderId === orderId);
-    const isPartOfGroup = orderToCancel?.paymentGroupId ? true : false;
-    
-    const confirmMessage = isPartOfGroup 
-      ? 'Are you sure you want to cancel this order? The payment total will be updated to exclude this order amount.'
-      : 'Are you sure you want to cancel this order?';
-    
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
+  const doCancelOrder = async (orderId) => {
     try {
       const response = await fetch(`${API}/marketplace/orders/${orderId}/cancel`, {
         method: 'PUT',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          reason: 'Cancelled by buyer'
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Cancelled by buyer' })
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
-        const successMessage = isPartOfGroup 
+        // Determine group context to tailor message
+        const orderToCancel = orders.find(o => o.orderId === orderId);
+        const isPartOfGroup = !!orderToCancel?.paymentGroupId;
+        const successMessage = isPartOfGroup
           ? 'Order cancelled successfully. The payment total has been updated for remaining orders.'
           : 'Order cancelled successfully';
-        alert(successMessage);
-        
-        // Small delay to ensure backend processing completes
-        setTimeout(() => {
-          fetchOrders();
-          setShowDetailsModal(false);
-        }, 500);
+        setAlertAfterOk(() => () => { fetchOrders(); setShowDetailsModal(false); });
+        showAlert(successMessage, 'Order');
       } else {
-        alert(result.error || 'Failed to cancel order');
+        showAlert(result.error || 'Failed to cancel order', 'Error');
       }
     } catch (error) {
       console.error('Error cancelling order:', error);
-      alert('Failed to cancel order');
+      showAlert('Failed to cancel order', 'Error');
     }
   };
+  const handleCancelOrder = (orderId) => {
+    const orderToCancel = orders.find(o => o.orderId === orderId);
+    const isPartOfGroup = !!orderToCancel?.paymentGroupId;
+    const msg = isPartOfGroup
+      ? 'Cancel this order? The payment total will be updated to exclude this order amount.'
+      : 'Are you sure you want to cancel this order?';
+    const shortId = (orderId || '').slice(0, 8).toUpperCase();
+    askConfirm({
+      title: `Cancel Order #${shortId}`,
+      message: msg,
+      okText: 'Cancel Order',
+      cancelText: 'Keep Order',
+      action: 'cancel',
+      payload: orderId,
+    });
+  };
 
-  const handleMarkAsDelivered = async (orderId) => {
-    if (!confirm('Confirm that you have received this order?')) {
-      return;
-    }
-
+  const doMarkAsDelivered = async (orderId) => {
     try {
-      const response = await fetch(`${API}/marketplace/orders/${orderId}/deliver`, {
-        method: 'PUT',
-        credentials: 'include'
-      });
-
+      const response = await fetch(`${API}/marketplace/orders/${orderId}/deliver`, { method: 'PUT', credentials: 'include' });
       const result = await response.json();
-
       if (response.ok && result.success) {
-        alert('Order marked as delivered!');
-        fetchOrders();
-        setShowDetailsModal(false);
+        setAlertAfterOk(() => () => { fetchOrders(); setShowDetailsModal(false); });
+        showAlert('Order marked as delivered!', 'Delivery');
       } else {
-        alert(result.error || 'Failed to update order');
+        showAlert(result.error || 'Failed to update order', 'Error');
       }
     } catch (error) {
       console.error('Error marking as delivered:', error);
-      alert('Failed to update order');
+      showAlert('Failed to update order', 'Error');
     }
+  };
+  const handleMarkAsDelivered = (orderId) => {
+    const shortId = (orderId || '').slice(0, 8).toUpperCase();
+    askConfirm({
+      title: 'Mark as Received',
+      message: `Confirm that you have received Order #${shortId}?`,
+      okText: 'Mark Received',
+      cancelText: 'Not Yet',
+      action: 'deliver',
+      payload: orderId,
+    });
+  };
+
+  const handleConfirm = async () => {
+    const action = confirmAction;
+    const payload = confirmPayload;
+    setConfirmOpen(false);
+    setConfirmAction(null);
+    setConfirmPayload(null);
+    try {
+      if (action === 'pay') await doPayNow(payload);
+      else if (action === 'check') await doCheckPaymentStatus(payload);
+      else if (action === 'cancel') await doCancelOrder(payload);
+      else if (action === 'deliver') await doMarkAsDelivered(payload);
+    } catch (_) {}
   };
 
   const getFilteredOrders = () => {
@@ -674,6 +731,31 @@ export default function MyOrders() {
           role="buyer"
         />
       )}
+
+      {/* Global Confirm */}
+      <ConfirmModal
+        open={confirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText={confirmOkText}
+        cancelText={confirmCancelText}
+        onConfirm={handleConfirm}
+        onCancel={() => { setConfirmOpen(false); setConfirmAction(null); setConfirmPayload(null); }}
+      />
+
+      {/* Global Alert */}
+      <AlertModal
+        open={alertOpen}
+        title={alertTitle}
+        message={alertMessage}
+        okText={alertOkText}
+        onOk={() => {
+          setAlertOpen(false);
+          const fn = alertAfterOk;
+          setAlertAfterOk(null);
+          try { if (typeof fn === 'function') fn(); } catch (_) {}
+        }}
+      />
     </div>
   );
 }

@@ -63,6 +63,19 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
           unread: !n.isRead,
         }
       }
+      if (n.type === "auction_won") {
+        return {
+          id: n.notificationId || n.id || crypto.randomUUID(),
+          notificationId: n.notificationId || n.id,
+          title: n.title || "You won the auction!",
+          subtitle: n.body || "View your order in My Orders",
+          image: img,
+          timestamp: n.createdAt || new Date().toISOString(),
+          href: "/marketplace/myorders",
+          eventId: null,
+          unread: !n.isRead,
+        }
+      }
       // Fallback generic row
       return {
         id: n.notificationId || n.id || crypto.randomUUID(),
@@ -363,6 +376,16 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
               tabIndex={0}
               onClick={() => {
                 markRead(n.id, n.notificationId);
+                if (typeof n.onClick === 'function') {
+                  n.onClick();
+                  onClose?.();
+                  return;
+                }
+                if (n.href) {
+                  navigate(n.href);
+                  onClose?.();
+                  return;
+                }
                 if (n.eventId) {
                   navigate(`/event/${n.eventId}`);
                   onClose?.();
@@ -372,6 +395,16 @@ export default function NotificationsPopover({ onClose, items: itemsProp, setIte
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   markRead(n.id, n.notificationId);
+                  if (typeof n.onClick === 'function') {
+                    n.onClick();
+                    onClose?.();
+                    return;
+                  }
+                  if (n.href) {
+                    navigate(n.href);
+                    onClose?.();
+                    return;
+                  }
                   if (n.eventId) {
                     navigate(`/event/${n.eventId}`);
                     onClose?.();

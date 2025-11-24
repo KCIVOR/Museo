@@ -128,6 +128,10 @@ router.get(
       query: {
         status: { type: 'string', required: false, min: 1, max: 50 },
         sellerProfileId: { type: 'string', required: false, min: 1, max: 120 },
+        category: { type: 'string', required: false, min: 1, max: 200 },
+        listingType: { type: 'string', required: false, enum: ['buy-now', 'auction', 'all'] },
+        minPrice: { type: 'number', required: false, min: 0, max: 10000000 },
+        maxPrice: { type: 'number', required: false, min: 0, max: 10000000 },
         page: { type: 'integer', required: false, default: 1, min: 1 },
         limit: { type: 'integer', required: false, default: 20, min: 1, max: 100 }
       }

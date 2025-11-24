@@ -265,29 +265,28 @@ export default function ArtistProfile() {
             )}
           </div>
         </div>
-
         {/* Artist's Artwork Gallery */}
         <div className="museo-card">
           <div className="museo-body">
             <h1 className="museo-heading">Artist's Portfolio</h1>
-            <ArtGallery
-              enablePagination={true}
-              fetchUrl="/api/profile/getUserArts"
-              userId={id}
-              title=""
-              showStats={true}
-              showActions={true}
-              showUpload={false}
-              onViewArt={handleViewArt}
-              onLikeArt={handleLikeArt}
-              onArtClick={handleArtClick}
-              onModalClose={handleModalClose}
-              fallbackImage={FALLBACK_COVER}
-              currentUser={{
-                id: id,
-                name: [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Artist',
-                avatar: avatar
-              }}
+              <ArtGallery
+                enablePagination={true}
+                fetchUrl="/api/profile/getUserArts"
+                userId={id}
+                title=""
+                showStats={true}
+                showActions={false}
+                showUpload={false}
+                onViewArt={handleViewArt}
+                onLikeArt={handleLikeArt}
+                onArtClick={handleArtClick}
+                onModalClose={handleModalClose}
+                fallbackImage={FALLBACK_COVER}
+                currentUser={{
+                  id: id,
+                  name: [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Artist',
+                  avatar: avatar
+                }}
             />
           </div>
         </div>

@@ -3,7 +3,7 @@ import "../../styles/components/productModal.css";
 import AddressPickerModal from "../../components/AddressPickerModal.jsx";
 import FullscreenImageViewer from "../../components/FullscreenImageViewer";
 
-export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid }) {
+export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid, showAlert }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
@@ -295,10 +295,14 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
         setErrorMsg(msg);
         return;
       }
-      setShowBidSuccess(true);
-      setTimeout(() => {
+      // Use parent AlertModal and close modal on success
+      try {
+        if (typeof showAlert === 'function') {
+          showAlert('Your sealed bid has been placed.', 'Success');
+        }
+      } finally {
         onClose?.();
-      }, 1200);
+      }
     } catch (e) {
       setErrorMsg(e?.message || 'Failed to place bid');
     } finally {
@@ -362,9 +366,6 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       <div className="pdm-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="pdm-header">
-          <div className="pdm-breadcrumb">
-            Marketplace / Auction / {item.title}
-          </div>
           <button className="event-modal__close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -734,11 +735,13 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     </div>
                   </div>
                   {showBidSuccess ? (
-                    <div className="pdm-bid-success">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      Bid placed successfully!
+                    <div className="museo-notice museo-notice--success" style={{ marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Your sealed bid has been placed.</span>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -794,12 +797,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
               </div>
             </div>
 
-            {showBidSuccess && (
-              <div className="pdm-success">
-                <div className="pdm-success-icon">✅</div>
-                <p>Your sealed bid has been placed!</p>
-              </div>
-            )}
+            {/* Minimal success notice shown above the button; no extra banner */}
           </div>
         </div>
       </div>

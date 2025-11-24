@@ -70,6 +70,7 @@ export default function MuseoModal({
         {/* Close Button */}
         {showCloseButton && (
           <button
+            type="button"
             className="museo-modal-close"
             onClick={onClose}
             aria-label="Close modal"

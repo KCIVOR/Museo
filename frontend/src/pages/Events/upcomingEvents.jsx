@@ -87,6 +87,7 @@ export default function UpcomingEvents() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All'); // All | This Week | Next Week | Next Month
+  const [participantCounts, setParticipantCounts] = useState({});
 
   const fetchMyEvents = async () => {
     try {
@@ -123,6 +124,42 @@ export default function UpcomingEvents() {
     end: ev.endsAt,
     venue: [ev.venueName, ev.venueAddress].filter(Boolean).join(', '),
   })), [events]);
+
+  // Fetch participant counts (same as Event.jsx)
+  useEffect(() => {
+    let abort = false;
+    const run = async () => {
+      try {
+        if (!Array.isArray(events) || events.length === 0) {
+          setParticipantCounts({});
+          return;
+        }
+        const results = await Promise.all(events.map(async (e) => {
+          const id = e.eventId || e.id;
+          if (!id) return null;
+          try {
+            const res = await fetch(`${API}/event/eventParticipants`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ eventId: id })
+            });
+            if (!res.ok) return [id, 0];
+            const data = await res.json();
+            const count = Array.isArray(data?.participants) ? data.participants.length : 0;
+            return [id, count];
+          } catch {
+            return [id, 0];
+          }
+        }));
+        if (abort) return;
+        const map = Object.fromEntries(results.filter(Boolean));
+        setParticipantCounts(map);
+      } catch {}
+    };
+    run();
+    return () => { abort = true; };
+  }, [events]);
 
   // Manila date helpers for filtering
   const getManilaYMD = (dateLike) => new Intl.DateTimeFormat('en-CA', {
@@ -315,25 +352,29 @@ export default function UpcomingEvents() {
                       Completed
                     </div>
 
-                    {/* Attendance badge - hide for completed events */}
+                    {/* Attendance badge */}
+                    <div className="event-attendance-badge">
+                      {participantCounts[ev.id] ?? 0} attending
+                    </div>
                     
                     <div className="museo-event-content">
                       <h3 className="museo-title">{ev.title}</h3>
                       
                       {/* Event metadata */}
                       <div className="event-metadata">
-                        <div className="event-metadata-item">
-                          <span>📅</span>
-                          <span>{new Date(ev.start).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                          })}</span>
-                        </div>
-                        {ev.venue && (
+                        {ev.start && (
                           <div className="event-metadata-item">
-                            <span>📍</span>
-                            <span>{ev.venue}</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                              <line x1="16" y1="2" x2="16" y2="6"/>
+                              <line x1="8" y1="2" x2="8" y2="6"/>
+                              <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span>{new Date(ev.start).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                            })}</span>
                           </div>
                         )}
                       </div>
@@ -348,15 +389,6 @@ export default function UpcomingEvents() {
                           return trimmed + "...";
                         })()}
                       </p>
-                      
-                      <div 
-                        className="museo-actions" 
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
-                          View Details
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -418,9 +450,9 @@ export default function UpcomingEvents() {
                           })()}
                         </div>
 
-                        {/* Saved badge */}
+                        {/* Attendance badge */}
                         <div className="event-attendance-badge">
-                          Saved
+                          {participantCounts[ev.id] ?? 0} attending
                         </div>
 
                         <div className="museo-event-content">
@@ -428,29 +460,23 @@ export default function UpcomingEvents() {
                           
                           {/* Event metadata */}
                           <div className="event-metadata">
-                            <div className={`event-metadata-item ${
-                              new Date(ev.start).toDateString() === new Date().toDateString() ? 'urgent' : ''
-                            }`}>
-                              <span>📅</span>
-                              <span>{new Date(ev.start).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric',
-                                year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                              })}</span>
-                            </div>
-                            {ev.venue && (
-                              <div className="event-metadata-item">
-                                <span>📍</span>
-                                <span>{ev.venue}</span>
+                            {ev.start && (
+                              <div className={`event-metadata-item ${
+                                new Date(ev.start).toDateString() === new Date().toDateString() ? 'urgent' : ''
+                              }`}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                  <line x1="16" y1="2" x2="16" y2="6"/>
+                                  <line x1="8" y1="2" x2="8" y2="6"/>
+                                  <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <span>{new Date(ev.start).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: new Date(ev.start).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                                })}</span>
                               </div>
                             )}
-                            <div className="event-metadata-item">
-                              <span>🕐</span>
-                              <span>{new Date(ev.start).toLocaleTimeString('en-US', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}</span>
-                            </div>
                           </div>
 
                           <p className="museo-desc">
@@ -463,15 +489,6 @@ export default function UpcomingEvents() {
                               return trimmed + "...";
                             })()}
                           </p>
-                          
-                          <div 
-                            className="museo-actions" 
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button className="btn btn-primary btn-sm" onClick={() => openDetails(ev)}>
-                              View Details
-                            </button>
-                          </div>
                         </div>
                       </div>
                     ))}

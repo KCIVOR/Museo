@@ -108,8 +108,6 @@ export default function Gallery() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(null);
-  const [isFetchingArtPreference, setIsFetchingArtPreference] = useState(false);
-  const [userArtPreferences, setUserArtPreferences] = useState(null);
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [isArtworkModalOpen, setIsArtworkModalOpen] = useState(false);
@@ -120,6 +118,9 @@ export default function Gallery() {
   const hasLoadedTopArts = useRef(false); // Track if we've already loaded top arts
   const [isRecomputingTopArts, setIsRecomputingTopArts] = useState(false);
   const hasOpenedArtRef = useRef(false); // Track if we've opened deep-linked artwork
+  // New: user saved categories (slugs and names)
+  const [savedCategorySlugs, setSavedCategorySlugs] = useState(new Set());
+  const [savedCategoryNames, setSavedCategoryNames] = useState(new Set());
   // Get featured artworks for rotation (limit to 6 for better UX)
   const featuredArtworks = artworks.filter(art => art.featured === true).slice(0, 6);
   const hasFeaturedArtworks = featuredArtworks.length > 0;
@@ -137,7 +138,7 @@ export default function Gallery() {
       if (loading) return;
       setLoading(true);
 
-      const res = await fetch(`${API}/gallery/getCategories`, {
+      const res = await fetch(`${API}/gallery/categories?page=1&limit=200&nocache=1`, {
         method: "GET",
         credentials: "include",
       });
@@ -145,18 +146,13 @@ export default function Gallery() {
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-
       const data = await res.json();
       
-      if (data.success && data.categories) {
-        // Categories now come with counts from the backend
-        // Add "All" category at the beginning with total count
-        const allCategory = { 
-          field: 'all', 
-          name: 'All', 
-          count: data.totalCount || 0 
-        };
-        setCategories([allCategory, ...data.categories]);
+      if (data.success && Array.isArray(data.categories)) {
+        // Map DB-driven categories to UI shape { field, name }
+        const mapped = data.categories.map(c => ({ field: c.slug, name: c.name }));
+        const allCategory = { field: 'all', name: 'All' };
+        setCategories([allCategory, ...mapped]);
         setError(null);
       } else {
         throw new Error('Invalid response format');
@@ -170,32 +166,27 @@ export default function Gallery() {
     }
   }
 
+  // New: fetch current user's saved categories (preferences)
+  const fetchSavedCategories = async () => {
+    try {
+      const res = await fetch(`${API}/gallery/preferences`, { method: 'GET', credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load saved categories');
+      const data = await res.json();
+      const list = Array.isArray(data?.categories) ? data.categories : [];
+      const slugs = new Set(list.map(c => c.slug).filter(Boolean));
+      const names = new Set(list.map(c => c.name).filter(Boolean));
+      setSavedCategorySlugs(slugs);
+      setSavedCategoryNames(names);
+    } catch (e) {
+      console.error('Failed to fetch saved categories:', e);
+      setSavedCategorySlugs(new Set());
+      setSavedCategoryNames(new Set());
+    }
+  };
+
 
  
-  const fetchArtPreference = async() => {
-    try{
-      if (isFetchingArtPreference) return;
-      setIsFetchingArtPreference(true);
-      
-      const res = await fetch(`${API}/gallery/getArtPreference`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      
-      if (data.success && data.artPreference) {
-        setUserArtPreferences(data.artPreference);
-      } else {
-        setUserArtPreferences(null);
-      }
-      
-    }catch(error){
-      console.error('Error fetching art preference:', error);
-    }finally{
-      setIsFetchingArtPreference(false);
-    }
-  }
+  // removed legacy fetchArtPreference
 
 
   // Fetch artworks based on selected categories with pagination
@@ -632,8 +623,8 @@ export default function Gallery() {
 
   useEffect(() => {
     fetchCategories();
+    fetchSavedCategories();
     fetchArtworks(); // Fetch artworks on component mount
-    fetchArtPreference();
   }, []);
 
   // Reset pagination when categories change
@@ -643,7 +634,18 @@ export default function Gallery() {
     setHasMore(true);
     setTotalCount(null);
     
-    const categoryFilter = newCategories.length === 0 ? 'all' : newCategories.join(',');
+    // Build filter that includes both slug and display name to match DB JSONB values
+    const categoryFilter = (() => {
+      if (newCategories.length === 0) return 'all';
+      const nameBySlug = new Map(categories.map(c => [c.field, c.name]));
+      const values = new Set();
+      newCategories.forEach(slug => {
+        values.add(slug);
+        const name = nameBySlug.get(slug);
+        if (name) values.add(name);
+      });
+      return Array.from(values).join(',');
+    })();
     
     // Fetch artworks with new filter
     fetchArtworks(categoryFilter, 1, false);
@@ -775,92 +777,20 @@ export default function Gallery() {
 
 
 
-  // Function to sort artworks based on user preferences (row-based loading)
+  // Function to sort artworks based on user's saved categories (new system)
   const sortArtworksByPreference = (artworksToSort) => {
-    if (!userArtPreferences || !artworksToSort.length) {
-      return artworksToSort;
-    }
+    if (!artworksToSort?.length) return artworksToSort;
+    const hasSaved = (savedCategorySlugs?.size > 0) || (savedCategoryNames?.size > 0);
+    if (!hasSaved) return artworksToSort;
 
-    // Map database preference fields to category names
-    const preferenceMapping = {
-      'classicalArt': 'Classical Art',
-      'abstractArt': 'Abstract Art',
-      'digitalArt': 'Digital Art',
-      'surrealist': 'Surrealist',
-      'contemporaryArt': 'Contemporary Art',
-      'sculpture': 'Sculpture',
-      'streetArt': 'Street Art',
-      'landscape': 'Landscape',
-      'impressionist': 'Impressionist',
-      'photography': 'Photography',
-      'minimalist': 'Minimalist',
-      'portrait': 'Portrait',
-      'miniature': 'Miniature',
-      'expressionist': 'Expressionist',
-      'realism': 'Realism',
-      'conceptual': 'Conceptual'
-    };
-
-    // Get user's preferred categories
-    const preferredCategories = Object.keys(preferenceMapping)
-      .filter(key => userArtPreferences[key] === true)
-      .map(key => preferenceMapping[key]);
-
-    // Separate preferred and non-preferred artworks (handle multiple categories)
-    const preferredArtworks = artworksToSort.filter(artwork => {
-      if (Array.isArray(artwork.categories)) {
-        return artwork.categories.some(cat => preferredCategories.includes(cat));
-      }
-      return false;
+    const preferred = [];
+    const others = [];
+    artworksToSort.forEach(art => {
+      const cats = getArtworkCategories(art).map(c => String(c));
+      const isPreferred = cats.some(c => savedCategorySlugs.has(c) || savedCategoryNames.has(c));
+      (isPreferred ? preferred : others).push(art);
     });
-    
-    const nonPreferredArtworks = artworksToSort.filter(artwork => {
-      // Handle single category (string)
-      if (typeof artwork.category === 'string') {
-        return !preferredCategories.includes(artwork.category);
-      }
-      // Handle multiple categories (array)
-      if (Array.isArray(artwork.category)) {
-        return !artwork.category.some(cat => preferredCategories.includes(cat));
-      }
-      // Handle categories stored as JSON string
-      if (typeof artwork.categories === 'string') {
-        try {
-          const categoriesArray = JSON.parse(artwork.categories);
-          return Array.isArray(categoriesArray) && 
-                 !categoriesArray.some(cat => preferredCategories.includes(cat));
-        } catch (e) {
-          return !preferredCategories.includes(artwork.categories);
-        }
-      }
-      // Handle categories as array
-      if (Array.isArray(artwork.categories)) {
-        return !artwork.categories.some(cat => preferredCategories.includes(cat));
-      }
-      return true;
-    });
-
-    // Row-based arrangement: 4 columns per row (desktop default)
-    const columnsPerRow = 4;
-    const arrangedArtworks = [];
-
-    // Calculate how many complete rows of preferred artworks we can make
-    const preferredRows = Math.ceil(preferredArtworks.length / columnsPerRow);
-    
-    // Fill rows with preferred artworks first
-    for (let row = 0; row < preferredRows; row++) {
-      const rowStart = row * columnsPerRow;
-      const rowEnd = Math.min(rowStart + columnsPerRow, preferredArtworks.length);
-      
-      for (let col = rowStart; col < rowEnd; col++) {
-        arrangedArtworks.push(preferredArtworks[col]);
-      }
-    }
-
-    // Then add non-preferred artworks to fill remaining space
-    arrangedArtworks.push(...nonPreferredArtworks);
-
-    return arrangedArtworks;
+    return [...preferred, ...others];
   };
 
   // Function to get all categories for an artwork
@@ -1513,7 +1443,7 @@ export default function Gallery() {
                       className="btn btn-museo-ghost btn-sm"
                       onClick={() => {
                         handleCategoryChange([]); // Clear all filters and reset pagination
-                        setPage(1); // Reset pagination
+                        setCurrentPage(1); // Reset pagination
                       }}
                     >
                       Clear All
@@ -1605,7 +1535,7 @@ export default function Gallery() {
             </h1>
             <p className="museo-gallery-subtitle">
               {selectedCategories.length === 0 
-                ? userArtPreferences 
+                ? (savedCategorySlugs?.size > 0 || savedCategoryNames?.size > 0)
                   ? 'Personalized selection based on your art preferences, featuring your favorite styles first'
                   : 'Discover masterpieces from across centuries and movements'
                 : selectedCategories.length === 1
