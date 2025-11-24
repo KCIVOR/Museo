@@ -50,6 +50,33 @@ export function initializeRealtimeSync(io) {
     )
     .subscribe();
 
+  // Listen to notification inserts and emit to appropriate audience
+  const notificationChannel = supabase
+    .channel('notification-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notification'
+      },
+      (payload) => {
+        try {
+          const row = payload?.new || {};
+          const recipient = row.recipient;
+          // Emit the raw notification object; frontend already expects this shape
+          if (recipient) {
+            io.to(`user_${recipient}`).emit('notification', row);
+          } else {
+            io.emit('notification', row);
+          }
+        } catch (e) {
+          console.error('Realtime notify emit failed:', e);
+        }
+      }
+    )
+    .subscribe();
+
   // Handle errors
   userChannel.on('error', (error) => {
     console.error('❌ Supabase Realtime (users) error:', error);
@@ -63,6 +90,7 @@ export function initializeRealtimeSync(io) {
   return () => {
     supabase.removeChannel(userChannel);
     supabase.removeChannel(profileChannel);
+    supabase.removeChannel(notificationChannel);
   };
 }
 

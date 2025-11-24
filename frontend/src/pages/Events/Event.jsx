@@ -330,7 +330,7 @@ export default function Event() {
         {/* Header */}
         <div className="event__header">
           <h1 className="museo-heading">Events</h1>
-          {/*(role === 'admin' || role?.role === 'admin' || role === 'artist' || role?.role === 'artist') && (
+          {(role === 'admin' || role?.role === 'admin') && (
             <button
               className="btn btn-primary btn-sm event__add-button"
               onClick={() => setShowPublish(true)}
@@ -341,7 +341,7 @@ export default function Event() {
               </svg>
               Add Event
             </button>
-          )*/}
+          )}
         </div>
 
         {/* Loading */}

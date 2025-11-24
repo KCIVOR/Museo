@@ -1,6 +1,7 @@
 import db from '../database/db.js';
 import { cache } from '../utils/cache.js';
 import { sendEventAnnouncement, notifyEventEnded as notifyEventEndedService } from '../services/announcementService.js';
+import { notifyEventCreated } from '../services/notificationService.js';
 
 export const getEvents = async (req, res) => {
   try {
@@ -227,65 +228,21 @@ export const createEvent = async (req, res) => {
     await cache.del('events:*');
     console.log('🗑️ Events cache invalidated after create');
 
-    const notification = {
-      type: "event_created",
-      eventId: data.eventId,
-      title: data.title,
-      startsAt: data.startsAt,
-      venueName: data.venueName,
-      image: data.image || null,
-      createdBy: data.createdBy || null,
-      createdAt: new Date().toISOString(),
-    }
-
-
-    // Save notification to database for offline users
-    // Table columns: notificationId, createdAt, type, title, body, data, userId, recipient, isRead
+    // Centralized publish: DB insert + Socket.IO emit (global)
     try {
-      const insertRow = {
-        type: notification.type,
-        title: `New event: ${notification.title ?? "Untitled"}`,
-        body: _details || null,
-        data: {
-          eventId: notification.eventId,
-          venueName: notification.venueName,
-          startsAt: notification.startsAt,
-          image: notification.image,
-          createdBy: notification.createdBy,
+      await notifyEventCreated({
+        event: {
+          eventId: data?.eventId,
+          title: data?.title,
+          startsAt: data?.startsAt,
+          venueName: data?.venueName,
+          image: data?.image || null,
         },
-        userId: req.user?.id || null, // Who created the event
-        recipient: null, // null = send to everyone (global notification)
-        readByUsers: [], // Initialize empty array - no one has read it yet
-        deletedByUsers: [], // Initialize empty array
-        createdAt: new Date().toISOString() // Explicitly set createdAt
-      }
-      const { data: notifRow, error: notifErr } = await db
-        .from('notification')
-        .insert(insertRow)
-        .select('*')
-        .single()
-
-      if (notifErr) {
-        console.warn('createEvent: notification insert failed:', notifErr)
-      } else if (notifRow) {
-        // Carry DB identifiers/timestamps back to the emitted payload
-        notification.notificationId = notifRow.notificationId || notifRow.id || undefined
-        notification.createdAt = notifRow.createdAt || notification.createdAt
-      }
+        createdBy: req.user?.id || null,
+        details: _details || null,
+      });
     } catch (e) {
-      console.warn('createEvent: notification insert threw:', e)
-    }
-
-    const io = req.app.get("io")
-    if (io) {
-      io.emit("notification", notification)
-      
-      // Clear notification cache for ALL users
-      // This is intentional for global notifications (events) since everyone needs to see them
-      // Trade-off: All users get cache miss on next request, but ensures immediate visibility
-      await cache.clearPattern('notifications:*');
-    } else {
-      console.warn("[event] io not available to emit notification")
+      console.warn('[event] notifyEventCreated failed:', e?.message || e)
     }
 
     // Fire-and-forget: SendGrid announcement broadcast (non-blocking)

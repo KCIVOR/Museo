@@ -829,6 +829,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
         }}
       />
     )}
+
     </>
   );
 }

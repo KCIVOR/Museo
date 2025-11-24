@@ -37,6 +37,7 @@ import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import initializeRealtimeSync from './services/realtimeSync.js';
+import { setIO } from './utils/ioBus.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -132,6 +133,8 @@ const io = new Server(server, {
 });
 // Make io available to controllers
 app.set("io", io);
+// Also expose io globally for services (e.g., auction notifications)
+setIO(io);
 
 // On connection, join a global room so we can broadcast easily
 io.on("connection", (socket) => {

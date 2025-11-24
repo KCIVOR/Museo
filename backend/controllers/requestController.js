@@ -1,4 +1,5 @@
 import db from "../database/db.js"; // Using singleton instance!
+import { publishNotification } from "../services/notificationService.js";
 
 export const registerAsArtist = async (req, res) =>{
     try{
@@ -417,69 +418,28 @@ const createArtistRequestNotification = async (req, userId, action, requestRow) 
     const userName = `${userProfile?.firstName || ''} ${userProfile?.lastName || ''}`.trim() || 'User';
     const isApproved = action === 'approved';
     
-    const notification = {
-      type: isApproved ? "artist_request_approved" : "artist_request_rejected",
-      requestId: requestRow.requestId,
-      userId: userId,
-      userName: userName,
-      userProfilePicture: userProfile?.profilePicture || null,
-      action: action,
-      createdAt: new Date().toISOString()
-    };
+    // Centralized publish (DB insert + Socket.IO emit + cache bust)
+    const type = isApproved ? "artist_request_approved" : "artist_request_rejected";
+    const title = isApproved ? "🎨 Artist Request Approved" : "❌ Artist Request Rejected";
+    const body = isApproved
+      ? "Your request as artist has been approved. You are now an artist!"
+      : "Your request as artist has been rejected.";
 
-    // Save notification to database
-    const insertRow = {
-      type: notification.type,
-      title: isApproved 
-        ? `🎨 Artist Request Approved` 
-        : `❌ Artist Request Rejected`,
-      body: isApproved 
-        ? `Your request as artist has been approved. You are now an artist!`
-        : `Your request as artist has been rejected.`,
+    await publishNotification({
+      type,
+      title,
+      body,
       data: {
-        requestId: notification.requestId,
-        userId: notification.userId,
-        userName: notification.userName,
-        userProfilePicture: notification.userProfilePicture,
-        action: notification.action
+        requestId: requestRow.requestId,
+        userId,
+        userName,
+        userProfilePicture: userProfile?.profilePicture || null,
+        action,
       },
-      userId: req.user?.id || null, // Admin who performed the action
-      recipient: userId, // Send notification to the user who made the request
-      readByUsers: [], // Initialize empty array
-      deletedByUsers: [], // Initialize empty array
-      createdAt: new Date().toISOString() // Explicitly set createdAt
-    };
-
-    const { data: notifRow, error: notifErr } = await db
-      .from('notification')
-      .insert(insertRow)
-      .select('*')
-      .single();
-
-    if (notifErr) {
-      console.warn('Artist request notification insert failed:', notifErr);
-      return;
-    }
-
-    if (notifRow) {
-      notification.notificationId = notifRow.notificationId || notifRow.id;
-      notification.createdAt = notifRow.createdAt || notification.createdAt;
-    }
-    
-    // Emit real-time notification via Socket.IO
-    const io = req.app.get("io");
-    if (io) {
-      // Send to specific user room only (not to all users)
-      io.to(`user_${userId}`).emit("notification", notification);
-      
-      // Clear notification cache ONLY for this specific user
-      // This is a targeted notification, so only the recipient's cache needs clearing
-      // Other users' caches remain intact for better performance
-      const { cache } = await import('../utils/cache.js');
-      await cache.clearPattern(`notifications:${userId}:*`);
-    } else {
-      console.warn("[artist-request] io not available to emit notification");
-    }
+      recipient: userId,
+      userId: req.user?.id || null,
+      dedupeContains: { requestId: requestRow.requestId, action },
+    });
 
   } catch (error) {
     console.error('Error creating artist request notification:', error);

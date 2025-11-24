@@ -3,12 +3,116 @@
 
 import db from '../database/db.js';
 import mailerSendGrid from './mailerSendGrid.js';
+import { notifyAuctionWinnerCentral } from './notificationService.js';
 
 function fmtDatePH(iso) {
   try {
     if (!iso) return '';
     return new Date(iso).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
   } catch (_) { return String(iso || ''); }
+}
+
+// Orchestrate auction winner notification (in-app + email)
+export async function notifyAuctionWinner({ auctionId, winnerUserId, order, paymentLinkUrl }) {
+  try {
+    if (!auctionId || !winnerUserId) return { success: false, error: 'MISSING_PARAMS' };
+
+    // Load auction context
+    const { data: auction } = await db
+      .from('auctions')
+      .select('auctionId, auctionItemId, paymentDueAt')
+      .eq('auctionId', auctionId)
+      .single();
+
+    // Load item title
+    let item = null;
+    if (auction?.auctionItemId) {
+      const r = await db
+        .from('auction_items')
+        .select('title, primary_image')
+        .eq('auctionItemId', auction.auctionItemId)
+        .single();
+      if (!r.error) item = r.data;
+    }
+
+    // Winner email + first name
+    let winnerEmail = null; let firstName = '';
+    try {
+      if (db.auth?.admin?.getUserById) {
+        const resp = await db.auth.admin.getUserById(winnerUserId);
+        winnerEmail = resp?.data?.user?.email || resp?.user?.email || null;
+      }
+      const { data: prof } = await db.from('profile').select('firstName').eq('userId', winnerUserId).maybeSingle();
+      firstName = prof?.firstName || '';
+    } catch (_) {}
+
+    // In-app notification (centralized)
+    await notifyAuctionWinnerCentral({
+      winnerUserId,
+      auctionId,
+      order,
+      paymentDueAt: auction?.paymentDueAt || null,
+      checkoutUrl: paymentLinkUrl || null,
+      itemTitle: item?.title || null,
+    });
+
+    // Winner email (centralized)
+    if (winnerEmail) {
+      await sendAuctionWinnerEmail({
+        email: winnerEmail,
+        firstName,
+        itemTitle: item?.title,
+        amount: order?.totalAmount || 0,
+        paymentDueAt: auction?.paymentDueAt,
+        checkoutUrl: paymentLinkUrl,
+        auctionId,
+        orderId: order?.orderId,
+      });
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.warn('[announcement] notifyAuctionWinner failed:', e?.message || e);
+    return { success: false, error: e?.message || String(e) };
+  }
+}
+
+// Centralized single-recipient email for auction winners
+export async function sendAuctionWinnerEmail({ email, firstName = '', itemTitle, amount, paymentDueAt, checkoutUrl, auctionId, orderId }) {
+  try {
+    const templateId = process.env.SENDGRID_AUCTION_WIN_TEMPLATE_ID || process.env.SENDGRID_ANNOUNCE_TEMPLATE_ID;
+    const from = process.env.SENDGRID_FROM;
+    const groupId = process.env.SENDGRID_UNSUB_GROUP_ID;
+    if (!templateId || !from || !email) {
+      console.warn('[auction-winner] Missing email config or recipient; skipping send');
+      return { success: false, error: 'MISSING_CONFIG_OR_EMAIL' };
+    }
+
+    const personalizations = [{
+      to: { email },
+      dynamic_template_data: {
+        firstName,
+        itemTitle: itemTitle || 'Auction Item',
+        amount: Number(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }),
+        paymentDueAt: paymentDueAt ? fmtDatePH(paymentDueAt) : '',
+        checkoutUrl: checkoutUrl || `${appOrigin()}/orders/${orderId || ''}`,
+        auctionUrl: `${appOrigin()}/auction/${auctionId || ''}`,
+        orderId: orderId || '',
+      },
+    }];
+
+    const result = await mailerSendGrid.sendBulkTemplate({
+      from,
+      templateId,
+      unsubscribeGroupId: groupId,
+      personalizations,
+      category: 'auction-winner',
+    });
+    return result;
+  } catch (e) {
+    console.warn('[announcement] sendAuctionWinnerEmail failed:', e?.message || e);
+    return { success: false, error: e?.message || String(e) };
+  }
 }
 
 function appOrigin() {
@@ -235,4 +339,4 @@ export async function checkAndNotifyEndedEvents() {
   }
 }
 
-export default { sendEventAnnouncement, notifyEventEnded, checkAndNotifyEndedEvents };
+export default { sendEventAnnouncement, notifyEventEnded, checkAndNotifyEndedEvents, sendAuctionWinnerEmail, notifyAuctionWinner };

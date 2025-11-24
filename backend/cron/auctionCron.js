@@ -4,6 +4,7 @@
 import db from '../database/db.js';
 import auctionService from '../services/auctionService.js';
 import * as xenditService from '../services/xenditService.js';
+import { notifyAuctionWinner } from '../services/announcementService.js';
 
 const PAYMENT_WINDOW_HOURS = Number(process.env.AUCTION_PAYMENT_WINDOW_HOURS || 24);
 
@@ -72,7 +73,14 @@ export async function closeEndedAuctions() {
           // If it was paused, immediately settle so it ends up as 'settled' in the same cycle
           if (wasPaused) {
             try {
-              await auctionService.settleAuction(auction.auctionId);
+              const { order, paymentLink } = await auctionService.settleAuction(auction.auctionId);
+              // Targeted winner notify (idempotent inside service)
+              await notifyAuctionWinner({
+                auctionId: auction.auctionId,
+                winnerUserId: order?.userId,
+                order,
+                paymentLinkUrl: paymentLink?.checkoutUrl,
+              });
               console.log(`💳 Settled paused auction ${auction.auctionId} immediately after close`);
             } catch (settleErr) {
               console.error(`Error settling paused auction ${auction.auctionId}:`, settleErr);
@@ -113,7 +121,14 @@ export async function settleAuctions() {
 
     for (const auction of toSettle) {
       try {
-        const { order } = await auctionService.settleAuction(auction.auctionId);
+        const { order, paymentLink } = await auctionService.settleAuction(auction.auctionId);
+        // Targeted winner notify (idempotent inside service)
+        await notifyAuctionWinner({
+          auctionId: auction.auctionId,
+          winnerUserId: order?.userId,
+          order,
+          paymentLinkUrl: paymentLink?.checkoutUrl,
+        });
         console.log(`✅ Settled auction ${auction.auctionId}, order: ${order.orderId}`);
       } catch (err) {
         console.error(`Error settling auction ${auction.auctionId}:`, err);
@@ -230,7 +245,14 @@ export async function rolloverUnpaidWinners() {
           .eq('auctionId', auction.auctionId);
 
         // Settle for new winner
-        const { order: newOrder } = await auctionService.settleAuction(auction.auctionId);
+        const { order: newOrder, paymentLink: newPaymentLink } = await auctionService.settleAuction(auction.auctionId);
+        // Notify the new winner only
+        await notifyAuctionWinner({
+          auctionId: auction.auctionId,
+          winnerUserId: newOrder?.userId,
+          order: newOrder,
+          paymentLinkUrl: newPaymentLink?.checkoutUrl,
+        });
         console.log('[auction][cron] Created new order for winner', { orderId: newOrder?.orderId, userId: newOrder?.userId });
         console.log(`✅ Rolled over auction ${auction.auctionId} to new winner, new order: ${newOrder.orderId}`);
       } catch (err) {
