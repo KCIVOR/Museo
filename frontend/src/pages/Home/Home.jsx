@@ -12,7 +12,7 @@ import AnnouncementCard from "./AnnouncementCard.jsx";
 import ConfirmModal from "../Shared/ConfirmModal";
 import AlertModal from "../Shared/AlertModal";
 import EditPostModal from "./EditPostModal";
-import ReportModal from "../../../components/ReportModal.jsx";
+import ReportModal from "../../components/ReportModal.jsx";
 const API = import.meta.env.VITE_API_BASE;
 // Get average color from an image element using canvas
 function getAverageColorFromImageElement(img) {

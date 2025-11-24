@@ -7,6 +7,19 @@ import { useParams } from 'react-router-dom';
 import MuseoLoadingBox from "../../components/MuseoLoadingBox.jsx";
 const API = import.meta.env.VITE_API_BASE;
 
+// SVG Icons (matching MyProfile.jsx)
+const ArtistIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 3c-4.97 0-9 3.582-9 8 0 2.485 2.015 4.5 4.5 4.5h.75a1.75 1.75 0 1 0 3.5 0h1.5a3.75 3.75 0 1 0 0-7.5h-.75C10.093 8 9 6.907 9 5.5S10.093 3 11.5 3H12z"/>
+  </svg>
+);
+
+const AdminIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2l3 6 6 .9-4.5 4.2L17.8 20 12 16.9 6.2 20l1.3-6.9L3 8.9 9 8z"/>
+  </svg>
+);
+
 const FALLBACK_AVATAR =
   import.meta.env.FALLBACKPHOTO_URL ||
   "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
@@ -160,8 +173,16 @@ export default function ArtistProfile() {
             <div className="mp__cover-overlay" />
             
             {/* Artist Badge */}
-            <div className="mp__role-badge">
-              {role === 'admin' ? '👑 Admin' : '🎨 Artist'}
+            <div className="mp__role-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {role === 'admin' ? (
+                <>
+                  <AdminIcon size={16} /> Admin
+                </>
+              ) : (
+                <>
+                  <ArtistIcon size={16} /> Artist
+                </>
+              )}
             </div>
           </div>
 
@@ -204,8 +225,8 @@ export default function ArtistProfile() {
                 </div>
               </div>
               <div className="mp__stat-item">
-                <div className="mp__stat-number">
-                  {role === 'admin' ? '👑' : '🎨'}
+                <div className="mp__stat-number" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {role === 'admin' ? <AdminIcon size={20} /> : <ArtistIcon size={20} />}
                 </div>
                 <div className="mp__stat-label">
                   {role === 'admin' ? 'Admin' : 'Artist'}
