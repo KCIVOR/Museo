@@ -1,8 +1,10 @@
 
 import axios from "axios";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
+
 const api = axios.create({
-  baseURL: "http://localhost:3000/api", // your backend API
+  baseURL: API_BASE,
   withCredentials: true // allows cookies (refresh token)
 });
 
@@ -19,7 +21,7 @@ api.interceptors.response.use(
 
       try {
         // Call refresh endpoint
-        const { data } = await axios.get("http://localhost:3000/api/auth/refresh", { withCredentials: true });
+        const { data } = await axios.get(`${API_BASE}/auth/refresh`, { withCredentials: true });
 
         // Save the new access token
         localStorage.setItem("accessToken", data.accessToken);
