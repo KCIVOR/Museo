@@ -36,9 +36,25 @@ import {
   getSellerStats,
   getSellerShippingPrefs,
   updateSellerShippingPrefs,
+  quoteShipping,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
+
+// Shipping quote (static fallback for now)
+router.post(
+  '/shipping/quote',
+  validateRequest(
+    {
+      body: {
+        courier: { type: 'string', required: true, enum: ['J&T Express', 'LBC'] },
+        courierService: { type: 'string', required: true, enum: ['standard', 'express'] }
+      }
+    },
+    { source: 'body', allowUnknown: false, stripUnknown: true }
+  ),
+  quoteShipping
+);
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,

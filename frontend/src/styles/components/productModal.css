@@ -88,6 +88,7 @@
   padding: 16px 24px;
   background: var(--museo-bg-secondary);
   border-bottom: 1px solid var(--museo-border);
+  position: relative; /* Ensure absolutely positioned close button is inside header */
 }
 
 .pdm-breadcrumb {
@@ -401,6 +402,34 @@
 .pdm-ship-option span {
   font-size: 13px;
   color: var(--museo-text-muted);
+}
+
+/* ===== AUCTION SHIPPING (align with checkout minimal UI) ===== */
+.pdm-shipping-info .shipping-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--museo-space-3);
+}
+
+.pdm-shipping-info .shipping-service-row {
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .pdm-shipping-info .shipping-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  .pdm-shipping-info .shipping-service-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pdm-shipping-info .shipping-service-row .museo-select {
+    width: 100%;
+  }
 }
 
 /* Address List (Shipping tab) */

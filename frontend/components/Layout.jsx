@@ -11,17 +11,18 @@ import ToastNotification from "./ToastNotification";
 
 export default function Layout() {
   const { pathname } = useLocation();
-  const isMessage = pathname.startsWith("/message");
-  const isGallery = pathname === "/Gallery" || pathname === "/gallery";
-  const isMarketplace = pathname === "/Marketplace" || pathname === "/marketplace";
-  const isCheckout = pathname === "/marketplace/checkout" || pathname === "/Marketplace/checkout";
-  const isSellerDashboard = pathname === "/marketplace/seller-dashboard" || pathname === "/Marketplace/seller-dashboard";
-  const isMyOrders = pathname === "/marketplace/myorders" || pathname === "/Marketplace/myorders";
-  const isArtistProfile = pathname.startsWith("/artist/");
-  const isMyProfile = pathname === "/MyProfile";
-  const isVisitMuseo = pathname === "/visit-museo";
-  const isRequestsPage = pathname === "/requests";
-  const isSettings = pathname === "/settings";
+  const path = pathname.toLowerCase();
+  const isMessage = path.startsWith("/message");
+  const isGallery = path === "/gallery" || path.startsWith("/gallery/");
+  const isMarketplace = path === "/marketplace" || path.startsWith("/marketplace/");
+  const isCheckout = path === "/marketplace/checkout" || path.startsWith("/marketplace/checkout/");
+  const isSellerDashboard = path === "/marketplace/seller-dashboard" || path.startsWith("/marketplace/seller-dashboard/");
+  const isMyOrders = path === "/marketplace/myorders" || path.startsWith("/marketplace/myorders/");
+  const isArtistProfile = path.startsWith("/artist/");
+  const isMyProfile = path === "/myprofile" || path.startsWith("/myprofile/");
+  const isVisitMuseo = path === "/visit-museo" || path.startsWith("/visit-museo/");
+  const isRequestsPage = path === "/requests" || path.startsWith("/requests/");
+  const isSettings = path === "/settings" || path.startsWith("/settings/");
   
   // Get user data from UserContext instead of fetching
   const { userData, isLoading } = useUser();

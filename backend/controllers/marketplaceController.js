@@ -2,6 +2,7 @@
 import db from '../database/db.js';
 import * as xenditService from '../services/xenditService.js';
 import payoutService from '../services/payoutService.js';
+import shippingService from '../services/shippingService.js';
 
 // Simple inline helper functions
 const sanitizeInput = (text) => {
@@ -2272,10 +2273,7 @@ export const markOrderAsDelivered = async (req, res) => {
 
     // Create payout for the seller (NEW)
     try {
-      // Import payout service at the top of the file
-      const payoutService = (await import('../services/payoutService.js')).default;
-      
-      // Create payout with escrow period
+      // Create payout with escrow period (using top-level import)
       await payoutService.createPayout(orderId);
       console.log(`✅ Payout created for delivered order ${orderId}`);
     } catch (payoutError) {
@@ -3861,6 +3859,21 @@ export const updateSellerShippingPrefs = async (req, res) => {
   } catch (err) {
     console.error('Error in updateSellerShippingPrefs:', err);
     return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+// Quote shipping (static fallback for now)
+export const quoteShipping = async (req, res) => {
+  try {
+    const { courier, courierService } = req.body || {};
+    if (!courier || !courierService) {
+      return res.status(400).json({ success: false, error: 'courier and courierService are required' });
+    }
+    const quote = await shippingService.getQuote({ courier, courierService });
+    return res.json({ success: true, data: quote });
+  } catch (error) {
+    console.error('Error in quoteShipping:', error);
+    return res.status(500).json({ success: false, error: 'Failed to get shipping quote' });
   }
 };
 

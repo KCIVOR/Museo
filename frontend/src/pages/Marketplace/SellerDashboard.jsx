@@ -27,7 +27,6 @@ import '../../styles/main.css';
 import './css/sellerDashboard.css';
 import '../../styles/components/dropdowns.css';
 
-import PayoutMethodSettings from './components/PayoutMethodSettings.jsx';
 import PayoutsManager from './components/PayoutsManager.jsx';
 
 const API = import.meta.env.VITE_API_BASE;
@@ -1808,14 +1807,7 @@ export default function SellerDashboard() {
               )}
             </div>
 
-            {/* Payment Settings */}
-            <div>
-              <div style={{ marginBottom: 'var(--museo-space-4)' }}>
-                <h2 className="museo-heading" style={{ fontSize: 'var(--museo-text-2xl)' }}>Payment Settings</h2>
-                <p style={{ color: 'var(--museo-text-secondary)', marginTop: 'var(--museo-space-1)' }}>Connect your e‑wallet or bank account for payouts</p>
-              </div>
-              <PayoutMethodSettings apiBase={API} />
-            </div>
+            {/* Payment Settings removed: managed exclusively in Payouts tab */}
           </div>
         )}
       </div>

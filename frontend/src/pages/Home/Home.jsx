@@ -675,7 +675,7 @@ export default function Home() {
   };
 
   const handleReport = (postId) => {
-    setReportTarget({ type: 'homepagePost', id: postId });
+    setReportTarget({ type: 'post', id: postId });
     setShowReportModal(true);
     closeMenu(postId);
   };

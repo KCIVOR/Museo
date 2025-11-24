@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "./ReportModal.css";
+import MuseoModal, { MuseoModalBody, MuseoModalActions } from "../src/components/MuseoModal.jsx";
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -30,12 +30,10 @@ export default function ReportModal({
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   // Initialize defaults when opening
   useEffect(() => {
     if (isOpen) {
-      setSuccess(false);
       setError("");
       setLoading(false);
       if (defaultReason) {
@@ -77,7 +75,6 @@ export default function ReportModal({
   const submit = async () => {
     try {
       setError("");
-      setSuccess(false);
       setLoading(true);
 
       const finalReason = reasonOption === "other" ? customReason.trim() : reasonOption;
@@ -110,11 +107,10 @@ export default function ReportModal({
         return;
       }
 
-      setSuccess(true);
       setLoading(false);
       onSubmitted?.(json.data);
-      // Optionally close after slight delay
-      setTimeout(() => onClose?.(), 800);
+      // Close immediately; parent can show alert modal
+      onClose?.();
     } catch (e) {
       setError(e?.message || "Failed to submit report");
       setLoading(false);
@@ -122,78 +118,62 @@ export default function ReportModal({
   };
 
   return (
-    <div
-      className="modal-overlay"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
-    >
-      <div
-        className="report modal-content"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="report-title"
-        ref={dialogRef}
-      >
-        <div className="report__header">
-          <h2 id="report-title">Report Content</h2>
-          <button className="report__close" aria-label="Close" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <div className="report__group">
-          <label className="report__label">Reason</label>
-          <div className="report__row">
-            <select
-              className="report__select"
-              value={reasonOption}
-              onChange={(e) => setReasonOption(e.target.value)}
-              disabled={loading}
-            >
-              {PRESET_REASONS.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            {reasonOption === "other" && (
-              <input
-                className="report__input"
-                placeholder="Type a short summary"
-                value={customReason}
-                onChange={(e) => setCustomReason(e.target.value)}
-                maxLength={200}
+    <MuseoModal open={isOpen} onClose={onClose} title="Report Content" size="md">
+      <MuseoModalBody>
+        <div ref={dialogRef}>
+          <div className="museo-form-group">
+            <label className="museo-label">Reason</label>
+            <div className="museo-input-group">
+              <select
+                className="museo-dropdown"
+                value={reasonOption}
+                onChange={(e) => setReasonOption(e.target.value)}
                 disabled={loading}
-              />
-            )}
+              >
+                {PRESET_REASONS.map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              {reasonOption === "other" && (
+                <input
+                  className="museo-input"
+                  placeholder="Type a short summary"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  maxLength={200}
+                  disabled={loading}
+                />
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="report__group">
-          <label className="report__label">Details (optional)</label>
-          <textarea
-            className="report__textarea"
-            placeholder="Add more context (links, timestamps, what happened)"
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            rows={5}
-            maxLength={5000}
-            disabled={loading}
-          />
-          <div className="report__hint">{details.length}/5000</div>
-        </div>
+          <div className="museo-form-group">
+            <label className="museo-label">Details (optional)</label>
+            <textarea
+              className="museo-textarea"
+              placeholder="Add more context (links, timestamps, what happened)"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              rows={5}
+              maxLength={5000}
+              disabled={loading}
+            />
+            <small className="museo-form-helper">{details.length}/5000</small>
+          </div>
 
-        {error && <div className="report__error">{error}</div>}
-        {success && <div className="report__success">Report submitted. Thank you.</div>}
-
-        <div className="report__footer">
-          <button className="btn" onClick={onClose} disabled={loading}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={submit} disabled={loading}>
-            {loading ? "Submitting..." : "Submit Report"}
-          </button>
+          {error && <div className="museo-form-error">{error}</div>}
         </div>
-      </div>
-    </div>
+      </MuseoModalBody>
+      <MuseoModalActions align="right">
+        <button className="btn btn-secondary" onClick={onClose} disabled={loading}>
+          Cancel
+        </button>
+        <button className="btn btn-primary" onClick={submit} disabled={loading}>
+          {loading ? "Submitting..." : "Submit Report"}
+        </button>
+      </MuseoModalActions>
+    </MuseoModal>
   );
 }

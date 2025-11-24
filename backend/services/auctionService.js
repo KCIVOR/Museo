@@ -3,6 +3,7 @@
 
 import db from '../database/db.js';
 import * as xenditService from '../services/xenditService.js';
+import shippingService from '../services/shippingService.js';
 
 const PAYMENT_WINDOW_HOURS = Number(process.env.AUCTION_PAYMENT_WINDOW_HOURS || 24);
 
@@ -148,6 +149,8 @@ export async function closeAuction(auctionId) {
 }
 
 // SETTLE AUCTION: Create order for winner
+// FIXED VERSION - Replace the settleAuction function in auctionService.js
+
 export async function settleAuction(auctionId) {
   try {
     const now = new Date().toISOString();
@@ -161,6 +164,63 @@ export async function settleAuction(auctionId) {
     if (aerr || !auction) throw new Error('Auction not found');
     if (!auction.winnerUserId) throw new Error('No winner for this auction');
 
+    // IDEMPOTENCY GUARD 1: If we already have a settlement order, reuse it
+    if (auction.settlementOrderId) {
+      const { data: existingOrder } = await db
+        .from('orders')
+        .select('*')
+        .eq('orderId', auction.settlementOrderId)
+        .maybeSingle();
+      let existingPaymentLink = null;
+      if (existingOrder?.paymentLinkId) {
+        try {
+          const link = await xenditService.getPaymentLink(existingOrder.paymentLinkId);
+          existingPaymentLink = {
+            paymentLinkId: existingOrder.paymentLinkId,
+            referenceNumber: existingOrder.paymentReference,
+            checkoutUrl: link?.checkoutUrl
+          };
+        } catch (_) {
+          // ignore fetch errors, order still valid
+        }
+      }
+      return { order: existingOrder || null, paymentLink: existingPaymentLink };
+    }
+
+    // IDEMPOTENCY GUARD 2: If an order already exists for this auction & winner, attach it
+    const { data: prevOrder } = await db
+      .from('orders')
+      .select('*')
+      .eq('auctionId', auctionId)
+      .eq('userId', auction.winnerUserId)
+      .eq('is_auction', true)
+      .not('status', 'eq', 'cancelled')
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prevOrder) {
+      // Ensure auction points to this settlement order and is marked settled
+      await db
+        .from('auctions')
+        .update({ status: 'settled', settlementOrderId: prevOrder.orderId, updated_at: now })
+        .eq('auctionId', auctionId);
+
+      let paymentLink = null;
+      if (prevOrder.paymentLinkId && !prevOrder.paidAt) {
+        try {
+          const link = await xenditService.getPaymentLink(prevOrder.paymentLinkId);
+          paymentLink = {
+            paymentLinkId: prevOrder.paymentLinkId,
+            referenceNumber: prevOrder.paymentReference,
+            checkoutUrl: link?.checkoutUrl
+          };
+        } catch (_) {
+          // ignore
+        }
+      }
+      return { order: prevOrder, paymentLink };
+    }
+
     // Get auction item
     const { data: item, error: ierr } = await db
       .from('auction_items')
@@ -169,10 +229,10 @@ export async function settleAuction(auctionId) {
       .single();
     if (ierr || !item) throw new Error('Auction item not found');
 
-    // Get winning bid with address
+    // Get winning bid with address and optional courier preferences
     const { data: winningBid, error: wberr } = await db
       .from('auction_bids')
-      .select('amount, userAddressId')
+      .select('amount, userAddressId, courier, courierService')
       .eq('bidId', auction.winningBidId)
       .single();
     if (wberr || !winningBid) throw new Error('Winning bid not found');
@@ -202,17 +262,37 @@ export async function settleAuction(auctionId) {
           barangayName: addr.barangayName,
           postalCode: addr.postalCode,
           addressType: addr.addressType,
-          deliveryInstructions: addr.deliveryInstructions
+          deliveryInstructions: addr.deliveryInstructions,
+          courier: winningBid.courier || null,
+          courierService: winningBid.courierService || null
         };
       }
     }
 
-    // Calculate totals (already in pesos)
-    const totalAmount = winningBid.amount;
-    const platformFeeRate = 0.04;
-    const platformFee = parseFloat((totalAmount * platformFeeRate).toFixed(2));
+    // 🔧 FIX: Calculate totals correctly
+    const bidAmount = Number(winningBid.amount); // The winning bid (item price)
+    
+    // Get shipping cost
+    let shippingCost = 0;
+    if (winningBid.courier && winningBid.courierService) {
+      try {
+        const quote = await shippingService.getQuote({ 
+          courier: winningBid.courier, 
+          courierService: winningBid.courierService 
+        });
+        shippingCost = Number(quote?.price || 0);
+      } catch (_) {
+        shippingCost = 0;
+      }
+    }
 
-    // Create order (matching marketplace order structure)
+    // Calculate fees and totals
+    const platformFeeRate = 0.04;
+    const itemSubtotal = bidAmount; // Just the bid amount
+    const platformFee = parseFloat((itemSubtotal * platformFeeRate).toFixed(2));
+    const totalAmount = itemSubtotal + shippingCost; // Total = item + shipping
+
+    // Create order
     const { data: order, error: oerr } = await db
       .from('orders')
       .insert([{
@@ -221,11 +301,11 @@ export async function settleAuction(auctionId) {
         sellerProfileId: item.sellerProfileId,
         status: 'pending',
         paymentStatus: 'pending',
-        subtotal: totalAmount,
+        subtotal: itemSubtotal,  // ✅ Just the bid amount
         platformFee: platformFee,
-        shippingCost: 0,
-        totalAmount: totalAmount,
-        shippingMethod: 'standard',
+        shippingCost: shippingCost, // ✅ Shipping separate
+        totalAmount: totalAmount, // ✅ Total includes both
+        shippingMethod: winningBid.courierService || 'standard',
         orderNotes: `Auction Order - ${item.title}`,
         is_auction: true,
         shippingAddress: shippingAddress || {},
@@ -237,10 +317,9 @@ export async function settleAuction(auctionId) {
       .single();
     if (oerr) throw new Error(oerr.message);
 
-    // Create order item linking auction item to order
-    const itemTotal = totalAmount;
-    const platformFeeAmount = parseFloat((itemTotal * platformFeeRate).toFixed(2));
-    const artistEarnings = parseFloat((itemTotal - platformFeeAmount).toFixed(2));
+    // 🔧 FIX: Create order item with correct calculations
+    const itemPlatformFee = parseFloat((itemSubtotal * platformFeeRate).toFixed(2));
+    const artistEarnings = parseFloat((itemSubtotal - itemPlatformFee).toFixed(2));
 
     const { error: oiErr } = await db
       .from('order_items')
@@ -251,33 +330,34 @@ export async function settleAuction(auctionId) {
         userId: auction.winnerUserId,
         sellerId: item.userId,
         title: item.title,
-        priceAtPurchase: totalAmount,
+        priceAtPurchase: bidAmount, // ✅ Just the bid amount (item price)
         quantity: 1,
-        itemTotal: itemTotal,
-        platformFeeAmount: platformFeeAmount,
-        artistEarnings: artistEarnings,
+        itemTotal: itemSubtotal, // ✅ Item total without shipping
+        platformFeeAmount: itemPlatformFee, // ✅ Fee on item only
+        artistEarnings: artistEarnings, // ✅ Earnings from item only
         createdAt: now
       }])
       .select()
       .single();
     if (oiErr) throw new Error(`Failed to create order item: ${oiErr.message}`);
 
-    // Create payment link via Xendit
+    // Create payment link via Xendit (with TOTAL amount including shipping)
     let paymentLink;
     try {
       paymentLink = await xenditService.createPaymentLink({
-        amount: totalAmount,
+        amount: totalAmount, // ✅ Total includes item + shipping
         description: `Auction Order ${order.orderId}`,
         metadata: {
           orderId: order.orderId,
           userId: auction.winnerUserId,
           sellerProfileId: item.sellerProfileId,
           auctionId: auctionId,
-          winningBidAmount: winningBid.amount
+          winningBidAmount: bidAmount
         }
       });
     } catch (plError) {
       // Rollback on failure
+      await db.from('order_items').delete().eq('orderId', order.orderId);
       await db.from('orders').delete().eq('orderId', order.orderId);
       throw new Error(`Failed to create payment link: ${plError.message}`);
     }

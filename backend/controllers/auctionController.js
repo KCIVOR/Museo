@@ -60,11 +60,31 @@ export const getAuctionDetails = async (req, res) => {
     }
     const showParticipantCount = isSeller || isAdmin;
 
+    // Load seller shipping preferences (sanitized) to inform buyers which couriers/services are supported
+    let sellerShippingPrefs = null;
+    if (auction?.sellerProfileId) {
+      const { data: sellerProfile } = await db
+        .from('sellerProfiles')
+        .select('shippingPreferences')
+        .eq('sellerProfileId', auction.sellerProfileId)
+        .maybeSingle();
+      const rawCouriers = sellerProfile?.shippingPreferences?.couriers || {};
+      const jnt = rawCouriers['J&T Express'] || rawCouriers['J&T'] || rawCouriers['JNT'] || {};
+      const lbc = rawCouriers['LBC'] || rawCouriers['LBC Express'] || rawCouriers['Lbc'] || {};
+      sellerShippingPrefs = {
+        couriers: {
+          'J&T Express': { standard: Boolean(jnt.standard), express: Boolean(jnt.express) },
+          'LBC': { standard: Boolean(lbc.standard), express: Boolean(lbc.express) }
+        }
+      };
+    }
+
     res.json({
       success: true,
       data: {
         ...auction,
-        ...(showParticipantCount && { participantsCount })
+        ...(showParticipantCount && { participantsCount }),
+        sellerShippingPrefs
       }
     });
   } catch (error) {
@@ -749,7 +769,7 @@ export const getMyBid = async (req, res) => {
 export const placeBid = async (req, res) => {
   try {
     const { auctionId } = req.params;
-    const { amount, userAddressId, idempotencyKey } = req.body;
+    const { amount, userAddressId, idempotencyKey, courier, courierService } = req.body;
     const userId = req.user?.id;
 
     if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -792,6 +812,31 @@ export const placeBid = async (req, res) => {
       .eq('auctionId', auctionId)
       .single();
     if (aerr || !auction) throw new Error('Auction not found');
+
+    // VALIDATION: Validate courier against seller prefs AND require selection if seller has options
+    const { data: sellerProfile } = await db
+      .from('sellerProfiles')
+      .select('shippingPreferences')
+      .eq('sellerProfileId', auction.sellerProfileId)
+      .maybeSingle();
+    const rawCouriers = sellerProfile?.shippingPreferences?.couriers || {};
+    const normalized = {
+      'J&T Express': rawCouriers['J&T Express'] || rawCouriers['J&T'] || rawCouriers['JNT'] || {},
+      'LBC': rawCouriers['LBC'] || rawCouriers['LBC Express'] || rawCouriers['Lbc'] || {}
+    };
+    const sellerHasOptions = Boolean(normalized['J&T Express']?.standard || normalized['J&T Express']?.express || normalized['LBC']?.standard || normalized['LBC']?.express);
+
+    // If seller requires shipping selection, enforce it at the API level to avoid missing courier on bids
+    if (sellerHasOptions && (!courier || !courierService)) {
+      return res.status(400).json({ success: false, error: 'Please select a shipping courier and service before placing a bid.' });
+    }
+    // If provided, ensure the pair is allowed
+    if (courier && courierService) {
+      const c = normalized[courier];
+      if (!c || !Boolean(c[courierService])) {
+        return res.status(400).json({ success: false, error: 'Selected courier/service is not supported by the seller' });
+      }
+    }
 
     // VALIDATION: Prevent seller from bidding on their own auction
     // Resolve current user's active seller profile and compare to auction's sellerProfileId
@@ -859,6 +904,8 @@ export const placeBid = async (req, res) => {
     const bidData = { auctionId, bidderUserId: userId, amount };
     if (idempotencyKey) bidData.idempotencyKey = idempotencyKey;
     bidData.userAddressId = userAddressId;
+    if (courier) bidData.courier = courier;
+    if (courierService) bidData.courierService = courierService;
 
     const { data: bid, error } = await db
       .from('auction_bids')

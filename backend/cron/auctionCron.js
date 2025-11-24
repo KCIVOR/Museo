@@ -101,7 +101,9 @@ export async function settleAuctions() {
       .from('auctions')
       .select('*')
       .eq('status', 'ended')
-      .not('winnerUserId', 'is', null);
+      .not('winnerUserId', 'is', null)
+      // Prevent double settlement in the same cycle if an order was already created
+      .is('settlementOrderId', null);
 
     if (error) throw new Error(error.message);
     if (!toSettle || toSettle.length === 0) {

@@ -37,6 +37,7 @@ export default function Checkout() {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [availableShippingOptions, setAvailableShippingOptions] = useState([]);
   const [selectedCourierBrand, setSelectedCourierBrand] = useState('');
+  const [quotedPrices, setQuotedPrices] = useState({}); // id -> price
 
   // Load selected Buy Now item (from router state)
   const fetchSelectedItem = async (marketItemId, quantity) => {
@@ -61,11 +62,11 @@ export default function Checkout() {
       // Filter shipping options using seller's shippingPreferences if provided
       const prefsContainer = Array.isArray(item?.sellerProfiles) ? item?.sellerProfiles[0] : item?.sellerProfiles;
       const prefs = prefsContainer?.shippingPreferences;
-      const filteredOpts = prefs && prefs.couriers ? shippingOptions.filter(opt => {
+      const filteredOpts = (prefs && prefs.couriers) ? shippingOptions.filter(opt => {
         const courierBrand = opt.courier;
         const svc = opt.courierService;
         return prefs.couriers?.[courierBrand]?.[svc] === true;
-      }) : shippingOptions;
+      }) : [];
       setAvailableShippingOptions(filteredOpts);
       // Ensure selected option is valid
       const stillValid = filteredOpts.some(o => o.id === selectedShipping);
@@ -188,8 +189,39 @@ export default function Checkout() {
     }
   ];
   
-  // Effective options (respect seller preferences when available)
-  const effectiveShippingOptions = availableShippingOptions.length ? availableShippingOptions : shippingOptions;
+  // Effective options: only show when seller explicitly configured preferences
+  const effectiveShippingOptions = availableShippingOptions;
+
+  // Quote helper (server-backed, falls back to static in backend)
+  const quoteOption = async (courier, courierService) => {
+    try {
+      const res = await fetch(`${API}/marketplace/shipping/quote`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courier, courierService })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) return 0;
+      return Number(json?.data?.price || 0);
+    } catch {
+      return 0;
+    }
+  };
+
+  // Prefetch quotes for visible options (brand-agnostic)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const tasks = (effectiveShippingOptions || []).map(async (o) => {
+        const price = await quoteOption(o.courier, o.courierService);
+        if (!alive) return;
+        setQuotedPrices(prev => ({ ...prev, [o.id]: price }));
+      });
+      await Promise.allSettled(tasks);
+    })();
+    return () => { alive = false; };
+  }, [effectiveShippingOptions]);
 
   // Group by courier brand for categorized UI
   const groupedByCourier = useMemo(() => {
@@ -229,7 +261,9 @@ export default function Checkout() {
   
   const getShippingCost = () => {
     const option = effectiveShippingOptions.find(opt => opt.id === selectedShipping);
-    return option ? option.price : 0;
+    if (!option) return 0;
+    const quoted = quotedPrices[option.id];
+    return typeof quoted === 'number' ? quoted : (option.price || 0);
   };
   
   const getTotal = () => {
@@ -408,6 +442,7 @@ export default function Checkout() {
                   Object.entries(groupedByCourier).map(([brand, options]) => {
                     const brandSelected = selectedCourierBrand === brand;
                     const current = options.find(o => o.id === selectedShipping) || options[0];
+                    const currentPrice = current ? (quotedPrices[current.id] ?? current.price) : 0;
                     return (
                       <div key={brand} className={`shipping-card ${brandSelected ? 'selected' : ''}`} onClick={() => setSelectedCourierBrand(brand)}>
                         <div className="shipping-radio">
@@ -428,9 +463,11 @@ export default function Checkout() {
                                 onChange={(e) => setSelectedShipping(e.target.value)}
                                 style={{ minWidth: 220 }}
                               >
-                                {options.map(o => (
-                                  <option key={o.id} value={o.id}>{`${o.courierService.charAt(0).toUpperCase() + o.courierService.slice(1)} — ₱${o.price}`}</option>
-                                ))}
+                                {options.map(o => {
+                                  const price = quotedPrices[o.id] ?? o.price;
+                                  const label = `${o.courierService.charAt(0).toUpperCase() + o.courierService.slice(1)} — ₱${price}`;
+                                  return (<option key={o.id} value={o.id}>{label}</option>);
+                                })}
                               </select>
                               <div className="shipping-desc">{current?.description}</div>
                             </div>
@@ -438,7 +475,7 @@ export default function Checkout() {
                             <div className="shipping-desc">Select to choose service</div>
                           )}
                         </div>
-                        <div className="shipping-price">₱{current?.price}</div>
+                        <div className="shipping-price">₱{currentPrice}</div>
                       </div>
                     );
                   })

@@ -19,6 +19,11 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
   const [myBids, setMyBids] = useState([]);
   const [loadingMyBids, setLoadingMyBids] = useState(false);
   const [errorMyBids, setErrorMyBids] = useState('');
+  // Seller courier preferences and user-selected courier/service
+  const [sellerCouriers, setSellerCouriers] = useState(null);
+  const [selectedCourierBrand, setSelectedCourierBrand] = useState('');
+  const [selectedCourierService, setSelectedCourierService] = useState('');
+  const [estimatedShippingPrice, setEstimatedShippingPrice] = useState(0);
   // Images from API (primary_image + images[]) with de-duplication
   const images = item ? (() => {
     const arr = [
@@ -42,7 +47,9 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       setShowBidSuccess(false);
       setSelectedTab("details");
       setIsDescriptionExpanded(false);
-      fetchAddress()
+      fetchAddress();
+      // Fetch auction details for seller shipping preferences
+      fetchAuctionDetails();
       return () => { document.body.style.overflow = prev; };
     }
   }, [isOpen]);
@@ -87,6 +94,53 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
     }
   }, [isOpen, item]);
 
+  // Derive courier options early and keep service consistent (hooks must be unconditional)
+  const courierOptions = sellerCouriers?.couriers || {};
+  const courierBrands = Object.keys(courierOptions);
+  const hasCourierOptions = courierBrands.some(brand => courierOptions[brand]?.standard || courierOptions[brand]?.express);
+
+  useEffect(() => {
+    // Keep selected service valid when brand changes or options update
+    if (!hasCourierOptions || !selectedCourierBrand) return;
+    const services = ['standard', 'express'].filter(s => courierOptions[selectedCourierBrand]?.[s]);
+    if (services.length === 0) {
+      setSelectedCourierService('');
+    } else if (!services.includes(selectedCourierService)) {
+      setSelectedCourierService(services[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCourierBrand, hasCourierOptions]);
+
+  // Fetch server shipping quote when selection changes (static fallback handled by backend)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!hasCourierOptions || !selectedCourierBrand || !selectedCourierService) {
+        if (alive) setEstimatedShippingPrice(0);
+        return;
+      }
+      try {
+        const API = import.meta.env.VITE_API_BASE;
+        const res = await fetch(`${API}/marketplace/shipping/quote`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ courier: selectedCourierBrand, courierService: selectedCourierService })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!alive) return;
+        if (res.ok && json?.success !== false) {
+          setEstimatedShippingPrice(Number(json?.data?.price || 0));
+        } else {
+          setEstimatedShippingPrice(0);
+        }
+      } catch {
+        if (alive) setEstimatedShippingPrice(0);
+      }
+    })();
+    return () => { alive = false; };
+  }, [hasCourierOptions, selectedCourierBrand, selectedCourierService]);
+
   // Fetch my bid history for this auction
   const fetchMyBids = async () => {
     if (!auctionId) return;
@@ -117,6 +171,40 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       setErrorMyBids(e?.message || 'Failed to load bid history');
     } finally {
       setLoadingMyBids(false);
+    }
+  };
+
+  // Fetch auction details to get seller shipping preferences
+  const fetchAuctionDetails = async () => {
+    try {
+      if (!isOpen || !auctionId) return;
+      const API = import.meta.env.VITE_API_BASE;
+      const res = await fetch(`${API}/auctions/${auctionId}`, { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success && data?.data?.sellerShippingPrefs) {
+        const prefs = data.data.sellerShippingPrefs;
+        // Normalize: keep only couriers with at least one enabled service
+        const couriers = prefs?.couriers || {};
+        const filtered = Object.fromEntries(
+          Object.entries(couriers).filter(([_, svc]) => Boolean(svc?.standard) || Boolean(svc?.express))
+        );
+        setSellerCouriers({ couriers: filtered });
+        // Auto-select first available brand/service similar to checkout
+        const brands = Object.keys(filtered);
+        if (brands.length > 0) {
+          const fb = brands[0];
+          const services = ['standard', 'express'].filter(s => filtered[fb]?.[s]);
+          setSelectedCourierBrand(fb);
+          setSelectedCourierService(services[0] || '');
+        } else {
+          setSelectedCourierBrand('');
+          setSelectedCourierService('');
+        }
+      } else {
+        setSellerCouriers(null);
+      }
+    } catch (e) {
+      setSellerCouriers(null);
     }
   };
 
@@ -171,13 +259,39 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
       setSelectedTab('shipping');
       return;
     }
+    // If seller has courier preferences, require user to select one
+    const hasCourierOptions = !!(sellerCouriers && Object.values(sellerCouriers.couriers || {}).some(c => c.standard || c.express));
+    if (hasCourierOptions && (!selectedCourierBrand || !selectedCourierService)) {
+      setErrorMsg('Please choose your courier and service in the Shipping tab before placing a bid.');
+      setSelectedTab('shipping');
+      return;
+    }
     if (isNaN(bid) || bid < startPriceVal) return;
     setErrorMsg('');
     setPlacingBid(true);
     try {
-      const result = await (onPlaceBid?.(item, bid, selectedAddressId));
-      if (result === false || (result && result.success === false)) {
-        const msg = result?.error || 'Failed to place bid';
+      const API = import.meta.env.VITE_API_BASE;
+      const idempotencyKey = (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function')
+        ? globalThis.crypto.randomUUID()
+        : `bid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const payload = {
+        amount: bid,
+        userAddressId: selectedAddressId,
+        idempotencyKey
+      };
+      if (selectedCourierBrand && selectedCourierService) {
+        payload.courier = selectedCourierBrand;
+        payload.courierService = selectedCourierService;
+      }
+      const res = await fetch(`${API}/auctions/${auctionId}/bids`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) {
+        const msg = json?.error || `Failed to place bid (HTTP ${res.status})`;
         setErrorMsg(msg);
         return;
       }
@@ -235,6 +349,12 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
   
   // Currently selected address object (if any)
   const selectedAddress = userAddresses.find(a => a.userAddressId === selectedAddressId);
+  // Determine if courier selection is required/enabled (derived above)
+
+  // Estimated shipping cost from server (fallback handled in backend)
+  const estimatedShipping = (selectedCourierBrand && selectedCourierService) ? Number(estimatedShippingPrice || 0) : 0;
+  const parsedBid = Number(bidAmount) || 0;
+  const estimatedTotal = parsedBid + (hasCourierOptions ? estimatedShipping : 0);
 
   return (
     <>
@@ -245,7 +365,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
           <div className="pdm-breadcrumb">
             Marketplace / Auction / {item.title}
           </div>
-          <button className="pdm-close" onClick={onClose}>
+          <button className="event-modal__close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
@@ -454,7 +574,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
 
               {selectedTab === 'shipping' && (
                 <div className="pdm-shipping-info">
-                  <div className="pdm-ship-option" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="pdm-ship-option">
                     <strong>Shipping Address</strong>
                     <button
                       className="btn btn-sm btn-secondary"
@@ -485,16 +605,59 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     </div>
                   )}
 
-                  <hr style={{ margin: '12px 0', borderColor: 'var(--museo-border)' }} />
-
-                  <div className="pdm-ship-option">
-                    <strong>Standard Shipping</strong>
-                    <span>3-7 business days, insured</span>
-                  </div>
-                  <div className="pdm-ship-option">
-                    <strong>Express Shipping</strong>
-                    <span>1-3 business days, insured</span>
-                  </div>
+                  {hasCourierOptions && (
+                    <>
+                      <hr style={{ margin: '12px 0', borderColor: 'var(--museo-border)' }} />
+                      <div className="pdm-ship-option">
+                        <strong>Shipping Method</strong>
+                        <span className="museo-form-helper">Select courier and service</span>
+                      </div>
+                      <div className="museo-card">
+                        <div className="museo-card__body shipping-options">
+                          {courierBrands.map((brand) => {
+                            const brandSelected = selectedCourierBrand === brand;
+                            const services = ['standard', 'express'].filter(s => courierOptions[brand]?.[s]);
+                            const currentService = brandSelected && services.includes(selectedCourierService) ? selectedCourierService : services[0];
+                            return (
+                              <div
+                                key={brand}
+                                className={`shipping-card ${brandSelected ? 'selected' : ''}`}
+                                onClick={() => setSelectedCourierBrand(brand)}
+                              >
+                                <div className="shipping-radio">
+                                  {brandSelected && (
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                    </svg>
+                                  )}
+                                </div>
+                                <div className="shipping-details">
+                                  <div className="shipping-name">{brand}</div>
+                                  {brandSelected ? (
+                                    <div className="shipping-service-row" onClick={(e) => e.stopPropagation()}>
+                                      <select
+                                        className="museo-select"
+                                        value={currentService || ''}
+                                        onChange={(e) => setSelectedCourierService(e.target.value)}
+                                      >
+                                        {services.includes('standard') && (<option value="standard">Standard</option>)}
+                                        {services.includes('express') && (<option value="express">Express</option>)}
+                                      </select>
+                                      <div className="shipping-desc">
+                                        {currentService === 'express' ? 'Faster delivery' : 'Economy delivery'}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="shipping-desc">Select to choose service</div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   {/*
                     <div className="pdm-ship-option">
@@ -551,6 +714,25 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                     placeholder={`Min ₱${startPriceVal}`}
                     min={startPriceVal}
                   />
+                  {/* Estimated breakdown */}
+                  <div className="museo-card">
+                    <div className="museo-card__body" style={{ display: 'grid', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="pdm-stat-label">Bid</span>
+                        <span className="pdm-stat-value">₱{Number(parsedBid || 0).toLocaleString()}</span>
+                      </div>
+                      {hasCourierOptions && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span className="pdm-stat-label">Estimated Shipping</span>
+                          <span className="pdm-stat-value">₱{Number(estimatedShipping || 0).toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--museo-border)', paddingTop: 6 }}>
+                        <span className="pdm-stat-label">Estimated Total</span>
+                        <span className="pdm-stat-value">₱{Number(estimatedTotal || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
                   {showBidSuccess ? (
                     <div className="pdm-bid-success">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -568,6 +750,7 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                           !bidAmount ||
                           parseFloat(bidAmount) < startPriceVal ||
                           !selectedAddressId ||
+                          (hasCourierOptions && (!selectedCourierBrand || !selectedCourierService)) ||
                           timeDisabled
                         }
                       >
@@ -587,6 +770,11 @@ export default function ProductAuctionModal({ isOpen, onClose, item, onPlaceBid 
                       {!selectedAddressId && userAddresses.length > 0 && (
                         <div style={{ color: 'var(--museo-text-muted)', fontSize: '12px' }}>
                           Select a shipping address in the Shipping tab to enable bidding.
+                        </div>
+                      )}
+                      {hasCourierOptions && (!selectedCourierBrand || !selectedCourierService) && (
+                        <div style={{ color: 'var(--museo-text-muted)', fontSize: '12px' }}>
+                          Choose your courier and service in the Shipping tab to enable bidding.
                         </div>
                       )}
                       {errorMsg && (

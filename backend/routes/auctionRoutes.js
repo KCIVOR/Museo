@@ -275,6 +275,8 @@ router.post(
       body: {
         amount: { type: 'number', required: true, min: 0.01 },
         userAddressId: { type: 'string', required: true, min: 1 },
+        courier: { type: 'string', required: false, min: 1, max: 100 },
+        courierService: { type: 'string', required: false, min: 1, max: 100 },
         idempotencyKey: { type: 'string', required: false, min: 1, max: 255 }
       }
     },

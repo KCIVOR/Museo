@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import MuseoLoadingBox from "../../../components/MuseoLoadingBox";
 import ConfirmModal from "../../Shared/ConfirmModal";
 import ContentPreview from "../../../components/ContentPreview";
+import MuseoModal, { MuseoModalBody, MuseoModalSection, MuseoModalActions } from "../../../components/MuseoModal.jsx";
 
 const API = import.meta.env.VITE_API_BASE;
 
@@ -136,10 +137,28 @@ export default function ReportsTab() {
         return "#ff6b6b";
       case "resolved":
         return "#51cf66";
-      case "dismissed":
+      case "rejected":
         return "#868e96";
       default:
         return "#495057";
+    }
+  };
+
+  // Use Museo badge variants from styles/components/badges.css
+  const getStatusBadgeClass = (status) => {
+    switch (String(status)) {
+      case "open":
+      case "triage":
+      case "inProgress":
+        return "museo-badge museo-badge--info";
+      case "resolved":
+        return "museo-badge museo-badge--success";
+      case "rejected":
+        return "museo-badge museo-badge--error";
+      case "duplicate":
+        return "museo-badge museo-badge--warning";
+      default:
+        return "museo-badge";
     }
   };
 
@@ -148,8 +167,15 @@ export default function ReportsTab() {
       artwork: "Artwork",
       post: "Post",
       user: "User",
+      profile: "Profile",
       comment: "Comment",
-      marketplace_item: "Marketplace Item"
+      galleryPost: "Gallery Post",
+      marketplace_item: "Marketplace Item",
+      marketplaceItem: "Marketplace Item",
+      order: "Order",
+      orderItem: "Order Item",
+      auction: "Auction",
+      auctionItem: "Auction Item"
     };
     return labels[type] || type;
   };
@@ -185,34 +211,19 @@ export default function ReportsTab() {
           placeholder="Search by target ID, reason..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            flex: 1,
-            minWidth: "200px",
-            padding: "8px 12px",
-            border: "1px solid var(--museo-border)",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontFamily: "inherit"
-          }}
+          className="museo-input"
+          style={{ flex: 1, minWidth: "200px" }}
         />
 
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            border: "1px solid var(--museo-border)",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontFamily: "inherit",
-            backgroundColor: "white",
-            cursor: "pointer"
-          }}
+          className="museo-dropdown"
         >
           <option value="all">All Status</option>
           <option value="open">Open</option>
           <option value="resolved">Resolved</option>
-          <option value="dismissed">Dismissed</option>
+          <option value="rejected">Rejected</option>
         </select>
       </div>
 
@@ -239,57 +250,15 @@ export default function ReportsTab() {
           {filteredReports.map((report) => (
             <div
               key={report.reportId}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px",
-                border: "1px solid var(--museo-border)",
-                borderRadius: "8px",
-                backgroundColor: "var(--museo-bg-secondary)",
-                transition: "all var(--museo-transition-base)",
-                cursor: "pointer"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--museo-bg-hover)";
-                e.currentTarget.style.borderColor = "var(--museo-primary)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--museo-bg-secondary)";
-                e.currentTarget.style.borderColor = "var(--museo-border)";
-              }}
+              className="museo-card"
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}
             >
               <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    alignItems: "center",
-                    marginBottom: "8px"
-                  }}
-                >
-                  <span
-                    style={{
-                      backgroundColor: getStatusBadgeColor(report.status),
-                      color: "white",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      textTransform: "capitalize"
-                    }}
-                  >
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "8px" }}>
+                  <span className={getStatusBadgeClass(report.status)} style={{ textTransform: "uppercase" }}>
                     {report.status}
                   </span>
-                  <span
-                    style={{
-                      backgroundColor: "var(--museo-bg-tertiary)",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontWeight: "500"
-                    }}
-                  >
+                  <span className="museo-badge museo-badge--primary">
                     {getTargetTypeLabel(report.targetType)}
                   </span>
                 </div>
@@ -305,7 +274,7 @@ export default function ReportsTab() {
                   >
                     Target ID: <code style={{ fontSize: "12px" }}>{report.targetId}</code>
                   </p>
-                  {report.reason && (
+                  {(report.reason || report.reasonSummary) && (
                     <p
                       style={{
                         margin: "0",
@@ -313,7 +282,7 @@ export default function ReportsTab() {
                         color: "var(--museo-text-muted)"
                       }}
                     >
-                      Reason: {report.reason}
+                      Reason: {report.reason || report.reasonSummary}
                     </p>
                   )}
                 </div>
@@ -335,34 +304,12 @@ export default function ReportsTab() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  marginLeft: "16px"
-                }}
-              >
+              <div style={{ display: "flex", gap: "8px", marginLeft: "16px" }}>
                 <button
+                  className="btn btn-primary btn-sm"
                   onClick={() => {
                     setSelectedReport(report);
                     setShowDetailModal(true);
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "var(--museo-primary)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    transition: "all var(--museo-transition-base)"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "0.9";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = "1";
                   }}
                 >
                   View Details
@@ -398,417 +345,102 @@ export default function ReportsTab() {
 
       {/* Detail Modal */}
       {showDetailModal && selectedReport && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000
-          }}
-          onClick={() => setShowDetailModal(false)}
+        <MuseoModal
+          open={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          title="Report Details"
+          size="lg"
         >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "32px",
-              maxWidth: "600px",
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "24px"
-              }}
-            >
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600" }}>
-                Report Details
-              </h2>
-              <button
-                onClick={() => setShowDetailModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  color: "var(--museo-text-muted)"
-                }}
-              >
-                ×
-              </button>
-            </div>
+          <MuseoModalBody>
+            <MuseoModalSection>
+              <ContentPreview targetType={selectedReport.targetType} targetId={selectedReport.targetId} />
+            </MuseoModalSection>
 
-            {/* Reported Content Preview */}
-            <ContentPreview 
-              targetType={selectedReport.targetType} 
-              targetId={selectedReport.targetId} 
-            />
-
-            {/* Report Info */}
-            <div style={{ marginBottom: "24px" }}>
+            <MuseoModalSection>
               <div style={{ marginBottom: "16px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "var(--museo-text-muted)",
-                    marginBottom: "4px",
-                    textTransform: "uppercase"
-                  }}
-                >
-                  Report ID
-                </label>
-                <code
-                  style={{
-                    fontSize: "13px",
-                    backgroundColor: "var(--museo-bg-secondary)",
-                    padding: "8px 12px",
-                    borderRadius: "4px",
-                    display: "block",
-                    wordBreak: "break-all"
-                  }}
-                >
+                <label className="museo-label">Report ID</label>
+                <code style={{ fontSize: "13px", backgroundColor: "var(--museo-bg-secondary)", padding: "8px 12px", borderRadius: "4px", display: "block", wordBreak: "break-all" }}>
                   {selectedReport.reportId}
                 </code>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px",
-                  marginBottom: "16px"
-                }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Target Type
-                  </label>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "14px",
-                      fontWeight: "500"
-                    }}
-                  >
-                    {getTargetTypeLabel(selectedReport.targetType)}
-                  </p>
+                  <label className="museo-label">Target Type</label>
+                  <span className="museo-badge museo-badge--primary">{getTargetTypeLabel(selectedReport.targetType)}</span>
                 </div>
-
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Target ID
-                  </label>
-                  <code
-                    style={{
-                      fontSize: "13px",
-                      backgroundColor: "var(--museo-bg-secondary)",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      wordBreak: "break-all"
-                    }}
-                  >
-                    {selectedReport.targetId}
-                  </code>
+                  <label className="museo-label">Target ID</label>
+                  <code style={{ fontSize: "13px", backgroundColor: "var(--museo-bg-secondary)", padding: "4px 8px", borderRadius: "4px", wordBreak: "break-all" }}>{selectedReport.targetId}</code>
                 </div>
               </div>
 
               <div style={{ marginBottom: "16px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "var(--museo-text-muted)",
-                    marginBottom: "4px",
-                    textTransform: "uppercase"
-                  }}
-                >
-                  Reason
-                </label>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "14px",
-                    color: selectedReport.reason
-                      ? "var(--museo-text)"
-                      : "var(--museo-text-muted)"
-                  }}
-                >
+                <label className="museo-label">Reason</label>
+                <p style={{ margin: 0, fontSize: "14px", color: selectedReport.reason ? "var(--museo-text)" : "var(--museo-text-muted)" }}>
                   {selectedReport.reason || "No reason provided"}
                 </p>
               </div>
 
               {selectedReport.details && (
                 <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Details
-                  </label>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "14px",
-                      color: "var(--museo-text)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word"
-                    }}
-                  >
+                  <label className="museo-label">Details</label>
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--museo-text)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                     {selectedReport.details}
                   </p>
                 </div>
               )}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px",
-                  marginBottom: "16px"
-                }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Status
-                  </label>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      backgroundColor: getStatusBadgeColor(selectedReport.status),
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "4px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      textTransform: "capitalize"
-                    }}
-                  >
-                    {selectedReport.status}
-                  </span>
+                  <label className="museo-label">Status</label>
+                  <span className={getStatusBadgeClass(selectedReport.status)}>{selectedReport.status}</span>
                 </div>
-
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Reported By
-                  </label>
-                  <code
-                    style={{
-                      fontSize: "13px",
-                      backgroundColor: "var(--museo-bg-secondary)",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      wordBreak: "break-all"
-                    }}
-                  >
-                    {selectedReport.reporterUserId}
-                  </code>
+                  <label className="museo-label">Reported By</label>
+                  <code style={{ fontSize: "13px", backgroundColor: "var(--museo-bg-secondary)", padding: "4px 8px", borderRadius: "4px", wordBreak: "break-all" }}>{selectedReport.reporterUserId}</code>
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px"
-                }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--museo-text-muted)",
-                      marginBottom: "4px",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    Created At
-                  </label>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "13px",
-                      color: "var(--museo-text-muted)"
-                    }}
-                  >
-                    {new Date(selectedReport.createdAt).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                      }
-                    )}
+                  <label className="museo-label">Created At</label>
+                  <p style={{ margin: 0, fontSize: "13px", color: "var(--museo-text-muted)" }}>
+                    {new Date(selectedReport.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
-
                 {selectedReport.updatedAt && (
                   <div>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "var(--museo-text-muted)",
-                        marginBottom: "4px",
-                        textTransform: "uppercase"
-                      }}
-                    >
-                      Updated At
-                    </label>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "13px",
-                        color: "var(--museo-text-muted)"
-                      }}
-                    >
-                      {new Date(selectedReport.updatedAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        }
-                      )}
+                    <label className="museo-label">Updated At</label>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--museo-text-muted)" }}>
+                      {new Date(selectedReport.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Status Change Actions */}
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                borderTop: "1px solid var(--museo-border)",
-                paddingTop: "24px"
-              }}
-            >
-              {selectedReport.status !== "resolved" && selectedReport.status !== "dismissed" && (
-                <button
-                  onClick={() =>
-                    handleStatusChange(selectedReport.reportId, "resolved")
-                  }
-                  disabled={updatingStatus === selectedReport.reportId}
-                  style={{
-                    flex: 1,
-                    padding: "10px 16px",
-                    backgroundColor: "#51cf66",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    cursor:
-                      updatingStatus === selectedReport.reportId
-                        ? "not-allowed"
-                        : "pointer",
-                    opacity:
-                      updatingStatus === selectedReport.reportId ? 0.6 : 1
-                  }}
-                >
-                  {updatingStatus === selectedReport.reportId
-                    ? "Updating..."
-                    : "Mark as Resolved"}
-                </button>
-              )}
-
-              {selectedReport.status !== "dismissed" && (
-                <button
-                  onClick={() =>
-                    handleStatusChange(selectedReport.reportId, "dismissed")
-                  }
-                  disabled={updatingStatus === selectedReport.reportId}
-                  style={{
-                    flex: 1,
-                    padding: "10px 16px",
-                    backgroundColor: "#868e96",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    cursor:
-                      updatingStatus === selectedReport.reportId
-                        ? "not-allowed"
-                        : "pointer",
-                    opacity:
-                      updatingStatus === selectedReport.reportId ? 0.6 : 1
-                  }}
-                >
-                  {updatingStatus === selectedReport.reportId
-                    ? "Updating..."
-                    : "Dismiss"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+            </MuseoModalSection>
+          </MuseoModalBody>
+          <MuseoModalActions>
+            {selectedReport.status !== "resolved" && selectedReport.status !== "rejected" && (
+              <button
+                className="btn btn-success"
+                onClick={() => handleStatusChange(selectedReport.reportId, "resolved")}
+                disabled={updatingStatus === selectedReport.reportId}
+              >
+                {updatingStatus === selectedReport.reportId ? "Updating..." : "Mark as Resolved"}
+              </button>
+            )}
+            {selectedReport.status !== "rejected" && (
+              <button
+                className="btn btn-danger"
+                onClick={() => handleStatusChange(selectedReport.reportId, "rejected")}
+                disabled={updatingStatus === selectedReport.reportId}
+              >
+                {updatingStatus === selectedReport.reportId ? "Updating..." : "Reject"}
+              </button>
+            )}
+          </MuseoModalActions>
+        </MuseoModal>
       )}
 
       {/* Confirm Modal */}
