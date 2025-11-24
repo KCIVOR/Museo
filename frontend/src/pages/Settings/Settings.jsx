@@ -3,9 +3,18 @@ import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase/supabaseClient';
 import SellerApplicationModal from '../../components/SellerApplicationModal';
+import MuseoModal, { MuseoModalBody, MuseoModalActions } from '../../components/MuseoModal';
 import './Settings.css';
 
 const API = import.meta.env.VITE_API_BASE;
+
+const FALLBACK_AVATAR =
+  import.meta.env.FALLBACKPHOTO_URL ||
+  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/profilePicture.png";
+
+const FALLBACK_COVER =
+  import.meta.env.FALLBACKCOVER_URL ||
+  "https://ddkkbtijqrgpitncxylx.supabase.co/storage/v1/object/public/uploads/pics/coverphoto.png";
 
 export default function Settings() {
   const { userData, refreshUserData } = useUser();
@@ -29,6 +38,41 @@ export default function Settings() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
   const [emailMsgType, setEmailMsgType] = useState("");
+
+  // Edit profile modal state
+  const [openEditProfile, setOpenEditProfile] = useState(false);
+  const [profileEditData, setProfileEditData] = useState({
+    avatar: userData?.profilePicture || FALLBACK_AVATAR,
+    cover: userData?.coverPicture || FALLBACK_COVER,
+    bio: userData?.bio || "",
+    about: userData?.about || "",
+    birthdate: userData?.birthdate || "",
+    address: userData?.address || "",
+    sex: userData?.sex || "",
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    middleName: userData?.middleName || "",
+    username: userData?.username || "",
+    profileId: userData?.profileId || ""
+  });
+
+  // Sync profile data when userData changes
+  useEffect(() => {
+    setProfileEditData({
+      avatar: userData?.profilePicture || FALLBACK_AVATAR,
+      cover: userData?.coverPicture || FALLBACK_COVER,
+      bio: userData?.bio || "",
+      about: userData?.about || "",
+      birthdate: userData?.birthdate || "",
+      address: userData?.address || "",
+      sex: userData?.sex || "",
+      firstName: userData?.firstName || "",
+      lastName: userData?.lastName || "",
+      middleName: userData?.middleName || "",
+      username: userData?.username || "",
+      profileId: userData?.profileId || ""
+    });
+  }, [userData]);
 
   // Fetch user activities
   useEffect(() => {
@@ -215,6 +259,82 @@ export default function Settings() {
     return date.toLocaleDateString();
   };
 
+  const handleCloseEditProfile = async () => {
+    setOpenEditProfile(false);
+    await refreshUserData();
+  };
+
+  const pickImage = (cb) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const f = input.files?.[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      cb({ file: f, url });
+    };
+    input.click();
+  };
+
+  const updateProfile = async () => {
+    try {
+      const errs = {};
+      const t = (v) => (typeof v === 'string' ? v.trim() : v);
+      if (!t(profileEditData.firstName)) errs.firstName = "First name is required";
+      if (!t(profileEditData.lastName)) errs.lastName = "Last name is required";
+      if (!t(profileEditData.username)) errs.username = "Username is required";
+      if (!t(profileEditData.bio)) errs.bio = "Bio is required";
+      if (!t(profileEditData.about)) errs.about = "About is required";
+      if (!t(profileEditData.birthdate)) errs.birthdate = "Birthdate is required";
+      if (!t(profileEditData.address)) errs.address = "Address is required";
+      if (!t(profileEditData.sex)) errs.sex = "Sex is required";
+
+      if (Object.keys(errs).length) {
+        alert("Please fill out all required fields.");
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("firstName", profileEditData.firstName || "");
+      fd.append("middleName", profileEditData.middleName || "");
+      fd.append("lastName", profileEditData.lastName || "");
+      fd.append("bio", profileEditData.bio || "");
+      fd.append("about", profileEditData.about || "");
+      fd.append("birthdate", profileEditData.birthdate || "");
+      fd.append("address", profileEditData.address || "");
+      fd.append("sex", profileEditData.sex || "");
+      fd.append("username", profileEditData.username || "");
+
+      if (profileEditData.avatar && profileEditData.avatar.file) fd.append("avatar", profileEditData.avatar.file);
+      if (profileEditData.cover && profileEditData.cover.file) fd.append("cover", profileEditData.cover.file);
+
+      const res = await fetch(`${API}/profile/updateProfile`, {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      if (!res.ok) {
+        try {
+          const payload = await res.json();
+          if (res.status === 409) {
+            alert("Username is already taken");
+            return;
+          }
+          throw new Error(payload?.error || payload?.message || "Failed to update profile");
+        } catch (_) {
+          const t = await res.text();
+          throw new Error(t || "Failed to update profile");
+        }
+      }
+      
+      handleCloseEditProfile();
+    } catch (err) {
+      console.error("Update failed:", err);
+      alert(err.message || "Failed to update profile");
+    }
+  };
+
   return (
     <div className="museo-settings-container">
       {/* Header */}
@@ -233,17 +353,6 @@ export default function Settings() {
               <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
             Account Settings
-          </button>
-          
-          <button 
-            className={`museo-tab ${activeTab === 'notifications' ? 'museo-tab--active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            Notifications
           </button>
           
           <button 
@@ -414,48 +523,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Notifications Tab */}
-          <div className={`museo-tab-panel ${activeTab === 'notifications' ? 'museo-tab-panel--active' : ''}`}>
-            <h2 className="settings-section-title">Notification Preferences</h2>
-            
-            <div className="settings-group">
-              <h3 className="settings-group-title">Email Notifications</h3>
-              
-              <div className="settings-toggle-item">
-                <div className="settings-toggle-info">
-                  <label className="museo-label">Marketing Emails</label>
-                  <p className="settings-description">Receive updates about new features and promotions</p>
-                </div>
-                <input type="checkbox" className="museo-checkbox" defaultChecked />
-              </div>
-              
-              <div className="settings-toggle-item">
-                <div className="settings-toggle-info">
-                  <label className="museo-label">Order Updates</label>
-                  <p className="settings-description">Get notified about your order status</p>
-                </div>
-                <input type="checkbox" className="museo-checkbox" defaultChecked />
-              </div>
-              
-              <div className="settings-toggle-item">
-                <div className="settings-toggle-info">
-                  <label className="museo-label">New Followers</label>
-                  <p className="settings-description">Notification when someone follows you</p>
-                </div>
-                <input type="checkbox" className="museo-checkbox" defaultChecked />
-              </div>
-              
-              <div className="settings-toggle-item">
-                <div className="settings-toggle-info">
-                  <label className="museo-label">Comments & Likes</label>
-                  <p className="settings-description">Notification for interactions on your posts</p>
-                </div>
-                <input type="checkbox" className="museo-checkbox" defaultChecked />
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Tab */}
+{/* Profile Tab */}
           <div className={`museo-tab-panel ${activeTab === 'profile' ? 'museo-tab-panel--active' : ''}`}>
             <h2 className="settings-section-title">Profile Settings</h2>
             
@@ -473,7 +541,7 @@ export default function Settings() {
                   <p>@{userData?.username || 'username'}</p>
                   <button 
                     className="btn btn-primary btn-sm"
-                    onClick={() => navigate('/MyProfile')}
+                    onClick={() => setOpenEditProfile(true)}
                   >
                     Edit Profile
                   </button>
@@ -481,30 +549,6 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Privacy Settings */}
-            <div className="settings-group">
-              <h3 className="settings-group-title">Privacy</h3>
-              
-              <div className="settings-item">
-                <div className="settings-item-info">
-                  <label className="museo-label">Profile Visibility</label>
-                  <p className="settings-description">Control who can see your profile</p>
-                </div>
-                <select className="museo-select">
-                  <option value="public">Public</option>
-                  <option value="followers">Followers Only</option>
-                  <option value="private">Private</option>
-                </select>
-              </div>
-              
-              <div className="settings-toggle-item">
-                <div className="settings-toggle-info">
-                  <label className="museo-label">Show Activity Status</label>
-                  <p className="settings-description">Let others see when you're active</p>
-                </div>
-                <input type="checkbox" className="museo-checkbox" defaultChecked />
-              </div>
-            </div>
           </div>
 
           {/* Marketplace Tab */}
@@ -530,58 +574,6 @@ export default function Settings() {
                     >
                       Go to Seller Dashboard
                     </button>
-                  </div>
-                </div>
-                
-                {/* Seller Settings */}
-                <div className="settings-group">
-                  <h3 className="settings-group-title">Seller Preferences</h3>
-                  
-                  <div className="settings-item">
-                    <div className="settings-item-info">
-                      <label className="museo-label">Commission Rate</label>
-                      <p className="settings-description">Set your default commission rate</p>
-                    </div>
-                    <div className="settings-input-group">
-                      <input type="number" className="museo-input" defaultValue="15" min="0" max="100" />
-                      <span>%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="settings-toggle-item">
-                    <div className="settings-toggle-info">
-                      <label className="museo-label">Accept Custom Orders</label>
-                      <p className="settings-description">Allow buyers to request custom artwork</p>
-                    </div>
-                    <input type="checkbox" className="museo-checkbox" defaultChecked />
-                  </div>
-                  
-                  <div className="settings-toggle-item">
-                    <div className="settings-toggle-info">
-                      <label className="museo-label">International Shipping</label>
-                      <p className="settings-description">Ship artwork internationally</p>
-                    </div>
-                    <input type="checkbox" className="museo-checkbox" />
-                  </div>
-                  
-                  <div className="settings-toggle-item">
-                    <div className="settings-toggle-info">
-                      <label className="museo-label">Vacation Mode</label>
-                      <p className="settings-description">Temporarily pause your store while you're away</p>
-                    </div>
-                    <input type="checkbox" className="museo-checkbox" />
-                  </div>
-                </div>
-
-                {/* Payment Settings - Coming Soon */}
-                <div className="settings-group">
-                  <h3 className="settings-group-title">Payment Methods</h3>
-                  <div className="settings-item">
-                    <div className="settings-item-info">
-                      <label className="museo-label">Payout Method</label>
-                      <p className="settings-description">New artist-friendly payout system coming soon!</p>
-                    </div>
-                    <button className="btn btn-secondary btn-sm" disabled>Coming Soon</button>
                   </div>
                 </div>
               </>
@@ -756,6 +748,263 @@ export default function Settings() {
           setShowSellerModal(false);
         }}
       />
+
+      {/* Edit Profile Modal */}
+      <MuseoModal
+        open={openEditProfile}
+        onClose={handleCloseEditProfile}
+        title="Edit Profile"
+        subtitle="Update your profile information"
+        size="lg"
+      >
+        <MuseoModalBody>
+          {/* Cover Photo Section */}
+          <div style={{
+            position: 'relative',
+            height: '160px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            marginBottom: '20px',
+            background: 'linear-gradient(135deg, #e8dcc6 0%, #f0e6d2 100%)',
+            border: '1px solid rgba(212, 180, 138, 0.2)'
+          }}>
+            {profileEditData.cover ? (
+              <img 
+                src={profileEditData.cover.url || profileEditData.cover} 
+                alt="Cover" 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => { e.currentTarget.src = ""; }}
+              />
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#8b6f4d',
+                fontSize: '16px',
+                fontFamily: 'Georgia, Times New Roman, serif'
+              }}>
+                Background photo
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => pickImage((v) => setProfileEditData({...profileEditData, cover: v}))}
+              style={{
+                position: 'absolute',
+                bottom: '12px',
+                right: '12px',
+                zIndex: 10
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+              Change Cover
+            </button>
+          </div>
+
+          {/* Main Content - Two Column Layout */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '180px 1fr',
+            gap: '24px',
+            alignItems: 'start',
+            marginBottom: '16px'
+          }}>
+            {/* Avatar Section */}
+            <div style={{
+              position: 'relative',
+              alignSelf: 'start',
+              width: '180px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <img
+                src={profileEditData.avatar?.url || profileEditData.avatar || FALLBACK_AVATAR}
+                alt="Avatar"
+                style={{
+                  width: '160px',
+                  height: '160px',
+                  borderRadius: '20px',
+                  objectFit: 'cover',
+                  border: '6px solid #faf8f5',
+                  boxShadow: '0 8px 24px rgba(110, 74, 46, 0.15)'
+                }}
+                onError={(e) => { e.currentTarget.src = FALLBACK_AVATAR; }}
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+              />
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => pickImage((v) => setProfileEditData({...profileEditData, avatar: v}))}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center'
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Change Photo
+              </button>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {/* Name Fields Row */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                alignItems: 'start'
+              }}>
+                <label className="museo-form-label">
+                  First name *
+                  <input
+                    type="text"
+                    className="museo-input"
+                    value={profileEditData.firstName}
+                    onChange={(e) => setProfileEditData({...profileEditData, firstName: e.target.value})}
+                    placeholder="First name"
+                  />
+                </label>
+                <label className="museo-form-label">
+                  Middle name
+                  <input
+                    type="text"
+                    className="museo-input"
+                    value={profileEditData.middleName}
+                    onChange={(e) => setProfileEditData({...profileEditData, middleName: e.target.value})}
+                    placeholder="Middle name"
+                  />
+                </label>
+              </div>
+
+              <label className="museo-form-label">
+                Last name *
+                <input
+                  type="text"
+                  className="museo-input"
+                  value={profileEditData.lastName}
+                  onChange={(e) => setProfileEditData({...profileEditData, lastName: e.target.value})}
+                  placeholder="Last name"
+                />
+              </label>
+
+              <label className="museo-form-label">
+                Username *
+                <input
+                  type="text"
+                  className="museo-input"
+                  value={profileEditData.username}
+                  onChange={(e) => setProfileEditData({...profileEditData, username: e.target.value})}
+                  placeholder="Username"
+                />
+              </label>
+
+              <label className="museo-form-label">
+                Bio *
+                <textarea
+                  className="museo-input museo-textarea"
+                  placeholder="Short intro about yourself…"
+                  value={profileEditData.bio}
+                  onChange={(e) => setProfileEditData({...profileEditData, bio: e.target.value})}
+                  rows={3}
+                />
+              </label>
+
+              <label className="museo-form-label">
+                About *
+                <textarea
+                  className="museo-input museo-textarea"
+                  placeholder="Write a more detailed description, story, or background…"
+                  value={profileEditData.about}
+                  onChange={(e) => setProfileEditData({...profileEditData, about: e.target.value})}
+                  rows={5}
+                />
+              </label>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '16px',
+                alignItems: 'start'
+              }}>
+                <label className="museo-form-label">
+                  Birthdate *
+                  <input
+                    type="date"
+                    className="museo-input"
+                    value={profileEditData.birthdate || ""}
+                    onChange={(e) => setProfileEditData({...profileEditData, birthdate: e.target.value})}
+                  />
+                </label>
+
+                <label className="museo-form-label">
+                  Sex *
+                  <select
+                    className="museo-input"
+                    value={profileEditData.sex}
+                    onChange={(e) => setProfileEditData({...profileEditData, sex: e.target.value})}
+                  >
+                    <option value="">Select…</option>
+                    <option>Female</option>
+                    <option>Male</option>
+                    <option>Prefer not to say</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="museo-form-label">
+                Address *
+                <input
+                  type="text"
+                  className="museo-input"
+                  placeholder="Street, city, province"
+                  value={profileEditData.address}
+                  onChange={(e) => setProfileEditData({...profileEditData, address: e.target.value})}
+                />
+              </label>
+            </div>
+          </div>
+        </MuseoModalBody>
+
+        <MuseoModalActions>
+          <button 
+            type="button"
+            className="btn btn-secondary btn-sm" 
+            onClick={handleCloseEditProfile}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={updateProfile}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17,21 17,13 7,13 7,21"/>
+              <polyline points="7,3 7,8 15,8"/>
+            </svg>
+            Save Changes
+          </button>
+        </MuseoModalActions>
+      </MuseoModal>
     </div>
   );
 }
