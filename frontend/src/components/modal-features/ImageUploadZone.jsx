@@ -27,6 +27,7 @@ export default function ImageUploadZone({
   hint
 }) {
   const [dragActive, setDragActive] = useState(false);
+  const [localError, setLocalError] = useState(null);
 
   const isSingle = type === "single";
   const isMultiple = type === "multiple";
@@ -36,6 +37,9 @@ export default function ImageUploadZone({
   // Normalize value to array
   const images = Array.isArray(value) ? value : (value ? [value] : []);
   const maxAllowed = isMultiple ? maxFiles : 1;
+  
+  // High-resolution validation: minimum 1200px on shortest side
+  const MIN_SHORT_SIDE = 1200;
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -73,22 +77,55 @@ export default function ImageUploadZone({
 
     if (validFiles.length === 0) return;
 
-    // Create preview URLs
-    const newImages = validFiles.map(file => ({
-      file,
-      url: URL.createObjectURL(file),
-      preview: URL.createObjectURL(file),
-      id: Date.now() + Math.random()
-    }));
+    // Validate resolution for each file (async)
+    Promise.all(validFiles.map(file => {
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const minSide = Math.min(img.naturalWidth, img.naturalHeight);
+          if (minSide < MIN_SHORT_SIDE) {
+            resolve({ 
+              file, 
+              valid: false, 
+              reason: `Image too small: ${img.naturalWidth}x${img.naturalHeight} (minimum ${MIN_SHORT_SIDE}px on shortest side)` 
+            });
+          } else {
+            resolve({ file, valid: true });
+          }
+        };
+        img.onerror = () => resolve({ 
+          file, 
+          valid: false, 
+          reason: 'Invalid image file' 
+        });
+        img.src = URL.createObjectURL(file);
+      });
+    })).then(results => {
+      const failed = results.filter(r => !r.valid);
+      if (failed.length > 0) {
+        setLocalError(failed[0].reason);
+        return;
+      }
+      
+      setLocalError(null);
+      
+      // Create preview URLs for valid images
+      const newImages = results.filter(r => r.valid).map(r => ({
+        file: r.file,
+        url: URL.createObjectURL(r.file),
+        preview: URL.createObjectURL(r.file),
+        id: Date.now() + Math.random()
+      }));
 
-    if (isSingle || isCover || isAvatar) {
-      // Single image - replace
-      onChange?.(newImages[0]);
-    } else {
-      // Multiple images - append up to max
-      const combined = [...images, ...newImages].slice(0, maxAllowed);
-      onChange?.(combined);
-    }
+      if (isSingle || isCover || isAvatar) {
+        // Single image - replace
+        onChange?.(newImages[0]);
+      } else {
+        // Multiple images - append up to max
+        const combined = [...images, ...newImages].slice(0, maxAllowed);
+        onChange?.(combined);
+      }
+    });
   };
 
   const handleRemove = (imageId) => {
@@ -128,7 +165,7 @@ export default function ImageUploadZone({
         >
           Change cover photo
         </button>
-        {error && <div className="museo-error-message">{error}</div>}
+        {(error || localError) && <div className="museo-error-message">{error || localError}</div>}
       </div>
     );
   }
@@ -151,7 +188,7 @@ export default function ImageUploadZone({
         >
           Change photo
         </button>
-        {error && <div className="museo-error-message">{error}</div>}
+        {(error || localError) && <div className="museo-error-message">{error || localError}</div>}
       </div>
     );
   }
@@ -186,7 +223,7 @@ export default function ImageUploadZone({
         </div>
       </div>
 
-      {error && <div className="museo-error-message">{error}</div>}
+      {(error || localError) && <div className="museo-error-message">{error || localError}</div>}
 
       {/* Image Previews */}
       {images.length > 0 && (
