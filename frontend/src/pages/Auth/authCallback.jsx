@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../supabase/supabaseClient";
 import MuseoLoadingPage from "../../components/MuseoLoadingPage";
 
@@ -7,6 +7,7 @@ const API = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [message, setMessage] = useState("Finishing login...");
 
   useEffect(() => {
@@ -36,15 +37,20 @@ export default function AuthCallback() {
       }
 
       // ✅ Session stored successfully
-      // Note: ProtectedRoutes will populate UserContext automatically
-      console.log("✅ OAuth Callback: Session stored, navigating to home...");
-      
+      // Determine safe redirect target from query param (?redirect=/path)
+      const params = new URLSearchParams(location.search);
+      const redirectParam = params.get('redirect');
+      const safeRedirect = (p) => (p && p.startsWith('/')) ? p : '/Home';
+      const destination = safeRedirect(redirectParam);
+
+      console.log("✅ OAuth Callback: Session stored, navigating to:", destination);
+
       localStorage.removeItem('sb-ddkkbtijqrgpitncxylx-auth-token');
-      navigate("/home");
+      navigate(destination, { replace: true });
     };
 
     finishLogin();
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   // Show loading page while processing auth
   return <MuseoLoadingPage />;
